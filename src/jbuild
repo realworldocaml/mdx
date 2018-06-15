@@ -1,0 +1,9 @@
+(jbuild_version 1)
+
+(executables
+ ((names (duniverse))
+  (public_names (duniverse))
+  (libraries (bos cmdliner fmt.cli logs.fmt fmt.tty logs.cli rresult sexplib))
+  (preprocess (per_module ((pps (ppx_sexp_conv)) (types))))
+))
+
