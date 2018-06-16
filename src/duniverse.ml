@@ -16,18 +16,20 @@
 
 open Cmdliner
 
-let copts =
-  ()
+let copts = ()
 
 let setup_logs () =
+  Printexc.record_backtrace true ;
   let setup_log style_renderer level =
-    Fmt_tty.setup_std_outputs ?style_renderer ();
-    Logs.set_level level;
-    Logs.set_reporter (Logs_fmt.reporter ()) in
+    Fmt_tty.setup_std_outputs ?style_renderer () ;
+    Logs.set_level level ;
+    Logs.set_reporter (Logs_fmt.reporter ())
+  in
   let global_option_section = "COMMON OPTIONS" in
-  Term.(const setup_log
-    $ Fmt_cli.style_renderer ~docs:global_option_section ()
-    $ Logs_cli.level ~docs:global_option_section ())
+  let open Term in
+  const setup_log
+  $ Fmt_cli.style_renderer ~docs:global_option_section ()
+  $ Logs_cli.level ~docs:global_option_section ()
 
 let copts_t =
   let _docs = Manpage.s_common_options in
@@ -36,14 +38,20 @@ let copts_t =
 let init_cmd =
   let doc = "init TODO" in
   let exits = Term.default_exits in
-  let man = [ `S Manpage.s_description; `P "TODO" ] in
-  ( Term.(term_result (const Init_cmd.init_duniverse $ setup_logs ()))
+  let man = [`S Manpage.s_description; `P "TODO"] in
+  let pkg_t =
+    let open Arg in
+    required
+    & pos 0 (some string) None
+    & info [] ~doc:"opam package to calculate duniverse for" ~docv:"PACKAGE"
+  in
+  ( Term.(term_result (const Init_cmd.init_duniverse $ pkg_t $ setup_logs ()))
   , Term.info "init" ~doc ~exits ~man )
 
 let default_cmd =
   let doc = "duniverse is the spice of build life" in
   let sdocs = Manpage.s_common_options in
-  let man = [ `S Manpage.s_description ] in
+  let man = [`S Manpage.s_description] in
   ( Term.(ret (const (fun _ -> `Help (`Pager, None)) $ pure ()))
   , Term.info "duniverse" ~version:"%%VERSION%%" ~doc ~sdocs ~man )
 
