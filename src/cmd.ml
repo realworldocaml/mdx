@@ -34,6 +34,28 @@ let map fn l =
 
 let run_git ~repo args = OS.Cmd.(run Cmd.(v "git" % "-C" % p repo % args))
 
+let git_ls_remote remote =
+  OS.Cmd.(run_out Cmd.(v "git" % "ls-remote" % remote) |> to_lines)
+  >>= map (fun l ->
+          match String.cuts ~empty:false ~sep:"\t" l with
+          | [_; r] -> (
+            match String.cuts ~sep:"/" r with
+            | ["refs"; "tags"; tag] -> Ok (`Tag tag)
+            | ["refs"; "heads"; head] -> Ok (`Head head)
+            | _ -> Ok `Other )
+          | _ ->
+              R.error_msg
+                (Fmt.strf "unable to parse git ls-remote for %s: '%s'" remote l)
+      )
+  >>= fun l ->
+  let tags, heads =
+    List.fold_left
+      (fun (tags, heads) -> function `Other -> (tags, heads)
+        | `Tag t -> (t :: tags, heads) | `Head h -> (tags, h :: heads) )
+      ([], []) l
+  in
+  Ok (tags, heads)
+
 let run_opam_package_deps package =
   let cmd =
     let open Cmd in
@@ -99,3 +121,34 @@ let get_opam_depends package =
            "Unable to parse opam depends for %s\n\
             Try `opam show --normalise -f depends: %s` manually"
            package package)
+
+(* Currently unused due to API limits *)
+let query_github_api ~user ~repo frag =
+  let url = Fmt.strf "https://api.github.com/repos/%s/%s/%s" user repo frag in
+  let cmd = Cmd.(v "curl" % "--silent" % url) in
+  OS.Cmd.(run_out cmd |> to_string ~trim:true) >>| Ezjsonm.from_string
+
+(* Currently unused due to API limits *)
+let get_github_branches ~user ~repo =
+  query_github_api ~user ~repo "branches"
+  >>= fun j ->
+  try
+    Ok
+      Ezjsonm.(
+        get_list (fun d -> get_dict d |> List.assoc "name" |> get_string) j)
+  with exn ->
+    R.error_msg
+      (Fmt.strf "Unable to get remote branches for github/%s/%s" user repo)
+
+(* Currently unused due to API limits *)
+let get_github_tags ~user ~repo =
+  query_github_api ~user ~repo "tags"
+  >>= fun j ->
+  try
+    Ok
+      Ezjsonm.(
+        get_list (fun d -> get_dict d |> List.assoc "name" |> get_string) j)
+  with exn ->
+    R.error_msg
+      (Fmt.strf "Unable to get remote branches for github/%s/%s: %s" user repo
+         Ezjsonm.(to_string (wrap j)))

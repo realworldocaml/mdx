@@ -17,6 +17,7 @@ depends: [
   "rresult"
   "opam-file-format"
   "uri"
+  "ezjsonm"
   "alcotest" {test}
 ]
 build: [

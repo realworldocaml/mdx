@@ -14,7 +14,7 @@
  *
  *)
 
-open Types
+open Types.Opam
 open Rresult
 open Astring
 
@@ -22,6 +22,12 @@ let split_opam_name_and_version b =
   match String.cut ~sep:"." b with
   | None -> R.error_msg (Fmt.strf "Unable to find version string in %s" b)
   | Some r -> Ok r
+
+let strip_ext fname =
+  let open Fpath in
+  let fname = v fname |> rem_ext in
+  let fname = if has_ext "tar" fname then rem_ext fname else fname in
+  to_string fname
 
 let known_duniverse_domains =
   ["gitlab.camlcity.org"; (* ocamlfind *) "erratique.ch" (* dbuenzli *)
@@ -38,13 +44,13 @@ let classify_dev_repo ~dev_repo ~archive () =
     | Some "github.com" -> (
       match String.cuts ~empty:false ~sep:"/" (Uri.path uri) with
       | [user; repo] ->
-          let repo = Fpath.(v repo |> rem_ext |> to_string) in
+          let repo = strip_ext repo in
           `Github (user, repo)
       | tl -> `Error "wierd github url" )
     | Some domain when List.mem domain known_duniverse_domains -> (
       match String.cuts ~empty:false ~sep:"/" (Uri.path uri) with
       | [user; repo] ->
-          let repo = Fpath.(v repo |> rem_ext |> to_string) in
+          let repo = strip_ext repo in
           `Duniverse_fork repo
       | _ -> `Error "weird gitlab camlcity url" )
     | Some host -> `Unknown host
@@ -62,21 +68,16 @@ let classify_pkg_archive_into_tag ~name ~version ~dev_repo ~archive =
       in
       match String.cuts ~empty:false ~sep:"/" (Uri.path archive) with
       | ["ocaml-core"; ver; "files"; archive] -> (
-        match
-          Fpath.(v archive |> rem_ext |> rem_ext |> to_string)
-          |> String.cut ~sep:"-"
-        with
+        match strip_ext archive |> String.cut ~rev:true ~sep:"-" with
         | None -> parse_err ()
         | Some (n, v) -> Some v )
       | ["janestreet"; r; "releases"; "download"; v; archive] -> Some v
-      | ["janestreet"; r; "archive"; archive] ->
-          Some Fpath.(v archive |> rem_ext |> to_string)
+      | ["janestreet"; r; "archive"; archive] -> Some (strip_ext archive)
       | _ -> parse_err () )
   | `Github (user, repo) -> (
     match String.cuts ~empty:false ~sep:"/" (Uri.path archive) with
     | [u; r; "releases"; "download"; v; archive] -> Some v
-    | [u; r; "archive"; archive] ->
-        Some Fpath.(v archive |> rem_ext |> to_string)
+    | [u; r; "archive"; archive] -> Some (strip_ext archive)
     | _ ->
       match Uri.scheme archive with
       | Some "git+https" -> None
@@ -152,10 +153,10 @@ let rec filter_duniverse_packages pkgs =
           || hd.name = "jbuilder" (* this is us *)
           || hd.name = "dune" (* this is us *)
           || hd.name = "ocamlbuild" (* build system *)
-          || hd.name = "result"
-          || (* builtin since 4.03 *)
-             hd.name = "uchar"
-          (* builtin since 4.06 *)
+          || hd.name = "result" || hd.name = "uchar"
+          || hd.name = "ocaml-base-compiler"
+          || hd.name = "ocaml-variants" || hd.name = "ocamlfind"
+          (* for now *)
         in
         if filter then fn acc tl else fn (hd :: acc) tl
     | [] -> Ok (List.rev acc)
@@ -199,6 +200,7 @@ let init_duniverse package ofile () =
     Logs.info (fun l ->
         l "All %d packages are Dune compatible! It's a spicy miracle!"
           num_total ) ;
-  Bos.OS.File.write ofile (Fmt.strf "%a\n" pp_packages packages) >>= fun () ->
-  Fmt.pr "Written %a (%d packages)\n" pp_packages packages num_total;
+  Bos.OS.File.write ofile (Fmt.strf "%a\n" pp_packages packages)
+  >>= fun () ->
+  Fmt.pr "Written %a (%d packages)\n" pp_packages packages num_total ;
   Ok ()
