@@ -162,7 +162,7 @@ let rec filter_duniverse_packages pkgs =
   in
   fn [] pkgs
 
-let init_duniverse package () =
+let init_duniverse package ofile () =
   Cmd.run_opam_package_deps package
   >>= fun deps ->
   Logs.info (fun l -> l "Found %d opam dependencies" (List.length deps)) ;
@@ -184,7 +184,6 @@ let init_duniverse package () =
   let num_not_dune = List.length not_dune_pkgs in
   let num_total = List.length pkgs in
   let packages = {pkgs} in
-  Logs.debug (fun l -> l "%a" pp_packages packages) ;
   if num_not_dune > 0 then
     Logs.err (fun l ->
         l
@@ -200,5 +199,6 @@ let init_duniverse package () =
     Logs.info (fun l ->
         l "All %d packages are Dune compatible! It's a spicy miracle!"
           num_total ) ;
-  Fmt.pr "%a\n" pp_packages packages ;
+  Bos.OS.File.write ofile (Fmt.strf "%a\n" pp_packages packages) >>= fun () ->
+  Fmt.pr "Written %a (%d packages)\n" pp_packages packages num_total;
   Ok ()

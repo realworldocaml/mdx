@@ -35,7 +35,9 @@ let copts_t =
   let _docs = Manpage.s_common_options in
   Term.(const copts)
 
-let init_cmd =
+let fpath_t = Arg.conv ~docv:"PATH" (Fpath.of_string, Fpath.pp)
+
+let opam_lock_cmd =
   let doc = "init TODO" in
   let exits = Term.default_exits in
   let man = [`S Manpage.s_description; `P "TODO"] in
@@ -43,10 +45,18 @@ let init_cmd =
     let open Arg in
     required
     & pos 0 (some string) None
-    & info [] ~doc:"opam package to calculate duniverse for" ~docv:"PACKAGE"
+    & info [] ~doc:"opam package name to calculate duniverse for" ~docv:"PACKAGE"
   in
-  ( Term.(term_result (const Init_cmd.init_duniverse $ pkg_t $ setup_logs ()))
-  , Term.info "init" ~doc ~exits ~man )
+  let lockfile_t =
+    let doc = "Output path to store opam lockfile to" in
+    let open Arg in
+    value
+    & opt fpath_t (Fpath.v "duniverse-opam.lock")
+    & info ["o"] ~docv:"OUTPUT_FILE" ~doc 
+  in
+  ( Term.(term_result (const Opam_lock_cmd.init_duniverse $ pkg_t $ lockfile_t $ setup_logs ()))
+
+  , Term.info "opam-lock" ~doc ~exits ~man )
 
 let default_cmd =
   let doc = "duniverse is the spice of build life" in
@@ -55,6 +65,6 @@ let default_cmd =
   ( Term.(ret (const (fun _ -> `Help (`Pager, None)) $ pure ()))
   , Term.info "duniverse" ~version:"%%VERSION%%" ~doc ~sdocs ~man )
 
-let cmds = [init_cmd]
+let cmds = [opam_lock_cmd]
 
 let () = Term.(exit @@ eval_choice default_cmd cmds)
