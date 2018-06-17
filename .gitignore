@@ -4,4 +4,5 @@ _build
 .DS_Store
 .*.swp
 _opam
+*.lock
 .vscode
