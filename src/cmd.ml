@@ -38,7 +38,7 @@ let run_opam_package_deps package =
   let cmd =
     let open Cmd in
     v "opam" % "list" % "--color=never" % "-s" % ("--resolve=" ^ package)
-    % "--all-versions"
+    % "-V" % "--no-switch" % "-S"
   in
   OS.Cmd.(run_out cmd |> to_lines ~trim:true)
 
