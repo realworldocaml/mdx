@@ -41,6 +41,39 @@ let dune_repo_of_opam ?(verify_refs= true) opam =
       Ok {Dune.dir; upstream; ref}
   | x -> R.error_msg (Fmt.strf "TODO cannot handle %a" Opam.pp_opam opam)
 
+let dedup_git_remotes dunes =
+  (* In the future we should be able to select the subtrees from different git
+     remotes, but for now we error if we require different tags for the same
+     git remote *)
+  let open Dune in
+  Logs.info (fun l -> l "Deduplicating the git remotes") ;
+  let by_repo = Hashtbl.create 7 in
+  List.iter
+    (fun dune ->
+      match Hashtbl.find by_repo dune.upstream with
+      | rs -> Hashtbl.replace by_repo dune.upstream (dune :: rs)
+      | exception Not_found -> Hashtbl.add by_repo dune.upstream [dune] )
+    dunes ;
+  Hashtbl.iter
+    (fun upstream dunes ->
+      match dunes with
+      | [] -> assert false
+      | [_] -> ()
+      | dunes ->
+          let tags = List.map (fun {ref} -> ref) dunes in
+          let uniq_tags = List.sort_uniq String.compare tags in
+          if List.length uniq_tags = 1 then
+            Logs.info (fun l ->
+                l "Multiple entries found for %s with same tag: %s." upstream
+                  (List.hd uniq_tags) )
+          else
+            Logs.err (fun l ->
+                l "Multiple entries found for %s with clashing tags: %s"
+                  upstream
+                  (String.concat ~sep:", " uniq_tags) ) )
+    by_repo ;
+  Ok ()
+
 let gen_dune_lock ifile ofile () =
   Bos.OS.File.read ifile
   >>= fun b ->
@@ -49,7 +82,11 @@ let gen_dune_lock ifile ofile () =
   let dune_packages = List.filter (fun o -> o.Opam.is_dune) opam.Opam.pkgs in
   Cmd.map dune_repo_of_opam dune_packages
   >>= fun repos ->
+  dedup_git_remotes repos
+  >>= fun () ->
   let open Dune in
   let t = {repos} in
-  Logs.debug (fun l -> l "%a" Dune.pp t) ;
+  Bos.OS.File.write ofile (Fmt.strf "%a\n" Dune.pp t)
+  >>= fun () ->
+  Logs.info (fun l -> l "Wrote Dune lockfile to %a" Fpath.pp ofile) ;
   Ok ()
