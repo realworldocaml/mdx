@@ -30,67 +30,84 @@ let strip_ext fname =
   to_string fname
 
 let duniverse_forks =
-  [ ("https://github.com/hannesm/duration", "duration")
-  ; ("https://github.com/backtracking/ocaml-hashcons", "ocaml-hashcons") ]
+  [ ("git+http://erratique.ch/repos/uutf.git", "uutf")
+  ; ("git+http://erratique.ch/repos/astring.git", "astring")
+  ; ("git+http://erratique.ch/repos/logs.git", "logs")
+  ; ("git+http://erratique.ch/repos/uuidm.git", "uuidm")
+  ; ("git+http://erratique.ch/repos/uutf.git", "uutf")
+  ; ("git+http://erratique.ch/repos/mtime.git", "mtime")
+  ; ("git+http://erratique.ch/repos/fmt.git", "fmt")
+  ; ("git+http://erratique.ch/repos/rresult.git", "rresult")
+  ; ("git+http://erratique.ch/repos/jsonm.git", "jsonm")
+  ; ("git+http://erratique.ch/repos/fpath.git", "fpath")
+  ; ("git+http://erratique.ch/repos/bos.git", "bos")
+  ; ("git+http://erratique.ch/repos/topkg.git", "topkg")
+  ; ("git+http://erratique.ch/repos/cmdliner.git", "cmdliner")
+  ; ("git+https://github.com/hannesm/duration.git", "duration")
+  ; ("git+https://github.com/hannesm/randoconv.git", "randomconv")
+  ; ("git+https://github.com/backtracking/ocaml-hashcons", "ocaml-hashcons")
+  ; ("git+https://github.com/backtracking/ocamlgraph.git", "ocamlgraph")
+  ; ("git+https://gitlab.camlcity.org/gerd/lib-findlib.git", "lib-findlib") ]
 
-let known_duniverse_domains =
-  ["gitlab.camlcity.org"; (* ocamlfind *) "erratique.ch" (* dbuenzli *)
-  ]
-
-(* Classify the dev-repo. TODO: extend the classifier to look online in
-   https://github.com/dune-universe *)
-let classify_dev_repo ~dev_repo ~archive () =
-  if archive = None then `Virtual
-  else if dev_repo = "" then `None
-  else
-    let uri = Uri.of_string dev_repo in
-    match Uri.host uri with
-    | Some "github.com" -> (
-      match String.cuts ~empty:false ~sep:"/" (Uri.path uri) with
-      | [user; repo] ->
-          let repo = strip_ext repo in
-          `Github (user, repo)
-      | tl -> `Error "wierd github url" )
-    | Some domain when List.mem domain known_duniverse_domains -> (
-      match String.cuts ~empty:false ~sep:"/" (Uri.path uri) with
-      | [user; repo] ->
-          let repo = strip_ext repo in
-          `Duniverse_fork repo
-      | _ -> `Error "weird gitlab camlcity url" )
-    | Some host -> `Unknown host
-    | None -> `Error "wierd unknown url with no path"
-
-let classify_pkg_archive_into_tag ~name ~version ~dev_repo ~archive =
-  match dev_repo with
-  | `Github ("janestreet", repo) -> (
-      (* JS archives sit on their server *)
-      let parse_err () =
-        Logs.err (fun l ->
-            l "Unable to classify Jane Street archive %s.%s: %s" name version
-              (Uri.to_string archive) ) ;
-        exit 1
-      in
-      match String.cuts ~empty:false ~sep:"/" (Uri.path archive) with
-      | ["ocaml-core"; ver; "files"; archive] -> (
-        match strip_ext archive |> String.cut ~rev:true ~sep:"-" with
-        | None -> parse_err ()
-        | Some (n, v) -> Some v )
-      | ["janestreet"; r; "releases"; "download"; v; archive] -> Some v
-      | ["janestreet"; r; "archive"; archive] -> Some (strip_ext archive)
-      | _ -> parse_err () )
-  | `Github (user, repo) -> (
-    match String.cuts ~empty:false ~sep:"/" (Uri.path archive) with
+let tag_from_archive archive =
+  let uri = Uri.of_string archive in
+  let path = String.cuts ~empty:false ~sep:"/" (Uri.path uri) in
+  let parse_err () =
+    Logs.err (fun l -> l "Unable to classify archive %s" archive) ;
+    None
+  in
+  let tag_of_file ?(prefix= "") f =
+    match strip_ext f |> String.cut ~rev:true ~sep:"-" with
+    | None -> parse_err ()
+    | Some (n, v) -> Some (prefix ^ v)
+  in
+  let tag_of_last_path ?prefix () =
+    List.rev path |> List.hd |> tag_of_file ?prefix
+  in
+  match Uri.host uri with
+  | Some "github.com" -> (
+    match path with
     | [u; r; "releases"; "download"; v; archive] -> Some v
     | [u; r; "archive"; archive] -> Some (strip_ext archive)
-    | _ ->
-      match Uri.scheme archive with
-      | Some "git+https" -> None
-      | _ ->
-          Logs.err (fun l ->
-              l "Unable to classify GitHub archive %s.%s: %s" name version
-                (Uri.to_string archive) ) ;
-          None )
-  | _ -> None
+    | _ -> if Uri.scheme uri = Some "git+https" then None else parse_err () )
+  | Some "ocaml.janestreet.com" -> (
+    match path with
+    | ["ocaml-core"; ver; "files"; f] -> tag_of_file f
+    | ["janestreet"; r; "releases"; "download"; v; f] -> Some v
+    | ["janestreet"; r; "archive"; f] -> Some (strip_ext f)
+    | _ -> parse_err () )
+  | Some "gitlab.camlcity.org" | Some "download.camlcity.org" ->
+      tag_of_last_path ()
+  | Some "ocamlgraph.lri.fr" | Some "erratique.ch" ->
+      tag_of_last_path ~prefix:"v" ()
+  | _ -> parse_err ()
+
+let classify_dev_repo ~name ~version ~dev_repo ~archive () =
+  Logs.debug (fun l -> l "dev-repo=%s" dev_repo) ;
+  let err msg = (`Error msg, None) in
+  let uri = Uri.of_string dev_repo in
+  match dev_repo with
+  | "" -> (`Virtual, None)
+  | dev_repo ->
+    match archive with
+    | None -> (`Virtual, None)
+    | Some archive ->
+        let tag = tag_from_archive archive in
+        Logs.debug (fun l ->
+            l "Mapped %s -> %s" archive
+              (match tag with None -> "??" | Some v -> v) ) ;
+        match List.assoc_opt dev_repo duniverse_forks with
+        | Some repo -> (`Duniverse_fork repo, tag)
+        | None ->
+          match Uri.host uri with
+          | Some "github.com" -> (
+            match String.cuts ~empty:false ~sep:"/" (Uri.path uri) with
+            | [user; repo] ->
+                let repo = strip_ext repo in
+                (`Github (user, repo), tag)
+            | tl -> err "wierd github url" )
+          | Some host -> (`Unknown host, tag)
+          | None -> err "dev-repo without host"
 
 let check_if_dune package =
   Cmd.get_opam_depends package
@@ -105,7 +122,7 @@ let get_opam_info package =
   >>= fun archive ->
   check_if_dune package
   >>= fun is_dune ->
-  let dev_repo = classify_dev_repo ~dev_repo ~archive () in
+  let dev_repo, tag = classify_dev_repo ~name ~version ~dev_repo ~archive () in
   let is_dune =
     match (is_dune, dev_repo) with
     | true, `Duniverse_fork _ ->
@@ -119,12 +136,6 @@ let get_opam_info package =
         Logs.info (fun l -> l "%s.%s is a Duniverse fork override" name version) ;
         true
     | is_dune, _ -> is_dune
-  in
-  let tag =
-    match archive with
-    | None -> None
-    | Some archive ->
-        classify_pkg_archive_into_tag ~name ~version ~dev_repo ~archive
   in
   Ok {name; version; dev_repo; tag; is_dune}
 
@@ -147,17 +158,18 @@ let rec check_packages_are_valid pkgs =
   in
   fn pkgs
 
-let rec filter_duniverse_packages pkgs =
+let rec filter_duniverse_packages ~extra pkgs =
   Logs.info (fun l ->
       l "Filtering out packages that are irrelevant to the Duniverse" ) ;
   let rec fn acc = function
     | hd :: tl ->
         let filter =
-          hd.dev_repo = `Virtual
+          List.mem hd.name extra
+          || hd.dev_repo = `Virtual
           || hd.name = "jbuilder" (* this is us *)
           || hd.name = "dune" (* this is us *)
           || hd.name = "ocamlbuild" (* build system *)
-          || hd.name = "result" || hd.name = "uchar"
+          || hd.name = "result" || hd.name = "uchar" || hd.name = "ocaml"
           || hd.name = "ocaml-base-compiler"
           || hd.name = "ocaml-variants" || hd.name = "ocamlfind"
           (* for now *)
@@ -180,7 +192,7 @@ let init_duniverse package ofile () =
   >>= fun pkgs ->
   check_packages_are_valid pkgs
   >>= fun () ->
-  filter_duniverse_packages pkgs
+  filter_duniverse_packages ~extra:[package] pkgs
   >>= fun pkgs ->
   let is_dune_pkgs, not_dune_pkgs =
     List.partition (fun {is_dune} -> is_dune) pkgs
@@ -206,5 +218,5 @@ let init_duniverse package ofile () =
           num_total ) ;
   Bos.OS.File.write ofile (Fmt.strf "%a\n" pp_packages packages)
   >>= fun () ->
-  Fmt.pr "Written %a (%d packages)\n" pp_packages packages num_total ;
+  Fmt.pr "Written %a (%d packages)\n" Fpath.pp ofile num_total ;
   Ok ()

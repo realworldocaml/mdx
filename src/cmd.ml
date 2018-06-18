@@ -98,7 +98,7 @@ let get_opam_dev_repo package =
 
 let get_opam_archive_url package =
   get_opam_field_string_value ~field:"url.src" package
-  >>= function "" -> Ok None | uri -> Ok (Some (Uri.of_string uri))
+  >>= function "" -> Ok None | uri -> Ok (Some uri)
 
 let get_opam_depends package =
   get_opam_field ~field:"depends" package
