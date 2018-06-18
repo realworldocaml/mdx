@@ -29,6 +29,10 @@ let strip_ext fname =
   let fname = if has_ext "tar" fname then rem_ext fname else fname in
   to_string fname
 
+let duniverse_forks =
+  [ ("https://github.com/hannesm/duration", "duration")
+  ; ("https://github.com/backtracking/ocaml-hashcons", "ocaml-hashcons") ]
+
 let known_duniverse_domains =
   ["gitlab.camlcity.org"; (* ocamlfind *) "erratique.ch" (* dbuenzli *)
   ]

@@ -32,7 +32,7 @@ let map fn l =
        (Ok [])
   |> function Ok v -> Ok (List.rev v) | e -> e
 
-let run_git ~repo args = OS.Cmd.(run Cmd.(v "git" % "-C" % p repo % args))
+let run_git ~repo args = OS.Cmd.(run Cmd.(v "git" % "-C" % p repo %% args))
 
 let git_ls_remote remote =
   OS.Cmd.(run_out Cmd.(v "git" % "ls-remote" % remote) |> to_lines)
@@ -121,6 +121,11 @@ let get_opam_depends package =
            "Unable to parse opam depends for %s\n\
             Try `opam show --normalise -f depends: %s` manually"
            package package)
+
+let query_github_repo_exists ~user ~repo =
+  let url = Fmt.strf "https://github.com/%s/%s" user repo in
+  let cmd = Cmd.(v "curl" % "--silent" % url) in
+  OS.Cmd.(run_out cmd |> to_string ~trim:true) >>| fun r -> r <> "Not Found"
 
 (* Currently unused due to API limits *)
 let query_github_api ~user ~repo frag =

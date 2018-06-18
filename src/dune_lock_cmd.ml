@@ -32,7 +32,7 @@ let dune_repo_of_opam ?(verify_refs= true) opam =
           R.error_msg (Fmt.strf "%s#%s is not a branch or a tag" upstream ref)
       else Ok {Dune.dir; upstream; ref}
   | `Duniverse_fork repo ->
-      let upstream = Fmt.strf "https://github.com/duniverse/%s.git" repo in
+      let upstream = Fmt.strf "git://github.com/dune-universe/%s.git" repo in
       let ref =
         match opam.Opam.tag with
         | None -> "duniverse-master"
@@ -68,14 +68,33 @@ let dedup_git_remotes dunes =
                 l "Multiple entries found for %s with same tag: %s." upstream
                   (List.hd uniq_tags) )
           else
-            err := Some (Fmt.strf "Multiple entries found for %s with clashing tags: %s.\nFor now, you need to resolve this in `duniverse-opam.lock` file and reconcile conflicting packages to have the same tag.\nIn the future, we may implement some fancier subtree resolution to make it possible to support multiple tags from the same repository, but not yet." upstream (String.concat ~sep:", " uniq_tags)))
+            err :=
+              Some
+                (Fmt.strf
+                   "Multiple entries found for %s with clashing tags: %s.\n\
+                    For now, you need to resolve this in \
+                    `duniverse-opam.lock` file and reconcile conflicting \
+                    packages to have the same tag.\n\
+                    In the future, we may implement some fancier subtree \
+                    resolution to make it possible to support multiple tags \
+                    from the same repository, but not yet."
+                   upstream
+                   (String.concat ~sep:", " uniq_tags)) )
     by_repo ;
   match !err with
   | Some msg -> R.error_msg msg
-  | None -> (* generate filtered dune list *)
-      Ok (Hashtbl.fold (fun _ v acc ->
-        (List.sort (fun a b -> compare (String.length a.dir) (String.length b.dir)) v |> List.hd) :: acc
-      ) by_repo [])
+  | None ->
+      (* generate filtered dune list *)
+      Ok
+        (Hashtbl.fold
+           (fun _ v acc ->
+             ( List.sort
+                 (fun a b ->
+                   compare (String.length a.dir) (String.length b.dir) )
+                 v
+             |> List.hd )
+             :: acc )
+           by_repo [])
 
 let gen_dune_lock ifile ofile () =
   Bos.OS.File.read ifile
@@ -93,3 +112,39 @@ let gen_dune_lock ifile ofile () =
   >>= fun () ->
   Logs.info (fun l -> l "Wrote Dune lockfile to %a" Fpath.pp ofile) ;
   Ok ()
+
+let gen_dune_upstream_branches repo ifile () =
+  let open Dune in
+  Logs.debug (fun l -> l "Loading Dune lockfile from %a" Fpath.pp ifile) ;
+  Bos.OS.File.read ifile
+  >>= fun d ->
+  let dune = Sexplib.Sexp.of_string d |> Dune.t_of_sexp in
+  let repos = dune.repos in
+  Cmd.iter
+    (fun r ->
+      let branch = Config.upstream_branch r.dir in
+      let remote = Config.upstream_remote r.dir in
+      let dir = Fpath.(v "vendor" / r.dir) in
+      Logs.info (fun l -> l "Checking for %s#%s -> %s" r.upstream r.ref branch) ;
+      (* ignore(Cmd.run_git ~repo Bos.Cmd.(v "remote" % "remove" % remote)); *)
+      Cmd.run_git ~repo Bos.Cmd.(v "remote" % "add" % remote % r.upstream)
+      >>= fun () ->
+      match Cmd.run_git ~repo Bos.Cmd.(v "fetch" % "-q" % remote % r.ref) with
+      | Error (`Msg m) ->
+          Logs.err (fun l -> l "Error fetching repo %s: %s" r.upstream m) ;
+          Ok ()
+          (* just continue for now *)
+      | Ok () ->
+          Bos.OS.Dir.exists dir
+          >>= function
+          | false ->
+              Cmd.run_git ~repo
+                Bos.Cmd.(
+                  v "subtree" % "add" % "--prefix" % p dir % remote % r.ref
+                  % "--squash")
+          | true ->
+              Cmd.run_git ~repo
+                Bos.Cmd.(
+                  v "subtree" % "pull" % "--prefix" % p dir % remote % r.ref
+                  % "--squash") )
+    repos
