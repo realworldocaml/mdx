@@ -48,6 +48,7 @@ let dedup_git_remotes dunes =
   let open Dune in
   Logs.info (fun l -> l "Deduplicating the git remotes") ;
   let by_repo = Hashtbl.create 7 in
+  let err = ref None in
   List.iter
     (fun dune ->
       match Hashtbl.find by_repo dune.upstream with
@@ -67,12 +68,14 @@ let dedup_git_remotes dunes =
                 l "Multiple entries found for %s with same tag: %s." upstream
                   (List.hd uniq_tags) )
           else
-            Logs.err (fun l ->
-                l "Multiple entries found for %s with clashing tags: %s"
-                  upstream
-                  (String.concat ~sep:", " uniq_tags) ) )
+            err := Some (Fmt.strf "Multiple entries found for %s with clashing tags: %s.\nFor now, you need to resolve this in `duniverse-opam.lock` file and reconcile conflicting packages to have the same tag.\nIn the future, we may implement some fancier subtree resolution to make it possible to support multiple tags from the same repository, but not yet." upstream (String.concat ~sep:", " uniq_tags)))
     by_repo ;
-  Ok ()
+  match !err with
+  | Some msg -> R.error_msg msg
+  | None -> (* generate filtered dune list *)
+      Ok (Hashtbl.fold (fun _ v acc ->
+        (List.sort (fun a b -> compare (String.length a.dir) (String.length b.dir)) v |> List.hd) :: acc
+      ) by_repo [])
 
 let gen_dune_lock ifile ofile () =
   Bos.OS.File.read ifile
@@ -83,7 +86,7 @@ let gen_dune_lock ifile ofile () =
   Cmd.map dune_repo_of_opam dune_packages
   >>= fun repos ->
   dedup_git_remotes repos
-  >>= fun () ->
+  >>= fun repos ->
   let open Dune in
   let t = {repos} in
   Bos.OS.File.write ofile (Fmt.strf "%a\n" Dune.pp t)
