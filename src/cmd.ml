@@ -56,10 +56,11 @@ let git_ls_remote remote =
   in
   Ok (tags, heads)
 
-let run_opam_package_deps package =
+let run_opam_package_deps packages =
+  let packages = String.concat ~sep:"," packages in
   let cmd =
     let open Cmd in
-    v "opam" % "list" % "--color=never" % "-s" % ("--resolve=" ^ package)
+    v "opam" % "list" % "--color=never" % "-s" % ("--resolve=" ^ packages)
     % "-V" % "--no-switch" % "-S"
   in
   OS.Cmd.(run_out cmd |> to_lines ~trim:true)

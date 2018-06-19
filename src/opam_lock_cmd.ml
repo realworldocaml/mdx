@@ -17,6 +17,7 @@
 open Types.Opam
 open Rresult
 open Astring
+open Config
 
 let split_opam_name_and_version b =
   match String.cut ~sep:"." b with
@@ -28,26 +29,6 @@ let strip_ext fname =
   let fname = v fname |> rem_ext in
   let fname = if has_ext "tar" fname then rem_ext fname else fname in
   to_string fname
-
-let duniverse_forks =
-  [ ("git+http://erratique.ch/repos/uutf.git", "uutf")
-  ; ("git+http://erratique.ch/repos/astring.git", "astring")
-  ; ("git+http://erratique.ch/repos/logs.git", "logs")
-  ; ("git+http://erratique.ch/repos/uuidm.git", "uuidm")
-  ; ("git+http://erratique.ch/repos/uutf.git", "uutf")
-  ; ("git+http://erratique.ch/repos/mtime.git", "mtime")
-  ; ("git+http://erratique.ch/repos/fmt.git", "fmt")
-  ; ("git+http://erratique.ch/repos/rresult.git", "rresult")
-  ; ("git+http://erratique.ch/repos/jsonm.git", "jsonm")
-  ; ("git+http://erratique.ch/repos/fpath.git", "fpath")
-  ; ("git+http://erratique.ch/repos/bos.git", "bos")
-  ; ("git+http://erratique.ch/repos/topkg.git", "topkg")
-  ; ("git+http://erratique.ch/repos/cmdliner.git", "cmdliner")
-  ; ("git+https://github.com/hannesm/duration.git", "duration")
-  ; ("git+https://github.com/hannesm/randoconv.git", "randomconv")
-  ; ("git+https://github.com/backtracking/ocaml-hashcons", "ocaml-hashcons")
-  ; ("git+https://github.com/backtracking/ocamlgraph.git", "ocamlgraph")
-  ; ("git+https://gitlab.camlcity.org/gerd/lib-findlib.git", "lib-findlib") ]
 
 let tag_from_archive archive =
   let uri = Uri.of_string archive in
@@ -82,32 +63,34 @@ let tag_from_archive archive =
       tag_of_last_path ~prefix:"v" ()
   | _ -> parse_err ()
 
-let classify_dev_repo ~name ~version ~dev_repo ~archive () =
+let classify_package ~name ~version ~dev_repo ~archive () =
   Logs.debug (fun l -> l "dev-repo=%s" dev_repo) ;
   let err msg = (`Error msg, None) in
   let uri = Uri.of_string dev_repo in
-  match dev_repo with
-  | "" -> (`Virtual, None)
-  | dev_repo ->
-    match archive with
-    | None -> (`Virtual, None)
-    | Some archive ->
-        let tag = tag_from_archive archive in
-        Logs.debug (fun l ->
-            l "Mapped %s -> %s" archive
-              (match tag with None -> "??" | Some v -> v) ) ;
-        match List.assoc_opt dev_repo duniverse_forks with
-        | Some repo -> (`Duniverse_fork repo, tag)
-        | None ->
-          match Uri.host uri with
-          | Some "github.com" -> (
-            match String.cuts ~empty:false ~sep:"/" (Uri.path uri) with
-            | [user; repo] ->
-                let repo = strip_ext repo in
-                (`Github (user, repo), tag)
-            | tl -> err "wierd github url" )
-          | Some host -> (`Unknown host, tag)
-          | None -> err "dev-repo without host"
+  if List.mem name base_packages then (`Virtual, None)
+  else
+    match dev_repo with
+    | "" -> (`Virtual, None)
+    | dev_repo ->
+      match archive with
+      | None -> (`Virtual, None)
+      | Some archive ->
+          let tag = tag_from_archive archive in
+          Logs.debug (fun l ->
+              l "Mapped %s -> %s" archive
+                (match tag with None -> "??" | Some v -> v) ) ;
+          match List.assoc_opt dev_repo duniverse_forks with
+          | Some repo -> (`Duniverse_fork repo, tag)
+          | None ->
+            match Uri.host uri with
+            | Some "github.com" -> (
+              match String.cuts ~empty:false ~sep:"/" (Uri.path uri) with
+              | [user; repo] ->
+                  let repo = strip_ext repo in
+                  (`Github (user, repo), tag)
+              | tl -> err "wierd github url" )
+            | Some host -> (`Unknown host, tag)
+            | None -> err "dev-repo without host"
 
 let check_if_dune package =
   Cmd.get_opam_depends package
@@ -122,7 +105,7 @@ let get_opam_info package =
   >>= fun archive ->
   check_if_dune package
   >>= fun is_dune ->
-  let dev_repo, tag = classify_dev_repo ~name ~version ~dev_repo ~archive () in
+  let dev_repo, tag = classify_package ~name ~version ~dev_repo ~archive () in
   let is_dune =
     match (is_dune, dev_repo) with
     | true, `Duniverse_fork _ ->
@@ -158,13 +141,13 @@ let rec check_packages_are_valid pkgs =
   in
   fn pkgs
 
-let rec filter_duniverse_packages ~extra pkgs =
+let rec filter_duniverse_packages ~exclude pkgs =
   Logs.info (fun l ->
       l "Filtering out packages that are irrelevant to the Duniverse" ) ;
   let rec fn acc = function
     | hd :: tl ->
         let filter =
-          List.mem hd.name extra
+          List.mem hd.name exclude
           || hd.dev_repo = `Virtual
           || hd.name = "jbuilder" (* this is us *)
           || hd.name = "dune" (* this is us *)
@@ -179,12 +162,13 @@ let rec filter_duniverse_packages ~extra pkgs =
   in
   fn [] pkgs
 
-let init_duniverse package ofile () =
-  Cmd.run_opam_package_deps package
+let init_duniverse packages ofile exclude () =
+  Cmd.run_opam_package_deps packages
   >>= fun deps ->
   Logs.info (fun l -> l "Found %d opam dependencies" (List.length deps)) ;
   Logs.debug (fun l ->
-      l "The dependencies for %s are: %s" package
+      l "The dependencies for %s are: %s"
+        (String.concat ~sep:" " packages)
         (String.concat ~sep:", " deps) ) ;
   Logs.info (fun l ->
       l "Querying opam for the dev repos and Dune compatibility" ) ;
@@ -192,7 +176,7 @@ let init_duniverse package ofile () =
   >>= fun pkgs ->
   check_packages_are_valid pkgs
   >>= fun () ->
-  filter_duniverse_packages ~extra:[package] pkgs
+  filter_duniverse_packages ~exclude pkgs
   >>= fun pkgs ->
   let is_dune_pkgs, not_dune_pkgs =
     List.partition (fun {is_dune} -> is_dune) pkgs

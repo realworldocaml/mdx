@@ -48,7 +48,6 @@ let dedup_git_remotes dunes =
   let open Dune in
   Logs.info (fun l -> l "Deduplicating the git remotes") ;
   let by_repo = Hashtbl.create 7 in
-  let err = ref None in
   List.iter
     (fun dune ->
       match Hashtbl.find by_repo dune.upstream with
@@ -68,33 +67,33 @@ let dedup_git_remotes dunes =
                 l "Multiple entries found for %s with same tag: %s." upstream
                   (List.hd uniq_tags) )
           else
-            err :=
-              Some
-                (Fmt.strf
-                   "Multiple entries found for %s with clashing tags: %s.\n\
-                    For now, you need to resolve this in \
-                    `duniverse-opam.lock` file and reconcile conflicting \
-                    packages to have the same tag.\n\
-                    In the future, we may implement some fancier subtree \
-                    resolution to make it possible to support multiple tags \
-                    from the same repository, but not yet."
-                   upstream
-                   (String.concat ~sep:", " uniq_tags)) )
+            let latest_tag =
+              List.sort OpamVersionCompare.compare tags |> List.rev |> List.hd
+            in
+            Logs.info (fun l ->
+                l
+                  "Multiple entries found for %s with clashing tags: %s.\n\
+                   We are selecting the latest version '%s' for use with all \
+                   the packages that share the same development repo.\n\
+                   In the future, we may implement some fancier subtree \
+                   resolution to make it possible to support multiple tags \
+                   from the same repository, but not yet."
+                  upstream
+                  (String.concat ~sep:", " uniq_tags)
+                  latest_tag ) ;
+            Hashtbl.replace by_repo upstream
+              (List.map (fun d -> {d with ref= latest_tag}) dunes) )
     by_repo ;
-  match !err with
-  | Some msg -> R.error_msg msg
-  | None ->
-      (* generate filtered dune list *)
-      Ok
-        (Hashtbl.fold
-           (fun _ v acc ->
-             ( List.sort
-                 (fun a b ->
-                   compare (String.length a.dir) (String.length b.dir) )
-                 v
-             |> List.hd )
-             :: acc )
-           by_repo [])
+  (* generate filtered dune list *)
+  Ok
+    (Hashtbl.fold
+       (fun _ v acc ->
+         ( List.sort
+             (fun a b -> compare (String.length a.dir) (String.length b.dir))
+             v
+         |> List.hd )
+         :: acc )
+       by_repo [])
 
 let gen_dune_lock ifile ofile () =
   Bos.OS.File.read ifile
@@ -122,11 +121,8 @@ let gen_dune_upstream_branches repo ifile () =
   let repos = dune.repos in
   Cmd.iter
     (fun r ->
-      let branch = Config.upstream_branch r.dir in
       let remote = Config.upstream_remote r.dir in
       let dir = Fpath.(v "vendor" / r.dir) in
-      Logs.info (fun l -> l "Checking for %s#%s -> %s" r.upstream r.ref branch) ;
-      (* ignore(Cmd.run_git ~repo Bos.Cmd.(v "remote" % "remove" % remote)); *)
       Cmd.run_git ~repo Bos.Cmd.(v "remote" % "add" % remote % r.upstream)
       >>= fun () ->
       match Cmd.run_git ~repo Bos.Cmd.(v "fetch" % "-q" % remote % r.ref) with

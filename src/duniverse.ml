@@ -43,10 +43,16 @@ let opam_lock_cmd =
   let man = [`S Manpage.s_description; `P "TODO"] in
   let pkg_t =
     let open Arg in
-    required
-    & pos 0 (some string) None
-    & info [] ~doc:"opam package name to calculate duniverse for"
-        ~docv:"PACKAGE"
+    non_empty & pos_all string []
+    & info [] ~doc:"opam packages to calculate duniverse for" ~docv:"PACKAGES"
+  in
+  let exclude_t =
+    let doc =
+      "Packages to exclude from the output list. You can use this to remove \
+       the root packages so they are not duplicated in the vendor directory.  \
+       Repeat this flag multiple times for more than one exclusion."
+    in
+    Arg.(value & opt_all string [] & info ["exclude"; "x"] ~docv:"EXCLUDE" ~doc)
   in
   let lockfile_t =
     let doc = "Output path to store opam lockfile to" in
@@ -57,7 +63,8 @@ let opam_lock_cmd =
   in
   ( (let open Term in
     term_result
-      (const Opam_lock_cmd.init_duniverse $ pkg_t $ lockfile_t $ setup_logs ()))
+      ( const Opam_lock_cmd.init_duniverse
+      $ pkg_t $ lockfile_t $ exclude_t $ setup_logs () ))
   , Term.info "opam-lock" ~doc ~exits ~man )
 
 let dune_lock_cmd =

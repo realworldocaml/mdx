@@ -18,6 +18,7 @@ depends: [
   "opam-file-format"
   "uri"
   "ezjsonm"
+  "opam-core"
   "alcotest" {test}
 ]
 build: [
