@@ -63,7 +63,7 @@ let opam_lock_cmd =
   in
   ( (let open Term in
     term_result
-      ( const Opam_lock_cmd.init_duniverse
+      ( const Opam_cmd.init_duniverse
       $ pkg_t $ lockfile_t $ exclude_t $ setup_logs () ))
   , Term.info "opam-lock" ~doc ~exits ~man )
 
@@ -87,7 +87,7 @@ let dune_lock_cmd =
   in
   ( (let open Term in
     term_result
-      ( const Dune_lock_cmd.gen_dune_lock
+      ( const Dune_cmd.gen_dune_lock
       $ opam_lockfile_t $ dune_lockfile_t $ setup_logs () ))
   , Term.info "dune-lock" ~doc ~exits ~man )
 
@@ -109,7 +109,7 @@ let dune_fetch_cmd =
   in
   ( (let open Term in
     term_result
-      ( const Dune_lock_cmd.gen_dune_upstream_branches
+      ( const Dune_cmd.gen_dune_upstream_branches
       $ git_repo_t $ dune_lockfile_t $ setup_logs () ))
   , Term.info "dune-fetch" ~doc ~exits ~man )
 
