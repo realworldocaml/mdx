@@ -56,6 +56,10 @@ let git_ls_remote remote =
   in
   Ok (tags, heads)
 
+let git_local_duniverse_remotes () =
+  OS.Cmd.(run_out Cmd.(v "git" % "remote") |> to_lines)
+  >>| List.filter (String.is_prefix ~affix:"duniverse-")
+
 let run_opam_package_deps packages =
   let packages = String.concat ~sep:"," packages in
   let cmd =
