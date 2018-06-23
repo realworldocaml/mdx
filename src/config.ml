@@ -34,6 +34,10 @@ let duniverse_forks =
   ; ("git+https://github.com/hannesm/randoconv.git", "randomconv")
   ; ("git+https://github.com/backtracking/ocaml-hashcons", "ocaml-hashcons")
   ; ("git+https://github.com/backtracking/ocamlgraph.git", "ocamlgraph")
-  ; ("git+https://gitlab.camlcity.org/gerd/lib-findlib.git", "lib-findlib") ]
+  ; ("git+https://gitlab.camlcity.org/gerd/lib-findlib.git", "lib-findlib")
+  ; ("git+https://gforge.inria.fr/git/dose/dose.git", "dose3")
+  ; ("git+https://github.com/ocaml/opam-file-format", "opam-file-format")
+  ; ("git+https://scm.gforge.inria.fr/anonscm/git/cudf/cudf.git", "cudf")
+  ; ("git://github.com/ygrek/ocaml-extlib.git", "ocaml-extlib") ]
 
 let upstream_remote f = Fmt.strf "duniverse-%s" f
