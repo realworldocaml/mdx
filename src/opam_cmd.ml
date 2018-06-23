@@ -61,7 +61,11 @@ let tag_from_archive archive =
       tag_of_last_path ()
   | Some "ocamlgraph.lri.fr" | Some "erratique.ch" ->
       tag_of_last_path ~prefix:"v" ()
-  | _ -> parse_err ()
+  | _ ->
+      Logs.debug (fun l ->
+          l "Attempting to guess tag for %s from the final part of the URL"
+            archive ) ;
+      tag_of_last_path ()
 
 let classify_package ~name ~version ~dev_repo ~archive () =
   Logs.debug (fun l -> l "dev-repo=%s" dev_repo) ;

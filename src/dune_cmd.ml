@@ -112,18 +112,29 @@ let gen_dune_lock ifile ofile () =
   Logs.info (fun l -> l "Wrote Dune lockfile to %a" Fpath.pp ofile) ;
   Ok ()
 
-let gen_dune_upstream_branches repo ifile () =
+let gen_dune_upstream_branches repo ifile target_branch () =
   let open Dune in
   Logs.debug (fun l -> l "Loading Dune lockfile from %a" Fpath.pp ifile) ;
   Bos.OS.File.read ifile
   >>= fun d ->
   let dune = Sexplib.Sexp.of_string d |> Dune.t_of_sexp in
+  ( match target_branch with
+  | None -> Ok ()
+  | Some b -> Cmd.run_git ~repo Bos.Cmd.(v "checkout" % "-B" % b) )
+  >>= fun () ->
+  Cmd.git_local_duniverse_remotes ()
+  >>= fun local_remotes ->
   let repos = dune.repos in
   Cmd.iter
     (fun r ->
       let remote = Config.upstream_remote r.dir in
       let dir = Fpath.(v "vendor" / r.dir) in
-      Cmd.run_git ~repo Bos.Cmd.(v "remote" % "add" % remote % r.upstream)
+      let remote_cmd =
+        if List.mem remote local_remotes then
+          Bos.Cmd.(v "remote" % "set-url" % remote % r.upstream)
+        else Bos.Cmd.(v "remote" % "add" % remote % r.upstream)
+      in
+      Cmd.run_git ~repo remote_cmd
       >>= fun () ->
       match Cmd.run_git ~repo Bos.Cmd.(v "fetch" % "-q" % remote % r.ref) with
       | Error (`Msg m) ->
@@ -136,11 +147,12 @@ let gen_dune_upstream_branches repo ifile () =
           | false ->
               Cmd.run_git ~repo
                 Bos.Cmd.(
-                  v "subtree" % "add" % "--prefix" % p dir % remote % r.ref
-                  % "--squash")
+                  v "subtree" % "-q" % "add" % "--prefix" % p dir % remote
+                  % r.ref % "--squash")
           | true ->
               Cmd.run_git ~repo
                 Bos.Cmd.(
-                  v "subtree" % "pull" % "--prefix" % p dir % remote % r.ref
-                  % "--squash") )
+                  v "subtree" % "-q" % "pull" % "--prefix" % p dir % remote
+                  % r.ref % "--squash" % "-m"
+                  % ("duniverse vendor merge of " ^ r.dir)) )
     repos

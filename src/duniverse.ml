@@ -100,6 +100,14 @@ let dune_fetch_cmd =
     let open Arg in
     value & opt fpath_t (Fpath.v ".") & info ["r"] ~docv:"TARGET_GIT_REPO" ~doc
   in
+  let branch_t =
+    let doc =
+      "Target branch to switch to before merging in the vendored \
+       repositories. If not supplied, the current branch in the target \
+       repository is used."
+    in
+    Arg.(value & opt (some string) None & info ["b"] ~docv:"VENDOR_BRANCH" ~doc)
+  in
   let dune_lockfile_t =
     let doc = "Input path of Dune lockfile" in
     let open Arg in
@@ -110,7 +118,7 @@ let dune_fetch_cmd =
   ( (let open Term in
     term_result
       ( const Dune_cmd.gen_dune_upstream_branches
-      $ git_repo_t $ dune_lockfile_t $ setup_logs () ))
+      $ git_repo_t $ dune_lockfile_t $ branch_t $ setup_logs () ))
   , Term.info "dune-fetch" ~doc ~exits ~man )
 
 let default_cmd =
