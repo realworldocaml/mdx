@@ -1,6 +1,6 @@
 #!/usr/bin/env bash -ex
 
-PACKAGES="core_extended async atdgen toplevel_expect_test patdiff sexp_pretty re fmt ppxlib lambdasoup cmdliner ppx_tools"
+PACKAGES="core_extended async atdgen toplevel_expect_test patdiff sexp_pretty re fmt ppxlib lambdasoup cmdliner ppx_tools cohttp-async core_bench mtime yojson astring atd uri"
 dune build
 rm -rf _rwo
 git clone git://github.com/realworldocaml/book _rwo
