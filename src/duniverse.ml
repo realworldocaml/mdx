@@ -89,37 +89,46 @@ let dune_lock_cmd =
     term_result
       ( const Dune_cmd.gen_dune_lock
       $ opam_lockfile_t $ dune_lockfile_t $ setup_logs () ))
-  , Term.info "dune-lock" ~doc ~exits ~man )
+  , Term.info "lock" ~doc ~exits ~man )
+
+let git_repo_t =
+  let doc = "Target git repository" in
+  let open Arg in
+  value & opt fpath_t (Fpath.v ".") & info ["r"] ~docv:"TARGET_GIT_REPO" ~doc
+
+let branch_t =
+  let doc =
+    "Target branch to switch to before merging in the vendored repositories. \
+     If not supplied, the current branch in the target repository is used."
+  in
+  Arg.(value & opt (some string) None & info ["b"] ~docv:"VENDOR_BRANCH" ~doc)
+
+let dune_lockfile_t =
+  let doc = "Input path of Dune lockfile" in
+  let open Arg in
+  value
+  & opt fpath_t (Fpath.v "duniverse-dune.lock")
+  & info ["f"] ~docv:"DUNE_LOCKFILE" ~doc
 
 let dune_fetch_cmd =
   let doc = "dune-fetch TODO" in
   let exits = Term.default_exits in
   let man = [`S Manpage.s_description; `P "TODO"] in
-  let git_repo_t =
-    let doc = "Target git repository" in
-    let open Arg in
-    value & opt fpath_t (Fpath.v ".") & info ["r"] ~docv:"TARGET_GIT_REPO" ~doc
-  in
-  let branch_t =
-    let doc =
-      "Target branch to switch to before merging in the vendored \
-       repositories. If not supplied, the current branch in the target \
-       repository is used."
-    in
-    Arg.(value & opt (some string) None & info ["b"] ~docv:"VENDOR_BRANCH" ~doc)
-  in
-  let dune_lockfile_t =
-    let doc = "Input path of Dune lockfile" in
-    let open Arg in
-    value
-    & opt fpath_t (Fpath.v "duniverse-dune.lock")
-    & info ["f"] ~docv:"DUNE_LOCKFILE" ~doc
-  in
   ( (let open Term in
     term_result
       ( const Dune_cmd.gen_dune_upstream_branches
       $ git_repo_t $ dune_lockfile_t $ branch_t $ setup_logs () ))
-  , Term.info "dune-fetch" ~doc ~exits ~man )
+  , Term.info "pull" ~doc ~exits ~man )
+
+let status_cmd =
+  let doc = "status TODO" in
+  let exits = Term.default_exits in
+  let man = [`S Manpage.s_description; `P "TODO"] in
+  ( (let open Term in
+    term_result
+      ( const Dune_cmd.status $ git_repo_t $ dune_lockfile_t $ branch_t
+      $ setup_logs () ))
+  , Term.info "status" ~doc ~exits ~man )
 
 let default_cmd =
   let doc = "duniverse is the spice of build life" in
@@ -128,6 +137,6 @@ let default_cmd =
   ( Term.(ret (const (fun _ -> `Help (`Pager, None)) $ pure ()))
   , Term.info "duniverse" ~version:"%%VERSION%%" ~doc ~sdocs ~man )
 
-let cmds = [opam_lock_cmd; dune_lock_cmd; dune_fetch_cmd]
+let cmds = [opam_lock_cmd; dune_lock_cmd; dune_fetch_cmd; status_cmd]
 
 let () = Term.(exit @@ eval_choice default_cmd cmds)

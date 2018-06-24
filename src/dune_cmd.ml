@@ -112,6 +112,8 @@ let gen_dune_lock ifile ofile () =
   Logs.info (fun l -> l "Wrote Dune lockfile to %a" Fpath.pp ofile) ;
   Ok ()
 
+let status repo ifile target_branch () = Ok ()
+
 let gen_dune_upstream_branches repo ifile target_branch () =
   let open Dune in
   Logs.debug (fun l -> l "Loading Dune lockfile from %a" Fpath.pp ifile) ;
