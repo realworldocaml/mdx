@@ -32,6 +32,19 @@ let map fn l =
        (Ok [])
   |> function Ok v -> Ok (List.rev v) | e -> e
 
+let load_sexp label conv file =
+  Logs.debug (fun l -> l "Reading file %a for %s" Fpath.pp file label);
+  OS.File.read file >>= fun b ->
+  try
+    Sexplib.Sexp.of_string b |> conv |> R.ok
+  with exn ->
+    R.error_msg (Fmt.strf "Error parsing %a: %s" Fpath.pp file (Printexc.to_string exn))
+
+let save_sexp label conv file v =
+  Logs.debug (fun l -> l "Writing file %a for %s" Fpath.pp file label);
+  let b = Sexplib.Sexp.to_string_hum (conv v) in
+  OS.File.write file b
+
 let run_git ~repo args = OS.Cmd.(run Cmd.(v "git" % "-C" % p repo %% args))
 
 let git_ls_remote remote =

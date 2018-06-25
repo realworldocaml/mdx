@@ -166,7 +166,8 @@ let rec filter_duniverse_packages ~excludes pkgs =
   in
   fn [] pkgs
 
-let init_duniverse roots ofile excludes () =
+let calculate_duniverse file =
+  load file >>= fun {roots;excludes;pkgs} ->
   Cmd.run_opam_package_deps roots
   >>= fun deps ->
   Logs.info (fun l -> l "Found %d opam dependencies" (List.length deps)) ;
@@ -188,7 +189,7 @@ let init_duniverse roots ofile excludes () =
   let num_dune = List.length is_dune_pkgs in
   let num_not_dune = List.length not_dune_pkgs in
   let num_total = List.length pkgs in
-  let packages = {pkgs; roots; excludes} in
+  let t = {pkgs; roots; excludes} in
   if num_not_dune > 0 then
     Logs.err (fun l ->
         l
@@ -204,7 +205,12 @@ let init_duniverse roots ofile excludes () =
     Logs.info (fun l ->
         l "All %d packages are Dune compatible! It's a spicy miracle!"
           num_total ) ;
-  Bos.OS.File.write ofile (Fmt.strf "%a\n" pp_packages packages)
+  save file t
   >>= fun () ->
-  Fmt.pr "Written %a (%d packages)\n" Fpath.pp ofile num_total ;
+  Fmt.pr "Written %a (%d packages)\n" Fpath.pp file num_total ;
   Ok ()
+
+let init_duniverse file roots excludes () =
+  save file {pkgs=[]; roots; excludes} >>= fun () ->
+  calculate_duniverse file
+

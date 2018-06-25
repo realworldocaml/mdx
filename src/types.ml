@@ -20,7 +20,7 @@ module Opam = struct
     ; is_dune: bool [@default true] [@sexp_drop_default] }
   [@@deriving sexp]
 
-  type packages = {
+  type t = {
     pkgs: opam list;
     roots: string list;
     excludes: string list; } [@@deriving sexp]
@@ -29,7 +29,10 @@ module Opam = struct
 
   let pp_opam = pp_sexp sexp_of_opam
 
-  let pp_packages = pp_sexp sexp_of_packages
+  let pp = pp_sexp sexp_of_t
+  let load file = Cmd.load_sexp "opam duniverse" t_of_sexp file
+  let save file v = Cmd.save_sexp "opam duniverse" sexp_of_t file v
+
 end
 
 module Dune = struct
@@ -44,4 +47,6 @@ module Dune = struct
   let pp_repo = pp_sexp sexp_of_repo
 
   let pp = pp_sexp sexp_of_t
+  let load file = Cmd.load_sexp "git duniverse" t_of_sexp file 
+  let save file v = Cmd.save_sexp "git duniverse" sexp_of_t file v
 end

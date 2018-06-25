@@ -64,7 +64,7 @@ let opam_lock_cmd =
   ( (let open Term in
     term_result
       ( const Opam_cmd.init_duniverse
-      $ pkg_t $ lockfile_t $ exclude_t $ setup_logs () ))
+      $ lockfile_t $ pkg_t $ exclude_t $ setup_logs () ))
   , Term.info "opam-lock" ~doc ~exits ~man )
 
 let dune_lock_cmd =
