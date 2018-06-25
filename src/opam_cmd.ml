@@ -145,13 +145,13 @@ let rec check_packages_are_valid pkgs =
   in
   fn pkgs
 
-let rec filter_duniverse_packages ~exclude pkgs =
+let rec filter_duniverse_packages ~excludes pkgs =
   Logs.info (fun l ->
       l "Filtering out packages that are irrelevant to the Duniverse" ) ;
   let rec fn acc = function
     | hd :: tl ->
         let filter =
-          List.mem hd.name exclude
+          List.mem hd.name excludes
           || hd.dev_repo = `Virtual
           || hd.name = "jbuilder" (* this is us *)
           || hd.name = "dune" (* this is us *)
@@ -166,13 +166,13 @@ let rec filter_duniverse_packages ~exclude pkgs =
   in
   fn [] pkgs
 
-let init_duniverse packages ofile exclude () =
-  Cmd.run_opam_package_deps packages
+let init_duniverse roots ofile excludes () =
+  Cmd.run_opam_package_deps roots
   >>= fun deps ->
   Logs.info (fun l -> l "Found %d opam dependencies" (List.length deps)) ;
   Logs.debug (fun l ->
       l "The dependencies for %s are: %s"
-        (String.concat ~sep:" " packages)
+        (String.concat ~sep:" " roots)
         (String.concat ~sep:", " deps) ) ;
   Logs.info (fun l ->
       l "Querying opam for the dev repos and Dune compatibility" ) ;
@@ -180,7 +180,7 @@ let init_duniverse packages ofile exclude () =
   >>= fun pkgs ->
   check_packages_are_valid pkgs
   >>= fun () ->
-  filter_duniverse_packages ~exclude pkgs
+  filter_duniverse_packages ~excludes pkgs
   >>= fun pkgs ->
   let is_dune_pkgs, not_dune_pkgs =
     List.partition (fun {is_dune} -> is_dune) pkgs
@@ -188,7 +188,7 @@ let init_duniverse packages ofile exclude () =
   let num_dune = List.length is_dune_pkgs in
   let num_not_dune = List.length not_dune_pkgs in
   let num_total = List.length pkgs in
-  let packages = {pkgs} in
+  let packages = {pkgs; roots; excludes} in
   if num_not_dune > 0 then
     Logs.err (fun l ->
         l

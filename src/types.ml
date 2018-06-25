@@ -20,7 +20,10 @@ module Opam = struct
     ; is_dune: bool [@default true] [@sexp_drop_default] }
   [@@deriving sexp]
 
-  type packages = {pkgs: opam list} [@@deriving sexp]
+  type packages = {
+    pkgs: opam list;
+    roots: string list;
+    excludes: string list; } [@@deriving sexp]
 
   let pp_repo = pp_sexp sexp_of_repo
 
