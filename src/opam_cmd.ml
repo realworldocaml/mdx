@@ -19,10 +19,10 @@ open Rresult
 open Astring
 open Config
 
-let split_opam_name_and_version b =
-  match String.cut ~sep:"." b with
-  | None -> R.error_msg (Fmt.strf "Unable to find version string in %s" b)
-  | Some r -> Ok r
+let split_opam_name_and_version name =
+  match String.cut ~sep:"." name with
+  | None -> {name;version=None}
+  | Some (name,version) -> {name; version=Some version}
 
 let strip_ext fname =
   let open Fpath in
@@ -67,11 +67,11 @@ let tag_from_archive archive =
             archive ) ;
       tag_of_last_path ()
 
-let classify_package ~name ~version ~dev_repo ~archive () =
+let classify_package ~package ~dev_repo ~archive () =
   Logs.debug (fun l -> l "dev-repo=%s" dev_repo) ;
   let err msg = (`Error msg, None) in
   let uri = Uri.of_string dev_repo in
-  if List.mem name base_packages then (`Virtual, None)
+  if List.mem package.name base_packages then (`Virtual, None)
   else
     match dev_repo with
     | "" -> (`Virtual, None)
@@ -97,43 +97,41 @@ let classify_package ~name ~version ~dev_repo ~archive () =
             | None -> err "dev-repo without host"
 
 let check_if_dune package =
-  Cmd.get_opam_depends package
+  Cmd.get_opam_depends (string_of_package package)
   >>| List.exists (fun l -> l = "jbuilder" || l = "dune")
 
 let get_opam_info package =
-  split_opam_name_and_version package
-  >>= fun (name, version) ->
-  Cmd.get_opam_dev_repo package
+  Cmd.get_opam_dev_repo (string_of_package package)
   >>= fun dev_repo ->
-  Cmd.get_opam_archive_url package
+  Cmd.get_opam_archive_url (string_of_package package)
   >>= fun archive ->
   check_if_dune package
   >>= fun is_dune ->
-  let dev_repo, tag = classify_package ~name ~version ~dev_repo ~archive () in
+  let dev_repo, tag = classify_package ~package ~dev_repo ~archive () in
   let is_dune =
     match (is_dune, dev_repo) with
     | true, `Duniverse_fork _ ->
         Logs.err (fun l ->
             l
-              "%s.%s appears to be ported to Dune upstream. Do you still need \
-               a Duniverse fork?"
-              name version ) ;
+              "%a appears to be ported to Dune upstream. Do you still need \
+               a Duniverse fork?" pp_package package
+              ) ;
         true
     | false, `Duniverse_fork _ ->
-        Logs.info (fun l -> l "%s.%s is a Duniverse fork override" name version) ;
+        Logs.info (fun l -> l "%a is a Duniverse fork override" pp_package package) ;
         true
     | is_dune, _ -> is_dune
   in
-  Ok {name; version; dev_repo; tag; is_dune}
+  Ok {package; dev_repo; tag; is_dune}
 
-let package_is_valid {name; version; dev_repo} =
+let package_is_valid {package; dev_repo} =
   match dev_repo with
   | `Error msg ->
       R.error_msg
-        (Fmt.strf "Do not know how to deal with %s.%s: %s" name version msg)
+        (Fmt.strf "Do not know how to deal with %a: %s" pp_package package msg)
   | `Unknown msg ->
       R.error_msg
-        (Fmt.strf "Need a Duniverse fork for %s.%s: %s" name version msg)
+        (Fmt.strf "Need a Duniverse fork for %a: %s" pp_package package msg)
   | _ -> R.ok ()
 
 let rec check_packages_are_valid pkgs =
@@ -151,14 +149,14 @@ let rec filter_duniverse_packages ~excludes pkgs =
   let rec fn acc = function
     | hd :: tl ->
         let filter =
-          List.mem hd.name excludes
+          List.exists (fun e -> e.name = hd.package.name) excludes
           || hd.dev_repo = `Virtual
-          || hd.name = "jbuilder" (* this is us *)
-          || hd.name = "dune" (* this is us *)
-          || hd.name = "ocamlbuild" (* build system *)
-          || hd.name = "result" || hd.name = "uchar" || hd.name = "ocaml"
-          || hd.name = "ocaml-base-compiler"
-          || hd.name = "ocaml-variants" || hd.name = "ocamlfind"
+          || hd.package.name = "jbuilder" (* this is us *)
+          || hd.package.name = "dune" (* this is us *)
+          || hd.package.name = "ocamlbuild" (* build system *)
+          || hd.package.name = "result" || hd.package.name = "uchar" || hd.package.name = "ocaml"
+          || hd.package.name = "ocaml-base-compiler"
+          || hd.package.name = "ocaml-variants" || hd.package.name = "ocamlfind"
           (* for now *)
         in
         if filter then fn acc tl else fn (hd :: acc) tl
@@ -168,13 +166,14 @@ let rec filter_duniverse_packages ~excludes pkgs =
 
 let calculate_duniverse file =
   load file >>= fun {roots;excludes;pkgs} ->
-  Cmd.run_opam_package_deps roots
+  Cmd.run_opam_package_deps (List.map string_of_package roots)
+  >>| List.map split_opam_name_and_version
   >>= fun deps ->
   Logs.info (fun l -> l "Found %d opam dependencies" (List.length deps)) ;
   Logs.debug (fun l ->
-      l "The dependencies for %s are: %s"
-        (String.concat ~sep:" " roots)
-        (String.concat ~sep:", " deps) ) ;
+      l "The dependencies for %a are: %a"
+        Fmt.(list ~sep:(unit ",@ ") pp_package) roots
+        Fmt.(list ~sep:(unit ",@ ") pp_package) deps);
   Logs.info (fun l ->
       l "Querying opam for the dev repos and Dune compatibility" ) ;
   Cmd.map (fun p -> get_opam_info p) deps
@@ -195,12 +194,9 @@ let calculate_duniverse file =
         l
           "The good news is that %d/%d are Dune compatible.\n\
            The bad news is that you will have to fork these to the Duniverse \
-           or port them upstream: %s"
+           or port them upstream: %a"
           num_dune num_total
-          (String.concat ~sep:", "
-             (List.map
-                (fun {name; version} -> Fmt.strf "%s.%s" name version)
-                not_dune_pkgs)) )
+          Fmt.(list ~sep:(unit ",@ ") pp_entry) not_dune_pkgs)
   else
     Logs.info (fun l ->
         l "All %d packages are Dune compatible! It's a spicy miracle!"
@@ -211,6 +207,14 @@ let calculate_duniverse file =
   Ok ()
 
 let init_duniverse file roots excludes () =
+  let excludes = List.map split_opam_name_and_version excludes |> sort_uniq in
+  let roots = List.map split_opam_name_and_version roots |> sort_uniq in
   save file {pkgs=[]; roots; excludes} >>= fun () ->
   calculate_duniverse file
 
+let add_root_packages file roots () =
+  load file >>= fun t ->
+  let roots = t.roots @ List.map split_opam_name_and_version roots |> sort_uniq in
+  let t = {t with roots} in
+  save file t >>= fun () ->
+  calculate_duniverse file

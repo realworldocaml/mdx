@@ -12,26 +12,40 @@ module Opam = struct
     | `Error of string ]
   [@@deriving sexp]
 
-  type opam =
-    { name: string
-    ; version: string
+  type package = {
+    name: string;
+    version: string option [@default None] [@sexp_drop_default];
+  } [@@deriving sexp]
+
+  type entry =
+    { package: package
     ; dev_repo: repo
     ; tag: string option [@default None] [@sexp_drop_default]
     ; is_dune: bool [@default true] [@sexp_drop_default] }
   [@@deriving sexp]
 
   type t = {
-    pkgs: opam list;
-    roots: string list;
-    excludes: string list; } [@@deriving sexp]
+    pkgs: entry list;
+    roots: package list;
+    excludes: package list; } [@@deriving sexp]
 
   let pp_repo = pp_sexp sexp_of_repo
 
-  let pp_opam = pp_sexp sexp_of_opam
+  let pp_package ppf {name;version} =
+    match version with
+    | None -> Fmt.pf ppf "%s" name
+    | Some v -> Fmt.pf ppf "%s.%s" name v
+
+  let string_of_package pkg = Fmt.strf "%a" pp_package pkg
+
+  let pp_entry = pp_sexp sexp_of_entry
 
   let pp = pp_sexp sexp_of_t
   let load file = Cmd.load_sexp "opam duniverse" t_of_sexp file
   let save file v = Cmd.save_sexp "opam duniverse" sexp_of_t file v
+
+  let sort_uniq l =
+    List.sort_uniq (fun a b -> String.compare a.name b.name) l
 
 end
 

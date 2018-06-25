@@ -19,7 +19,7 @@ open Rresult
 open Astring
 
 let dune_repo_of_opam ?(verify_refs= true) opam =
-  let dir = opam.Opam.name in
+  let dir = Opam.(opam.package.name) in
   match opam.Opam.dev_repo with
   | `Github (user, repo) ->
       let upstream = Fmt.strf "https://github.com/%s/%s.git" user repo in
@@ -36,10 +36,10 @@ let dune_repo_of_opam ?(verify_refs= true) opam =
       let ref =
         match opam.Opam.tag with
         | None -> "duniverse-master"
-        | Some t -> Fmt.strf "duniverse-%s" t
+        | Some t -> Config.duniverse_branch t
       in
       Ok {Dune.dir; upstream; ref}
-  | x -> R.error_msg (Fmt.strf "TODO cannot handle %a" Opam.pp_opam opam)
+  | x -> R.error_msg (Fmt.strf "TODO cannot handle %a" Opam.pp_entry opam)
 
 let dedup_git_remotes dunes =
   (* In the future we should be able to select the subtrees from different git
@@ -122,7 +122,7 @@ let gen_dune_upstream_branches repo ifile target_branch () =
   let repos = dune.repos in
   Cmd.iter
     (fun r ->
-      let remote = Config.upstream_remote r.dir in
+      let remote = Config.duniverse_branch r.dir in
       let dir = Fpath.(v "vendor" / r.dir) in
       let remote_cmd =
         if List.mem remote local_remotes then

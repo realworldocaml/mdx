@@ -40,4 +40,7 @@ let duniverse_forks =
   ; ("git+https://scm.gforge.inria.fr/anonscm/git/cudf/cudf.git", "cudf")
   ; ("git://github.com/ygrek/ocaml-extlib.git", "ocaml-extlib") ]
 
-let upstream_remote f = Fmt.strf "duniverse-%s" f
+let duniverse_branch f = Fmt.strf "duniverse-%s" f
+
+let opam_lockfile = Fpath.v ".duniverse-opam.sxp"
+let duniverse_lockfile = Fpath.v ".duniverse.sxp"

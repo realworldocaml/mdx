@@ -58,7 +58,7 @@ let opam_lock_cmd =
     let doc = "Output path to store opam lockfile to" in
     let open Arg in
     value
-    & opt fpath_t (Fpath.v "duniverse-opam.lock")
+    & opt fpath_t Config.opam_lockfile
     & info ["o"] ~docv:"OUTPUT_FILE" ~doc
   in
   ( (let open Term in
@@ -75,14 +75,14 @@ let dune_lock_cmd =
     let doc = "Input path of opam lockfile " in
     let open Arg in
     value
-    & opt fpath_t (Fpath.v "duniverse-opam.lock")
+    & opt fpath_t Config.opam_lockfile
     & info ["i"] ~docv:"OPAM_LOCKFILE" ~doc
   in
   let dune_lockfile_t =
     let doc = "Output path to store Dune lockfile to" in
     let open Arg in
     value
-    & opt fpath_t (Fpath.v "duniverse-dune.lock")
+    & opt fpath_t Config.duniverse_lockfile
     & info ["o"] ~docv:"DUNE_LOCKFILE" ~doc
   in
   ( (let open Term in
@@ -107,7 +107,7 @@ let dune_lockfile_t =
   let doc = "Input path of Dune lockfile" in
   let open Arg in
   value
-  & opt fpath_t (Fpath.v "duniverse-dune.lock")
+  & opt fpath_t Config.duniverse_lockfile
   & info ["f"] ~docv:"DUNE_LOCKFILE" ~doc
 
 let dune_fetch_cmd =
