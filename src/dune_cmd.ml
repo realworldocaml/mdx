@@ -125,7 +125,7 @@ let gen_dune_upstream_branches repo ifile target_branch () =
   Cmd.iter
     (fun r ->
       let remote = Config.duniverse_branch r.dir in
-      let dir = Fpath.(v "vendor" / r.dir) in
+      let dir = Fpath.(Config.vendor_dir / r.dir) in
       let remote_cmd =
         if List.mem remote local_remotes then
           Bos.Cmd.(v "remote" % "set-url" % remote % r.upstream)
