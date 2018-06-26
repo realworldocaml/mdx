@@ -37,6 +37,13 @@ let copts_t =
 
 let fpath_t = Arg.conv ~docv:"PATH" (Fpath.of_string, Fpath.pp)
 
+let opam_lockfile_t =
+  let doc = "Output path to store opam lockfile to" in
+  let open Arg in
+  value
+  & opt fpath_t Config.opam_lockfile
+  & info ["o"] ~docv:"OUTPUT_FILE" ~doc
+
 let opam_lock_cmd =
   let doc = "opam-lock TODO" in
   let exits = Term.default_exits in
@@ -54,18 +61,41 @@ let opam_lock_cmd =
     in
     Arg.(value & opt_all string [] & info ["exclude"; "x"] ~docv:"EXCLUDE" ~doc)
   in
-  let lockfile_t =
-    let doc = "Output path to store opam lockfile to" in
-    let open Arg in
-    value
-    & opt fpath_t Config.opam_lockfile
-    & info ["o"] ~docv:"OUTPUT_FILE" ~doc
-  in
   ( (let open Term in
     term_result
       ( const Opam_cmd.init_duniverse
-      $ lockfile_t $ pkg_t $ exclude_t $ setup_logs () ))
-  , Term.info "opam-lock" ~doc ~exits ~man )
+      $ opam_lockfile_t $ pkg_t $ exclude_t $ setup_logs () ))
+  , Term.info "opam" ~doc ~exits ~man )
+
+let opam_add_cmd =
+  let doc = "opam-add TODO" in
+  let exits = Term.default_exits in
+  let man = [`S Manpage.s_description; `P "TODO"] in
+  let pkg_t =
+    let open Arg in
+    non_empty & pos_all string []
+    & info [] ~doc:"opam packages to add to duniverse" ~docv:"PACKAGES"
+  in
+  ( (let open Term in
+    term_result
+      ( const Opam_cmd.add_root_packages
+      $ opam_lockfile_t $ pkg_t $ setup_logs () ))
+  , Term.info "opam-add" ~doc ~exits ~man )
+
+let opam_exclude_add_cmd =
+  let doc = "opam-exclude-add TODO" in
+  let exits = Term.default_exits in
+  let man = [`S Manpage.s_description; `P "TODO"] in
+  let pkg_t =
+    let open Arg in
+    non_empty & pos_all string []
+    & info [] ~doc:"opam packages to exclude from duniverse" ~docv:"PACKAGES"
+  in
+  ( (let open Term in
+    term_result
+      ( const Opam_cmd.add_exclude_packages
+      $ opam_lockfile_t $ pkg_t $ setup_logs () ))
+  , Term.info "opam-exclude-add" ~doc ~exits ~man )
 
 let dune_lock_cmd =
   let doc = "dune-lock TODO" in
@@ -137,6 +167,12 @@ let default_cmd =
   ( Term.(ret (const (fun _ -> `Help (`Pager, None)) $ pure ()))
   , Term.info "duniverse" ~version:"%%VERSION%%" ~doc ~sdocs ~man )
 
-let cmds = [opam_lock_cmd; dune_lock_cmd; dune_fetch_cmd; status_cmd]
+let cmds =
+  [ opam_lock_cmd
+  ; opam_add_cmd
+  ; opam_exclude_add_cmd
+  ; dune_lock_cmd
+  ; dune_fetch_cmd
+  ; status_cmd ]
 
 let () = Term.(exit @@ eval_choice default_cmd cmds)

@@ -96,23 +96,25 @@ let dedup_git_remotes dunes =
        by_repo [])
 
 let gen_dune_lock ifile ofile () =
-  Opam.load ifile >>= fun opam ->
+  Opam.load ifile
+  >>= fun opam ->
   let dune_packages = List.filter (fun o -> o.Opam.is_dune) opam.Opam.pkgs in
   Cmd.map dune_repo_of_opam dune_packages
   >>= fun repos ->
   dedup_git_remotes repos
   >>= fun repos ->
   let open Dune in
-  Dune.save ofile {repos} >>= fun () ->
+  Dune.save ofile {repos}
+  >>= fun () ->
   Logs.info (fun l -> l "Wrote Dune lockfile to %a" Fpath.pp ofile) ;
   Ok ()
 
-let status repo ifile target_branch () =
-  Ok ()
+let status repo ifile target_branch () = Ok ()
 
 let gen_dune_upstream_branches repo ifile target_branch () =
   let open Dune in
-  load ifile >>= fun dune ->
+  load ifile
+  >>= fun dune ->
   ( match target_branch with
   | None -> Ok ()
   | Some b -> Cmd.run_git ~repo Bos.Cmd.(v "checkout" % "-B" % b) )
