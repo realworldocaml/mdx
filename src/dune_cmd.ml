@@ -46,7 +46,7 @@ let dedup_git_remotes dunes =
      remotes, but for now we error if we require different tags for the same
      git remote *)
   let open Dune in
-  Logs.info (fun l -> l "Deduplicating the git remotes") ;
+  Logs.app (fun l -> l "Deduplicating the git remotes.") ;
   let by_repo = Hashtbl.create 7 in
   List.iter
     (fun dune ->
@@ -63,14 +63,14 @@ let dedup_git_remotes dunes =
           let tags = List.map (fun {ref} -> ref) dunes in
           let uniq_tags = List.sort_uniq String.compare tags in
           if List.length uniq_tags = 1 then
-            Logs.info (fun l ->
+            Logs.app (fun l ->
                 l "Multiple entries found for %s with same tag: %s." upstream
                   (List.hd uniq_tags) )
           else
             let latest_tag =
               List.sort OpamVersionCompare.compare tags |> List.rev |> List.hd
             in
-            Logs.info (fun l ->
+            Logs.app (fun l ->
                 l
                   "Multiple entries found for %s with clashing tags: %s.\n\
                    We are selecting the latest version '%s' for use with all \
@@ -106,10 +106,14 @@ let gen_dune_lock ifile ofile () =
   let open Dune in
   Dune.save ofile {repos}
   >>= fun () ->
-  Logs.info (fun l -> l "Wrote Dune lockfile to %a" Fpath.pp ofile) ;
+  Logs.app (fun l -> l "Wrote Dune lockfile to %a." Fpath.pp ofile) ;
   Ok ()
 
 let status repo ifile target_branch () = Ok ()
+
+let prune_recursive_vendors  =
+  let open Dune in
+  ()
 
 let gen_dune_upstream_branches repo ifile target_branch () =
   let open Dune in
@@ -119,13 +123,14 @@ let gen_dune_upstream_branches repo ifile target_branch () =
   | None -> Ok ()
   | Some b -> Cmd.run_git ~repo Bos.Cmd.(v "checkout" % "-B" % b) )
   >>= fun () ->
-  Cmd.git_local_duniverse_remotes ()
+  Cmd.git_local_duniverse_remotes ~repo ()
   >>= fun local_remotes ->
   let repos = dune.repos in
   Cmd.iter
     (fun r ->
       let remote = Config.duniverse_branch r.dir in
       let dir = Fpath.(Config.vendor_dir / r.dir) in
+      Logs.app (fun l -> l "Pulling %a" Fpath.pp dir);
       let remote_cmd =
         if List.mem remote local_remotes then
           Bos.Cmd.(v "remote" % "set-url" % remote % r.upstream)
@@ -139,7 +144,7 @@ let gen_dune_upstream_branches repo ifile target_branch () =
           Ok ()
           (* just continue for now *)
       | Ok () ->
-          Bos.OS.Dir.exists dir
+          Bos.OS.Dir.exists Fpath.(repo // dir)
           >>= function
           | false ->
               Cmd.run_git ~repo

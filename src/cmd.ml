@@ -45,7 +45,7 @@ let save_sexp label conv file v =
   let b = Sexplib.Sexp.to_string_hum (conv v) in
   OS.File.write file b
 
-let run_git ~repo args = OS.Cmd.(run Cmd.(v "git" % "-C" % p repo %% args))
+let run_git ~repo args = OS.Cmd.(run ~err:err_null Cmd.(v "git" % "-C" % p repo %% args))
 
 let git_ls_remote remote =
   OS.Cmd.(run_out Cmd.(v "git" % "ls-remote" % remote) |> to_lines)
@@ -69,8 +69,8 @@ let git_ls_remote remote =
   in
   Ok (tags, heads)
 
-let git_local_duniverse_remotes () =
-  OS.Cmd.(run_out Cmd.(v "git" % "remote") |> to_lines)
+let git_local_duniverse_remotes ~repo () =
+  OS.Cmd.(run_out Cmd.(v "git" % "-C" % p repo % "remote") |> to_lines)
   >>| List.filter (String.is_prefix ~affix:"duniverse-")
 
 let run_opam_package_deps packages =

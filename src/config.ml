@@ -20,6 +20,9 @@ let duniverse_forks =
   [ ("git+http://erratique.ch/repos/uutf.git", "uutf")
   ; ("git+http://erratique.ch/repos/astring.git", "astring")
   ; ("git+http://erratique.ch/repos/logs.git", "logs")
+  ; ("git+http://erratique.ch/repos/react.git", "react")
+  ; ("git+http://erratique.ch/repos/xmlm.git", "xmlm")
+  ; ("git+http://erratique.ch/repos/webbrowser.git", "webbrowser")
   ; ("git+http://erratique.ch/repos/uuidm.git", "uuidm")
   ; ("git+http://erratique.ch/repos/uutf.git", "uutf")
   ; ("git+http://erratique.ch/repos/mtime.git", "mtime")
@@ -38,6 +41,7 @@ let duniverse_forks =
   ; ("git+https://gforge.inria.fr/git/dose/dose.git", "dose3")
   ; ("git+https://github.com/ocaml/opam-file-format", "opam-file-format")
   ; ("git+https://scm.gforge.inria.fr/anonscm/git/cudf/cudf.git", "cudf")
+  ; ("git+https://github.com/ocsigen/tyxml.git", "tyxml")
   ; ("git://github.com/ygrek/ocaml-extlib.git", "ocaml-extlib") ]
 
 let duniverse_branch f = Fmt.strf "duniverse-%s" f
