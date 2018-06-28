@@ -228,7 +228,8 @@ let calculate_duniverse file =
   Logs.app (fun l -> l "Written %a (%d packages)." Fpath.pp file num_total) ;
   Ok ()
 
-let init_duniverse file roots excludes () =
+let init_duniverse repo roots excludes () =
+  let file = Fpath.(repo // Config.opam_lockfile) in
   find_local_opam_packages Fpath.(split_base file |> fst)
   >>= fun locals ->
   let excludes =

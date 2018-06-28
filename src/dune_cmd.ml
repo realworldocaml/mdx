@@ -95,7 +95,9 @@ let dedup_git_remotes dunes =
          :: acc )
        by_repo [])
 
-let gen_dune_lock ifile ofile () =
+let gen_dune_lock repo () =
+  let ifile = Fpath.(repo // Config.opam_lockfile) in
+  let ofile = Fpath.(repo // Config.duniverse_lockfile) in
   Opam.load ifile
   >>= fun opam ->
   let dune_packages = List.filter (fun o -> o.Opam.is_dune) opam.Opam.pkgs in
@@ -109,13 +111,14 @@ let gen_dune_lock ifile ofile () =
   Logs.app (fun l -> l "Wrote Dune lockfile to %a." Fpath.pp ofile) ;
   Ok ()
 
-let status repo ifile target_branch () = Ok ()
+let status repo target_branch () = Ok ()
 
 let prune_recursive_vendors  =
   let open Dune in
   ()
 
-let gen_dune_upstream_branches repo ifile target_branch () =
+let gen_dune_upstream_branches repo target_branch () =
+  let ifile = Fpath.(repo // Config.duniverse_lockfile) in
   let open Dune in
   load ifile
   >>= fun dune ->

@@ -38,11 +38,18 @@ let copts_t =
 let fpath_t = Arg.conv ~docv:"PATH" (Fpath.of_string, Fpath.pp)
 
 let target_repo_t =
-  let doc = "Path to Git repository to store vendored code in, defaults to current directory" in
+  let doc = "Path to Git repository to store vendored code in." in
   let open Arg in
   value
   & opt fpath_t (Fpath.v ".")
   & info ["r";"--repo"] ~docv:"TARGET_REPO" ~doc
+
+let branch_t =
+  let doc =
+    "Target branch to switch to before merging in the vendored repositories. \
+     If not supplied, the current branch in the target repository is used."
+  in
+  Arg.(value & opt (some string) None & info ["b"] ~docv:"VENDOR_BRANCH" ~doc)
 
 let opam_cmd =
   let doc = "opam TODO" in
@@ -71,37 +78,11 @@ let dune_lock_cmd =
   let doc = "dune-lock TODO" in
   let exits = Term.default_exits in
   let man = [`S Manpage.s_description; `P "TODO"] in
-  let opam_lockfile_t =
-    let doc = "Input path of opam lockfile " in
-    let open Arg in
-    value
-    & opt fpath_t Config.opam_lockfile
-    & info ["i"] ~docv:"OPAM_LOCKFILE" ~doc
-  in
-  let dune_lockfile_t =
-    let doc = "Output path to store Dune lockfile to" in
-    let open Arg in
-    value
-    & opt fpath_t Config.duniverse_lockfile
-    & info ["o"] ~docv:"DUNE_LOCKFILE" ~doc
-  in
   ( (let open Term in
     term_result
       ( const Dune_cmd.gen_dune_lock
-      $ opam_lockfile_t $ dune_lockfile_t $ setup_logs () ))
+      $ target_repo_t $ setup_logs () ))
   , Term.info "lock" ~doc ~exits ~man )
-
-let git_repo_t =
-  let doc = "Target git repository" in
-  let open Arg in
-  value & opt fpath_t (Fpath.v ".") & info ["r"] ~docv:"TARGET_GIT_REPO" ~doc
-
-let branch_t =
-  let doc =
-    "Target branch to switch to before merging in the vendored repositories. \
-     If not supplied, the current branch in the target repository is used."
-  in
-  Arg.(value & opt (some string) None & info ["b"] ~docv:"VENDOR_BRANCH" ~doc)
 
 let dune_lockfile_t =
   let doc = "Input path of Dune lockfile" in
@@ -117,7 +98,7 @@ let dune_fetch_cmd =
   ( (let open Term in
     term_result
       ( const Dune_cmd.gen_dune_upstream_branches
-      $ git_repo_t $ dune_lockfile_t $ branch_t $ setup_logs () ))
+      $ target_repo_t $ branch_t $ setup_logs () ))
   , Term.info "pull" ~doc ~exits ~man )
 
 let status_cmd =
@@ -126,7 +107,7 @@ let status_cmd =
   let man = [`S Manpage.s_description; `P "TODO"] in
   ( (let open Term in
     term_result
-      ( const Dune_cmd.status $ git_repo_t $ dune_lockfile_t $ branch_t
+      ( const Dune_cmd.status $ target_repo_t $ branch_t
       $ setup_logs () ))
   , Term.info "status" ~doc ~exits ~man )
 
@@ -138,9 +119,7 @@ let default_cmd =
   , Term.info "duniverse" ~version:"%%VERSION%%" ~doc ~sdocs ~man )
 
 let cmds =
-  [ opam_lock_cmd
-  ; opam_add_cmd
-  ; opam_exclude_add_cmd
+  [ opam_cmd
   ; dune_lock_cmd
   ; dune_fetch_cmd
   ; status_cmd ]

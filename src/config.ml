@@ -42,7 +42,7 @@ let duniverse_forks =
   ; ("git+https://github.com/ocaml/opam-file-format", "opam-file-format")
   ; ("git+https://scm.gforge.inria.fr/anonscm/git/cudf/cudf.git", "cudf")
   ; ("git+https://github.com/ocsigen/tyxml.git", "tyxml")
-  ; ("git+https://github.com/ocaml/opam-depext.git", "opam-depext")
+  ; ("git+https://github.com/ocaml/opam-depext.git#2.0", "opam-depext")
   ; ("git://github.com/ygrek/ocaml-extlib.git", "ocaml-extlib") ]
 
 let duniverse_branch f = Fmt.strf "duniverse-%s" f
