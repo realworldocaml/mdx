@@ -37,15 +37,15 @@ let copts_t =
 
 let fpath_t = Arg.conv ~docv:"PATH" (Fpath.of_string, Fpath.pp)
 
-let opam_lockfile_t =
-  let doc = "Output path to store opam lockfile to" in
+let target_repo_t =
+  let doc = "Path to Git repository to store vendored code in, defaults to current directory" in
   let open Arg in
   value
-  & opt fpath_t Config.opam_lockfile
-  & info ["o"] ~docv:"OUTPUT_FILE" ~doc
+  & opt fpath_t (Fpath.v ".")
+  & info ["r";"--repo"] ~docv:"TARGET_REPO" ~doc
 
-let opam_lock_cmd =
-  let doc = "opam-lock TODO" in
+let opam_cmd =
+  let doc = "opam TODO" in
   let exits = Term.default_exits in
   let man = [`S Manpage.s_description; `P "TODO"] in
   let pkg_t =
@@ -64,38 +64,8 @@ let opam_lock_cmd =
   ( (let open Term in
     term_result
       ( const Opam_cmd.init_duniverse
-      $ opam_lockfile_t $ pkg_t $ exclude_t $ setup_logs () ))
+      $ target_repo_t $ pkg_t $ exclude_t $ setup_logs () ))
   , Term.info "opam" ~doc ~exits ~man )
-
-let opam_add_cmd =
-  let doc = "opam-add TODO" in
-  let exits = Term.default_exits in
-  let man = [`S Manpage.s_description; `P "TODO"] in
-  let pkg_t =
-    let open Arg in
-    non_empty & pos_all string []
-    & info [] ~doc:"opam packages to add to duniverse" ~docv:"PACKAGES"
-  in
-  ( (let open Term in
-    term_result
-      ( const Opam_cmd.add_root_packages
-      $ opam_lockfile_t $ pkg_t $ setup_logs () ))
-  , Term.info "opam-add" ~doc ~exits ~man )
-
-let opam_exclude_add_cmd =
-  let doc = "opam-exclude-add TODO" in
-  let exits = Term.default_exits in
-  let man = [`S Manpage.s_description; `P "TODO"] in
-  let pkg_t =
-    let open Arg in
-    non_empty & pos_all string []
-    & info [] ~doc:"opam packages to exclude from duniverse" ~docv:"PACKAGES"
-  in
-  ( (let open Term in
-    term_result
-      ( const Opam_cmd.add_exclude_packages
-      $ opam_lockfile_t $ pkg_t $ setup_logs () ))
-  , Term.info "opam-exclude-add" ~doc ~exits ~man )
 
 let dune_lock_cmd =
   let doc = "dune-lock TODO" in
