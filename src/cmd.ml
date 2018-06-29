@@ -73,20 +73,22 @@ let git_local_duniverse_remotes ~repo () =
   OS.Cmd.(run_out Cmd.(v "git" % "-C" % p repo % "remote") |> to_lines)
   >>| List.filter (String.is_prefix ~affix:"duniverse-")
 
-let run_opam_package_deps packages =
+let run_opam_package_deps ?switch packages =
+  let switch = match switch with None -> Cmd.empty | Some s -> Cmd.(v "--switch" % s) in
   let packages = String.concat ~sep:"," packages in
   let cmd =
     let open Cmd in
-    v "opam" % "list" % "--color=never" % "-s" % ("--resolve=" ^ packages)
+    v "opam" % "list" %% switch % "--color=never" % "-s" % ("--resolve=" ^ packages)
     % "-V" % "--no-switch" % "-S"
   in
   OS.Cmd.(run_out cmd |> to_lines ~trim:true)
 
-let get_opam_field ~field package =
+let get_opam_field ?switch ~field package =
+  let switch = match switch with None -> Cmd.empty | Some s -> Cmd.(v "--switch" % s) in
   let field = field ^ ":" in
   let cmd =
     let open Cmd in
-    v "opam" % "show" % "--color=never" % "--normalise" % "-f" % field
+    v "opam" % "show" %% switch % "--color=never" % "--normalise" % "-f" % field
     % package
   in
   OS.Cmd.(run_out cmd |> to_string ~trim:true)
@@ -97,8 +99,8 @@ let get_opam_field ~field package =
     try Ok (OpamParser.value_from_string r "") with exn ->
       Error (`Msg (Fmt.strf "parsing error for: '%s'" r))
 
-let get_opam_field_string_value ~field package =
-  get_opam_field ~field package
+let get_opam_field_string_value ?switch ~field package =
+  get_opam_field ?switch ~field package
   >>= fun v ->
   let open OpamParserTypes in
   match v with
@@ -111,15 +113,15 @@ let get_opam_field_string_value ~field package =
             Try `opam show --normalise -f %s: %s`"
            field package)
 
-let get_opam_dev_repo package =
-  get_opam_field_string_value ~field:"dev-repo" package
+let get_opam_dev_repo ?switch package =
+  get_opam_field_string_value ?switch ~field:"dev-repo" package
 
-let get_opam_archive_url package =
-  get_opam_field_string_value ~field:"url.src" package
+let get_opam_archive_url ?switch package =
+  get_opam_field_string_value ?switch ~field:"url.src" package
   >>= function "" -> Ok None | uri -> Ok (Some uri)
 
-let get_opam_depends package =
-  get_opam_field ~field:"depends" package
+let get_opam_depends ?switch package =
+  get_opam_field ?switch ~field:"depends" package
   >>= fun v ->
   let open OpamParserTypes in
   match v with
