@@ -42,7 +42,7 @@ let target_repo_t =
   let open Arg in
   value
   & opt fpath_t (Fpath.v ".")
-  & info ["r";"--repo"] ~docv:"TARGET_REPO" ~doc
+  & info ["r"; "--repo"] ~docv:"TARGET_REPO" ~doc
 
 let branch_t =
   let doc =
@@ -68,10 +68,18 @@ let opam_cmd =
     in
     Arg.(value & opt_all string [] & info ["exclude"; "x"] ~docv:"EXCLUDE" ~doc)
   in
+  let pins_t =
+    let doc =
+      "Packages to pin to their master branches for the latest opam metadata \
+       and source. Repeat this flag multiple times for more than one \
+       exclusion."
+    in
+    Arg.(value & opt_all string [] & info ["pin"; "p"] ~docv:"PIN" ~doc)
+  in
   ( (let open Term in
     term_result
       ( const Opam_cmd.init_duniverse
-      $ target_repo_t $ pkg_t $ exclude_t $ setup_logs () ))
+      $ target_repo_t $ pkg_t $ exclude_t $ pins_t $ setup_logs () ))
   , Term.info "opam" ~doc ~exits ~man )
 
 let dune_lock_cmd =
@@ -79,9 +87,7 @@ let dune_lock_cmd =
   let exits = Term.default_exits in
   let man = [`S Manpage.s_description; `P "TODO"] in
   ( (let open Term in
-    term_result
-      ( const Dune_cmd.gen_dune_lock
-      $ target_repo_t $ setup_logs () ))
+    term_result (const Dune_cmd.gen_dune_lock $ target_repo_t $ setup_logs ()))
   , Term.info "lock" ~doc ~exits ~man )
 
 let dune_lockfile_t =
@@ -107,8 +113,7 @@ let status_cmd =
   let man = [`S Manpage.s_description; `P "TODO"] in
   ( (let open Term in
     term_result
-      ( const Dune_cmd.status $ target_repo_t $ branch_t
-      $ setup_logs () ))
+      (const Dune_cmd.status $ target_repo_t $ branch_t $ setup_logs ()))
   , Term.info "status" ~doc ~exits ~man )
 
 let default_cmd =
@@ -118,10 +123,6 @@ let default_cmd =
   ( Term.(ret (const (fun _ -> `Help (`Pager, None)) $ pure ()))
   , Term.info "duniverse" ~version:"%%VERSION%%" ~doc ~sdocs ~man )
 
-let cmds =
-  [ opam_cmd
-  ; dune_lock_cmd
-  ; dune_fetch_cmd
-  ; status_cmd ]
+let cmds = [opam_cmd; dune_lock_cmd; dune_fetch_cmd; status_cmd]
 
 let () = Term.(exit @@ eval_choice default_cmd cmds)

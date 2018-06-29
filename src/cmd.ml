@@ -45,7 +45,8 @@ let save_sexp label conv file v =
   let b = Sexplib.Sexp.to_string_hum (conv v) in
   OS.File.write file b
 
-let run_git ~repo args = OS.Cmd.(run ~err:err_null Cmd.(v "git" % "-C" % p repo %% args))
+let run_git ~repo args =
+  OS.Cmd.(run ~err:err_null Cmd.(v "git" % "-C" % p repo %% args))
 
 let git_ls_remote remote =
   OS.Cmd.(run_out Cmd.(v "git" % "ls-remote" % remote) |> to_lines)
@@ -73,23 +74,25 @@ let git_local_duniverse_remotes ~repo () =
   OS.Cmd.(run_out Cmd.(v "git" % "-C" % p repo % "remote") |> to_lines)
   >>| List.filter (String.is_prefix ~affix:"duniverse-")
 
-let run_opam_package_deps ?switch packages =
-  let switch = match switch with None -> Cmd.empty | Some s -> Cmd.(v "--switch" % s) in
+let switch_path repo =
+  let path = Fpath.(repo / ".duniverse") in
+  Cmd.(v (Fmt.strf "--switch=%a" Fpath.pp path))
+
+let run_opam_package_deps ~repo packages =
   let packages = String.concat ~sep:"," packages in
   let cmd =
     let open Cmd in
-    v "opam" % "list" %% switch % "--color=never" % "-s" % ("--resolve=" ^ packages)
-    % "-V" % "--no-switch" % "-S"
+    v "opam" % "list" %% switch_path repo % "--color=never" % "-s"
+    % ("--resolve=" ^ packages) % "-V" % "--no-switch" % "-S"
   in
   OS.Cmd.(run_out cmd |> to_lines ~trim:true)
 
-let get_opam_field ?switch ~field package =
-  let switch = match switch with None -> Cmd.empty | Some s -> Cmd.(v "--switch" % s) in
+let get_opam_field ~repo ~field package =
   let field = field ^ ":" in
   let cmd =
     let open Cmd in
-    v "opam" % "show" %% switch % "--color=never" % "--normalise" % "-f" % field
-    % package
+    v "opam" % "show" %% switch_path repo % "--color=never" % "--normalise"
+    % "-f" % field % package
   in
   OS.Cmd.(run_out cmd |> to_string ~trim:true)
   >>= fun r ->
@@ -99,8 +102,8 @@ let get_opam_field ?switch ~field package =
     try Ok (OpamParser.value_from_string r "") with exn ->
       Error (`Msg (Fmt.strf "parsing error for: '%s'" r))
 
-let get_opam_field_string_value ?switch ~field package =
-  get_opam_field ?switch ~field package
+let get_opam_field_string_value ~repo ~field package =
+  get_opam_field ~repo ~field package
   >>= fun v ->
   let open OpamParserTypes in
   match v with
@@ -113,15 +116,15 @@ let get_opam_field_string_value ?switch ~field package =
             Try `opam show --normalise -f %s: %s`"
            field package)
 
-let get_opam_dev_repo ?switch package =
-  get_opam_field_string_value ?switch ~field:"dev-repo" package
+let get_opam_dev_repo ~repo package =
+  get_opam_field_string_value ~repo ~field:"dev-repo" package
 
-let get_opam_archive_url ?switch package =
-  get_opam_field_string_value ?switch ~field:"url.src" package
+let get_opam_archive_url ~repo package =
+  get_opam_field_string_value ~repo ~field:"url.src" package
   >>= function "" -> Ok None | uri -> Ok (Some uri)
 
-let get_opam_depends ?switch package =
-  get_opam_field ?switch ~field:"depends" package
+let get_opam_depends ~repo package =
+  get_opam_field ~repo ~field:"depends" package
   >>= fun v ->
   let open OpamParserTypes in
   match v with
@@ -141,6 +144,35 @@ let get_opam_depends ?switch package =
            "Unable to parse opam depends for %s\n\
             Try `opam show --normalise -f depends: %s` manually"
            package package)
+
+let init_local_opam_switch ~repo () =
+  let dir = Fpath.(repo / ".duniverse") in
+  OS.Dir.exists dir
+  >>= function
+  | true ->
+      Logs.debug (fun l ->
+          l "Local opam switch already exists, so not creating" ) ;
+      Ok ()
+  | false ->
+      OS.Dir.create dir
+      >>= fun _ ->
+      let cmd =
+        let open Cmd in
+        v "opam" % "switch" % "create" % p dir % "ocaml-system"
+        % "--no-install"
+      in
+      OS.Cmd.(run ~err:err_null cmd)
+
+let add_opam_dev_pin ~repo package =
+  let cmd =
+    let open Cmd in
+    v "opam" % "pin" %% switch_path repo % "add" % "-n" % package % "--dev"
+  in
+  OS.Cmd.(run ~err:err_null cmd)
+
+let opam_update ~repo =
+  let cmd = Cmd.(v "opam" % "update" %% switch_path repo % "update") in
+  OS.Cmd.(run ~err:err_null cmd)
 
 let query_github_repo_exists ~user ~repo =
   let url = Fmt.strf "https://github.com/%s/%s" user repo in

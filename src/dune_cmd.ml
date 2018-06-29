@@ -113,9 +113,7 @@ let gen_dune_lock repo () =
 
 let status repo target_branch () = Ok ()
 
-let prune_recursive_vendors  =
-  let open Dune in
-  ()
+let prune_recursive_vendors = Dune.(())
 
 let gen_dune_upstream_branches repo target_branch () =
   let ifile = Fpath.(repo // Config.duniverse_lockfile) in
@@ -133,7 +131,7 @@ let gen_dune_upstream_branches repo target_branch () =
     (fun r ->
       let remote = Config.duniverse_branch r.dir in
       let dir = Fpath.(Config.vendor_dir / r.dir) in
-      Logs.app (fun l -> l "Pulling %a" Fpath.pp dir);
+      Logs.app (fun l -> l "Pulling %a" Fpath.pp dir) ;
       let remote_cmd =
         if List.mem remote local_remotes then
           Bos.Cmd.(v "remote" % "set-url" % remote % r.upstream)
