@@ -18,12 +18,18 @@ clean:
 doc:
 	jbuilder build @doc
 
-vendor:
-	git checkout -B vendor
-	git merge master
+v-setup:
 	jbuilder exec -- duniverse opam duniverse
 	jbuilder exec -- duniverse lock
+
+v:
+	git checkout -B vendor
 	jbuilder exec -- duniverse pull
+	git rm -rf vendor/opam-core/src_ext
+	git commit -m 'trim opam/src-ext'
+	git checkout master
+	git merge vendor --squash
+	git commit -m 'update vendor libraries'
 
 publish-doc: doc
 	rm -rf .gh-pages
