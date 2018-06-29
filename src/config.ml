@@ -41,7 +41,6 @@ let duniverse_forks =
   ; ("git+https://gforge.inria.fr/git/dose/dose.git", "dose3")
   ; ("git+https://github.com/ocaml/opam-file-format", "opam-file-format")
   ; ("git+https://scm.gforge.inria.fr/anonscm/git/cudf/cudf.git", "cudf")
-  ; ("git+https://github.com/ocsigen/tyxml.git", "tyxml")
   ; ("git+https://github.com/ocaml/opam-depext.git#2.0", "opam-depext")
   ; ("git://github.com/ygrek/ocaml-extlib.git", "ocaml-extlib") ]
 
