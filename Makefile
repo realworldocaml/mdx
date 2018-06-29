@@ -18,6 +18,9 @@ clean:
 doc:
 	jbuilder build @doc
 
+vendor:	
+	jbuilder exec -- duniverse opam dune	
+
 publish-doc: doc
 	rm -rf .gh-pages
 	git clone `git config --get remote.origin.url` .gh-pages --reference .

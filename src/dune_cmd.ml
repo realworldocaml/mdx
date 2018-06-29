@@ -96,6 +96,8 @@ let dedup_git_remotes dunes =
        by_repo [])
 
 let gen_dune_lock repo () =
+  Bos.OS.Dir.create Fpath.(repo // Config.duniverse_dir)
+  >>= fun _ ->
   let ifile = Fpath.(repo // Config.opam_lockfile) in
   let ofile = Fpath.(repo // Config.duniverse_lockfile) in
   Opam.load ifile
@@ -116,6 +118,8 @@ let status repo target_branch () = Ok ()
 let prune_recursive_vendors = Dune.(())
 
 let gen_dune_upstream_branches repo target_branch () =
+  Bos.OS.Dir.create Fpath.(repo // Config.duniverse_dir)
+  >>= fun _ ->
   let ifile = Fpath.(repo // Config.duniverse_lockfile) in
   let open Dune in
   load ifile

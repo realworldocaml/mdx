@@ -146,31 +146,32 @@ let get_opam_depends ~repo package =
            package package)
 
 let init_local_opam_switch ~opam_switch ~repo () =
-  let dir = Fpath.(repo / ".duniverse") in
-  OS.Dir.exists dir
+  OS.Dir.exists Fpath.(Config.duniverse_dir / "_opam")
   >>= function
   | true ->
       Logs.debug (fun l ->
           l "Local opam switch already exists, so not creating" ) ;
       Ok ()
   | false ->
-      OS.Dir.create dir
+      OS.Dir.create Config.duniverse_dir
       >>= fun _ ->
       let cmd =
         let open Cmd in
-        v "opam" % "switch" % "create" % p dir % opam_switch % "--no-install"
+        v "opam" % "switch" % "create" % p Config.duniverse_dir % opam_switch
+        % "--no-install"
       in
       OS.Cmd.(run ~err:err_null cmd)
 
 let add_opam_dev_pin ~repo package =
   let cmd =
     let open Cmd in
-    v "opam" % "pin" %% switch_path repo % "add" % "-n" % package % "--dev"
+    v "opam" % "pin" %% switch_path repo % "add" % "-n" % (package ^ ".dev")
+    % "--dev"
   in
   OS.Cmd.(run ~err:err_null cmd)
 
 let opam_update ~repo =
-  let cmd = Cmd.(v "opam" % "update" %% switch_path repo % "update") in
+  let cmd = Cmd.(v "opam" % "update" %% switch_path repo) in
   OS.Cmd.(run ~err:err_null cmd)
 
 let query_github_repo_exists ~user ~repo =

@@ -46,8 +46,10 @@ let duniverse_forks =
 
 let duniverse_branch f = Fmt.strf "duniverse-%s" f
 
-let opam_lockfile = Fpath.v ".duniverse-opam.sxp"
+let duniverse_dir = Fpath.v ".duniverse"
 
-let duniverse_lockfile = Fpath.v ".duniverse.sxp"
+let opam_lockfile = Fpath.(duniverse_dir / "opam.sxp")
+
+let duniverse_lockfile = Fpath.(duniverse_dir / "dune.sxp")
 
 let vendor_dir = Fpath.v "vendor"

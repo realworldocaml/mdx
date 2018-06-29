@@ -57,27 +57,32 @@ let tag_from_archive archive =
   let tag_of_last_path ?prefix () =
     List.rev path |> List.hd |> tag_of_file ?prefix
   in
-  match Uri.host uri with
-  | Some "github.com" -> (
-    match path with
-    | [u; r; "releases"; "download"; v; archive] -> Some v
-    | [u; r; "archive"; archive] -> Some (strip_ext archive)
-    | _ -> if Uri.scheme uri = Some "git+https" then None else parse_err () )
-  | Some "ocaml.janestreet.com" -> (
-    match path with
-    | ["ocaml-core"; ver; "files"; f] -> tag_of_file f
-    | ["janestreet"; r; "releases"; "download"; v; f] -> Some v
-    | ["janestreet"; r; "archive"; f] -> Some (strip_ext f)
-    | _ -> parse_err () )
-  | Some "gitlab.camlcity.org" | Some "download.camlcity.org" ->
-      tag_of_last_path ()
-  | Some "ocamlgraph.lri.fr" | Some "erratique.ch" ->
-      tag_of_last_path ~prefix:"v" ()
+  match Uri.scheme uri with
+  | Some "git+http" | Some "git+https" ->
+      (* TODO handle branches for pins *)
+      Some "master"
   | _ ->
-      Logs.info (fun l ->
-          l "Attempting to guess tag for %s from the final part of the URL"
-            archive ) ;
-      tag_of_last_path ()
+    match Uri.host uri with
+    | Some "github.com" -> (
+      match path with
+      | [u; r; "releases"; "download"; v; archive] -> Some v
+      | [u; r; "archive"; archive] -> Some (strip_ext archive)
+      | _ -> if Uri.scheme uri = Some "git+https" then None else parse_err () )
+    | Some "ocaml.janestreet.com" -> (
+      match path with
+      | ["ocaml-core"; ver; "files"; f] -> tag_of_file f
+      | ["janestreet"; r; "releases"; "download"; v; f] -> Some v
+      | ["janestreet"; r; "archive"; f] -> Some (strip_ext f)
+      | _ -> parse_err () )
+    | Some "gitlab.camlcity.org" | Some "download.camlcity.org" ->
+        tag_of_last_path ()
+    | Some "ocamlgraph.lri.fr" | Some "erratique.ch" ->
+        tag_of_last_path ~prefix:"v" ()
+    | _ ->
+        Logs.info (fun l ->
+            l "Attempting to guess tag for %s from the final part of the URL"
+              archive ) ;
+        tag_of_last_path ()
 
 let classify_package ~package ~dev_repo ~archive () =
   Logs.debug (fun l -> l "dev-repo=%s" dev_repo) ;
@@ -188,6 +193,8 @@ let calculate_duniverse ~repo file =
   >>= fun {roots; excludes; pkgs; pins; opam_switch} ->
   Cmd.run_opam_package_deps ~repo (List.map string_of_package roots)
   >>| List.map split_opam_name_and_version
+  >>| List.map (fun p ->
+          if List.mem p.name pins then {p with version= Some "dev"} else p )
   >>= fun deps ->
   Logs.app (fun l -> l "Found %d opam dependencies." (List.length deps)) ;
   Logs.debug (fun l ->
@@ -231,6 +238,8 @@ let calculate_duniverse ~repo file =
 
 let init_duniverse repo roots excludes pins opam_switch () =
   let file = Fpath.(repo // Config.opam_lockfile) in
+  Bos.OS.Dir.create Fpath.(repo // duniverse_dir)
+  >>= fun _ ->
   Cmd.init_local_opam_switch ~opam_switch ~repo ()
   >>= fun () ->
   Cmd.(iter (add_opam_dev_pin ~repo) pins)
@@ -241,5 +250,5 @@ let init_duniverse repo roots excludes pins opam_switch () =
     List.map split_opam_name_and_version (locals @ excludes) |> sort_uniq
   in
   let roots = List.map split_opam_name_and_version roots |> sort_uniq in
-  save file {pkgs= []; roots; excludes; pins; opam_switch }
+  save file {pkgs= []; roots; excludes; pins; opam_switch}
   >>= fun () -> calculate_duniverse ~repo file
