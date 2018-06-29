@@ -12,7 +12,7 @@ steps:
       - git config --global user.email 'bactrian@ocaml.org' && git config --global user.name 'Bactrian the Build Bot'
       - echo '## Experimental OCaml Platform\n\nNothing to see here just yet.' > README.md
       - git add . && git commit -m duniverse
-      - opam exec -- duniverse opam opam-devel dune-release utop bun odoc ocp-indent --pin ocp-indent --pin odoc --opam-switch "4.06.1" -vv && opam exec -- duniverse lock -vv && cat .duniverse*.sxp && opam exec -- duniverse pull -vv
+      - opam exec -- duniverse opam opam-devel dune-release utop bun odoc ocp-indent --pin ocp-indent --pin odoc --pin tyxml --opam-switch "4.06.1" -vv && opam exec -- duniverse lock -vv && cat .duniverse*.sxp && opam exec -- duniverse pull -vv
       - git add . && git commit -m vendor
       - cd ..
       - tar -jcf platform.tar.gz platform
