@@ -27,7 +27,8 @@ module Opam = struct
     { roots: package list
     ; excludes: package list
     ; pins: string list
-    ; pkgs: entry list }
+    ; pkgs: entry list
+    ; opam_switch: string }
   [@@deriving sexp]
 
   let pp_repo = pp_sexp sexp_of_repo

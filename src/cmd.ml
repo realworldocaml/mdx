@@ -145,7 +145,7 @@ let get_opam_depends ~repo package =
             Try `opam show --normalise -f depends: %s` manually"
            package package)
 
-let init_local_opam_switch ~ocaml_switch ~repo () =
+let init_local_opam_switch ~opam_switch ~repo () =
   let dir = Fpath.(repo / ".duniverse") in
   OS.Dir.exists dir
   >>= function
@@ -158,7 +158,7 @@ let init_local_opam_switch ~ocaml_switch ~repo () =
       >>= fun _ ->
       let cmd =
         let open Cmd in
-        v "opam" % "switch" % "create" % p dir % ocaml_switch % "--no-install"
+        v "opam" % "switch" % "create" % p dir % opam_switch % "--no-install"
       in
       OS.Cmd.(run ~err:err_null cmd)
 

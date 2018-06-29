@@ -185,7 +185,7 @@ let rec filter_duniverse_packages ~excludes pkgs =
 
 let calculate_duniverse ~repo file =
   load file
-  >>= fun {roots; excludes; pkgs; pins} ->
+  >>= fun {roots; excludes; pkgs; pins; opam_switch} ->
   Cmd.run_opam_package_deps ~repo (List.map string_of_package roots)
   >>| List.map split_opam_name_and_version
   >>= fun deps ->
@@ -210,7 +210,7 @@ let calculate_duniverse ~repo file =
   let num_dune = List.length is_dune_pkgs in
   let num_not_dune = List.length not_dune_pkgs in
   let num_total = List.length pkgs in
-  let t = {pkgs; roots; excludes; pins} in
+  let t = {pkgs; roots; excludes; pins; opam_switch} in
   if num_not_dune > 0 then
     Logs.app (fun l ->
         l
@@ -229,9 +229,9 @@ let calculate_duniverse ~repo file =
   Logs.app (fun l -> l "Written %a (%d packages)." Fpath.pp file num_total) ;
   Ok ()
 
-let init_duniverse repo roots excludes pins ocaml_switch () =
+let init_duniverse repo roots excludes pins opam_switch () =
   let file = Fpath.(repo // Config.opam_lockfile) in
-  Cmd.init_local_opam_switch ~ocaml_switch ~repo ()
+  Cmd.init_local_opam_switch ~opam_switch ~repo ()
   >>= fun () ->
   Cmd.(iter (add_opam_dev_pin ~repo) pins)
   >>= fun () ->
@@ -241,5 +241,5 @@ let init_duniverse repo roots excludes pins ocaml_switch () =
     List.map split_opam_name_and_version (locals @ excludes) |> sort_uniq
   in
   let roots = List.map split_opam_name_and_version roots |> sort_uniq in
-  save file {pkgs= []; roots; excludes; pins}
+  save file {pkgs= []; roots; excludes; pins; opam_switch }
   >>= fun () -> calculate_duniverse ~repo file
