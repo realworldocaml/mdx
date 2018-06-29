@@ -76,10 +76,23 @@ let opam_cmd =
     in
     Arg.(value & opt_all string [] & info ["pin"; "p"] ~docv:"PIN" ~doc)
   in
+  let ocaml_switch_t =
+    let doc =
+      "Name of the ocaml compiler to use to resolve opam packages.  A local \
+       switch is created in $(i,.duniverse) where pins and packages can be \
+       tracked independently of your main opam switch.  This defaults to \
+       $(i,ocaml-system), but you can use this flag to supply a more specific \
+       version such as $(b,ocaml.4.06.1)."
+    in
+    let open Arg in
+    value & opt string "ocaml-system"
+    & info ["opam-switch"; "s"] ~docv:"OPAM_SWITCH" ~doc
+  in
   ( (let open Term in
     term_result
       ( const Opam_cmd.init_duniverse
-      $ target_repo_t $ pkg_t $ exclude_t $ pins_t $ setup_logs () ))
+      $ target_repo_t $ pkg_t $ exclude_t $ pins_t $ ocaml_switch_t
+      $ setup_logs () ))
   , Term.info "opam" ~doc ~exits ~man )
 
 let dune_lock_cmd =

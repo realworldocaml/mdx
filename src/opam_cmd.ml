@@ -229,9 +229,9 @@ let calculate_duniverse ~repo file =
   Logs.app (fun l -> l "Written %a (%d packages)." Fpath.pp file num_total) ;
   Ok ()
 
-let init_duniverse repo roots excludes pins () =
+let init_duniverse repo roots excludes pins ocaml_switch () =
   let file = Fpath.(repo // Config.opam_lockfile) in
-  Cmd.init_local_opam_switch ~repo ()
+  Cmd.init_local_opam_switch ~ocaml_switch ~repo ()
   >>= fun () ->
   Cmd.(iter (add_opam_dev_pin ~repo) pins)
   >>= fun () ->
