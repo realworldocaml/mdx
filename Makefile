@@ -18,8 +18,12 @@ clean:
 doc:
 	jbuilder build @doc
 
-vendor:	
-	jbuilder exec -- duniverse opam dune	
+vendor:
+	git checkout -B vendor
+	git merge master
+	jbuilder exec -- duniverse opam duniverse
+	jbuilder exec -- duniverse lock
+	jbuilder exec -- duniverse pull
 
 publish-doc: doc
 	rm -rf .gh-pages

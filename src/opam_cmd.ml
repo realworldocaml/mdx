@@ -61,6 +61,7 @@ let tag_from_archive archive =
   | Some "git+http" | Some "git+https" ->
       (* TODO handle branches for pins *)
       Some "master"
+  | Some "git+file" -> None
   | _ ->
     match Uri.host uri with
     | Some "github.com" -> (
@@ -246,6 +247,8 @@ let init_duniverse repo roots excludes pins opam_switch () =
   >>= fun () ->
   find_local_opam_packages repo
   >>= fun locals ->
+  Cmd.(iter (add_opam_local_pin ~repo) locals)
+  >>= fun () ->
   let excludes =
     List.map split_opam_name_and_version (locals @ excludes) |> sort_uniq
   in

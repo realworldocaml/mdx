@@ -83,7 +83,7 @@ let run_opam_package_deps ~repo packages =
   let cmd =
     let open Cmd in
     v "opam" % "list" %% switch_path repo % "--color=never" % "-s"
-    % ("--resolve=" ^ packages) % "-V" % "--no-switch" % "-S"
+    % ("--resolve=" ^ packages) % "-V" % "-S"
   in
   OS.Cmd.(run_out cmd |> to_lines ~trim:true)
 
@@ -167,6 +167,14 @@ let add_opam_dev_pin ~repo package =
     let open Cmd in
     v "opam" % "pin" %% switch_path repo % "add" % "-n" % (package ^ ".dev")
     % "--dev"
+  in
+  OS.Cmd.(run ~err:err_null cmd)
+
+let add_opam_local_pin ~repo package =
+  let cmd =
+    let open Cmd in
+    v "opam" % "pin" %% switch_path repo % "add" % "-yn" % (package ^ ".dev")
+    % "."
   in
   OS.Cmd.(run ~err:err_null cmd)
 
