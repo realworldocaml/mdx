@@ -23,7 +23,7 @@ v-setup:
 	jbuilder exec -- duniverse lock
 
 v:
-	git checkout -B vendor
+	git checkout vendor || git checkout -b vendor
 	jbuilder exec -- duniverse pull
 	git rm -rf vendor/opam-core/src_ext
 	git commit -m 'trim opam/src-ext'
