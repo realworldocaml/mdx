@@ -11,7 +11,7 @@ esac
 
 sudo chown -R opam /home/opam/src
 cd /home/opam/src
-opam install -y jbuilder
+opam install -y jbuilder result
 # workaround for opam embedding bug
 cd vendor/opam-core && ./configure
 cd /home/opam/src
