@@ -29,7 +29,7 @@ v:
 	git commit -m 'trim opam/src-ext' -a || true
 	git checkout master
 	git merge vendor --squash
-	git commit -m 'update vendor libraries'
+	git commit -m 'update vendor libraries' -a || true
 	cd vendor/opam-core && ./configure && cp src/core/opamVersion.ml.in src/core/opamVersion.ml
 
 publish-doc: doc
