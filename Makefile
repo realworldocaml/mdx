@@ -23,10 +23,10 @@ v-setup:
 	jbuilder exec -- duniverse lock
 
 v:
-	git checkout vendor || git checkout -b vendor
+	git checkout vendor 2>/dev/null || git checkout -b vendor
 	jbuilder exec -- duniverse pull
-	git rm -rf vendor/opam-core/src_ext
-	git commit -m 'trim opam/src-ext'
+	rm -rf vendor/opam-core/src_ext
+	git commit -m 'trim opam/src-ext' -a || true
 	git checkout master
 	git merge vendor --squash
 	git commit -m 'update vendor libraries'
