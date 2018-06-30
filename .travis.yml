@@ -1,0 +1,12 @@
+sudo: required
+services:
+  - docker
+language: c
+script:
+  - docker run -e DISTRO=${DISTRO} -v `pwd`:/home/opam/src ocaml/opam2:${DISTRO} /home/opam/src/.docker.sh
+env:
+  matrix:
+  - DISTRO="debian-9"
+  - DISTRO="alpine-3.7"
+  - DISTRO="ubuntu-16.04"
+  - DISTRO="ubuntu-18.04"
