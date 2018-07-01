@@ -14,7 +14,18 @@
  *
  *)
 
-let base_packages = ["menhir"; "ocamlfind"; "num"; "ppx_tools"]
+let base_packages =
+  [ "menhir"
+  ; "ocamlfind"
+  ; "num"
+  ; "ppx_tools"
+  ; "jbuilder"
+  ; "dune"
+  ; "ocamlbuild"
+  ; "uchar"
+  ; "ocaml"
+  ; "ocaml-base-compiler"
+  ; "ocaml-variants" ]
 
 let duniverse_forks =
   [ ("git+http://erratique.ch/repos/uutf.git", "uutf")

@@ -170,19 +170,8 @@ let rec filter_duniverse_packages ~excludes pkgs =
     | hd :: tl ->
         let filter =
           List.exists (fun e -> e.name = hd.package.name) excludes
+    || List.mem hd.package.name Config.base_packages
           || hd.dev_repo = `Virtual
-          || hd.package.name = "jbuilder"
-          (* this is us *)
-          || hd.package.name = "dune"
-          (* this is us *)
-          || hd.package.name = "ocamlbuild"
-          (* build system *)
-          || hd.package.name = "result" || hd.package.name = "uchar"
-          || hd.package.name = "ocaml"
-          || hd.package.name = "ocaml-base-compiler"
-          || hd.package.name = "ocaml-variants"
-          || hd.package.name = "ocamlfind"
-          (* for now *)
         in
         if filter then fn acc tl else fn (hd :: acc) tl
     | [] -> Ok (List.rev acc)
