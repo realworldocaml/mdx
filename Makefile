@@ -25,9 +25,7 @@ v-setup:
 v:
 	git checkout -b duniverse 2>/dev/null || git checkout duniverse
 	git merge master
-	jbuilder exec -- duniverse pull
-	rm -rf vendor/opam-core/src_ext
-	git commit -m 'trim opam/src-ext' -a || true
+	jbuilder exec -- duniverse pull -v
 	git checkout master
 	git merge duniverse --squash
 	git commit -m 'update vendor libraries' -a || true
