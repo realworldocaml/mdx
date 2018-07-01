@@ -23,13 +23,13 @@ v-setup:
 	jbuilder exec -- duniverse lock
 
 v:
-	git checkout -b vendor 2>/dev/null || git checkout vendor
+	git checkout -b duniverse 2>/dev/null || git checkout duniverse
 	git merge master
 	jbuilder exec -- duniverse pull
 	rm -rf vendor/opam-core/src_ext
 	git commit -m 'trim opam/src-ext' -a || true
 	git checkout master
-	git merge vendor --squash
+	git merge duniverse --squash
 	git commit -m 'update vendor libraries' -a || true
 	cd vendor/opam-core && ./configure && cp src/core/opamVersion.ml.in src/core/opamVersion.ml
 
