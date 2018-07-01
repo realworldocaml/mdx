@@ -31,7 +31,6 @@ v:
 	git checkout master
 	git merge duniverse --squash
 	git commit -m 'update vendor libraries' -a || true
-	cd vendor/opam-core && ./configure && cp src/core/opamVersion.ml.in src/core/opamVersion.ml
 
 publish-doc: doc
 	rm -rf .gh-pages
