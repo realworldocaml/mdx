@@ -39,6 +39,8 @@
     (ref 1.5.0))
    ((dir jsonm) (upstream git://github.com/dune-universe/jsonm.git)
     (ref duniverse-v1.0.1))
+   ((dir result) (upstream https://github.com/janestreet/result.git)
+    (ref 1.3))
    ((dir cppo) (upstream https://github.com/mjambon/cppo.git) (ref v1.6.4))
    ((dir cmdliner) (upstream git://github.com/dune-universe/cmdliner.git)
     (ref duniverse-v1.0.2))
