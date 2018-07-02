@@ -18,14 +18,18 @@ clean:
 doc:
 	jbuilder build @doc
 
-v-setup:
+v-update:
 	jbuilder exec -- duniverse opam duniverse
 	jbuilder exec -- duniverse lock
+	git commit .duniverse -m 'update duniverse lockfiles' || true
 
-v:
-	git checkout -b duniverse 2>/dev/null || git checkout duniverse
-	git merge master
+v-pull:
+	git checkout duniverse
+	git merge master --commit
 	jbuilder exec -- duniverse pull -v
+	git push origin duniverse
+
+v-merge:
 	git checkout master
 	git merge duniverse --squash
 	git commit -m 'update vendor libraries' -a || true
