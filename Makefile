@@ -19,15 +19,17 @@ doc:
 	jbuilder build @doc
 
 v-update:
+	git checkout master
 	jbuilder exec -- duniverse opam duniverse
 	jbuilder exec -- duniverse lock
 	git commit .duniverse -m 'update duniverse lockfiles' || true
 
 v-pull:
 	git checkout duniverse 2>/dev/null || git checkout -b duniverse
-	git merge master --commit
+	git merge master --commit -m 'merge from master branch'
 	jbuilder exec -- duniverse pull -v
 	git push -u origin duniverse
+	git checkout master
 
 v-merge:
 	git checkout master
