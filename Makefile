@@ -24,10 +24,10 @@ v-update:
 	git commit .duniverse -m 'update duniverse lockfiles' || true
 
 v-pull:
-	git checkout duniverse
+	git checkout duniverse 2>/dev/null || git checkout -b duniverse
 	git merge master --commit
 	jbuilder exec -- duniverse pull -v
-	git push origin duniverse
+	git push -u origin duniverse
 
 v-merge:
 	git checkout master
