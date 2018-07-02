@@ -20,8 +20,8 @@ doc:
 
 v-update:
 	git checkout master
-	jbuilder exec -- duniverse opam duniverse
-	jbuilder exec -- duniverse lock
+	jbuilder exec -- duniverse opam -v
+	jbuilder exec -- duniverse lock -v
 	git commit .duniverse -m 'update duniverse lockfiles' || true
 
 v-pull:

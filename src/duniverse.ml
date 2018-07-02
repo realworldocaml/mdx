@@ -57,7 +57,7 @@ let opam_cmd =
   let man = [`S Manpage.s_description; `P "TODO"] in
   let pkg_t =
     let open Arg in
-    non_empty & pos_all string []
+    value & pos_all string []
     & info [] ~doc:"opam packages to calculate duniverse for" ~docv:"PACKAGES"
   in
   let exclude_t =

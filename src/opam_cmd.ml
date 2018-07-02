@@ -238,6 +238,21 @@ let init_duniverse repo roots excludes pins opam_switch () =
   >>= fun locals ->
   Cmd.(iter (add_opam_local_pin ~repo) locals)
   >>= fun () ->
+  let roots =
+    match roots, locals with 
+    | [], [] ->
+        Logs.err (fun l -> l "Cannot find any packages to vendor.\nEither create some *.opam files in the local repository, or specify them manually via 'duniverse opam <packages'.");
+        exit 1
+    | [], locals ->
+        Logs.info (fun l -> l "Using locally scanned packages '%a' as the roots." Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string)) locals);
+        locals
+    | roots, [] ->
+        Logs.info (fun l -> l "Using command-line specified packages '%a' as the roots." Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string)) roots);
+        roots
+   | roots, locals ->
+       Logs.info (fun l -> l "Using command-line specified packages '%a' as the roots.\nIgnoring the locally found packages %a unless they are explicitly specified on the command line." Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string)) roots Fmt.(list ~sep:(unit ",@ ") string) locals);
+       roots
+  in
   let excludes =
     List.map split_opam_name_and_version (locals @ excludes) |> sort_uniq
   in
