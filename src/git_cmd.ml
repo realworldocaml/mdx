@@ -49,6 +49,8 @@ let merge repo branch () =
   let vendor_branch = Fmt.strf "duniverse-vendor-of-%s" branch in
   Cmd.git_checkout ~repo branch
   >>= fun () ->
+  Cmd.git_merge ~from:vendor_branch ~args:Bos.Cmd.(v "--squash") ~repo ()
+  >>= fun () ->
   let message =
     Fmt.strf "update vendor libraries from branch %s" vendor_branch
   in
