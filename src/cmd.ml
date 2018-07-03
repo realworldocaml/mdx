@@ -55,13 +55,28 @@ let ignore_error r =
       Logs.debug (fun l -> l "Ignoring error: %s" msg) ;
       Ok ()
 
-let git_checkout ~repo branch = run_git ~repo Cmd.(v "checkout" % branch)
+let git_checkout ?(args= Cmd.empty) ~repo branch =
+  run_git ~repo Cmd.(v "checkout" %% args % branch)
+
+let git_checkout_or_branch ~repo branch =
+  match git_checkout ~repo branch with
+  | Ok () -> Ok ()
+  | Error (`Msg _) -> git_checkout ~args:(Cmd.v "-b") ~repo branch
 
 let git_add_and_commit ~repo ~message files =
   run_git ~repo Cmd.(v "add" %% files)
   |> ignore_error
   >>= fun () ->
   run_git ~repo Cmd.(v "commit" % "-m" % message %% files) |> ignore_error
+
+let git_add_all_and_commit ~repo ~message () =
+  run_git ~repo Cmd.(v "commit" % "-a" % "-m" % message) |> ignore_error
+
+let git_merge ?(args= Cmd.empty) ~from ~repo () =
+  run_git ~repo Cmd.(v "merge" %% args % from)
+
+let git_push ?(args= Cmd.empty) ~repo remote branch =
+  run_git ~repo Cmd.(v "push" %% args % remote % branch)
 
 let git_ls_remote remote =
   OS.Cmd.(run_out Cmd.(v "git" % "ls-remote" % remote) |> to_lines)

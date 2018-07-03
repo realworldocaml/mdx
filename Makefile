@@ -22,16 +22,10 @@ v-lock:
 	dune exec --profile=release -- duniverse vendor-lock -vv
 
 v-pull:
-	git checkout duniverse 2>/dev/null || git checkout -b duniverse
-	git merge master --commit -m 'merge from master branch'
-	jbuilder exec -- duniverse pull -v
-	git push -u origin duniverse
-	git checkout master
+	dune exec --profile=release -- duniverse vendor-pull -vv
 
 v-merge:
-	git checkout master
-	git merge duniverse --squash
-	git commit -m 'update vendor libraries' -a || true
+	dune exec --profile=release -- duniverse vendor-merge -vv
 
 publish-doc: doc
 	rm -rf .gh-pages

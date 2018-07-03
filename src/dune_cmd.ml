@@ -117,17 +117,13 @@ let status repo target_branch () = Ok ()
 
 let prune_recursive_vendors = Dune.(())
 
-let gen_dune_upstream_branches repo target_branch () =
+let gen_dune_upstream_branches repo () =
   Bos.OS.Dir.create Fpath.(repo // Config.duniverse_dir)
   >>= fun _ ->
   let ifile = Fpath.(repo // Config.duniverse_lockfile) in
   let open Dune in
   load ifile
   >>= fun dune ->
-  ( match target_branch with
-  | None -> Ok ()
-  | Some b -> Cmd.run_git ~repo Bos.Cmd.(v "checkout" % "-B" % b) )
-  >>= fun () ->
   Cmd.git_local_duniverse_remotes ~repo ()
   >>= fun local_remotes ->
   let repos = dune.repos in
