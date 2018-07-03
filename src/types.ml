@@ -28,6 +28,8 @@ module Opam = struct
     ; excludes: package list
     ; pins: string list
     ; pkgs: entry list
+    ; remotes: string list [@default []]
+    ; branch: string [@default "master"]
     ; opam_switch: string }
   [@@deriving sexp]
 

@@ -18,12 +18,11 @@ open Types
 open Rresult
 open Astring
 
-let update repo branch roots excludes pins opam_switch () =
-  let branch = match branch with None -> "master" | Some b -> b in
+let update repo branch roots excludes pins opam_switch remotes () =
   Cmd.git_checkout ~repo branch
   >>= fun () ->
   Logs.info (fun l -> l "Running `duniverse opam`") ;
-  Opam_cmd.init_duniverse repo roots excludes pins opam_switch ()
+  Opam_cmd.init_duniverse repo branch roots excludes pins opam_switch remotes ()
   >>= fun () ->
   Logs.info (fun l -> l "Running `duniverse lock`") ;
   Dune_cmd.gen_dune_lock repo ()
@@ -32,7 +31,6 @@ let update repo branch roots excludes pins opam_switch () =
     Bos.Cmd.(v ".duniverse/opam.sxp" % ".duniverse/dune.sxp")
 
 let pull repo branch () =
-  let branch = match branch with None -> "master" | Some b -> b in
   let vendor_branch = Fmt.strf "duniverse-vendor-of-%s" branch in
   Cmd.git_checkout_or_branch ~repo vendor_branch
   >>= fun () ->
@@ -45,7 +43,6 @@ let pull repo branch () =
   >>= fun () -> Cmd.git_checkout ~repo branch
 
 let merge repo branch () =
-  let branch = match branch with None -> "master" | Some b -> b in
   let vendor_branch = Fmt.strf "duniverse-vendor-of-%s" branch in
   Cmd.git_checkout ~repo branch
   >>= fun () ->

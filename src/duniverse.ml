@@ -46,10 +46,10 @@ let target_repo_t =
 
 let branch_t =
   let doc =
-    "Target branch to switch to before merging in the vendored repositories. \
-     If not supplied, the current branch in the target repository is used."
+    "Branch that represents the working tree of the source code.
+     If not supplied, the $(i,master) branch is used."
   in
-  Arg.(value & opt (some string) None & info ["b"] ~docv:"VENDOR_BRANCH" ~doc)
+  Arg.(value & opt string "master" & info ["b"] ~docv:"VENDOR_BRANCH" ~doc)
 
 let exclude_t =
   let doc =
@@ -58,6 +58,13 @@ let exclude_t =
      Repeat this flag multiple times for more than one exclusion."
   in
   Arg.(value & opt_all string [] & info ["exclude"; "x"] ~docv:"EXCLUDE" ~doc)
+
+let remotes_t =
+  let doc =
+    "Extra opam remotes to add when resolving package names. \
+     Repeat this flag multiple times for more than one remote."
+  in
+  Arg.(value & opt_all string [] & info ["opam-remote"] ~docv:"OPAM_REMOTE" ~doc)
 
 let pins_t =
   let doc =
@@ -90,7 +97,7 @@ let opam_cmd =
   ( (let open Term in
     term_result
       ( const Opam_cmd.init_duniverse
-      $ target_repo_t $ pkg_t $ exclude_t $ pins_t $ ocaml_switch_t
+      $ target_repo_t $ branch_t $ pkg_t $ exclude_t $ pins_t $ ocaml_switch_t $ remotes_t 
       $ setup_logs () ))
   , Term.info "opam" ~doc ~exits ~man )
 
@@ -126,7 +133,7 @@ let vendor_lock_cmd =
   ( (let open Term in
     term_result
       ( const Git_cmd.update $ target_repo_t $ branch_t $ pkg_t $ exclude_t
-      $ pins_t $ ocaml_switch_t $ setup_logs () ))
+      $ pins_t $ ocaml_switch_t $ remotes_t $ setup_logs () ))
   , Term.info "vendor-lock" ~doc ~exits ~man )
 
 let vendor_pull_cmd =

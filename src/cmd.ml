@@ -175,7 +175,7 @@ let get_opam_depends ~repo package =
             Try `opam show --normalise -f depends: %s` manually"
            package package)
 
-let init_local_opam_switch ~opam_switch ~repo () =
+let init_local_opam_switch ~opam_switch ~repo ~remotes () =
   OS.Dir.exists Fpath.(Config.duniverse_dir / "_opam")
   >>= function
   | true ->
@@ -190,7 +190,14 @@ let init_local_opam_switch ~opam_switch ~repo () =
         v "opam" % "switch" % "create" % p Config.duniverse_dir % opam_switch
         % "--no-install"
       in
-      OS.Cmd.(run ~err:err_null cmd)
+      OS.Cmd.(run ~err:err_null cmd) >>= fun () ->
+      let rcnt = ref 0 in
+      iter (fun remote ->
+        let rname = Fmt.strf "remote%d" !rcnt in
+        incr rcnt;
+        let cmd = Cmd.(v "opam" % "repository" %% switch_path repo % "add" % rname % remote) in
+        OS.Cmd.(run ~err:err_null cmd)
+      ) remotes
 
 let add_opam_dev_pin ~repo package =
   let cmd =
