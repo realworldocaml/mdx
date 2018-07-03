@@ -1,0 +1,22 @@
+(alias
+ ((name runtest)
+  (deps (section.md section.md.expected))
+  (action (progn
+           (run ${exe:../bin/main.exe} test -s Testing ${<})
+           (diff? ${<}.expected ${<}.corrected)))))
+
+(alias
+ ((name runtest)
+  (deps (pp.md section.md))
+  (action (progn
+           (setenv MDX ${exe:../bin/main.exe}
+            (run ${exe:../bin/main.exe} test ${<}))
+           (diff? ${<} ${<}.corrected)))))
+
+(alias
+ ((name runtest)
+  (deps (mlt.md))
+  (action (progn
+           (setenv MDX ${exe:../bin/main.exe}
+            (run ${exe:../bin/main.exe} test ${<}))
+           (diff? ${<} ${<}.corrected)))))

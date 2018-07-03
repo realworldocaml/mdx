@@ -1,0 +1,8 @@
+(executable
+ ((name        main)
+  (public_name mdx)
+  (package     mdx)
+  (modes       (byte))  ;; no native code toplevel libs yet
+  (link_flags  (-linkall))
+  (libraries   (fmt mdx unix cmdliner astring fmt.cli logs.fmt
+                fmt.tty logs.cli mdx.top))))
