@@ -12,5 +12,5 @@ depends: [
   "jbuilder" {build & >="1.0+beta17"}
 ]
 build: [
-  ["make"]
+  [make]
 ]
