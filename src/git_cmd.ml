@@ -29,7 +29,7 @@ let update repo branch roots excludes pins opam_switch () =
   Dune_cmd.gen_dune_lock repo ()
   >>= fun () ->
   Cmd.git_add_and_commit ~repo ~message:"update duniverse lockfiles"
-    Bos.Cmd.(v ".duniverse")
+    Bos.Cmd.(v ".duniverse/opam.sxp" % ".duniverse/dune.sxp")
 
 let pull repo branch () =
   let branch = match branch with None -> "master" | Some b -> b in
