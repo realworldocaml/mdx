@@ -1,0 +1,4 @@
+version = "2.0.0~rc2"
+description = "Parser and printer for the opam file syntax"
+archive(byte) = "opam-file-format.cma"
+archive(native) = "opam-file-format.cmxa"

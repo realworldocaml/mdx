@@ -1,0 +1,3 @@
+Foo is %{P1:FOO}%
+
+Foo also contains a variable with %{P1:l}%. Funny, isn't it?

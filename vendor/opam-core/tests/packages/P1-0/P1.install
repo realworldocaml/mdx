@@ -1,0 +1,6 @@
+lib: [
+  "p1.cmi"
+  "p1.cma"
+  "p1.cmxa"
+  "p1.a"
+]

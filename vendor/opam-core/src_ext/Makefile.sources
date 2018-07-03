@@ -1,0 +1,63 @@
+URL_cppo = https://github.com/mjambon/cppo/archive/v1.6.4.tar.gz
+MD5_cppo = f7a4a6a0e83b76562b45db3a93ffd204
+
+$(call PKG_SAME,cppo)
+
+URL_extlib = http://ygrek.org.ua/p/release/ocaml-extlib/extlib-1.7.4.tar.gz
+MD5_extlib = 25f982e2716b70cbc9ecb4beaf509889
+
+$(call PKG_SAME,extlib)
+
+URL_re = https://github.com/ocaml/ocaml-re/releases/download/1.7.3/re-1.7.3.tbz
+MD5_re = d2a74ca77216861bce4449600a132de9
+
+$(call PKG_SAME,re)
+
+URL_cmdliner = http://erratique.ch/software/cmdliner/releases/cmdliner-1.0.2.tbz
+MD5_cmdliner = ab2f0130e88e8dcd723ac6154c98a881
+
+$(call PKG_SAME,cmdliner)
+
+URL_ocamlgraph = http://ocamlgraph.lri.fr/download/ocamlgraph-1.8.8.tar.gz
+MD5_ocamlgraph = 9d71ca69271055bd22d0dfe4e939831a
+
+$(call PKG_SAME,ocamlgraph)
+
+URL_cudf = https://gforge.inria.fr/frs/download.php/36602/cudf-0.9.tar.gz
+MD5_cudf = a4c0e652e56e74c7b388a43f9258d119
+
+$(call PKG_SAME,cudf)
+
+URL_dose3 = https://gforge.inria.fr/frs/download.php/file/36063/dose3-5.0.1.tar.gz
+MD5_dose3 = e7d4b1840383c6732f29a47c08ba5650
+
+$(call PKG_SAME,dose3)
+
+URL_mccs = https://github.com/AltGr/ocaml-mccs/archive/1.1+8.tar.gz
+MD5_mccs = 987c4970715713f21e6c79b4f3cba430
+
+$(call PKG_SAME,mccs)
+
+URL_opam-file-format = https://github.com/ocaml/opam-file-format/archive/2.0.0-rc2.tar.gz
+MD5_opam-file-format = baa1230ff40a320bebdd980b071cfbf1
+
+$(call PKG_SAME,opam-file-format)
+
+URL_result = https://github.com/janestreet/result/releases/download/1.3/result-1.3.tbz
+MD5_result = 4beebefd41f7f899b6eeba7414e7ae01
+
+$(call PKG_SAME,result)
+
+URL_jbuilder = https://github.com/ocaml/dune/releases/download/1.0+beta20/jbuilder-1.0.beta20.tbz
+MD5_jbuilder = 09b8a90c6e3333aef2cac947424c1d66
+
+$(call PKG_SAME,jbuilder)
+
+URL_PKG_findlib = http://download.camlcity.org/download/findlib-1.8.0.tar.gz
+MD5_PKG_findlib = a710c559667672077a93d34eb6a42e5b
+
+URL_PKG_ocamlbuild = https://github.com/ocaml/ocamlbuild/archive/0.12.0.tar.gz
+MD5_PKG_ocamlbuild = 442baa19470bd49150f153122e22907b
+
+URL_PKG_topkg = http://erratique.ch/software/topkg/releases/topkg-0.9.1.tbz
+MD5_PKG_topkg = 8978a0595db1a22e4251ec62735d4b84
