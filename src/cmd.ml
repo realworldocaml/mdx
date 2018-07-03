@@ -48,6 +48,21 @@ let save_sexp label conv file v =
 let run_git ~repo args =
   OS.Cmd.(run ~err:err_null Cmd.(v "git" % "-C" % p repo %% args))
 
+let ignore_error r =
+  match r with
+  | Ok () -> Ok ()
+  | Error (`Msg msg) ->
+      Logs.debug (fun l -> l "Ignoring error: %s" msg) ;
+      Ok ()
+
+let git_checkout ~repo branch = run_git ~repo Cmd.(v "checkout" % branch)
+
+let git_add_and_commit ~repo ~message files =
+  run_git ~repo Cmd.(v "add" %% files)
+  |> ignore_error
+  >>= fun () ->
+  run_git ~repo Cmd.(v "commit" % "-m" % message %% files) |> ignore_error
+
 let git_ls_remote remote =
   OS.Cmd.(run_out Cmd.(v "git" % "ls-remote" % remote) |> to_lines)
   >>= map (fun l ->

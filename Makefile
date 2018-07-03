@@ -18,11 +18,8 @@ clean:
 doc:
 	jbuilder build @doc
 
-v-update:
-	git checkout master
-	jbuilder exec -- duniverse opam -v
-	jbuilder exec -- duniverse lock -v
-	git commit .duniverse -m 'update duniverse lockfiles' || true
+v-lock:
+	dune exec --profile=release -- duniverse vendor-lock -vv
 
 v-pull:
 	git checkout duniverse 2>/dev/null || git checkout -b duniverse

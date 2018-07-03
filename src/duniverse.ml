@@ -51,49 +51,58 @@ let branch_t =
   in
   Arg.(value & opt (some string) None & info ["b"] ~docv:"VENDOR_BRANCH" ~doc)
 
+let exclude_t =
+  let doc =
+    "Packages to exclude from the output list. You can use this to remove the \
+     root packages so they are not duplicated in the vendor directory.  \
+     Repeat this flag multiple times for more than one exclusion."
+  in
+  Arg.(value & opt_all string [] & info ["exclude"; "x"] ~docv:"EXCLUDE" ~doc)
+
+let pins_t =
+  let doc =
+    "Packages to pin to their master branches for the latest opam metadata \
+     and source. Repeat this flag multiple times for more than one exclusion."
+  in
+  Arg.(value & opt_all string [] & info ["pin"; "p"] ~docv:"PIN" ~doc)
+
+let ocaml_switch_t =
+  let doc =
+    "Name of the ocaml compiler to use to resolve opam packages.  A local \
+     switch is created in $(i,.duniverse) where pins and packages can be \
+     tracked independently of your main opam switch.  This defaults to \
+     $(i,ocaml-system), but you can use this flag to supply a more specific \
+     version such as $(b,ocaml.4.06.1)."
+  in
+  let open Arg in
+  value & opt string "ocaml-system"
+  & info ["opam-switch"; "s"] ~docv:"OPAM_SWITCH" ~doc
+
+let pkg_t =
+  let open Arg in
+  value & pos_all string []
+  & info [] ~doc:"opam packages to calculate duniverse for" ~docv:"PACKAGES"
+
 let opam_cmd =
   let doc = "opam TODO" in
   let exits = Term.default_exits in
   let man = [`S Manpage.s_description; `P "TODO"] in
-  let pkg_t =
-    let open Arg in
-    value & pos_all string []
-    & info [] ~doc:"opam packages to calculate duniverse for" ~docv:"PACKAGES"
-  in
-  let exclude_t =
-    let doc =
-      "Packages to exclude from the output list. You can use this to remove \
-       the root packages so they are not duplicated in the vendor directory.  \
-       Repeat this flag multiple times for more than one exclusion."
-    in
-    Arg.(value & opt_all string [] & info ["exclude"; "x"] ~docv:"EXCLUDE" ~doc)
-  in
-  let pins_t =
-    let doc =
-      "Packages to pin to their master branches for the latest opam metadata \
-       and source. Repeat this flag multiple times for more than one \
-       exclusion."
-    in
-    Arg.(value & opt_all string [] & info ["pin"; "p"] ~docv:"PIN" ~doc)
-  in
-  let ocaml_switch_t =
-    let doc =
-      "Name of the ocaml compiler to use to resolve opam packages.  A local \
-       switch is created in $(i,.duniverse) where pins and packages can be \
-       tracked independently of your main opam switch.  This defaults to \
-       $(i,ocaml-system), but you can use this flag to supply a more specific \
-       version such as $(b,ocaml.4.06.1)."
-    in
-    let open Arg in
-    value & opt string "ocaml-system"
-    & info ["opam-switch"; "s"] ~docv:"OPAM_SWITCH" ~doc
-  in
   ( (let open Term in
     term_result
       ( const Opam_cmd.init_duniverse
       $ target_repo_t $ pkg_t $ exclude_t $ pins_t $ ocaml_switch_t
       $ setup_logs () ))
   , Term.info "opam" ~doc ~exits ~man )
+
+let vendor_lock_cmd =
+  let doc = "git-update TODO" in
+  let exits = Term.default_exits in
+  let man = [`S Manpage.s_description; `P "TODO"] in
+  ( (let open Term in
+    term_result
+      ( const Git_cmd.update $ target_repo_t $ branch_t $ pkg_t $ exclude_t
+      $ pins_t $ ocaml_switch_t $ setup_logs () ))
+  , Term.info "vendor-lock" ~doc ~exits ~man )
 
 let dune_lock_cmd =
   let doc = "dune-lock TODO" in
@@ -136,6 +145,7 @@ let default_cmd =
   ( Term.(ret (const (fun _ -> `Help (`Pager, None)) $ pure ()))
   , Term.info "duniverse" ~version:"%%VERSION%%" ~doc ~sdocs ~man )
 
-let cmds = [opam_cmd; dune_lock_cmd; dune_fetch_cmd; status_cmd]
+let cmds =
+  [opam_cmd; dune_lock_cmd; dune_fetch_cmd; status_cmd; vendor_lock_cmd]
 
 let () = Term.(exit @@ eval_choice default_cmd cmds)
