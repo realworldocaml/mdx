@@ -40,6 +40,7 @@ let duniverse_forks =
   ; ("git+http://erratique.ch/repos/uuidm.git", "uuidm")
   ; ("git+http://erratique.ch/repos/uutf.git", "uutf")
   ; ("git+http://erratique.ch/repos/mtime.git", "mtime")
+  ; ("git+http://erratique.ch/repos/ptime.git", "ptime")
   ; ("git+http://erratique.ch/repos/fmt.git", "fmt")
   ; ("git+http://erratique.ch/repos/rresult.git", "rresult")
   ; ("git+http://erratique.ch/repos/jsonm.git", "jsonm")
