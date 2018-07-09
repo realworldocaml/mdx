@@ -29,3 +29,10 @@ let x = 2
 $ ls
 foo bar
 ```
+
+## Toplevel
+
+```ocaml
+   # print_endline "42";;
+   42
+```

@@ -5,3 +5,11 @@ $ ocamlc -pp '$MDX pp -s Hello' -impl section.md
 $ ./a.out
 42
 ```
+
+OCaml toplevel can also be compiled and executed in the same way:
+
+
+```sh
+$ ocamlc -pp '$MDX pp -s Toplevel' -impl section.md && ./a.out
+42
+```
