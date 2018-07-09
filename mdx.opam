@@ -1,0 +1,24 @@
+opam-version: "1.2"
+maintainer:   "Thomas Gazagnaire <thomas@gazagnaire.org>"
+authors:      ["Thomas Gazagnaire <thomas@gazagnaire.org"]
+homepage:     "https://github.com/realworldocaml/mdx"
+license:      "ISC"
+dev-repo:     "https://github.com/realworldocaml/mdx.git"
+bug-reports:  "https://github.com/realworldocaml/mdx/issues"
+doc:          "https://realworldocaml.github.io/mdx/"
+
+build: [
+ ["jbuilder" "subst" "-p" name] {pinned}
+ ["jbuilder" "build" "-p" name "-j" jobs]
+]
+build-test: ["jbuilder" "runtest" "-p" name]
+
+depends: [
+  "jbuilder" {build}
+  "fmt"
+  "astring"
+  "logs"
+  "cmdliner"
+  "re"
+  "ppx_tools"
+]
