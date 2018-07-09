@@ -1,3 +1,6 @@
+let src = Logs.Src.create "cram.pp"
+module Log = (val Logs.src_log src : Logs.LOG)
+
 let run () file section =
   let t = Mdx.parse_file file in
   let t = match section with
@@ -14,8 +17,11 @@ let run () file section =
     List.iter (function
         | Mdx.Section _ | Text _ -> ()
         | Block b ->
-          if Mdx.Block.is_raw_ocaml b then
-            Fmt.pr "#%d %S\n%a" b.line file Mdx.Block.pp_contents b
+          let b = Mdx.Block.eval b in
+          Log.debug (fun l -> l "pp: %a" Mdx.Block.dump b);
+          let pp_lines = Fmt.(list ~sep:(unit "\n") string) in
+          let contents = Mdx.Block.executable_contents b in
+          Fmt.pr "#%d %S\n%a" b.line file pp_lines contents
       ) t;
     0
 

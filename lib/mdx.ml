@@ -48,16 +48,8 @@ let of_string s = parse_lexbuf (Lexing.from_string s)
 let eval = function
   | Section _ | Text _ as x -> x
   | Block t as x ->
-    match t.header with
-    | Some ("sh" | "bash") ->
-      let value = Block.cram t.contents in
-      Block { t with value }
-    | Some "ocaml" ->
-      if Block.is_raw_ocaml t then x
-      else
-        let value = Block.toplevel t.contents in
-        Block { t with value }
-    | _ -> x
+    let t' = Block.eval t in
+    if t == t' then x else Block t'
 
 let run ~f n =
   Common.run_expect_test n ~f:(fun c l ->

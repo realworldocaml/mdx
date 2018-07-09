@@ -69,3 +69,26 @@ let is_raw_ocaml b =
 let toplevel lines =
   let pad, tests = Toplevel.of_lines lines in
   Toplevel { pad; tests }
+
+let eval t =
+  match t.header with
+  | Some ("sh" | "bash") ->
+    let value = cram t.contents in
+    { t with value }
+  | Some "ocaml" ->
+    if is_raw_ocaml t then t
+    else
+      let value = toplevel t.contents in
+      { t with value }
+  | _ -> t
+
+let executable_contents t =
+  if is_raw_ocaml t then t.contents
+  else match t.value with
+    | Raw | Cram _ -> []
+    | Toplevel { tests; pad } ->
+      List.flatten (
+        List.map (fun t ->
+            let mk s = String.make (pad+2) ' ' ^ s in
+            List.map mk t.command
+          ) tests)

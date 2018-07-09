@@ -1,7 +1,7 @@
 open Astring
 open Mdx
 
-let src = Logs.Src.create "cram"
+let src = Logs.Src.create "cram.test"
 module Log = (val Logs.src_log src : Logs.LOG)
 
 let read_lines file =

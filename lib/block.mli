@@ -18,7 +18,6 @@ val value: t -> value
 val section: t -> (int * string) option
 val header: t -> string option
 
-val cram: string list -> value
-val toplevel: string list -> value
-
 val is_raw_ocaml: t -> bool
+val executable_contents: t -> string list
+val eval: t -> t
