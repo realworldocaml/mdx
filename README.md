@@ -1,4 +1,4 @@
-## mdx -- executable markdown files
+## mdx -- executable code blocks inside markdown files
 
 `mdx` allows to execute code blocks inside markdow files.
 
