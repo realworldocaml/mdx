@@ -115,13 +115,13 @@ let classify_package ~package ~dev_repo ~archive () =
             | None -> err "dev-repo without host"
 
 let check_if_dune ~repo package =
-  Cmd.get_opam_depends ~repo (string_of_package package)
+  Exec.get_opam_depends ~repo (string_of_package package)
   >>| List.exists (fun l -> l = "jbuilder" || l = "dune")
 
 let get_opam_info ~repo ~pins package =
-  Cmd.get_opam_dev_repo ~repo (string_of_package package)
+  Exec.get_opam_dev_repo ~repo (string_of_package package)
   >>= fun dev_repo ->
-  Cmd.get_opam_archive_url ~repo (string_of_package package)
+  Exec.get_opam_archive_url ~repo (string_of_package package)
   >>= fun archive ->
   check_if_dune ~repo package
   >>= fun is_dune ->
@@ -181,7 +181,7 @@ let rec filter_duniverse_packages ~excludes pkgs =
 let calculate_duniverse ~repo file =
   load file
   >>= fun {roots; excludes; pkgs; pins; opam_switch; branch; remotes} ->
-  Cmd.run_opam_package_deps ~repo (List.map string_of_package roots)
+  Exec.run_opam_package_deps ~repo (List.map string_of_package roots)
   >>| List.map split_opam_name_and_version
   >>| List.map (fun p ->
           if List.mem p.name pins then {p with version= Some "dev"} else p )
@@ -195,7 +195,7 @@ let calculate_duniverse ~repo file =
         deps ) ;
   Logs.info (fun l ->
       l "Querying opam for the dev repos and Dune compatibility" ) ;
-  Cmd.map (fun p -> get_opam_info ~repo ~pins p) deps
+  Exec.map (fun p -> get_opam_info ~repo ~pins p) deps
   >>= fun pkgs ->
   check_packages_are_valid pkgs
   >>= fun () ->
@@ -230,13 +230,13 @@ let init_duniverse repo branch roots excludes pins opam_switch remotes () =
   let file = Fpath.(repo // Config.opam_lockfile) in
   Bos.OS.Dir.create Fpath.(repo // duniverse_dir)
   >>= fun _ ->
-  Cmd.init_local_opam_switch ~opam_switch ~repo ~remotes ()
+  Exec.init_local_opam_switch ~opam_switch ~repo ~remotes ()
   >>= fun () ->
-  Cmd.(iter (add_opam_dev_pin ~repo) pins)
+  Exec.(iter (add_opam_dev_pin ~repo) pins)
   >>= fun () ->
   find_local_opam_packages repo
   >>= fun locals ->
-  Cmd.(iter (add_opam_local_pin ~repo) locals)
+  Exec.(iter (add_opam_local_pin ~repo) locals)
   >>= fun () ->
   let roots =
     match (roots, locals) with

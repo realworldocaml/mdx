@@ -17,6 +17,7 @@
 open Types
 open Rresult
 open Astring
+open Bos
 
 let dune_repo_of_opam ?(verify_refs= true) opam =
   let dir = Opam.(opam.package.name) in
@@ -25,7 +26,7 @@ let dune_repo_of_opam ?(verify_refs= true) opam =
       let upstream = Fmt.strf "https://github.com/%s/%s.git" user repo in
       let ref = match opam.Opam.tag with None -> "master" | Some t -> t in
       if verify_refs then
-        Cmd.git_ls_remote upstream
+        Exec.git_ls_remote upstream
         >>= fun (tags, heads) ->
         if List.mem ref (heads @ tags) then Ok {Dune.dir; upstream; ref}
         else
@@ -103,7 +104,7 @@ let gen_dune_lock repo () =
   Opam.load ifile
   >>= fun opam ->
   let dune_packages = List.filter (fun o -> o.Opam.is_dune) opam.Opam.pkgs in
-  Cmd.map dune_repo_of_opam dune_packages
+  Exec.map dune_repo_of_opam dune_packages
   >>= fun repos ->
   dedup_git_remotes repos
   >>= fun repos ->
@@ -124,22 +125,22 @@ let gen_dune_upstream_branches repo () =
   let open Dune in
   load ifile
   >>= fun dune ->
-  Cmd.git_local_duniverse_remotes ~repo ()
+  Exec.git_local_duniverse_remotes ~repo ()
   >>= fun local_remotes ->
   let repos = dune.repos in
-  Cmd.iter
+  Exec.iter
     (fun r ->
       let remote = Config.duniverse_branch r.dir in
       let dir = Fpath.(Config.vendor_dir / r.dir) in
       Logs.app (fun l -> l "Pulling %a" Fpath.pp dir) ;
       let remote_cmd =
         if List.mem remote local_remotes then
-          Bos.Cmd.(v "remote" % "set-url" % remote % r.upstream)
-        else Bos.Cmd.(v "remote" % "add" % remote % r.upstream)
+          Cmd.(v "remote" % "set-url" % remote % r.upstream)
+        else Cmd.(v "remote" % "add" % remote % r.upstream)
       in
-      Cmd.run_git ~repo remote_cmd
+      Exec.run_git ~repo remote_cmd
       >>= fun () ->
-      match Cmd.run_git ~repo Bos.Cmd.(v "fetch" % "-q" % remote % r.ref) with
+      match Exec.run_git ~repo Bos.Cmd.(v "fetch" % "-q" % remote % r.ref) with
       | Error (`Msg m) ->
           Logs.err (fun l -> l "Error fetching repo %s: %s" r.upstream m) ;
           Ok ()
@@ -148,13 +149,13 @@ let gen_dune_upstream_branches repo () =
           Bos.OS.Dir.exists Fpath.(repo // dir)
           >>= function
           | false ->
-              Cmd.run_git ~repo
-                Bos.Cmd.(
+              Exec.run_git ~repo
+                Cmd.(
                   v "subtree" % "-q" % "add" % "--prefix" % p dir % remote
                   % r.ref % "--squash")
           | true ->
-              Cmd.run_git ~repo
-                Bos.Cmd.(
+              Exec.run_git ~repo
+                Cmd.(
                   v "subtree" % "-q" % "pull" % "--prefix" % p dir % remote
                   % r.ref % "--squash" % "-m"
                   % ("duniverse vendor merge of " ^ r.dir)) )
