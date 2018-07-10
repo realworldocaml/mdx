@@ -40,6 +40,10 @@ $ ls
 foo bar
 ```
 
+```ocaml
+let () = print_endline (string_of_int x)
+```
+
 ## Toplevel
 
 ```ocaml

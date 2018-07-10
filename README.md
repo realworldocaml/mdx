@@ -43,14 +43,14 @@ syntax is the following:
 Arbitrary padding with whitespace is supported, as long as it is consistent
 inside a code block.
 
-   Here is an example of a markdown file using shell scripts inside code blocks:
+    Here is an example of a markdown file using shell scripts inside code blocks:
 
-   ```sh
-   $ for i in `seq 1 3`
-   1
-   2
-   3
-   ```
+    ```sh
+    $ for i in `seq 1 10`
+    1
+    ...
+    3
+    ```
 
 #### OCaml Code
 
@@ -107,9 +107,9 @@ Cram tests can be executed and checked with `mdx test`:
     Here a cram test:
 
     ```sh
-     $ for i in `seq 1 3`; do echo $i; done
+     $ for i in `seq 1 10`; do echo $i; done
      1
-     2
+     ...
      3
      ```
 

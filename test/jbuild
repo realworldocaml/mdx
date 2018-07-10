@@ -24,7 +24,7 @@
 (rule
  ((targets (section.ml))
   (deps    (section.md))
-  (action  (with-stdout-to ${@} (run ${exe:../bin/main.exe} pp -s Hello ${<})))))
+  (action  (with-stdout-to ${@} (run ${exe:../bin/main.exe} pp ${<})))))
 
 (executable ((name section)))
 
