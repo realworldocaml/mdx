@@ -82,13 +82,24 @@ let eval t =
       { t with value }
   | _ -> t
 
+
+let ends_by_semi_semi c = match List.rev c with
+  | h::_ ->
+    let len = String.length h in
+    len > 2 && h.[len-1] = ';' && h.[len-2] = ';'
+  | _ -> false
+
 let executable_contents t =
-  if is_raw_ocaml t then t.contents
-  else match t.value with
-    | Raw | Cram _ -> []
-    | Toplevel { tests; pad } ->
-      List.flatten (
-        List.map (fun t ->
-            let mk s = String.make (pad+2) ' ' ^ s in
-            List.map mk t.command
-          ) tests)
+  let contents =
+    if is_raw_ocaml t then t.contents
+    else match t.value with
+      | Raw | Cram _ -> []
+      | Toplevel { tests; pad } ->
+        List.flatten (
+          List.map (fun t ->
+              let mk s = String.make (pad+2) ' ' ^ s in
+              List.map mk t.command
+            ) tests)
+  in
+  if contents = [] || ends_by_semi_semi contents then contents
+  else contents @ [";;"]
