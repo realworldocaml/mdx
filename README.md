@@ -22,12 +22,14 @@ syntax is the following:
   *commands* and will be run in the shell.
 - Multi-lines commands end by `\` and continue with two spaces and
   a `>` sign on the next line:
-      ```sh
+
+       ```sh
        $ <line1> \
        > <line2> \
        > <line3>
        ```
 - Commands support the heredoc syntax (`<<`):
+
        ```sh
        $ cat <<EOF \
        > hello\
