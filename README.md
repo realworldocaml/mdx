@@ -65,19 +65,19 @@ Note that nothing is displayed when the exit code is 0 (success).
 
 #### OCaml Code
 
-`mdx` interprets OCaml fragments. It understands "normal" code fragments and
-"toplevel" code fragments (starting with a `#` sign). Arbitrary (whitespace)
+`mdx` interprets OCaml fragments. It understands _normal_ code fragments and
+_toplevel_ code fragments (starting with a `#` sign). Arbitrary (whitespace)
 padding is supported, at long as it stays consistent.
 
 Toplevel fragments interleaves OCaml code and their corresponding outputs.
 
-    Here is an example of *normal* OCaml code:
+Here is an example of normal OCaml code:
 
     ```ocaml
     print_endline "42"
     ```
 
-    Here is an examples of *toplevel* OCaml code:
+Here is an examples of toplevel OCaml code:
 
     ```ocaml
     # print_endline "42"
@@ -92,14 +92,12 @@ option.
 
 For instance, given the following `file.md` document:
 
-    Print 42 on the standard output:
-
     ```ocaml
     # print_endline "42"
     42
     ```
 
-This can be compiled and executed using:
+Can be compiled and executed using:
 
 ```sh
 $ ocamlc -pp 'mdx pp' -impl file.md -o file.exe
@@ -122,9 +120,7 @@ This can be automated using `dune`:
 
 #### Cram Tests
 
-Cram tests can be executed and checked with `mdx test`:
-
-    Here a cram test:
+Cram tests can be executed and checked with `mdx test <file.md>`.
 
     ```sh
      $ for i in `seq 1 10`; do echo $i; done
@@ -133,26 +129,20 @@ Cram tests can be executed and checked with `mdx test`:
      10
      ```
 
-That file can be executed with `mdx test <file.md>`. If the output
-differs, a `<file.md>.corrected` file is generated, which means
-that integration with dune can use it (using the `diff?` stanza)
-to outline changes and to automatically promote thechange with
-`dune promote`.
+If the output is not consistent with what is expected,
+`<file.md>.corrected` is generated.
 
 #### OCaml
 
-To test OCaml code and toplevel fragments, uses `mdx test <file.md>`.
-For instance:
+To execute OCaml code and toplevel fragments, uses `mdx test <file.md>`.
 
-```ocaml
-# print_endline "42";;
-42
-```
+    ```ocaml
+    # print_endline "42";;
+    42
+    ```
 
-If the output is not consistent with what is expected: `mdx test
-<file.md>` will produce a `<file.md>.corrected`. This can be integrated
-with the `diff?` stanza of dune so that `dune promote` will automatically
-update the file if the output differs.
+If the output is not consistent with what is expected
+`<file.md>.corrected` is generated.
 
 #### Integration with Dune
 
@@ -168,13 +158,14 @@ dune's `diff?` stanza:
            (diff? ${<} ${<}.corrected)))))
 ```
 
-This allows to test `file.md` by doing:
+This allows to test the consistency of a markdown file using the normal dev
+workflow:
 
 ```
 $ jbuilder runtest
 ```
 
-This will display a diff of the output if something has changed. For instance:
+will display a diff of the output if something has changed. For instance:
 
 ```
 $ jbuilder runtest
@@ -192,7 +183,7 @@ File "file.md", line 23, characters 0-1:
  |```
 ```
 
-The changes can then be accepted using:
+And the changes can then be accepted using:
 
 ```
 $ jbuilder promote
@@ -211,7 +202,7 @@ $ jbuilder promote
 
 In that case, `ppx test <file>` will run the command but will not
 generate `<file>.corrected` if the new output differs from the one
-described in the file. Use `ppx test --non-deterministic <file>` to come
+described in the file. Use `mdx test --non-deterministic <file>` to come
 back to the default behaviour.
 
 **Non-deterministic Commands**
