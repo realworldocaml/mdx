@@ -7,5 +7,5 @@ $ exit 0
 
 ```sh
 $ exit 1
-✘ exit 1
+x-1
 ```

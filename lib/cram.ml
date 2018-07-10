@@ -26,7 +26,7 @@ let pp_command ?(pad=0) ppf (t : t) = match t.command with
     Fmt.pf ppf "%a$ %a\n" pp_pad pad Fmt.(list ~sep string) l
 
 let pp_exit_code ?(pad=0) ppf n =
-  if n <> 0 then Fmt.pf ppf "%a✘ exit %d\n" pp_pad pad n
+  if n <> 0 then Fmt.pf ppf "%ax-%d\n" pp_pad pad n
 
 let pp ?pad ppf (t : t) =
   pp_command ?pad ppf t;

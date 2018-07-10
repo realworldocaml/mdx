@@ -58,7 +58,7 @@ Here is an example of a markdown file using shell scripts inside code blocks:
     ```sh
     $ <command>
     <output>
-    ✘ exit 1
+    x-1
     ```
 
 Note that nothing is displayed when the exit code is 0 (success).
