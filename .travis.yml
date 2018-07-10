@@ -1,0 +1,11 @@
+language: c
+install: wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-docker.sh
+script: bash -ex .travis-docker.sh
+services:
+- docker
+env:
+  global:
+  - PINS="mdx:."
+  - DISTRO="debian-stable"
+  matrix:
+  - PACKAGE="mdx" OCAML_VERSION="4.06.0"
