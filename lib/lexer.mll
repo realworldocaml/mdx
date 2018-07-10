@@ -68,7 +68,7 @@ and toplevel = parse
 
 and phrase acc buf = parse
  | "\n  "       { phrase (Buffer.contents buf :: acc) (Buffer.create 8) lexbuf }
- | "\n"
+ | "\n"         { List.rev (Buffer.contents buf :: acc) }
  | ";;" eol     { List.rev ((Buffer.contents buf ^ ";;") :: acc) }
  | _ as c       { Buffer.add_char buf c; phrase acc buf lexbuf }
 

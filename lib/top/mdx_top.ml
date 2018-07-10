@@ -86,7 +86,15 @@ module Phrase = struct
     let endpos = lexbuf.Lexing.lex_curr_p in
     { doc = { lexbuf; contents}; startpos; endpos; parsed }
 
-  let parse lines = match parse lines with
+  let ends_by_semi_semi c = match List.rev c with
+    | h::_ ->
+      let len = String.length h in
+      len > 2 && h.[len-1] = ';' && h.[len-2] = ';'
+    | _ -> false
+
+  let parse lines =
+    let lines = if ends_by_semi_semi lines then lines else lines @ [";;"] in
+    match parse lines with
     | exception End_of_file -> None
     | t -> Some t
 
