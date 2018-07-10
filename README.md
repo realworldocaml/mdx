@@ -22,20 +22,20 @@ syntax is the following:
   *commands* and will be run in the shell.
 - Multi-lines commands end by `\` and continue with two spaces and
   a `>` sign on the next line:
-  ```
-  $ <line1> \
-  > <line2> \
-  > <line3>
-  ```
+     ```sh
+      $ <line1> \
+      > <line2> \
+      > <line3>
+      ```
 - Commands support the heredoc syntax (`<<`):
-  ```
-  $ cat <<EOF \
-  > hello\
-  > world\
-  > EOF
-  hello
-  world
-  ```
+      ```sh
+      $ cat <<EOF \
+      > hello\
+      > world\
+      > EOF
+      hello
+      world
+      ```
 - Lines beginning without a dollar sign are considered command *output*.
 - Command outputs can contains *ellipsis*: `...`. These will
   match any possible outputs (on zero, one or multiple lines).
@@ -51,6 +51,16 @@ inside a code block.
     ...
     3
     ```
+
+`mdx` will also consider exit codes when the following syntax is used:
+
+    ```sh
+    $ <command>
+    <output>
+    ✘ exit 1
+    ```
+
+Note that nothing is displayed when the exit code is 0 (success).
 
 #### OCaml Code
 
@@ -96,7 +106,16 @@ $ ./file.exe
 42
 ```
 
-TODO: dune integration
+This can be automated using `dune`:
+
+```
+(rule
+ ((targets (file.ml))
+  (deps    (file.md))
+  (action  (with-stdout-to ${@} (run mdx pp ${<})))))
+
+(executable ((name file)))
+```
 
 ### Tests
 
@@ -134,10 +153,81 @@ If the output is not consistent with what is expected: `mdx test
 with the `diff?` stanza of dune so that `dune promote` will automatically
 update the file if the output differs.
 
-TODO: test compilation
+#### Integration with Dune
+
+To test that the code blocks of `file.md` stays consistent, one can use
+dune's `diff?` stanza:
+
+```
+(alias
+ ((name runtest)
+  (deps (file.md))
+  (action (progn
+           (run mdx test ${<})
+           (diff? ${<} ${<}.corrected)))))
+```
+
+This allows to test `file.md` by doing:
+
+```
+$ jbuilder runtest
+```
+
+This will display a diff of the output if something has changed. For instance:
+
+```
+$ jbuilder runtest
+------ file.md
+++++++ file.md.corrected
+File "file.md", line 23, characters 0-1:
+ |
+ |```sh
+-| $ for i in `seq 1 3`; do echo $i; done
++| $ for i in `seq 1 4`; do echo $i; done
+ | 1
+ | 2
+ | 3
++| 4
+ |```
+```
+
+The changes can then be accepted using:
+
+```
+$ jbuilder promote
+```
+
+#### Non-deterministic Tests
+
+**Non-deterministic Outputs**
+
+`mdx test` supports non-deterministic outputs:
+
+    ```sh non-deterministic=output
+    $ <command>
+    <output>
+    ```
+
+In that case, `ppx test <file>` will run the command but will not
+generate `<file>.corrected` if the new output differs from the one
+described in the file. Use `ppx test --non-deterministic <file>` to come
+back to the default behaviour.
+
+**Non-deterministic Commands**
+
+`mdx test` supports non-deterministic commands:
+
+    ```ocaml non-deterministic=command
+    # Random.int 10;;
+    - : int = 5
+    ```
+
+In that case, `mdx test <file>` will *not* run the command. Use `mdx test
+--non-deterministic <file>` to come back to the default behaviour.
 
 ### Sections
 
-It is possible to test or execute only a subset of the file using sections.
-`mdx pp -s foo` will only consider the section matching the perl regular
-expression `foo`.
+It is possible to test or execute only a subset of the file using
+sections using the `--section` option (short name is `-s`). For
+instance `mdx pp -s foo` will only consider the section matching the
+perl regular expression `foo`.
