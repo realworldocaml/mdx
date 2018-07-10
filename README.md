@@ -38,36 +38,38 @@ syntax is the following:
        hello
        world
        ```
-- Lines beginning without a dollar sign are considered command *output*.
+- Lines beginning without a dollar sign are considered command *outputs*.
 - Command outputs can contains *ellipsis*: `...`. These will
   match any possible outputs (on zero, one or multiple lines).
 - Arbitrary padding with whitespace is supported, as long as it is consistent
   inside a code block.
 
-Here is an example of a markdown file using shell scripts inside code blocks:
+Here is an example of a markdown file using shell scripts inside code blocks,
+with a padding of 3:
 
     ```sh
-    $ for i in `seq 1 10`
-    1
-    ...
-    10
-    ```
+       $ for i in `seq 1 10`
+       1
+       ...
+       10
+       ```
 
-`mdx` will also consider exit codes when the following syntax is used:
+`mdx` will also consider exit codes when the syntax `x-<exit code>`is used:
 
     ```sh
-    $ <command>
-    <output>
+    $ exit 1
     x-1
     ```
 
-Note that nothing is displayed when the exit code is 0 (success).
+Note that nothing will be displayed when the exit code is 0 (e.g. in case
+of success).
 
 #### OCaml Code
 
 `mdx` interprets OCaml fragments. It understands _normal_ code fragments and
-_toplevel_ code fragments (starting with a `#` sign). Arbitrary (whitespace)
-padding is supported, at long as it stays consistent.
+_toplevel_ code fragments (starting with a `#` sign and optionally ending by
+`;;`). Arbitrary whitespace padding is supported, at long as it stays
+consistent within a code block.
 
 Toplevel fragments interleaves OCaml code and their corresponding outputs.
 
@@ -137,7 +139,7 @@ If the output is not consistent with what is expected,
 To execute OCaml code and toplevel fragments, uses `mdx test <file.md>`.
 
     ```ocaml
-    # print_endline "42";;
+    # print_endline "42"
     42
     ```
 
