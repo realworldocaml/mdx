@@ -41,17 +41,16 @@ syntax is the following:
 - Lines beginning without a dollar sign are considered command *output*.
 - Command outputs can contains *ellipsis*: `...`. These will
   match any possible outputs (on zero, one or multiple lines).
+- Arbitrary padding with whitespace is supported, as long as it is consistent
+  inside a code block.
 
-Arbitrary padding with whitespace is supported, as long as it is consistent
-inside a code block.
-
-    Here is an example of a markdown file using shell scripts inside code blocks:
+Here is an example of a markdown file using shell scripts inside code blocks:
 
     ```sh
     $ for i in `seq 1 10`
     1
     ...
-    3
+    10
     ```
 
 `mdx` will also consider exit codes when the following syntax is used:
@@ -131,7 +130,7 @@ Cram tests can be executed and checked with `mdx test`:
      $ for i in `seq 1 10`; do echo $i; done
      1
      ...
-     3
+     10
      ```
 
 That file can be executed with `mdx test <file.md>`. If the output
