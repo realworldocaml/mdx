@@ -21,6 +21,13 @@
             (run ${exe:../bin/main.exe} test ${<}))
            (diff? ${<} ${<}.corrected)))))
 
+(alias
+ ((name runtest)
+  (deps (multilines.md))
+  (action (progn
+           (run ${exe:../bin/main.exe} test ${<})
+           (diff? ${<} ${<}.corrected)))))
+
 (rule
  ((targets (section.ml))
   (deps    (section.md))

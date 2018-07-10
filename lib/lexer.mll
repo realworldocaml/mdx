@@ -16,14 +16,15 @@ let err lexbuf fmt =
       Fmt.failwith "%a: %s" pp_position lexbuf str
     ) fmt
 
-let commands s = String.cuts ~sep:"\\\n  > " s
 let line_ref = ref 1
+
+let commands s = String.cuts ~sep:"\\\n> " s
 
 }
 
 let eol = '\n' | eof
 let ws = ' ' | '\t'
-let cmd = [^'\n' '\\']+ ("\\\n  > " [^'\n' '\\']+)*
+let cram_cmd = [^'\n' '\\']+ ("\\\n> " [^'\n' '\\'] +)*
 let digit = ['0' - '9']
 
 rule text section = parse
@@ -52,15 +53,24 @@ and block = parse
   | ([^'\n'] * as str) eol { str :: block lexbuf }
 
 and cram = parse
- | "✘ exit" ws+ (digit + as str) ws* eol { `Exit (int_of_string str) }
- | "..." ws* eol                         { `Ellipsis }
- | "$ " (cmd as str) eol                 { `Command (commands str) }
- | ([^'\n']* as str) eol                 { `Output  str }
+ | eol                                   { [] }
+ | "✘ exit" ws+ (digit + as str) ws* eol { `Exit (int_of_string str) :: cram lexbuf }
+ | "..." ws* eol                         { `Ellipsis :: cram lexbuf }
+ | "$ " (cram_cmd as str) eol            { `Command (commands str) :: cram lexbuf }
+ | ([^'\n']* as str) eol                 { `Output str :: cram lexbuf }
 
 and toplevel = parse
- | "..." ws* eol                         { `Ellipsis }
- | "# " (cmd as str) eol                 { `Command (commands str) }
- | ([^'\n']* as str) eol                 { `Output  str }
+ | eol           { [] }
+ | "..." ws* eol { `Ellipsis :: toplevel lexbuf }
+ | "# "          { let c = phrase [] (Buffer.create 8) lexbuf in
+                   `Command c :: toplevel lexbuf }
+ | ([^'#'] [^'\n']* as str) eol { `Output  str :: toplevel lexbuf }
+
+and phrase acc buf = parse
+ | "\n  "       { phrase (Buffer.contents buf :: acc) (Buffer.create 8) lexbuf }
+ | "\n"
+ | ";;" eol     { List.rev ((Buffer.contents buf ^ ";;") :: acc) }
+ | _ as c       { Buffer.add_char buf c; phrase acc buf lexbuf }
 
 {
 
