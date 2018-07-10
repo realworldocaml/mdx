@@ -42,7 +42,7 @@ module Opam = struct
   type t =
     { roots: package list
     ; excludes: package list
-    ; pins: string list
+    ; pins: (string * string) list
     ; pkgs: entry list
     ; remotes: string list [@default []]
     ; branch: string [@default "master"]

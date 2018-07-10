@@ -199,11 +199,11 @@ let init_local_opam_switch ~opam_switch ~repo ~remotes () =
         OS.Cmd.(run ~err:err_null cmd)
       ) remotes
 
-let add_opam_dev_pin ~repo package =
+let add_opam_dev_pin ~repo (package,url) =
   let cmd =
     let open Cmd in
     v "opam" % "pin" %% switch_path repo % "add" % "-n" % (package ^ ".dev")
-    % "--dev"
+    % url
   in
   OS.Cmd.(run ~err:err_null cmd)
 

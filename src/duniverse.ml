@@ -15,6 +15,7 @@
  *)
 
 open Cmdliner
+open Astring
 
 let copts = ()
 
@@ -68,10 +69,18 @@ let remotes_t =
 
 let pins_t =
   let doc =
-    "Packages to pin to their master branches for the latest opam metadata \
-     and source. Repeat this flag multiple times for more than one exclusion."
+    "Packages to pin for the latest opam metadata and source. You can separate the package name and a url via a comma to specify a manual url (e.g. $(i,mirage,git://github.com/avsm/mirage)).  If a manual is not specified then the $(i,--dev) pin is used.  ppRepeat this flag multiple times for more than one exclusion."
   in
-  Arg.(value & opt_all string [] & info ["pin"; "p"] ~docv:"PIN" ~doc)
+  let fin s =
+    match String.cut ~sep:"," s with
+    | None -> Ok (s, "--dev")
+    | Some x -> Ok x in
+  let fout ppf (a,b) =
+    match b with
+    | "--dev" -> Fmt.pf ppf "%s" a
+    | v -> Fmt.pf ppf "%s,%s" a v in
+  let t = Arg.conv ~docv:"PIN" (fin,fout) in
+  Arg.(value & opt_all t [] & info ["pin"; "p"] ~docv:"PIN" ~doc)
 
 let ocaml_switch_t =
   let doc =
