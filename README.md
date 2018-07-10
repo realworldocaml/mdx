@@ -11,6 +11,13 @@ and to practice "literate programming" using markdown and OCaml.
 The test mode allows to ensure that shell scripts and OCaml fragments
 in the documentation always stays up-to-date.
 
+`mdx` is released as a single binary (called `mdx`) and
+can be installed using opam:
+
+```sh
+$ opam install mdx
+```
+
 ### Supported Extensions
 
 #### Shell Scripts
@@ -52,7 +59,7 @@ with a padding of 3:
        1
        ...
        10
-       ```
+    ```
 
 `mdx` will also consider exit codes when the syntax `x-<exit code>`is used:
 
