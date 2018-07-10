@@ -20,3 +20,15 @@
            (setenv MDX ${exe:../bin/main.exe}
             (run ${exe:../bin/main.exe} test ${<}))
            (diff? ${<} ${<}.corrected)))))
+
+(rule
+ ((targets (section.ml))
+  (deps    (section.md))
+  (action  (with-stdout-to ${@} (run ${exe:../bin/main.exe} pp -s Hello ${<})))))
+
+(executable ((name section)))
+
+(alias
+ ((name runtest)
+  (deps (section.exe))
+  (action (run ${<}))))
