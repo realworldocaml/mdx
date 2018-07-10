@@ -1,8 +1,16 @@
+let src = Logs.Src.create "mdx"
+module Log = (val Logs.src_log src : Logs.LOG)
+
 open Astring
 open Misc
 open S
 
 type t = cram
+
+let dump_line ppf = function
+  | #output as o -> Output.dump ppf o
+  | `Exit i      -> Fmt.pf ppf "`Exit %d" i
+  | `Command c   -> Fmt.pf ppf "`Command %a" Fmt.(Dump.list dump_string) c
 
 let dump ppf (t : t) =
   Fmt.pf ppf
@@ -35,13 +43,14 @@ let pad_of_lines = function
 let of_lines t =
   let pad = pad_of_lines t in
   let unpad line =
-    if String.length line < pad then Fmt.failwith "invalide padding: %S" line
+    if String.length line < pad then Fmt.failwith "invalid padding: %S" line
     else String.with_index_range line ~first:pad
   in
-  let lines = List.rev_map unpad t in
-  let lines =
-    List.rev_map (fun s -> Lexer.cram (Lexing.from_string s)) lines
-  in
+  let lines = List.map unpad t in
+  let lines = Lexer.cram (Lexing.from_string (String.concat ~sep:"\n" lines)) in
+  Log.debug (fun l ->
+      l "Cram.of_lines (pad=%d) %a" pad Fmt.(Dump.list dump_line) lines
+    );
   let mk command output exit_code =
     { command; output = List.rev output; exit_code }
   in
@@ -54,7 +63,7 @@ let of_lines t =
   in
   match lines with
   | `Command cmd :: t -> pad, aux cmd [] [] t
-  | _ -> Fmt.failwith "invalid cram block: %a" Fmt.(Dump.list string) t
+  | _ -> Fmt.failwith "invalid cram block: %a" Fmt.(Dump.list dump_line) lines
 
 let exit_code t = t.exit_code
 
