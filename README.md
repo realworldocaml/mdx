@@ -61,11 +61,11 @@ with a padding of 3:
        10
     ```
 
-`mdx` will also consider exit codes when the syntax `x-<exit code>`is used:
+`mdx` will also consider exit codes when the syntax `[<exit code>]`is used:
 
     ```sh
     $ exit 1
-    x-1
+    [1]
     ```
 
 Note that nothing will be displayed when the exit code is 0 (e.g. in case
