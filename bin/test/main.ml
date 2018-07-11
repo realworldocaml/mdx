@@ -4,6 +4,13 @@ open Mdx
 let src = Logs.Src.create "cram.test"
 module Log = (val Logs.src_log src : Logs.LOG)
 
+module Linked = struct
+  include (Topdirs : sig end)
+  include (Ephemeron : sig end)
+  include (Uchar : sig end)
+  include (Condition : sig end)
+end
+
 let read_lines file =
   let ic = open_in file in
   let r = ref [] in
@@ -70,10 +77,12 @@ let init_toplevel () =
   Toploop.toplevel_env := Compmisc.initial_env ();
   Sys.interactive := false
 
-let run_toplevel_tests ppf pad tests t =
+let run_toplevel_tests ~verbose ~silent ~verbose_findlib ppf pad tests t =
   Block.pp_header ppf t;
   List.iter (fun test ->
-      let lines = Mdx_top.run (Toplevel.command test) in
+      let lines =
+        Mdx_top.run ~verbose ~silent ~verbose_findlib (Toplevel.command test)
+      in
       let output =
         let output = List.map (fun x -> `Output x) lines in
         if Output.equal output test.output then test.output
@@ -89,8 +98,11 @@ let run_toplevel_tests ppf pad tests t =
     ) tests;
   Block.pp_footer ppf ()
 
+let verbose = ref true
+let silent = ref false
 
 let run () non_deterministic expect_test section =
+  let verbose_findlib = false in
   let section = match section with
     | None   -> None
     | Some p -> Some (Re.Perl.compile_pat p)
@@ -127,11 +139,48 @@ let run () non_deterministic expect_test section =
               run_cram_tests ppf temp_file pad tests t
             (* Top-level tests. *)
             | true, _, _, Toplevel { tests; pad } ->
-              run_toplevel_tests ppf pad tests t
+              run_toplevel_tests ~verbose ~silent ~verbose_findlib ppf pad tests t
         ) items;
       Format.pp_print_flush ppf ();
       Buffer.contents buf);
   0
+
+(**** Prepare the toplevel ******)
+
+(* BLACK MAGIC: patch field of a module at runtime *)
+let monkey_patch (type a) (type b) (m: a) (prj: unit -> b) (v : b) =
+  let m = Obj.repr m in
+  let v = Obj.repr v in
+  let v' = Obj.repr (prj ()) in
+  if v' == v then () else (
+    try
+      for i = 0 to Obj.size m - 1 do
+        if Obj.field m i == v' then (
+          Obj.set_field m i v;
+          if Obj.repr (prj ()) == v then raise Exit;
+          Obj.set_field m i v';
+        )
+      done;
+      invalid_arg "monkey_patch: field not found"
+    with Exit -> ()
+  )
+
+let () =
+  let module M = struct
+    module type T = module type of Env
+    let field () = Env.without_cmis
+    let replacement f x = f x
+    let () = monkey_patch (module Env : T) field replacement
+  end in
+  Mdx_top.init ();
+  Mdx_top.verbose verbose;
+  Mdx_top.verbose silent;
+  Topfind.don't_load_deeply [
+    "unix"; "findlib.top"; "findlib.internal"; "compiler-libs.toplevel"
+  ];
+  Topfind.add_predicates ["byte"]
+
+(**** Cmdliner ****)
 
 open Cmdliner
 

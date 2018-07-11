@@ -21,4 +21,5 @@ depends: [
   "cmdliner"
   "re"
   "ppx_tools"
+  "lwt" {test}
 ]

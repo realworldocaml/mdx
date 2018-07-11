@@ -1,6 +1,4 @@
 (library
  ((name        mdx_top)
   (public_name mdx.top)
-  (modes       (byte))  ;; no native code toplevel libs yet
-  (libraries   (unix compiler-libs.toplevel findlib.top
-                threads mdx ppx_tools compiler-libs))))
+  (libraries   (unix mdx ppx_tools compiler-libs))))
