@@ -26,6 +26,7 @@ let base_packages =
   ; "oasis"
   ; "ocamlify"
   ; "uchar"
+  ; "ocplib-endian"
   ; "ocaml"
   ; "ocaml-base-compiler"
   ; "ocaml-variants" ]
