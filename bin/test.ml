@@ -1,3 +1,6 @@
+let src = Logs.Src.create "cram.test"
+module Log = (val Logs.src_log src : Logs.LOG)
+
 let (/) x y = match x with
   | "." -> y
   | _   -> Filename.concat x y
@@ -9,8 +12,10 @@ let run () _ _ _ =
     | "main.exe" -> dir / "test" / "main.exe"
     | x -> dir / x ^ "-test"
   in
-  Sys.argv.(0) <- cmd;
-  Unix.execvp cmd Sys.argv
+  let argv = Array.sub Sys.argv 1 (Array.length Sys.argv - 1) in
+  argv.(0) <- cmd;
+  Log.debug (fun l -> l "executing %a" Fmt.(Dump.array string) argv);
+  Unix.execvp cmd argv
 
 open Cmdliner
 

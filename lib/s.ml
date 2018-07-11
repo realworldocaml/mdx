@@ -9,6 +9,7 @@ type cram = {
 }
 
 type toplevel = {
+  line   : int;
   command: string list;
   output : output list;
 }
@@ -20,6 +21,7 @@ type block_value =
 
 type block = {
   line    : int;
+  file    : string;
   section : section option;
   labels  : string list;
   header  : string option;

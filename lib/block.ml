@@ -16,11 +16,11 @@ let dump_value ppf = function
     Fmt.pf ppf "@[Toplevel { pad=%d;@ tests=%a}@]"
       pad Fmt.(Dump.list Toplevel.dump) tests
 
-let dump ppf { line; section; labels; header; contents; value } =
+let dump ppf { file; line; section; labels; header; contents; value } =
   Fmt.pf ppf
-    "{@[line: %d;@ section: %a;@ labels: %a;@ header: %a;@ contents: %a;\
-     @ value: %a@]}"
-    line
+    "{@[file: %s;@ line: %d;@ section: %a;@ labels: %a;@ header: %a;@
+        contents: %a;@ value: %a@]}"
+    file line
     Fmt.(Dump.option dump_section) section
     dump_strings labels
     Fmt.(Dump.option string) header
@@ -66,8 +66,8 @@ let is_raw_ocaml b =
     String.length h > 1 && h.[0] <> '#'
   | _ -> false
 
-let toplevel lines =
-  let pad, tests = Toplevel.of_lines lines in
+let toplevel ~file ~line lines =
+  let pad, tests = Toplevel.of_lines ~line ~file lines in
   Toplevel { pad; tests }
 
 let eval t =
@@ -78,7 +78,7 @@ let eval t =
   | Some "ocaml" ->
     if is_raw_ocaml t then t
     else
-      let value = toplevel t.contents in
+      let value = toplevel ~file:t.file ~line:t.line t.contents in
       { t with value }
   | _ -> t
 
@@ -89,16 +89,20 @@ let ends_by_semi_semi c = match List.rev c with
     len > 2 && h.[len-1] = ';' && h.[len-2] = ';'
   | _ -> false
 
-let executable_contents t =
+let executable_contents b =
   let contents =
-    if is_raw_ocaml t then t.contents
-    else match t.value with
+    if is_raw_ocaml b then b.contents
+    else match b.value with
       | Raw | Cram _ -> []
       | Toplevel { tests; pad } ->
         List.flatten (
-          List.map (fun t ->
-              let mk s = String.make (pad+2) ' ' ^ s in
-              List.map mk t.command
+          List.map (fun (t:toplevel) ->
+              match t.command with
+              | [] -> []
+              | cs ->
+                let mk s = String.make (pad+2) ' ' ^ s in
+                Fmt.strf "#%d %S" t.line b.file ::
+                List.map mk cs
             ) tests)
   in
   if contents = [] || ends_by_semi_semi contents then contents

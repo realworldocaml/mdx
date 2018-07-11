@@ -18,6 +18,10 @@ let err lexbuf fmt =
 
 let line_ref = ref 1
 
+let newline lexbuf =
+  Lexing.new_line lexbuf;
+  incr line_ref
+
 let commands s = String.cuts ~sep:"\\\n> " s
 
 }
@@ -31,21 +35,22 @@ rule text section = parse
   | eof { [] }
   | ("#"+ as n) " " ([^'\n']* as str) eol
       { let section = (String.length n, str) in
-        incr line_ref;
+        newline lexbuf;
         Section section :: text (Some section) lexbuf }
   | "```" ([^' ' '\n']* as h) ws* ([^'\n']* as l) eol
       { let header = if h = "" then None else Some h in
         let contents = block lexbuf in
         let labels = String.cuts ~empty:false ~sep:"," l in
         let value = Raw in
-        incr line_ref;
+        let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
+        newline lexbuf;
         let line = !line_ref in
-        List.iter (fun _ -> incr line_ref) contents;
-        incr line_ref;
-        Block { line; section; header; contents; labels; value }
+        List.iter (fun _ -> newline lexbuf) contents;
+        newline lexbuf;
+        Block { file; line; section; header; contents; labels; value }
         :: text section lexbuf }
   | ([^'\n']* as str) eol
-      { incr line_ref;
+      { newline lexbuf;
         Text str :: text section lexbuf }
 
 and block = parse
@@ -60,20 +65,34 @@ and cram = parse
  | ([^'\n']* as str) eol           { `Output str :: cram lexbuf }
 
 and toplevel = parse
- | eol           { [] }
+ | eof           { [] }
  | "..." ws* eol { `Ellipsis :: toplevel lexbuf }
  | "# "          { let c = phrase [] (Buffer.create 8) lexbuf in
                    `Command c :: toplevel lexbuf }
  | ([^'#'] [^'\n']* as str) eol { `Output  str :: toplevel lexbuf }
 
 and phrase acc buf = parse
- | "\n  "       { phrase (Buffer.contents buf :: acc) (Buffer.create 8) lexbuf }
- | "\n"         { List.rev (Buffer.contents buf :: acc) }
- | ";;" eol     { List.rev ((Buffer.contents buf ^ ";;") :: acc) }
- | _ as c       { Buffer.add_char buf c; phrase acc buf lexbuf }
+  | "\n  "
+      { Lexing.new_line lexbuf;
+        phrase (Buffer.contents buf :: acc) (Buffer.create 8) lexbuf }
+  | eol
+      { Lexing.new_line lexbuf;
+        List.rev (Buffer.contents buf :: acc) }
+ | ";;" eol { List.rev ((Buffer.contents buf ^ ";;") :: acc) }
+ | _ as c   { Buffer.add_char buf c; phrase acc buf lexbuf }
 
 {
 
-let token lexbuf = text None lexbuf
+let token lexbuf =
+  try text None lexbuf
+  with Failure _ -> err lexbuf "incomplete code block"
+
+let toplevel lexbuf =
+  try toplevel lexbuf
+  with Failure _ -> err lexbuf "incomplete toplevel"
+
+let cram lexbuf =
+  try cram lexbuf
+  with Failure _ -> err lexbuf "incomplete cram test"
 
 }
