@@ -1,69 +1,63 @@
 (alias
  ((name runtest)
-  (deps (section.md section.md.expected ../bin/test/main.exe))
+  (deps (section.md section.md.expected (package mdx)))
   (action (progn
-           (run ${exe:../bin/main.exe} test -s Testing ${<})
+           (run mdx test -s Testing ${<})
            (diff? ${<}.expected ${<}.corrected)))))
 
 (alias
  ((name runtest)
-  (deps (pp.md section.md ../bin/test/main.exe))
+  (deps (pp.md section.md (package mdx)))
   (action (progn
-           (setenv MDX ${exe:../bin/main.exe}
-            (run ${exe:../bin/main.exe} test ${<}))
+           (run mdx test ${<})
            (diff? ${<} ${<}.corrected)))))
 
 (alias
  ((name runtest)
-  (deps (mlt.md ../bin/test/main.exe))
+  (deps (mlt.md (package mdx)))
   (action (progn
-           (setenv MDX ${exe:../bin/main.exe}
-            (run ${exe:../bin/main.exe} test ${<}))
+           (run mdx test ${<})
            (diff? ${<} ${<}.corrected)))))
 
 (alias
  ((name runtest)
-  (deps (semisemi.md ../bin/test/main.exe))
+  (deps (semisemi.md (package mdx)))
   (action (progn
-           (setenv MDX ${exe:../bin/main.exe}
-            (run ${exe:../bin/main.exe} test ${<}))
+           (run mdx test ${<})
            (diff? ${<} ${<}.corrected)))))
 
 (alias
  ((name runtest)
-  (deps (exit.md ../bin/test/main.exe))
+  (deps (exit.md (package mdx)))
   (action (progn
-           (setenv MDX ${exe:../bin/main.exe}
-            (run ${exe:../bin/main.exe} test ${<}))
+           (run mdx test ${<})
            (diff? ${<} ${<}.corrected)))))
 
 (alias
  ((name runtest)
-  (deps (padding.md ../bin/test/main.exe))
+  (deps (padding.md (package mdx)))
   (action (progn
-           (setenv MDX ${exe:../bin/main.exe}
-            (run ${exe:../bin/main.exe} test ${<}))
+           (run mdx test ${<})
            (diff? ${<} ${<}.corrected)))))
 
 (alias
  ((name runtest)
-  (deps (lines.md ../bin/test/main.exe))
+  (deps (multilines.md (package mdx)))
   (action (progn
-           (setenv MDX ${exe:../bin/main.exe}
-            (run ${exe:../bin/main.exe} test ${<}))
+           (run mdx test ${<})
            (diff? ${<} ${<}.corrected)))))
 
 (alias
  ((name runtest)
-  (deps (multilines.md ../bin/test/main.exe))
+  (deps (lines.md (package mdx)))
   (action (progn
-           (run ${exe:../bin/main.exe} test ${<})
+           (run mdx test ${<})
            (diff? ${<} ${<}.corrected)))))
 
 (rule
  ((targets (section.ml))
-  (deps    (section.md))
-  (action  (with-stdout-to ${@} (run ${exe:../bin/main.exe} pp ${<})))))
+  (deps    (section.md (package mdx)))
+  (action  (with-stdout-to ${@} (run mdx pp ${<})))))
 
 (executable ((name section)))
 

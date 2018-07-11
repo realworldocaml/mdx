@@ -31,7 +31,7 @@ Error: This expression has type string but an expression was expected of type
 Let's go recursive:
 
 ```sh
-$ ocamlc -pp "$MDX pp" -impl lines.md
+$ ocamlc -pp "mdx pp" -impl lines.md
 File "lines.md", line 25, characters 6-11:
 Error: This expression has type string but an expression was expected of type
          int
