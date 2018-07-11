@@ -1,13 +1,13 @@
 (alias
  ((name runtest)
-  (deps (section.md section.md.expected))
+  (deps (section.md section.md.expected ../bin/test/main.exe))
   (action (progn
            (run ${exe:../bin/main.exe} test -s Testing ${<})
            (diff? ${<}.expected ${<}.corrected)))))
 
 (alias
  ((name runtest)
-  (deps (pp.md section.md))
+  (deps (pp.md section.md ../bin/test/main.exe))
   (action (progn
            (setenv MDX ${exe:../bin/main.exe}
             (run ${exe:../bin/main.exe} test ${<}))
@@ -15,7 +15,7 @@
 
 (alias
  ((name runtest)
-  (deps (mlt.md))
+  (deps (mlt.md ../bin/test/main.exe))
   (action (progn
            (setenv MDX ${exe:../bin/main.exe}
             (run ${exe:../bin/main.exe} test ${<}))
@@ -23,7 +23,7 @@
 
 (alias
  ((name runtest)
-  (deps (semisemi.md))
+  (deps (semisemi.md ../bin/test/main.exe))
   (action (progn
            (setenv MDX ${exe:../bin/main.exe}
             (run ${exe:../bin/main.exe} test ${<}))
@@ -31,7 +31,7 @@
 
 (alias
  ((name runtest)
-  (deps (exit.md))
+  (deps (exit.md ../bin/test/main.exe))
   (action (progn
            (setenv MDX ${exe:../bin/main.exe}
             (run ${exe:../bin/main.exe} test ${<}))
@@ -39,7 +39,7 @@
 
 (alias
  ((name runtest)
-  (deps (padding.md))
+  (deps (padding.md ../bin/test/main.exe))
   (action (progn
            (setenv MDX ${exe:../bin/main.exe}
             (run ${exe:../bin/main.exe} test ${<}))
@@ -47,7 +47,7 @@
 
 (alias
  ((name runtest)
-  (deps (multilines.md))
+  (deps (multilines.md ../bin/test/main.exe))
   (action (progn
            (run ${exe:../bin/main.exe} test ${<})
            (diff? ${<} ${<}.corrected)))))
