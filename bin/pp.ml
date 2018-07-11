@@ -21,7 +21,10 @@ let run () file section =
           Log.debug (fun l -> l "pp: %a" Mdx.Block.dump b);
           let pp_lines = Fmt.(list ~sep:(unit "\n") string) in
           let contents = Mdx.Block.executable_contents b in
-          Fmt.pr "#%d %S\n%a\n" b.line file pp_lines contents
+          match b.value with
+          | Raw        -> Fmt.pr "#%d %S\n%a\n" b.line file pp_lines contents
+          | Toplevel _ -> Fmt.pr "%a\n" pp_lines contents
+          | _          -> ()
       ) t;
     0
 

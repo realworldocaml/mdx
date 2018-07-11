@@ -14,10 +14,11 @@ let dump_line ppf = function
 let command (t : toplevel) = t.command
 let output (t : toplevel) = t.output
 
-let dump ppf (t : t) =
-  Fmt.pf ppf "@[{command=%a;@ output=%a}@]"
-    Fmt.(Dump.list dump_string) t.command
-    Fmt.(Dump.list Output.dump) t.output
+let dump ppf ({ line; command; output } : t) =
+  Fmt.pf ppf "@[{line=%d;@ command=%a;@ output=%a}@]"
+    line
+    Fmt.(Dump.list dump_string) command
+    Fmt.(Dump.list Output.dump) output
 
 let pp_command ?(pad=0) ppf (t : t) = match t.command with
   | [] -> ()
@@ -29,7 +30,7 @@ let pp ?pad ppf (t : t) =
   pp_command ?pad ppf t;
   pp_lines (Output.pp ?pad) ppf t.output
 
-let of_lines t =
+let of_lines ~line t =
   let pad = pad_of_lines t in
   let unpad line =
     if String.length line < pad then Fmt.failwith "invalide padding: %S" line
@@ -41,13 +42,15 @@ let of_lines t =
   Log.debug (fun l ->
       l "Toplevel.of_lines (pad=%d) %a" pad Fmt.(Dump.list dump_line) lines
     );
-  let mk command output = { command; output = List.rev output } in
-  let rec aux command output acc = function
-    | []                  -> List.rev (mk command output :: acc)
-    | `Ellipsis as o :: t -> aux command (o :: output) acc t
-    | `Command cmd   :: t -> aux cmd [] (mk command output :: acc) t
-    | `Output _ as o :: t -> aux command (o :: output) acc t
+  let mk command line output = { command; line; output = List.rev output } in
+  let rec aux command line output acc = function
+    | []                  -> List.rev (mk command line output :: acc)
+    | `Ellipsis as o :: t -> aux command line (o :: output) acc t
+    | `Output _ as o :: t -> aux command line (o :: output) acc t
+    | `Command cmd   :: t ->
+      let line' = line + List.length cmd + List.length output in
+      aux cmd line' [] (mk command line output :: acc) t
   in
   match lines with
-  | `Command cmd :: t -> pad, aux cmd [] [] t
+  | `Command cmd :: t -> pad, aux cmd line [] [] t
   | _ -> Fmt.failwith "invalid toplevel block: %a" Fmt.(Dump.list string) t

@@ -38,11 +38,12 @@ rule text section = parse
         let contents = block lexbuf in
         let labels = String.cuts ~empty:false ~sep:"," l in
         let value = Raw in
+        let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
         incr line_ref;
         let line = !line_ref in
         List.iter (fun _ -> incr line_ref) contents;
         incr line_ref;
-        Block { line; section; header; contents; labels; value }
+        Block { file; line; section; header; contents; labels; value }
         :: text section lexbuf }
   | ([^'\n']* as str) eol
       { incr line_ref;
