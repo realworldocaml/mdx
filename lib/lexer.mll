@@ -53,11 +53,11 @@ and block = parse
   | ([^'\n'] * as str) eol { str :: block lexbuf }
 
 and cram = parse
- | eol                          { [] }
- | "x-" (digit+ as str) ws* eol { `Exit (int_of_string str) :: cram lexbuf }
- | "..." ws* eol                { `Ellipsis :: cram lexbuf }
- | "$ " (cram_cmd as str) eol   { `Command (commands str) :: cram lexbuf }
- | ([^'\n']* as str) eol        { `Output str :: cram lexbuf }
+ | eol                             { [] }
+ | "[" (digit+ as str) "]" ws* eol { `Exit (int_of_string str) :: cram lexbuf }
+ | "..." ws* eol                   { `Ellipsis :: cram lexbuf }
+ | "$ " (cram_cmd as str) eol      { `Command (commands str) :: cram lexbuf }
+ | ([^'\n']* as str) eol           { `Output str :: cram lexbuf }
 
 and toplevel = parse
  | eol           { [] }
