@@ -136,6 +136,12 @@ let run () non_deterministic expect_test section =
 open Cmdliner
 
 let cmd =
+  let exits = Term.default_exits in
+  let man = [] in
   let doc = "Test markdown files." in
   Term.(pure run $ Cli.setup $ Cli.non_deterministic $ Cli.file $ Cli.section),
-  Term.info "test" ~doc
+  Term.info "mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man
+
+let main () = Term.(exit_status @@ eval cmd)
+
+let () = main ()
