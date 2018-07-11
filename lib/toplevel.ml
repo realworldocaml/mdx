@@ -30,7 +30,19 @@ let pp ?pad ppf (t : t) =
   pp_command ?pad ppf t;
   pp_lines (Output.pp ?pad) ppf t.output
 
-let of_lines ~line t =
+let lexbuf ~file ~line s =
+  let lexbuf = Lexing.from_string s in
+  let start =
+    {lexbuf.Lexing.lex_start_p with pos_fname = file; pos_lnum = line}
+  in
+  let curr =
+    {lexbuf.Lexing.lex_curr_p with pos_fname = file; pos_lnum = line}
+  in
+  lexbuf.lex_start_p <- start;
+  lexbuf.lex_curr_p <- curr;
+  lexbuf
+
+let of_lines ~file ~line t =
   let pad = pad_of_lines t in
   let unpad line =
     if String.length line < pad then Fmt.failwith "invalide padding: %S" line
@@ -38,7 +50,7 @@ let of_lines ~line t =
   in
   let lines = List.map unpad t in
   let lines = String.concat ~sep:"\n" lines in
-  let lines = Lexer.toplevel (Lexing.from_string lines) in
+  let lines = Lexer.toplevel (lexbuf ~file ~line lines) in
   Log.debug (fun l ->
       l "Toplevel.of_lines (pad=%d) %a" pad Fmt.(Dump.list dump_line) lines
     );
@@ -48,7 +60,7 @@ let of_lines ~line t =
     | `Ellipsis as o :: t -> aux command line (o :: output) acc t
     | `Output _ as o :: t -> aux command line (o :: output) acc t
     | `Command cmd   :: t ->
-      let line' = line + List.length cmd + List.length output in
+      let line' = line + List.length command + List.length output in
       aux cmd line' [] (mk command line output :: acc) t
   in
   match lines with

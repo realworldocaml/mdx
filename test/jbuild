@@ -47,6 +47,14 @@
 
 (alias
  ((name runtest)
+  (deps (lines.md ../bin/test/main.exe))
+  (action (progn
+           (setenv MDX ${exe:../bin/main.exe}
+            (run ${exe:../bin/main.exe} test ${<}))
+           (diff? ${<} ${<}.corrected)))))
+
+(alias
+ ((name runtest)
   (deps (multilines.md ../bin/test/main.exe))
   (action (progn
            (run ${exe:../bin/main.exe} test ${<})

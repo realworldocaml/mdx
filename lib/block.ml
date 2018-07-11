@@ -66,8 +66,8 @@ let is_raw_ocaml b =
     String.length h > 1 && h.[0] <> '#'
   | _ -> false
 
-let toplevel ~line lines =
-  let pad, tests = Toplevel.of_lines ~line lines in
+let toplevel ~file ~line lines =
+  let pad, tests = Toplevel.of_lines ~line ~file lines in
   Toplevel { pad; tests }
 
 let eval t =
@@ -78,7 +78,7 @@ let eval t =
   | Some "ocaml" ->
     if is_raw_ocaml t then t
     else
-      let value = toplevel ~line:t.line t.contents in
+      let value = toplevel ~file:t.file ~line:t.line t.contents in
       { t with value }
   | _ -> t
 
