@@ -1,9 +1,5 @@
-val run:
-  verbose:bool ref ->
-  silent:bool ref ->
-  ?verbose_findlib:bool ->
-  string list -> string list
+type t
 
-val init: unit -> unit
-val verbose: bool ref -> unit
-val silent: bool ref -> unit
+val init: verbose:bool -> silent:bool -> verbose_findlib:bool -> unit -> t
+
+val run: t -> string list -> string list

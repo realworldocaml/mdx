@@ -184,7 +184,13 @@ module Async_autorun = struct
     | phrase -> phrase
 end
 
-let toplevel_exec_phrase ~verbose ppf p = match Phrase.result p with
+type t = {
+  mutable verbose: bool;
+  mutable silent : bool;
+  verbose_findlib: bool;
+}
+
+let toplevel_exec_phrase t ppf p = match Phrase.result p with
   | Error exn -> raise exn
   | Ok phrase ->
     Warnings.reset_fatal ();
@@ -201,7 +207,7 @@ let toplevel_exec_phrase ~verbose ppf p = match Phrase.result p with
     if !Clflags.dump_parsetree then Printast. top_phrase ppf phrase;
     if !Clflags.dump_source    then Pprintast.top_phrase ppf phrase;
     Env.reset_cache_toplevel ();
-    Toploop.execute_phrase !verbose ppf phrase
+    Toploop.execute_phrase t.verbose ppf phrase
 
 type var_and_value = V : 'a ref * 'a -> var_and_value
 
@@ -258,7 +264,7 @@ let trim_line str =
 let rtrim l = List.rev (ltrim (List.rev l))
 let trim l = ltrim (rtrim (List.map trim_line l))
 
-let run ~verbose ~silent ?(verbose_findlib=false) cmd =
+let run t cmd =
   let buf = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buf in
   let exec_code ~capture phrase =
@@ -279,7 +285,7 @@ let run ~verbose ~silent ?(verbose_findlib=false) cmd =
     in
     Oprint.out_phrase := out_phrase;
     let restore () = Oprint.out_phrase := out_phrase' in
-    begin match toplevel_exec_phrase ~verbose ppf phrase with
+    begin match toplevel_exec_phrase t ppf phrase with
       | (_ : bool) -> restore ()
       | exception exn ->
         restore ();
@@ -287,7 +293,7 @@ let run ~verbose ~silent ?(verbose_findlib=false) cmd =
     end;
     Format.pp_print_flush ppf ();
     capture ();
-    if !silent || (not verbose_findlib && Phrase.is_findlib_directive phrase)
+    if t.silent || (not t.verbose_findlib && Phrase.is_findlib_directive phrase)
     then []
     else trim (List.rev !lines)
   in
@@ -447,16 +453,17 @@ let show () =
              from any of the categories below.";
     }
 
-let verbose v =
+let verbose t =
   Toploop.add_directive "verbose"
-    (Toploop.Directive_bool (fun x -> v := x))
+    (Toploop.Directive_bool (fun x -> t.verbose <- x))
     { section = section_env ; doc = "Be verbose" }
 
-let silent s = Toploop.add_directive "silent"
-    (Toploop.Directive_bool (fun x -> s := x))
+let silent t = Toploop.add_directive "silent"
+    (Toploop.Directive_bool (fun x -> t.silent <- x))
     { section = section_env; doc = "Be silent" }
 
-let init () =
+let init ~verbose:v ~silent:s ~verbose_findlib () =
+  let t = { verbose=v; silent=s; verbose_findlib } in
   show ();
   show_val ();
   show_type ();
@@ -464,4 +471,7 @@ let init () =
   show_module_type ();
   show_exception ();
   show_class ();
-  show_class_type ()
+  show_class_type ();
+  verbose t;
+  silent t;
+  t
