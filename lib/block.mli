@@ -42,7 +42,7 @@ val dump: t Fmt.t
 (** [dump] is the printer for dumping code blocks. Useful for debugging. *)
 
 val pp_header: t Fmt.t
-(** pp_header] pretty-prints block headers. *)
+(** [pp_header] pretty-prints block headers. *)
 
 val pp_contents: t Fmt.t
 (** [pp_contents] pretty-prints block contents. *)
@@ -75,6 +75,8 @@ val executable_contents: t -> string list
 val is_raw_ocaml: t -> bool
 (** [is_raw_ocaml] is true iff [t] is a raw block and [t]'s header is
    ["ocaml"]. *)
+
+(** {2 Evaluation} *)
 
 val eval: t -> t
 (** [eval t] is the same as [t] but with it's value replaced by either
