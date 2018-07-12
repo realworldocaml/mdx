@@ -5,3 +5,6 @@ all:
 
 test:
 	jbuilder runtest --dev --force
+
+clean:
+	jbuilder clean

@@ -109,176 +109,7 @@ module Phrase = struct
 
 end
 
-module Linked = struct
-  include (Topdirs : sig end)
-  include (Ephemeron : sig end)
-  include (Uchar : sig end)
-  include (Condition : sig end)
-end
-
 open Parsetree
-
-let show_prim to_sig ppf lid =
-  let env = !Toploop.toplevel_env in
-  let loc = Location.none in
-  try
-    let s =
-      match lid with
-      | Longident.Lident s -> s
-      | Longident.Ldot (_,s) -> s
-      | Longident.Lapply _ ->
-          Format.fprintf ppf "Invalid path %a@." Printtyp.longident lid;
-          raise Exit
-    in
-    let id = Ident.create_persistent s in
-    let sg = to_sig env loc id lid in
-    Printtyp.wrap_printing_env env (fun () ->
-        Format.fprintf ppf "@[%a@]@." Printtyp.signature sg
-      )
-  with
-  | Not_found -> Format.fprintf ppf "@[Unknown element.@]@."
-  | Exit -> ()
-
-
-let all_show_funs = ref []
-
-let section_env = "Environment queries"
-
-let std_out = lazy (Format.formatter_of_out_channel stdout)
-
-let reg_show_prim name to_sig doc =
-  let lazy ppf = std_out in
-  all_show_funs := to_sig :: !all_show_funs;
-  Toploop.add_directive
-    name
-    (Directive_ident (show_prim to_sig ppf))
-    { section = section_env; doc }
-
-let () =
-  reg_show_prim "show_val"
-    (fun env loc id lid ->
-       let _path, desc = Typetexp.find_value env loc lid in
-       [ Sig_value (id, desc) ]
-    )
-    "Print the signature of the corresponding value."
-
-let () =
-  reg_show_prim "show_type"
-    (fun env loc id lid ->
-       let _path, desc = Typetexp.find_type env loc lid in
-       [ Sig_type (id, desc, Trec_not) ]
-    )
-    "Print the signature of the corresponding type constructor."
-
-let () =
-  reg_show_prim "show_exception"
-    (fun env loc id lid ->
-       let desc = Typetexp.find_constructor env loc lid in
-       if not (Ctype.equal env true [desc.cstr_res] [Predef.type_exn]) then
-         raise Not_found;
-       let ret_type =
-         if desc.cstr_generalized then Some Predef.type_exn
-         else None
-       in
-       let ext =
-         { ext_type_path = Predef.path_exn;
-           ext_type_params = [];
-           ext_args = Cstr_tuple desc.cstr_args;
-           ext_ret_type = ret_type;
-           ext_private = Asttypes.Public;
-           Types.ext_loc = desc.cstr_loc;
-           Types.ext_attributes = desc.cstr_attributes; }
-       in
-         [Sig_typext (id, ext, Text_exception)]
-    )
-    "Print the signature of the corresponding exception."
-
-let () =
-  let open Types in
-  let trim_signature = function
-    | Mty_signature sg ->
-      Mty_signature (List.map (function
-            Sig_module (id, md, rs) ->
-            Sig_module (id, {md with md_attributes =
-                                       (Location.mknoloc "...", Parsetree.PStr [])
-                                       :: md.md_attributes},
-                        rs)
-          (*| Sig_modtype (id, Modtype_manifest mty) ->
-              Sig_modtype (id, Modtype_manifest (trim_modtype mty))*)
-          | item -> item)
-          sg)
-    | mty -> mty
-  in
-  reg_show_prim "show_module"
-    (fun env loc id lid ->
-       let rec accum_aliases path acc =
-         let md = Env.find_module path env in
-         let acc =
-           Sig_module (id, {md with md_type = trim_signature md.md_type},
-                       Trec_not) :: acc in
-         match md.md_type with
-         | Mty_alias(_, path) -> accum_aliases path acc
-         | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
-           List.rev acc
-       in
-       let path, _ = Typetexp.find_module env loc lid in
-       accum_aliases path []
-    )
-    "Print the signature of the corresponding module."
-
-let () =
-  reg_show_prim "show_module_type"
-    (fun env loc id lid ->
-       let _path, desc = Typetexp.find_modtype env loc lid in
-       [ Sig_modtype (id, desc) ]
-    )
-    "Print the signature of the corresponding module type."
-
-let () =
-  reg_show_prim "show_class"
-    (fun env loc id lid ->
-       let _path, desc = Typetexp.find_class env loc lid in
-       [ Sig_class (id, desc, Trec_not) ]
-    )
-    "Print the signature of the corresponding class."
-
-let () =
-  reg_show_prim "show_class_type"
-    (fun env loc id lid ->
-       let _path, desc = Typetexp.find_class_type env loc lid in
-       [ Sig_class_type (id, desc, Trec_not) ]
-    )
-    "Print the signature of the corresponding class type."
-
-let show env loc id lid =
-  let sg =
-    List.fold_left
-      (fun sg f -> try (f env loc id lid) @ sg with _ -> sg)
-      [] !all_show_funs
-  in
-  if sg = [] then raise Not_found else sg
-
-let () =
-  let lazy pp = std_out in
-  Toploop.add_directive "show" (Directive_ident (show_prim show pp))
-    {
-      section = section_env;
-      doc = "Print the signatures of components \
-             from any of the categories below.";
-    }
-
-let verbose = ref true
-let () =
-  Toploop.add_directive "verbose"
-    (Toploop.Directive_bool (fun x -> verbose := x))
-    { section = section_env ; doc = "Be verbose" }
-
-let silent = ref false
-let () = Toploop.add_directive "silent"
-    (Toploop.Directive_bool (fun x -> silent := x))
-    { section = section_env; doc = "Be silent" }
-
-let verbose_findlib = ref false
 
 module Async_autorun = struct
   (* Inspired by Utop auto run rewriter *)
@@ -353,7 +184,13 @@ module Async_autorun = struct
     | phrase -> phrase
 end
 
-let toplevel_exec_phrase ppf p = match Phrase.result p with
+type t = {
+  mutable verbose: bool;
+  mutable silent : bool;
+  verbose_findlib: bool;
+}
+
+let toplevel_exec_phrase t ppf p = match Phrase.result p with
   | Error exn -> raise exn
   | Ok phrase ->
     Warnings.reset_fatal ();
@@ -370,7 +207,7 @@ let toplevel_exec_phrase ppf p = match Phrase.result p with
     if !Clflags.dump_parsetree then Printast. top_phrase ppf phrase;
     if !Clflags.dump_source    then Pprintast.top_phrase ppf phrase;
     Env.reset_cache_toplevel ();
-    Toploop.execute_phrase !verbose ppf phrase
+    Toploop.execute_phrase t.verbose ppf phrase
 
 type var_and_value = V : 'a ref * 'a -> var_and_value
 
@@ -427,7 +264,7 @@ let trim_line str =
 let rtrim l = List.rev (ltrim (List.rev l))
 let trim l = ltrim (rtrim (List.map trim_line l))
 
-let run cmd =
+let run t cmd =
   let buf = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buf in
   let exec_code ~capture phrase =
@@ -448,7 +285,7 @@ let run cmd =
     in
     Oprint.out_phrase := out_phrase;
     let restore () = Oprint.out_phrase := out_phrase' in
-    begin match toplevel_exec_phrase ppf phrase with
+    begin match toplevel_exec_phrase t ppf phrase with
       | (_ : bool) -> restore ()
       | exception exn ->
         restore ();
@@ -456,7 +293,7 @@ let run cmd =
     end;
     Format.pp_print_flush ppf ();
     capture ();
-    if !silent || (not !verbose_findlib && Phrase.is_findlib_directive phrase)
+    if t.silent || (not t.verbose_findlib && Phrase.is_findlib_directive phrase)
     then []
     else trim (List.rev !lines)
   in
@@ -466,6 +303,171 @@ let run cmd =
           | Some t -> exec_code ~capture t
           | None   -> []
         ))
+
+
+let all_show_funs = ref []
+
+let section_env = "Environment queries"
+
+let std_out = lazy (Format.formatter_of_out_channel stdout)
+
+let show_prim to_sig ppf lid =
+  let env = !Toploop.toplevel_env in
+  let loc = Location.none in
+  try
+    let s =
+      match lid with
+      | Longident.Lident s -> s
+      | Longident.Ldot (_,s) -> s
+      | Longident.Lapply _ ->
+          Format.fprintf ppf "Invalid path %a@." Printtyp.longident lid;
+          raise Exit
+    in
+    let id = Ident.create_persistent s in
+    let sg = to_sig env loc id lid in
+    Printtyp.wrap_printing_env env (fun () ->
+        Format.fprintf ppf "@[%a@]@." Printtyp.signature sg
+      )
+  with
+  | Not_found -> Format.fprintf ppf "@[Unknown element.@]@."
+  | Exit -> ()
+
+let reg_show_prim name to_sig doc =
+  let lazy ppf = std_out in
+  all_show_funs := to_sig :: !all_show_funs;
+  Toploop.add_directive
+    name
+    (Directive_ident (show_prim to_sig ppf))
+    { section = section_env; doc }
+
+let show_val () =
+  reg_show_prim "show_val"
+    (fun env loc id lid ->
+       let _path, desc = Typetexp.find_value env loc lid in
+       [ Sig_value (id, desc) ]
+    )
+    "Print the signature of the corresponding value."
+
+let show_type () =
+  reg_show_prim "show_type"
+    (fun env loc id lid ->
+       let _path, desc = Typetexp.find_type env loc lid in
+       [ Sig_type (id, desc, Trec_not) ]
+    )
+    "Print the signature of the corresponding type constructor."
+
+let show_exception () =
+  reg_show_prim "show_exception"
+    (fun env loc id lid ->
+       let desc = Typetexp.find_constructor env loc lid in
+       if not (Ctype.equal env true [desc.cstr_res] [Predef.type_exn]) then
+         raise Not_found;
+       let ret_type =
+         if desc.cstr_generalized then Some Predef.type_exn
+         else None
+       in
+       let ext =
+         { ext_type_path = Predef.path_exn;
+           ext_type_params = [];
+           ext_args = Cstr_tuple desc.cstr_args;
+           ext_ret_type = ret_type;
+           ext_private = Asttypes.Public;
+           Types.ext_loc = desc.cstr_loc;
+           Types.ext_attributes = desc.cstr_attributes; }
+       in
+         [Sig_typext (id, ext, Text_exception)]
+    )
+    "Print the signature of the corresponding exception."
+
+let show_module () =
+  let open Types in
+  let trim_signature = function
+    | Mty_signature sg ->
+      Mty_signature (List.map (function
+            Sig_module (id, md, rs) ->
+            Sig_module (id, {md with md_attributes =
+                                       (Location.mknoloc "...", Parsetree.PStr [])
+                                       :: md.md_attributes},
+                        rs)
+          (*| Sig_modtype (id, Modtype_manifest mty) ->
+              Sig_modtype (id, Modtype_manifest (trim_modtype mty))*)
+          | item -> item)
+          sg)
+    | mty -> mty
+  in
+  reg_show_prim "show_module"
+    (fun env loc id lid ->
+       let rec accum_aliases path acc =
+         let md = Env.find_module path env in
+         let acc =
+           Sig_module (id, {md with md_type = trim_signature md.md_type},
+                       Trec_not) :: acc in
+         match md.md_type with
+         | Mty_alias(_, path) -> accum_aliases path acc
+         | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
+           List.rev acc
+       in
+       let path, _ = Typetexp.find_module env loc lid in
+       accum_aliases path []
+    )
+    "Print the signature of the corresponding module."
+
+let show_module_type () =
+  reg_show_prim "show_module_type"
+    (fun env loc id lid ->
+       let _path, desc = Typetexp.find_modtype env loc lid in
+       [ Sig_modtype (id, desc) ]
+    )
+    "Print the signature of the corresponding module type."
+
+let show_class () =
+  reg_show_prim "show_class"
+    (fun env loc id lid ->
+       let _path, desc = Typetexp.find_class env loc lid in
+       [ Sig_class (id, desc, Trec_not) ]
+    )
+    "Print the signature of the corresponding class."
+
+let show_class_type () =
+  reg_show_prim "show_class_type"
+    (fun env loc id lid ->
+       let _path, desc = Typetexp.find_class_type env loc lid in
+       [ Sig_class_type (id, desc, Trec_not) ]
+    )
+    "Print the signature of the corresponding class type."
+
+let show env loc id lid =
+  let sg =
+    List.fold_left
+      (fun sg f -> try (f env loc id lid) @ sg with _ -> sg)
+      [] !all_show_funs
+  in
+  if sg = [] then raise Not_found else sg
+
+let show () =
+  let lazy pp = std_out in
+  Toploop.add_directive "show" (Directive_ident (show_prim show pp))
+    {
+      section = section_env;
+      doc = "Print the signatures of components \
+             from any of the categories below.";
+    }
+
+let verbose t =
+  Toploop.add_directive "verbose"
+    (Toploop.Directive_bool (fun x -> t.verbose <- x))
+    { section = section_env ; doc = "Be verbose" }
+
+let silent t = Toploop.add_directive "silent"
+    (Toploop.Directive_bool (fun x -> t.silent <- x))
+    { section = section_env; doc = "Be silent" }
+
+module Linked = struct
+  include (Topdirs : sig end)
+  include (Ephemeron : sig end)
+  include (Uchar : sig end)
+  include (Condition : sig end)
+end
 
 (* BLACK MAGIC: patch field of a module at runtime *)
 let monkey_patch (type a) (type b) (m: a) (prj: unit -> b) (v : b) =
@@ -485,13 +487,34 @@ let monkey_patch (type a) (type b) (m: a) (prj: unit -> b) (v : b) =
     with Exit -> ()
   )
 
-let () =
+let patch_env () =
   let module M = struct
     module type T = module type of Env
     let field () = Env.without_cmis
     let replacement f x = f x
     let () = monkey_patch (module Env : T) field replacement
-  end in
+  end
+  in ()
+
+let init ~verbose:v ~silent:s ~verbose_findlib () =
+  Toploop.set_paths ();
+  Compmisc.init_path true;
+  Toploop.toplevel_env := Compmisc.initial_env ();
+  Sys.interactive := false;
+  patch_env ();
   Topfind.don't_load_deeply [
     "unix"; "findlib.top"; "findlib.internal"; "compiler-libs.toplevel"
-  ]
+  ];
+  Topfind.add_predicates ["byte"];
+  let t = { verbose=v; silent=s; verbose_findlib } in
+  show ();
+  show_val ();
+  show_type ();
+  show_module ();
+  show_module_type ();
+  show_exception ();
+  show_class ();
+  show_class_type ();
+  verbose t;
+  silent t;
+  t
