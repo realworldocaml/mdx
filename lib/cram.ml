@@ -19,14 +19,17 @@ module Log = (val Logs.src_log src : Logs.LOG)
 
 open Astring
 open Misc
-open S
 
-type t = cram
+type t = {
+  command  : string list;
+  output   : Output.t list;
+  exit_code: int;
+}
 
 let dump_line ppf = function
-  | #output as o -> Output.dump ppf o
-  | `Exit i      -> Fmt.pf ppf "`Exit %d" i
-  | `Command c   -> Fmt.pf ppf "`Command %a" Fmt.(Dump.list dump_string) c
+  | #Output.t as o -> Output.dump ppf o
+  | `Exit i        -> Fmt.pf ppf "`Exit %d" i
+  | `Command c     -> Fmt.pf ppf "`Command %a" Fmt.(Dump.list dump_string) c
 
 let dump ppf (t : t) =
   Fmt.pf ppf
@@ -63,7 +66,7 @@ let of_lines t =
     else String.with_index_range line ~first:pad
   in
   let lines = List.map unpad t in
-  let lines = Lexer.cram (Lexing.from_string (String.concat ~sep:"\n" lines)) in
+  let lines = Lexer_cram.token (Lexing.from_string (String.concat ~sep:"\n" lines)) in
   Log.debug (fun l ->
       l "Cram.of_lines (pad=%d) %a" pad Fmt.(Dump.list dump_line) lines
     );

@@ -14,26 +14,70 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+(** Code blocks. *)
+
 (** The type for block values. *)
-type value = S.block_value
+type value =
+  | Raw
+  | Cram of { pad: int; tests: Cram.t list }
+  | Toplevel of { pad: int; tests: Toplevel.t list }
+
+type section = int * string
+(** The type for sections. *)
 
 (** The type for supported code blocks. *)
-type t = S.block
+type t = {
+  line    : int;
+  file    : string;
+  section : section option;
+  labels  : string list;
+  header  : string option;
+  contents: string list;
+  value   : value;
+}
+
+(** {2 Printers} *)
 
 val dump: t Fmt.t
+(** [dump] is the printer for dumping code blocks. Useful for debugging. *)
 
 val pp_header: t Fmt.t
+(** [pp_header] pretty-prints block headers. *)
+
 val pp_contents: t Fmt.t
+(** [pp_contents] pretty-prints block contents. *)
+
 val pp_footer: unit Fmt.t
+(** [pp_footer] pretty-prints block footer. *)
 
 val pp: t Fmt.t
+(** [pp] pretty-prints blocks. *)
+
+(** {2 Accessors} *)
 
 val mode: t -> [`Non_det of [`Command|`Output] | `Normal]
+(** [mode t] is [t]'s mode. *)
 
 val value: t -> value
-val section: t -> (int * string) option
+(** [value t] is [t]'s value. *)
+
+val section: t -> section option
+(** [section t] is [t]'s section. *)
+
 val header: t -> string option
+(** [header t] is [t]'s header. *)
+
+val executable_contents: t -> string list
+(** [executable_contents t] is either [t]'s contents if [t] is a raw
+   or a cram block, or [t]'s commands if [t] is a toplevel fragments
+   (e.g. the phrase result is discarded). *)
 
 val is_raw_ocaml: t -> bool
-val executable_contents: t -> string list
+(** [is_raw_ocaml] is true iff [t] is a raw block and [t]'s header is
+   ["ocaml"]. *)
+
+(** {2 Evaluation} *)
+
 val eval: t -> t
+(** [eval t] is the same as [t] but with it's value replaced by either
+   [Cram] or [Toplevel] blocks, depending on [t]'s header. *)

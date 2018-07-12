@@ -19,16 +19,19 @@ module Log = (val Logs.src_log src : Logs.LOG)
 
 open Astring
 open Misc
-open S
 
-type t = toplevel
+type t = {
+  line   : int;
+  command: string list;
+  output : Output.t list;
+}
 
 let dump_line ppf = function
-  | #output as o -> Output.dump ppf o
-  | `Command c   -> Fmt.pf ppf "`Command %a" Fmt.(Dump.list dump_string) c
+  | #Output.t as o -> Output.dump ppf o
+  | `Command c     -> Fmt.pf ppf "`Command %a" Fmt.(Dump.list dump_string) c
 
-let command (t : toplevel) = t.command
-let output (t : toplevel) = t.output
+let command t = t.command
+let output t = t.output
 
 let dump ppf ({ line; command; output } : t) =
   Fmt.pf ppf "@[{line=%d;@ command=%a;@ output=%a}@]"
@@ -66,7 +69,7 @@ let of_lines ~file ~line t =
   in
   let lines = List.map unpad t in
   let lines = String.concat ~sep:"\n" lines in
-  let lines = Lexer.toplevel (lexbuf ~file ~line lines) in
+  let lines = Lexer_top.token (lexbuf ~file ~line lines) in
   Log.debug (fun l ->
       l "Toplevel.of_lines (pad=%d) %a" pad Fmt.(Dump.list dump_line) lines
     );

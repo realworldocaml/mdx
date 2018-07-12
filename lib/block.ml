@@ -14,10 +14,22 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open S
+type section = int * string
 
-type value = block_value
-type t = block
+type value =
+  | Raw
+  | Cram of { pad: int; tests: Cram.t list }
+  | Toplevel of { pad: int; tests: Toplevel.t list }
+
+type t = {
+  line    : int;
+  file    : string;
+  section : section option;
+  labels  : string list;
+  header  : string option;
+  contents: string list;
+  value   : value;
+}
 
 let dump_string ppf s = Fmt.pf ppf "%S" s
 let dump_strings = Fmt.Dump.list dump_string
@@ -112,8 +124,8 @@ let executable_contents b =
       | Raw | Cram _ -> []
       | Toplevel { tests; pad } ->
         List.flatten (
-          List.map (fun (t:toplevel) ->
-              match t.command with
+          List.map (fun t ->
+              match Toplevel.command t with
               | [] -> []
               | cs ->
                 let mk s = String.make (pad+2) ' ' ^ s in
