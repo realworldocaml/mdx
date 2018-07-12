@@ -80,10 +80,13 @@ let run_cram_tests ppf temp_file pad tests t =
     ) tests;
   Block.pp_footer ppf ()
 
+let eval_test c test =
+  Mdx_top.eval c (Toplevel.command test)
+
 let run_toplevel_tests c ppf pad tests t =
   Block.pp_header ppf t;
   List.iter (fun test ->
-      let lines = Mdx_top.eval c (Toplevel.command test) in
+      let lines = eval_test c test in
       let output =
         let output = List.map (fun x -> `Output x) lines in
         if Output.equal output test.output then test.output
@@ -131,6 +134,9 @@ let run () non_deterministic not_verbose silent verbose_findlib expect_test sect
             | true, false, `Non_det `Output, Cram { tests; _ } ->
               Block.pp ppf t;
               List.iter (fun t -> let _ = run_test temp_file t in ()) tests
+            | true, false, `Non_det `Output, Toplevel { tests; _ } ->
+              Block.pp ppf t;
+              List.iter (fun t -> let _ = eval_test c t in ()) tests
             (* Skip raw blocks. *)
             | true, _, _, Raw -> Block.pp ppf t
             (* Cram tests. *)
