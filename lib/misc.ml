@@ -60,3 +60,16 @@ let run_expect_test file ~f =
     if Sys.file_exists corrected_file then Sys.remove corrected_file;
     exit 0
   end
+
+let pp_position ppf lexbuf =
+  let p = Lexing.lexeme_start_p lexbuf in
+  Fmt.pf ppf
+    "File \"%s\", line %d, character %d"
+    p.Lexing.pos_fname p.Lexing.pos_lnum
+    (p.Lexing.pos_cnum - p.Lexing.pos_bol)
+
+(* TODO: better error reporting *)
+let err lexbuf fmt =
+  Fmt.kstrf (fun str ->
+      Fmt.failwith "%a: %s" pp_position lexbuf str
+    ) fmt

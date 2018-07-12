@@ -4,3 +4,5 @@
   (libraries   (astring fmt logs re))))
 
 (ocamllex (lexer))
+(ocamllex (lexer_cram))
+(ocamllex (lexer_top))

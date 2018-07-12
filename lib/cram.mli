@@ -18,8 +18,12 @@
 
 (** {1 Cram tests} *)
 
-type t = S.cram
 (** The type for cram tests. *)
+type t = {
+  command  : string list;
+  output   : Output.t list;
+  exit_code: int;
+}
 
 val exit_code: t -> int
 val use_heredoc: t -> bool

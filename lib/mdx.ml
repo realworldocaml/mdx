@@ -22,7 +22,10 @@ module Cram = Cram
 module Toplevel = Toplevel
 module Block = Block
 
-include S
+type line =
+  | Section of (int * string)
+  | Text    of string
+  | Block   of Block.t
 
 type t = line list
 
@@ -57,8 +60,15 @@ let filter_section re (t: t) =
   | [] -> None
   | l  -> Some l
 
-let parse_lexbuf l = Lexer.token l
-let parse_file f = Lexer.token (snd (Misc.init f))
+let parse l =
+  List.map (function
+      | `Text t -> Text t
+      | `Section s -> Section s
+      | `Block b   -> Block b
+    ) l
+
+let parse_lexbuf l = parse (Lexer.token l)
+let parse_file f = parse (Lexer.token (snd (Misc.init f)))
 let of_string s = parse_lexbuf (Lexing.from_string s)
 
 let eval = function

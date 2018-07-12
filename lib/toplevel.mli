@@ -14,7 +14,11 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-type t = S.toplevel
+type t = {
+  line   : int;
+  command: string list;
+  output : Output.t list;
+}
 
 val dump: t Fmt.t
 val pp: ?pad:int -> t Fmt.t
@@ -22,4 +26,4 @@ val pp_command: ?pad:int -> t Fmt.t
 
 val of_lines: file:string -> line:int -> string list -> int * t list
 val command: t -> string list
-val output: t -> S.output list
+val output: t -> Output.t list

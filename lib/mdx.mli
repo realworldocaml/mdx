@@ -14,14 +14,21 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-(** [Mdx] is a library to manipulate markdown code blocks. *)
+(** [Mdx] is a library to manipulate markdown code blocks.
+
+    [mdx] allows to execute code blocks inside markdow files. The
+   supported code {{!Block}blocks} are either {{!Cram}cram-like}
+   tests, raw OCaml fragments or {{!Toplevel}toplevel} phrases.
+
+    Cram tests and toplevel phrases are sequences of commands and
+   {{!Output}outputs}.  *)
 
 module Output = Output
 module Cram = Cram
 module Toplevel = Toplevel
 module Block = Block
 
-(** {1 Raw lexemes} *)
+(** {2 Lines} *)
 
 (** The type for the lines of a markdown file. *)
 type line =
@@ -32,6 +39,8 @@ type line =
 val pp_line: line Fmt.t
 (** [pp_line] is the pretty-printer for markdown lines. *)
 
+(** {2 Document} *)
+
 type t = line list
 (** The type for mdx documents. *)
 
@@ -40,12 +49,18 @@ val pp: t Fmt.t
    with {!of_string}. *)
 
 val to_string: t -> string
+(** [to_string t] converts the document [t] to a string. *)
 
 val of_string: string -> t
+(** [of_string s] is the document [t] such that [to_string t = s]. *)
 
 val parse_file: string ->  t
+(** [parse_file s] is {!of_string} of [s]'s contents. *)
 
 val parse_lexbuf: Lexing.lexbuf -> t
+(** [parse_lexbuf l] is {!of_string} of [l]'s contents. *)
+
+(** {2 Evaluation} *)
 
 val run: f:(string -> t -> string) -> string -> unit
 (** [run ~f n] runs the expect callback [f] over the file named
@@ -53,6 +68,8 @@ val run: f:(string -> t -> string) -> string -> unit
    contents; it returns the new file contents. If the result of [f] is
    different from the initial contents, then [$n.corrected] is created
    with the new contents. *)
+
+(** {2 Filtering} *)
 
 val section_of_line: line -> (int * string) option
 (** [section_of_line l] is [l]'s section. *)
