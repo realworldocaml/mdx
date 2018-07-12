@@ -15,6 +15,33 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+let redirect ~f =
+  let stdout_backup = Unix.dup Unix.stdout in
+  let stderr_backup = Unix.dup Unix.stdout in
+  let filename = Filename.temp_file "mdx" "stdout" in
+  let fd_out = Unix.openfile filename Unix.[O_WRONLY; O_CREAT; O_TRUNC] 0o600 in
+  Unix.dup2 fd_out Unix.stdout;
+  Unix.dup2 fd_out Unix.stderr;
+  let ic = open_in filename in
+  let read_up_to = ref 0 in
+  let capture buf =
+    flush stdout;
+    flush stderr;
+    let pos = Unix.lseek fd_out 0 Unix.SEEK_CUR in
+    let len = pos - !read_up_to in
+    read_up_to := pos;
+    Buffer.add_channel buf ic len
+  in
+  Misc.try_finally (fun () -> f ~capture)
+    (fun () ->
+       close_in_noerr ic;
+       Unix.close fd_out;
+       Unix.dup2 stdout_backup Unix.stdout;
+       Unix.dup2 stderr_backup Unix.stderr;
+       Unix.close stdout_backup;
+       Unix.close stderr_backup;
+       Sys.remove filename)
+
 module Lexbuf = struct
 
   open Lexing
@@ -128,11 +155,38 @@ end
 
 open Parsetree
 
-module Async_autorun = struct
-  (* Inspired by Utop auto run rewriter *)
-  let (async_typ, async_runner, async_rewrite) =
+module Rewrite = struct
+
+  type t = {
+    typ    : Longident.t;
+    witness: Longident.t;
+    runner : Longident.t;
+    rewrite: Warnings.loc -> expression -> expression;
+    mutable preload: string option;
+  }
+
+  (* Rewrite Lwt.t expressions to Lwt_main.run <expr> *)
+  let lwt =
+    let typ = Longident.parse "Lwt.t" in
+    let runner = Longident.parse "Lwt_main.run" in
+    let witness = Longident.parse "Lwt.return" in
+    let preload = Some "lwt.unix" in
+    let open Ast_helper in
+    let rewrite loc e =
+      with_default_loc loc (fun () ->
+          Exp.apply (Exp.ident (Location.mkloc runner loc))
+            [(Asttypes.Nolabel, e)]
+        )
+    in
+    { typ; runner; rewrite; witness; preload }
+
+  (* Rewrite Async.Defered.t expressions to
+     Async.Thread_safe.block_on_async_exn (fun () -> <expr>). *)
+  let async =
     let typ = Longident.parse "Async.Deferred.t" in
     let runner = Longident.parse "Async.Thread_safe.block_on_async_exn" in
+    let witness = runner in
+    let preload = None in
     let open Ast_helper in
     let rewrite loc e =
       let punit =
@@ -142,7 +196,7 @@ module Async_autorun = struct
         (Exp.ident (Location.mkloc runner loc))
         [(Asttypes.Nolabel, Exp.fun_ Asttypes.Nolabel None punit e)]
     in
-    (typ, runner, rewrite)
+    { typ; runner; rewrite; witness; preload }
 
   let normalize_type_path env path =
     match Env.find_type path env with
@@ -162,43 +216,81 @@ module Async_autorun = struct
     try is_persistent_path (fst (Env.lookup_value longident env))
     with Not_found -> false
 
-  let rewrite_item env async_typ pstr_item tstr_item =
+  let apply ts env pstr_item path e =
+    let rec aux = function
+      | []   -> pstr_item
+      | h::t ->
+        let ty = normalize_type_path env (Env.lookup_type h.typ env) in
+        if Path.same ty (normalize_type_path env path) then (
+          let loc = pstr_item.Parsetree.pstr_loc in
+          { Parsetree.pstr_desc = Parsetree.Pstr_eval (h.rewrite loc e, []);
+            Parsetree.pstr_loc = loc }
+        ) else
+          aux t
+    in
+    aux ts
+
+  let item ts env pstr_item tstr_item =
     match pstr_item.Parsetree.pstr_desc, tstr_item.Typedtree.str_desc with
     | (Parsetree.Pstr_eval (e, _),
        Typedtree.Tstr_eval ({ Typedtree.exp_type = typ; _ }, _)) ->
       begin match (Ctype.repr typ).Types.desc with
-        | Types.Tconstr (path, _, _) when
-            Path.same async_typ (normalize_type_path env path) ->
-          let loc = pstr_item.Parsetree.pstr_loc in
-          { Parsetree.pstr_desc = Parsetree.Pstr_eval (async_rewrite loc e, []);
-            Parsetree.pstr_loc = loc }
+        | Types.Tconstr (path, _, _) -> apply ts env pstr_item path e
         | _ -> pstr_item
       end
     | _ -> pstr_item
 
-  let rewrite_phrase =
+  let active_rewriters () =
+    List.filter (fun t ->
+        is_persistent_value !Toploop.toplevel_env t.witness
+      ) [lwt; async]
+
+  let phrase phrase =
     let is_eval = function
       | { pstr_desc = Pstr_eval _; _ } -> true
       | _ -> false
     in
-    function
-    | Ptop_def pstr when List.exists is_eval pstr
-                      && is_persistent_value !Toploop.toplevel_env async_runner ->
-      Env.reset_cache_toplevel ();
-      let snap = Btype.snapshot () in
-      let pstr =
-        try
-          let env = !Toploop.toplevel_env in
-          let path = normalize_type_path env (Env.lookup_type async_typ env) in
-          let tstr, _tsg, env =
-            Typemod.type_structure !Toploop.toplevel_env pstr Location.none in
-          List.map2 (rewrite_item env path) pstr tstr.Typedtree.str_items
-        with _ ->
-          pstr
+    match phrase with
+    | Ptop_def pstr when List.exists is_eval pstr ->
+      let ts = active_rewriters () in
+      if ts = [] then phrase
+      else (
+        Env.reset_cache_toplevel ();
+        let snap = Btype.snapshot () in
+        let pstr =
+          try
+            let tstr, _tsg, env =
+              Typemod.type_structure !Toploop.toplevel_env pstr Location.none
+            in
+            List.map2 (item ts env) pstr tstr.Typedtree.str_items
+          with _ ->
+            pstr
+        in
+        Btype.backtrack snap;
+        Ptop_def pstr
+      )
+    | _ -> phrase
+
+  let preload verbose ppf =
+    let require pkg =
+      let p = Ptop_dir ("require", Pdir_string pkg) in
+      let _ = Toploop.execute_phrase verbose ppf p in
+      ()
+    in
+    match active_rewriters () with
+    | [] -> ()
+    | ts ->
+      let ts =
+        List.fold_left (fun acc t -> match t.preload with
+            | None   -> acc
+            | Some x -> t.preload <- None; x :: acc
+          ) [] ts
       in
-      Btype.backtrack snap;
-      Ptop_def pstr
-    | phrase -> phrase
+      List.iter (fun pkg ->
+          if verbose then require pkg
+          else redirect ~f:(fun ~capture:_ -> require pkg)
+        ) ts
+
 end
 
 type t = {
@@ -220,10 +312,11 @@ let toplevel_exec_phrase t ppf p = match Phrase.result p with
       | Ptop_dir _ as x -> x
       | Ptop_def s -> Ptop_def (Pparse.apply_rewriters_str ~tool_name:"mdx" s)
     in
-    let phrase = Async_autorun.rewrite_phrase phrase in
+    let phrase = Rewrite.phrase phrase in
     if !Clflags.dump_parsetree then Printast. top_phrase ppf phrase;
     if !Clflags.dump_source    then Pprintast.top_phrase ppf phrase;
     Env.reset_cache_toplevel ();
+    Rewrite.preload t.verbose_findlib ppf;
     Toploop.execute_phrase t.verbose ppf phrase
 
 type var_and_value = V : 'a ref * 'a -> var_and_value
@@ -239,33 +332,6 @@ let capture_compiler_stuff ppf ~f =
   protect_vars
     [ V (Location.formatter_for_warnings , ppf) ]
     ~f
-
-let redirect ~f =
-  let stdout_backup = Unix.dup Unix.stdout in
-  let stderr_backup = Unix.dup Unix.stdout in
-  let filename = Filename.temp_file "mdx" "stdout" in
-  let fd_out = Unix.openfile filename Unix.[O_WRONLY; O_CREAT; O_TRUNC] 0o600 in
-  Unix.dup2 fd_out Unix.stdout;
-  Unix.dup2 fd_out Unix.stderr;
-  let ic = open_in filename in
-  let read_up_to = ref 0 in
-  let capture buf =
-    flush stdout;
-    flush stderr;
-    let pos = Unix.lseek fd_out 0 Unix.SEEK_CUR in
-    let len = pos - !read_up_to in
-    read_up_to := pos;
-    Buffer.add_channel buf ic len
-  in
-  Misc.try_finally (fun () -> f ~capture)
-    (fun () ->
-       close_in_noerr ic;
-       Unix.close fd_out;
-       Unix.dup2 stdout_backup Unix.stdout;
-       Unix.dup2 stderr_backup Unix.stderr;
-       Unix.close stdout_backup;
-       Unix.close stderr_backup;
-       Sys.remove filename)
 
 let rec ltrim = function
   | "" :: t -> ltrim t
@@ -522,7 +588,7 @@ let init ~verbose:v ~silent:s ~verbose_findlib () =
   Topfind.don't_load_deeply [
     "unix"; "findlib.top"; "findlib.internal"; "compiler-libs.toplevel"
   ];
-  Topfind.add_predicates ["byte"];
+  Topfind.add_predicates ["byte"; "toploop"];
   let t = { verbose=v; silent=s; verbose_findlib } in
   show ();
   show_val ();
