@@ -15,6 +15,33 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+let redirect ~f =
+  let stdout_backup = Unix.dup Unix.stdout in
+  let stderr_backup = Unix.dup Unix.stdout in
+  let filename = Filename.temp_file "mdx" "stdout" in
+  let fd_out = Unix.openfile filename Unix.[O_WRONLY; O_CREAT; O_TRUNC] 0o600 in
+  Unix.dup2 fd_out Unix.stdout;
+  Unix.dup2 fd_out Unix.stderr;
+  let ic = open_in filename in
+  let read_up_to = ref 0 in
+  let capture buf =
+    flush stdout;
+    flush stderr;
+    let pos = Unix.lseek fd_out 0 Unix.SEEK_CUR in
+    let len = pos - !read_up_to in
+    read_up_to := pos;
+    Buffer.add_channel buf ic len
+  in
+  Misc.try_finally (fun () -> f ~capture)
+    (fun () ->
+       close_in_noerr ic;
+       Unix.close fd_out;
+       Unix.dup2 stdout_backup Unix.stdout;
+       Unix.dup2 stderr_backup Unix.stderr;
+       Unix.close stdout_backup;
+       Unix.close stderr_backup;
+       Sys.remove filename)
+
 module Lexbuf = struct
 
   open Lexing
@@ -134,12 +161,14 @@ module Rewrite = struct
     typ    : Longident.t;
     runner : Longident.t;
     rewrite: Warnings.loc -> expression -> expression;
+    mutable preload: string option;
   }
 
   (* Rewrite Lwt.t expressions to Lwt_main.run <expr> *)
   let lwt =
     let typ = Longident.parse "Lwt.t" in
     let runner = Longident.parse "Lwt_main.run" in
+    let preload = Some "lwt.unix" in
     let open Ast_helper in
     let rewrite loc e =
       with_default_loc loc (fun () ->
@@ -147,13 +176,14 @@ module Rewrite = struct
             [(Asttypes.Nolabel, e)]
         )
     in
-    { typ; runner; rewrite }
+    { typ; runner; rewrite; preload }
 
   (* Rewrite Async.Defered.t expressions to
      Async.Thread_safe.block_on_async_exn (fun () -> <expr>). *)
   let async =
     let typ = Longident.parse "Async.Deferred.t" in
     let runner = Longident.parse "Async.Thread_safe.block_on_async_exn" in
+    let preload = None in
     let open Ast_helper in
     let rewrite loc e =
       let punit =
@@ -163,7 +193,7 @@ module Rewrite = struct
         (Exp.ident (Location.mkloc runner loc))
         [(Asttypes.Nolabel, Exp.fun_ Asttypes.Nolabel None punit e)]
     in
-    { typ; runner; rewrite }
+    { typ; runner; rewrite; preload }
 
   let normalize_type_path env path =
     match Env.find_type path env with
@@ -188,11 +218,11 @@ module Rewrite = struct
       | []   -> pstr_item
       | h::t ->
         let ty = normalize_type_path env (Env.lookup_type h.typ env) in
-        if Path.same ty (normalize_type_path env path) then
+        if Path.same ty (normalize_type_path env path) then (
           let loc = pstr_item.Parsetree.pstr_loc in
           { Parsetree.pstr_desc = Parsetree.Pstr_eval (h.rewrite loc e, []);
             Parsetree.pstr_loc = loc }
-        else
+        ) else
           aux t
     in
     aux ts
@@ -236,7 +266,28 @@ module Rewrite = struct
         Btype.backtrack snap;
         Ptop_def pstr
       )
-    | phrase -> phrase
+    | _ -> phrase
+
+  let preload verbose ppf =
+    let require pkg =
+      let p = Ptop_dir ("require", Pdir_string pkg) in
+      let _ = Toploop.execute_phrase verbose ppf p in
+      ()
+    in
+    match active_rewriters () with
+    | [] -> ()
+    | ts ->
+      let ts =
+        List.fold_left (fun acc t -> match t.preload with
+            | None   -> acc
+            | Some x -> t.preload <- None; x :: acc
+          ) [] ts
+      in
+      List.iter (fun pkg ->
+          if verbose then require pkg
+          else redirect ~f:(fun ~capture:_ -> require pkg)
+        ) ts
+
 end
 
 type t = {
@@ -262,6 +313,7 @@ let toplevel_exec_phrase t ppf p = match Phrase.result p with
     if !Clflags.dump_parsetree then Printast. top_phrase ppf phrase;
     if !Clflags.dump_source    then Pprintast.top_phrase ppf phrase;
     Env.reset_cache_toplevel ();
+    Rewrite.preload t.verbose_findlib ppf;
     Toploop.execute_phrase t.verbose ppf phrase
 
 type var_and_value = V : 'a ref * 'a -> var_and_value
@@ -277,33 +329,6 @@ let capture_compiler_stuff ppf ~f =
   protect_vars
     [ V (Location.formatter_for_warnings , ppf) ]
     ~f
-
-let redirect ~f =
-  let stdout_backup = Unix.dup Unix.stdout in
-  let stderr_backup = Unix.dup Unix.stdout in
-  let filename = Filename.temp_file "mdx" "stdout" in
-  let fd_out = Unix.openfile filename Unix.[O_WRONLY; O_CREAT; O_TRUNC] 0o600 in
-  Unix.dup2 fd_out Unix.stdout;
-  Unix.dup2 fd_out Unix.stderr;
-  let ic = open_in filename in
-  let read_up_to = ref 0 in
-  let capture buf =
-    flush stdout;
-    flush stderr;
-    let pos = Unix.lseek fd_out 0 Unix.SEEK_CUR in
-    let len = pos - !read_up_to in
-    read_up_to := pos;
-    Buffer.add_channel buf ic len
-  in
-  Misc.try_finally (fun () -> f ~capture)
-    (fun () ->
-       close_in_noerr ic;
-       Unix.close fd_out;
-       Unix.dup2 stdout_backup Unix.stdout;
-       Unix.dup2 stderr_backup Unix.stderr;
-       Unix.close stdout_backup;
-       Unix.close stderr_backup;
-       Sys.remove filename)
 
 let rec ltrim = function
   | "" :: t -> ltrim t
