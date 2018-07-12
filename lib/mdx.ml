@@ -1,3 +1,19 @@
+(*
+ * Copyright (c) 2018 Thomas Gazagnaire <thomas@gazagnaire.org>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *)
+
 let src = Logs.Src.create "mdx"
 module Log = (val Logs.src_log src : Logs.LOG)
 
@@ -42,7 +58,7 @@ let filter_section re (t: t) =
   | l  -> Some l
 
 let parse_lexbuf l = Lexer.token l
-let parse_file f = Lexer.token (snd (Common.init f))
+let parse_file f = Lexer.token (snd (Misc.init f))
 let of_string s = parse_lexbuf (Lexing.from_string s)
 
 let eval = function
@@ -52,7 +68,7 @@ let eval = function
     if t == t' then x else Block t'
 
 let run ~f n =
-  Common.run_expect_test n ~f:(fun c l ->
+  Misc.run_expect_test n ~f:(fun c l ->
       let items = parse_lexbuf l in
       let items = List.map eval items in
       Log.debug (fun l -> l "run @[%a@]" dump items);
