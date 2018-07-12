@@ -159,6 +159,7 @@ module Rewrite = struct
 
   type t = {
     typ    : Longident.t;
+    witness: Longident.t;
     runner : Longident.t;
     rewrite: Warnings.loc -> expression -> expression;
     mutable preload: string option;
@@ -168,6 +169,7 @@ module Rewrite = struct
   let lwt =
     let typ = Longident.parse "Lwt.t" in
     let runner = Longident.parse "Lwt_main.run" in
+    let witness = Longident.parse "Lwt.return" in
     let preload = Some "lwt.unix" in
     let open Ast_helper in
     let rewrite loc e =
@@ -176,13 +178,14 @@ module Rewrite = struct
             [(Asttypes.Nolabel, e)]
         )
     in
-    { typ; runner; rewrite; preload }
+    { typ; runner; rewrite; witness; preload }
 
   (* Rewrite Async.Defered.t expressions to
      Async.Thread_safe.block_on_async_exn (fun () -> <expr>). *)
   let async =
     let typ = Longident.parse "Async.Deferred.t" in
     let runner = Longident.parse "Async.Thread_safe.block_on_async_exn" in
+    let witness = runner in
     let preload = None in
     let open Ast_helper in
     let rewrite loc e =
@@ -193,7 +196,7 @@ module Rewrite = struct
         (Exp.ident (Location.mkloc runner loc))
         [(Asttypes.Nolabel, Exp.fun_ Asttypes.Nolabel None punit e)]
     in
-    { typ; runner; rewrite; preload }
+    { typ; runner; rewrite; witness; preload }
 
   let normalize_type_path env path =
     match Env.find_type path env with
@@ -239,7 +242,7 @@ module Rewrite = struct
 
   let active_rewriters () =
     List.filter (fun t ->
-        is_persistent_value !Toploop.toplevel_env t.runner
+        is_persistent_value !Toploop.toplevel_env t.witness
       ) [lwt; async]
 
   let phrase phrase =
