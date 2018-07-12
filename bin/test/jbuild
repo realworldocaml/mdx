@@ -4,4 +4,4 @@
   (package     mdx)
   (modes       (byte))  ;; no native code toplevel libs yet
   (link_flags  (-linkall))
-  (libraries   (cli compiler-libs.toplevel findlib.top threads mdx.top))))
+  (libraries   (cli mdx.top))))

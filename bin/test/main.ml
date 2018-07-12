@@ -4,13 +4,6 @@ open Mdx
 let src = Logs.Src.create "cram.test"
 module Log = (val Logs.src_log src : Logs.LOG)
 
-module Linked = struct
-  include (Topdirs : sig end)
-  include (Ephemeron : sig end)
-  include (Uchar : sig end)
-  include (Condition : sig end)
-end
-
 let read_lines file =
   let ic = open_in file in
   let r = ref [] in
@@ -71,12 +64,6 @@ let run_cram_tests ppf temp_file pad tests t =
     ) tests;
   Block.pp_footer ppf ()
 
-let init_toplevel () =
-  Toploop.set_paths ();
-  Compmisc.init_path true;
-  Toploop.toplevel_env := Compmisc.initial_env ();
-  Sys.interactive := false
-
 let run_toplevel_tests c ppf pad tests t =
   Block.pp_header ppf t;
   List.iter (fun test ->
@@ -109,7 +96,6 @@ let run () non_deterministic not_verbose silent verbose_findlib expect_test sect
     | Some re, None   -> Re.execp re ""
     | Some re, Some s -> Re.execp re (snd s)
   in
-  init_toplevel ();
   Mdx.run expect_test ~f:(fun file_contents items ->
       let temp_file = Filename.temp_file "mdx" ".output" in
       at_exit (fun () -> Sys.remove temp_file);
@@ -141,38 +127,6 @@ let run () non_deterministic not_verbose silent verbose_findlib expect_test sect
       Format.pp_print_flush ppf ();
       Buffer.contents buf);
   0
-
-(**** Prepare the toplevel ******)
-
-(* BLACK MAGIC: patch field of a module at runtime *)
-let monkey_patch (type a) (type b) (m: a) (prj: unit -> b) (v : b) =
-  let m = Obj.repr m in
-  let v = Obj.repr v in
-  let v' = Obj.repr (prj ()) in
-  if v' == v then () else (
-    try
-      for i = 0 to Obj.size m - 1 do
-        if Obj.field m i == v' then (
-          Obj.set_field m i v;
-          if Obj.repr (prj ()) == v then raise Exit;
-          Obj.set_field m i v';
-        )
-      done;
-      invalid_arg "monkey_patch: field not found"
-    with Exit -> ()
-  )
-
-let () =
-  let module M = struct
-    module type T = module type of Env
-    let field () = Env.without_cmis
-    let replacement f x = f x
-    let () = monkey_patch (module Env : T) field replacement
-  end in
-  Topfind.don't_load_deeply [
-    "unix"; "findlib.top"; "findlib.internal"; "compiler-libs.toplevel"
-  ];
-  Topfind.add_predicates ["byte"]
 
 (**** Cmdliner ****)
 

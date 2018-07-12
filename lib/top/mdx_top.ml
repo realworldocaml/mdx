@@ -462,7 +462,50 @@ let silent t = Toploop.add_directive "silent"
     (Toploop.Directive_bool (fun x -> t.silent <- x))
     { section = section_env; doc = "Be silent" }
 
+module Linked = struct
+  include (Topdirs : sig end)
+  include (Ephemeron : sig end)
+  include (Uchar : sig end)
+  include (Condition : sig end)
+end
+
+(* BLACK MAGIC: patch field of a module at runtime *)
+let monkey_patch (type a) (type b) (m: a) (prj: unit -> b) (v : b) =
+  let m = Obj.repr m in
+  let v = Obj.repr v in
+  let v' = Obj.repr (prj ()) in
+  if v' == v then () else (
+    try
+      for i = 0 to Obj.size m - 1 do
+        if Obj.field m i == v' then (
+          Obj.set_field m i v;
+          if Obj.repr (prj ()) == v then raise Exit;
+          Obj.set_field m i v';
+        )
+      done;
+      invalid_arg "monkey_patch: field not found"
+    with Exit -> ()
+  )
+
+let patch_env () =
+  let module M = struct
+    module type T = module type of Env
+    let field () = Env.without_cmis
+    let replacement f x = f x
+    let () = monkey_patch (module Env : T) field replacement
+  end
+  in ()
+
 let init ~verbose:v ~silent:s ~verbose_findlib () =
+  Toploop.set_paths ();
+  Compmisc.init_path true;
+  Toploop.toplevel_env := Compmisc.initial_env ();
+  Sys.interactive := false;
+  patch_env ();
+  Topfind.don't_load_deeply [
+    "unix"; "findlib.top"; "findlib.internal"; "compiler-libs.toplevel"
+  ];
+  Topfind.add_predicates ["byte"];
   let t = { verbose=v; silent=s; verbose_findlib } in
   show ();
   show_val ();
