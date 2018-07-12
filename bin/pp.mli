@@ -1,5 +1,4 @@
 (*
- * Copyright (c) 2017 Frédéric Bour
  * Copyright (c) 2018 Thomas Gazagnaire <thomas@gazagnaire.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -15,14 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-(** Toplevel logic for [mdx]. *)
+open Cmdliner
 
-type t
-(** The type for configuration values. *)
-
-val init: verbose:bool -> silent:bool -> verbose_findlib:bool -> unit -> t
-(** [init ()] is a new configuration value. *)
-
-val eval: t -> string list -> string list
-(** [eval t p] evaluates the toplevel phrase [p] (possibly spawning on
-    mulitple lines) with the configuration value [t]. *)
+val cmd: int Term.t * Term.info
