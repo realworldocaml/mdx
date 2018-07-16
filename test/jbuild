@@ -89,7 +89,9 @@
 
 (executable ((name section)))
 
+(rule (with-stdout-to section.out (run ./section.exe)))
+
 (alias
  ((name runtest)
-  (deps (section.exe))
-  (action (run ${<}))))
+  (deps   (section.out section.out.expected))
+  (action (diff? section.out section.out.expected))))
