@@ -14,6 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+open Astring
+
 type section = int * string
 
 type value =
@@ -73,13 +75,37 @@ let pp ppf b =
   pp_contents ppf b;
   pp_footer ppf ()
 
-let mode t = match t.labels with
-  | [] -> `Normal
-  | ["non-deterministic"]
-  | ["non-deterministic=output"]  -> `Non_det `Output
-  | ["non-deterministic=command"] -> `Non_det `Command
-  | _ ->
-    Fmt.failwith "invalid labels: '%a'" Fmt.(list ~sep:(unit ", ") string) t.labels
+let labels = ["dir"; "non-deterministic"]
+
+let check_labels t =
+  List.for_all (fun l ->
+      let l = List.filter (fun affix ->
+          String.is_prefix ~affix:(affix ^ "=") l
+        ) labels in
+      List.length l < 2
+    ) t.labels
+  |> function
+  | true  -> ()
+  | false ->
+    Fmt.failwith "invalid labels: '%a'"
+      Fmt.(list ~sep:(unit ", ") string) t.labels
+
+let get_label t label =
+  let label' = label ^ "=" in
+  match List.filter (String.is_prefix ~affix:label') t.labels with
+  | []       -> None
+  | _::_::_  -> Fmt.failwith "Too many labels: %s" label
+  | [x]      -> match String.cut ~sep:label' x with
+    | None   -> assert false
+    | Some x -> Some (snd x)
+
+let directory t = get_label t "dir"
+
+let mode t = match get_label t "non-deterministic" with
+  | None           -> `Normal
+  | Some "output"  -> `Non_det `Output
+  | Some "command" -> `Non_det `Command
+  | Some s         -> Fmt.failwith "invalid mode: %s" s
 
 let value t = t.value
 let section t = t.section
@@ -101,6 +127,7 @@ let toplevel ~file ~line lines =
   Toplevel { pad; tests }
 
 let eval t =
+  check_labels t;
   match t.header with
   | Some ("sh" | "bash") ->
     let value = cram t.contents in
@@ -134,7 +161,7 @@ let executable_contents b =
               match Toplevel.command t with
               | [] -> []
               | cs ->
-                let mk s = String.make (pad+2) ' ' ^ s in
+                let mk s = String.v ~len:(pad+2) (fun _ -> ' ') ^ s in
                 line_directive (b.file, t.line) :: List.map mk cs
             ) tests)
   in
