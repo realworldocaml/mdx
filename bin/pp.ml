@@ -38,8 +38,11 @@ let run () file section =
           let pp_lines = Fmt.(list ~sep:(unit "\n") string) in
           let contents = Mdx.Block.executable_contents b in
           match b.value with
-          | Raw        -> Fmt.pr "#%d %S\n%a\n" b.line file pp_lines contents
           | Toplevel _ -> Fmt.pr "%a\n" pp_lines contents
+          | OCaml      ->
+            Fmt.pr "%a\n%a\n"
+              Mdx.Block.pp_line_directive (file, b.line)
+              pp_lines contents
           | _          -> ()
       ) t;
     0

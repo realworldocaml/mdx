@@ -70,6 +70,13 @@
 
 (alias
  ((name runtest)
+  (deps (code.md (package mdx)))
+  (action (progn
+           (run mdx test ${<})
+           (diff? ${<} ${<}.corrected)))))
+
+(alias
+ ((name runtest)
   (deps (prelude.md (package mdx)))
   (action (progn
            (run mdx test --prelude-str "#require \"lwt\"" ${<})
@@ -82,7 +89,9 @@
 
 (executable ((name section)))
 
+(rule (with-stdout-to section.out (run ./section.exe)))
+
 (alias
  ((name runtest)
-  (deps (section.exe))
-  (action (run ${<}))))
+  (deps   (section.out section.out.expected))
+  (action (diff? section.out section.out.expected))))

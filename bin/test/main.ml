@@ -143,6 +143,8 @@ let run ()
           | Text _ as t -> Mdx.pp_line ppf t
           | Block t ->
             match active t, non_deterministic, Block.mode t, Block.value t with
+            (* Skip raw blocks. *)
+            | true, _, _, Raw -> Block.pp ppf t
             (* The command is not active, skip it. *)
             | false, _, _, _ -> Block.pp ppf t
             (* the command is active but non-deterministic so skip everything *)
@@ -155,8 +157,10 @@ let run ()
             | true, false, `Non_det `Output, Toplevel { tests; _ } ->
               Block.pp ppf t;
               List.iter (fun t -> let _ = eval_test c t in ()) tests
-            (* Skip raw blocks. *)
-            | true, _, _, Raw -> Block.pp ppf t
+            (* Run raw OCaml code *)
+            | true, _, _, OCaml ->
+              eval_raw c ~line:t.line t.contents;
+              Block.pp ppf t
             (* Cram tests. *)
             | true, _, _, Cram { tests; pad } ->
               run_cram_tests ppf temp_file pad tests t

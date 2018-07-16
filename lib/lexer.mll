@@ -34,7 +34,7 @@ rule text section = parse
         `Text str :: text section lexbuf }
 
 and block = parse
-  | eol | "```" ws* eol    { [] }
+  | eof | "```" ws* eol    { [] }
   | ([^'\n'] * as str) eol { str :: block lexbuf }
 {
 let token lexbuf =
