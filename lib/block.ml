@@ -18,6 +18,7 @@ type section = int * string
 
 type value =
   | Raw
+  | OCaml
   | Cram of { pad: int; tests: Cram.t list }
   | Toplevel of { pad: int; tests: Toplevel.t list }
 
@@ -37,6 +38,7 @@ let dump_section = Fmt.(Dump.pair int string)
 
 let dump_value ppf = function
   | Raw -> Fmt.string ppf "Raw"
+  | OCaml -> Fmt.string ppf "OCaml"
   | Cram { pad; tests } ->
     Fmt.pf ppf "@[Cram@ {pad=%d;@ tests=%a}@]"
       pad Fmt.(Dump.list Cram.dump) tests
@@ -104,7 +106,7 @@ let eval t =
     let value = cram t.contents in
     { t with value }
   | Some "ocaml" ->
-    if is_raw_ocaml t then t
+    if is_raw_ocaml t then { t with value = OCaml }
     else
       let value = toplevel ~file:t.file ~line:t.line t.contents in
       { t with value }
@@ -117,11 +119,15 @@ let ends_by_semi_semi c = match List.rev c with
     len > 2 && h.[len-1] = ';' && h.[len-2] = ';'
   | _ -> false
 
+let pp_line_directive ppf (file, line) = Fmt.pf ppf "#%d %S" line file
+let line_directive = Fmt.to_to_string pp_line_directive
+
 let executable_contents b =
   let contents =
     if is_raw_ocaml b then b.contents
     else match b.value with
       | Raw | Cram _ -> []
+      | OCaml -> line_directive (b.file, b.line) :: b.contents
       | Toplevel { tests; pad } ->
         List.flatten (
           List.map (fun t ->
@@ -129,8 +135,7 @@ let executable_contents b =
               | [] -> []
               | cs ->
                 let mk s = String.make (pad+2) ' ' ^ s in
-                Fmt.strf "#%d %S" t.line b.file ::
-                List.map mk cs
+                line_directive (b.file, t.line) :: List.map mk cs
             ) tests)
   in
   if contents = [] || ends_by_semi_semi contents then contents

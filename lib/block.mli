@@ -19,6 +19,7 @@
 (** The type for block values. *)
 type value =
   | Raw
+  | OCaml
   | Cram of { pad: int; tests: Cram.t list }
   | Toplevel of { pad: int; tests: Toplevel.t list }
 
@@ -53,6 +54,10 @@ val pp_footer: unit Fmt.t
 val pp: t Fmt.t
 (** [pp] pretty-prints blocks. *)
 
+val pp_line_directive: (string * int) Fmt.t
+(** [pp_line_directive] pretty-prints a line directive given as a
+   filename and line number. *)
+
 (** {2 Accessors} *)
 
 val mode: t -> [`Non_det of [`Command|`Output] | `Normal]
@@ -71,10 +76,6 @@ val executable_contents: t -> string list
 (** [executable_contents t] is either [t]'s contents if [t] is a raw
    or a cram block, or [t]'s commands if [t] is a toplevel fragments
    (e.g. the phrase result is discarded). *)
-
-val is_raw_ocaml: t -> bool
-(** [is_raw_ocaml] is true iff [t] is a raw block and [t]'s header is
-   ["ocaml"]. *)
 
 (** {2 Evaluation} *)
 
