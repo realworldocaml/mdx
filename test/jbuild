@@ -7,6 +7,13 @@
 
 (alias
  ((name runtest)
+  (deps (labels.md labels.md.expected (package mdx)))
+  (action (progn
+           (run mdx test -s Testing ${<})
+           (diff? ${<}.expected ${<}.corrected)))))
+
+(alias
+ ((name runtest)
   (deps (pp.md section.md (package mdx)))
   (action (progn
            (run mdx test ${<})
