@@ -63,6 +63,9 @@ val pp_line_directive: (string * int) Fmt.t
 val mode: t -> [`Non_det of [`Command|`Output] | `Normal]
 (** [mode t] is [t]'s mode. *)
 
+val directory: t -> string option
+(** [directory t] is the directory where [t] tests should be run. *)
+
 val value: t -> value
 (** [value t] is [t]'s value. *)
 

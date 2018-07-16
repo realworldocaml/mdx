@@ -49,20 +49,40 @@ let ansi_color_strip str =
   in
   loop 0
 
-let run_test temp_file t =
+let with_dir root f =
+  match root with
+  | None   -> f ()
+  | Some d ->
+    let old_d = Sys.getcwd () in
+    try
+      Sys.chdir d;
+      let r = f () in
+      Sys.chdir old_d;
+      r
+    with e ->
+      Sys.chdir old_d;
+      raise e
+
+let run_test ?root temp_file t =
   let cmd = Cram.command_line t in
   Log.info (fun l -> l "exec: %S" cmd);
   let fd = Unix.openfile temp_file [O_WRONLY; O_TRUNC] 0 in
-  let pid = Unix.create_process "sh" [| "sh"; "-c"; cmd |] Unix.stdin fd fd in
+  let pid = with_dir root (fun () ->
+      Unix.create_process "sh" [| "sh"; "-c"; cmd |] Unix.stdin fd fd
+    ) in
   Unix.close fd;
   match snd (Unix.waitpid [] pid) with
   | WEXITED n -> n
   | _ -> 255
 
-let run_cram_tests ppf temp_file pad tests t =
+let run_cram_tests ?root ppf temp_file pad tests t =
   Block.pp_header ppf t;
   List.iter (fun test ->
-      let n = run_test temp_file test in
+      let root = match root, Mdx.Block.directory t with
+        | Some d, _ -> (* --root always win *) Some d
+        | None  , d -> d
+      in
+      let n = run_test ?root temp_file test in
       let lines = read_lines temp_file in
       let output =
         let output = List.map (fun x -> `Output x) lines in
@@ -111,7 +131,7 @@ let run_toplevel_tests c ppf pad tests t =
 
 let run ()
     non_deterministic not_verbose silent verbose_findlib prelude prelude_str
-    file section
+    file section root
   =
   let c =
     Mdx_top.init ~verbose:(not not_verbose) ~silent ~verbose_findlib ()
@@ -163,7 +183,7 @@ let run ()
               Block.pp ppf t
             (* Cram tests. *)
             | true, _, _, Cram { tests; pad } ->
-              run_cram_tests ppf temp_file pad tests t
+              run_cram_tests ?root ppf temp_file pad tests t
             (* Top-level tests. *)
             | true, _, _, Toplevel { tests; pad } ->
               run_toplevel_tests c ppf pad tests t
@@ -183,7 +203,7 @@ let cmd =
   Term.(pure run
         $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose
         $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
-        $ Cli.file $ Cli.section),
+        $ Cli.file $ Cli.section $ Cli.root),
   Term.info "mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man
 
 let main () = Term.(exit_status @@ eval cmd)

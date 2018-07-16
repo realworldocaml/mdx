@@ -36,6 +36,10 @@ let prelude_str =
   let doc = "A string to load as prelude." in
   Arg.(value & opt (some string) None & info ["prelude-str"] ~doc ~docv:"STR")
 
+let root =
+  let doc = "The directory to run the tests from." in
+  Arg.(value & opt (some string) None & info ["root"] ~doc ~docv:"DIR")
+
 let setup_log style_renderer level =
   Fmt_tty.setup_std_outputs ?style_renderer ();
   Logs.set_level level;

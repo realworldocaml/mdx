@@ -77,6 +77,20 @@
 
 (alias
  ((name runtest)
+  (deps (dir.md (package mdx)))
+  (action (progn
+           (run mdx test ${<})
+           (diff? ${<} ${<}.corrected)))))
+
+(alias
+ ((name runtest)
+  (deps (dir.md dir.md.expected (package mdx)))
+  (action (progn
+           (run mdx test --root / ${<})
+           (diff? ${<}.expected ${<}.corrected)))))
+
+(alias
+ ((name runtest)
   (deps (prelude.md (package mdx)))
   (action (progn
            (run mdx test --prelude-str "#require \"lwt\"" ${<})
