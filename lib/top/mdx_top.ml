@@ -312,11 +312,11 @@ let toplevel_exec_phrase t ppf p = match Phrase.result p with
       | Ptop_dir _ as x -> x
       | Ptop_def s -> Ptop_def (Pparse.apply_rewriters_str ~tool_name:"mdx" s)
     in
+    Rewrite.preload t.verbose_findlib ppf;
     let phrase = Rewrite.phrase phrase in
     if !Clflags.dump_parsetree then Printast. top_phrase ppf phrase;
     if !Clflags.dump_source    then Pprintast.top_phrase ppf phrase;
     Env.reset_cache_toplevel ();
-    Rewrite.preload t.verbose_findlib ppf;
     Toploop.execute_phrase t.verbose ppf phrase
 
 type var_and_value = V : 'a ref * 'a -> var_and_value
