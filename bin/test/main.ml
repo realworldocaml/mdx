@@ -163,6 +163,8 @@ let run ()
           | Text _ as t -> Mdx.pp_line ppf t
           | Block t ->
             match active t, non_deterministic, Block.mode t, Block.value t with
+            (* Print errors *)
+            | _, _, _, Error _ -> Block.pp ppf t
             (* Skip raw blocks. *)
             | true, _, _, Raw -> Block.pp ppf t
             (* The command is not active, skip it. *)

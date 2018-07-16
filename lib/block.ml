@@ -21,6 +21,7 @@ type section = int * string
 type value =
   | Raw
   | OCaml
+  | Error of string list
   | Cram of { pad: int; tests: Cram.t list }
   | Toplevel of { pad: int; tests: Toplevel.t list }
 
@@ -28,19 +29,19 @@ type t = {
   line    : int;
   file    : string;
   section : section option;
-  labels  : string list;
+  labels  : (string * string option) list;
   header  : string option;
   contents: string list;
   value   : value;
 }
 
 let dump_string ppf s = Fmt.pf ppf "%S" s
-let dump_strings = Fmt.Dump.list dump_string
 let dump_section = Fmt.(Dump.pair int string)
 
 let dump_value ppf = function
   | Raw -> Fmt.string ppf "Raw"
   | OCaml -> Fmt.string ppf "OCaml"
+  | Error e -> Fmt.pf ppf "Error %a" Fmt.(Dump.list dump_string) e
   | Cram { pad; tests } ->
     Fmt.pf ppf "@[Cram@ {pad=%d;@ tests=%a}@]"
       pad Fmt.(Dump.list Cram.dump) tests
@@ -48,13 +49,15 @@ let dump_value ppf = function
     Fmt.pf ppf "@[Toplevel { pad=%d;@ tests=%a}@]"
       pad Fmt.(Dump.list Toplevel.dump) tests
 
+let dump_labels = Fmt.(Dump.list (pair dump_string Dump.(option dump_string)))
+
 let dump ppf { file; line; section; labels; header; contents; value } =
   Fmt.pf ppf
     "{@[file: %s;@ line: %d;@ section: %a;@ labels: %a;@ header: %a;@
         contents: %a;@ value: %a@]}"
     file line
     Fmt.(Dump.option dump_section) section
-    dump_strings labels
+    dump_labels labels
     Fmt.(Dump.option string) header
     Fmt.(Dump.list dump_string) contents
     dump_value value
@@ -63,49 +66,89 @@ let pp_lines pp = Fmt.(list ~sep:(unit "\n") pp)
 let pp_contents ppf t = Fmt.pf ppf "%a\n" (pp_lines Fmt.string) t.contents
 let pp_footer ppf () = Fmt.string ppf "```\n"
 
+let pp_label ppf (k, v) = match v with
+  | None   -> Fmt.string ppf k
+  | Some v -> Fmt.pf ppf "%s=%s" k v
+
+let pp_labels ppf = function
+  | [] -> ()
+  | l  -> Fmt.pf ppf " %a" Fmt.(list ~sep:(unit ",") pp_label) l
+
 let pp_header ppf t =
-  let pp_labels ppf () = match t.labels with
-    | [] -> ()
-    | l  -> Fmt.pf ppf " %a" Fmt.(list ~sep:(unit ",") string) l
-  in
-  Fmt.pf ppf "```%a%a\n" Fmt.(option string) t.header pp_labels ()
+  Fmt.pf ppf "```%a%a\n" Fmt.(option string) t.header pp_labels t.labels
+
+let pp_error ppf b =
+  match b.value with
+  | Error e -> List.iter (fun e -> Fmt.pf ppf ">> @[<h>%a@]@." Fmt.words e) e
+  | _ -> ()
 
 let pp ppf b =
   pp_header ppf b;
+  pp_error ppf b;
   pp_contents ppf b;
   pp_footer ppf ()
 
-let labels = ["dir"; "non-deterministic"]
+let labels = [
+  "dir"              , [`Any];
+  "non-deterministic", [`None; `Some "command"; `Some "output"]
+]
+
+let pp_value ppf = function
+  | `Any   -> Fmt.string ppf "*"
+  | `None   -> Fmt.string ppf "<none>"
+  | `Some v -> dump_string ppf v
+
+let match_label l p = match p, l with
+  | `Any   , Some _ -> true
+  | `None  , None   -> true
+  | `Some p, Some l -> p=l
+  | _ -> false
+
+let pp_v ppf = function
+  | None   -> Fmt.string ppf "<none>"
+  | Some v -> Fmt.string ppf v
+
+let rec pp_list pp ppf = function
+  | []    -> ()
+  | [x]   -> pp ppf x
+  | [x;y] -> Fmt.pf ppf "%a and %a" pp x pp y
+  | h::t  -> Fmt.pf ppf "%a, %a" pp h (pp_list pp) t
 
 let check_labels t =
-  List.for_all (fun l ->
-      let l = List.filter (fun affix ->
-          String.is_prefix ~affix:(affix ^ "=") l
-        ) labels in
-      List.length l < 2
-    ) t.labels
+  List.fold_left (fun acc (k, v) ->
+      try
+        let vs = List.assoc k labels in
+        if List.exists (match_label v) vs then acc
+        else
+          Fmt.strf "%a is not a valid value for label %S. \
+                    Valid values are %a."
+            pp_v v k (pp_list pp_value) vs
+          :: acc
+      with Not_found ->
+        Fmt.strf "%S is not a valid label. \
+                  Valid labels are are %a."
+          k (pp_list dump_string) (List.map fst labels)
+        :: acc
+    ) [] t.labels
   |> function
-  | true  -> ()
-  | false ->
-    Fmt.failwith "invalid labels: '%a'"
-      Fmt.(list ~sep:(unit ", ") string) t.labels
+  | [] -> Ok ()
+  | es -> Result.Error es
 
 let get_label t label =
-  let label' = label ^ "=" in
-  match List.filter (String.is_prefix ~affix:label') t.labels with
-  | []       -> None
-  | _::_::_  -> Fmt.failwith "Too many labels: %s" label
-  | [x]      -> match String.cut ~sep:label' x with
-    | None   -> assert false
-    | Some x -> Some (snd x)
+  try Some (List.assoc label t.labels)
+  with Not_found -> None
 
-let directory t = get_label t "dir"
+let directory t = match get_label t "dir" with
+  | None   -> None
+  | Some d -> d
 
-let mode t = match get_label t "non-deterministic" with
-  | None           -> `Normal
-  | Some "output"  -> `Non_det `Output
-  | Some "command" -> `Non_det `Command
-  | Some s         -> Fmt.failwith "invalid mode: %s" s
+let mode t =
+  match get_label t "non-deterministic" with
+  | None                  -> `Normal
+  | Some None
+  | Some (Some "output")  -> `Non_det `Output
+  | Some (Some "command") -> `Non_det `Command
+  | Some (Some _)         -> `Normal
 
 let value t = t.value
 let section t = t.section
@@ -127,18 +170,19 @@ let toplevel ~file ~line lines =
   Toplevel { pad; tests }
 
 let eval t =
-  check_labels t;
-  match t.header with
-  | Some ("sh" | "bash") ->
-    let value = cram t.contents in
-    { t with value }
-  | Some "ocaml" ->
-    if is_raw_ocaml t then { t with value = OCaml }
-    else
-      let value = toplevel ~file:t.file ~line:t.line t.contents in
+  match check_labels t with
+  | Error e -> { t with value = Error e }
+  | Ok ()   ->
+    match t.header with
+    | Some ("sh" | "bash") ->
+      let value = cram t.contents in
       { t with value }
-  | _ -> t
-
+    | Some "ocaml" ->
+      if is_raw_ocaml t then { t with value = OCaml }
+      else
+        let value = toplevel ~file:t.file ~line:t.line t.contents in
+        { t with value }
+    | _ -> t
 
 let ends_by_semi_semi c = match List.rev c with
   | h::_ ->
@@ -153,7 +197,7 @@ let executable_contents b =
   let contents =
     if is_raw_ocaml b then b.contents
     else match b.value with
-      | Raw | Cram _ -> []
+      | Error _ | Raw | Cram _ -> []
       | OCaml -> line_directive (b.file, b.line) :: b.contents
       | Toplevel { tests; pad } ->
         List.flatten (
@@ -167,3 +211,11 @@ let executable_contents b =
   in
   if contents = [] || ends_by_semi_semi contents then contents
   else contents @ [";;"]
+
+let labels_of_string s =
+  let labels = String.cuts ~empty:false ~sep:"," s in
+  List.map (fun s ->
+      match String.cut ~sep:"=" s with
+      | None        -> s, None
+      | Some (k, v) -> k, Some v
+    ) labels

@@ -20,6 +20,7 @@
 type value =
   | Raw
   | OCaml
+  | Error of string list
   | Cram of { pad: int; tests: Cram.t list }
   | Toplevel of { pad: int; tests: Toplevel.t list }
 
@@ -31,7 +32,7 @@ type t = {
   line    : int;
   file    : string;
   section : section option;
-  labels  : string list;
+  labels  : (string * string option) list;
   header  : string option;
   contents: string list;
   value   : value;
@@ -85,3 +86,8 @@ val executable_contents: t -> string list
 val eval: t -> t
 (** [eval t] is the same as [t] but with it's value replaced by either
    [Cram] or [Toplevel] blocks, depending on [t]'s header. *)
+
+(** {2 Parsers} *)
+
+val labels_of_string: string -> (string * string option) list
+(** [labels_of_string s] cuts [s] into a list of labels. *)
