@@ -81,7 +81,14 @@ let run_cram_tests ppf temp_file pad tests t =
   Block.pp_footer ppf ()
 
 let eval_test c test =
+  Log.debug (fun l ->
+      l "eval_test %a" Fmt.(Dump.list string) (Toplevel.command test));
   Mdx_top.eval c (Toplevel.command test)
+
+let eval_raw c ~line lines =
+  let t = Toplevel.{line; command = lines; output = [] } in
+  let _ = eval_test c t in
+  ()
 
 let run_toplevel_tests c ppf pad tests t =
   Block.pp_header ppf t;
@@ -102,7 +109,10 @@ let run_toplevel_tests c ppf pad tests t =
     ) tests;
   Block.pp_footer ppf ()
 
-let run () non_deterministic not_verbose silent verbose_findlib expect_test section =
+let run ()
+    non_deterministic not_verbose silent verbose_findlib prelude prelude_str
+    file section
+  =
   let c =
     Mdx_top.init ~verbose:(not not_verbose) ~silent ~verbose_findlib ()
   in
@@ -115,7 +125,15 @@ let run () non_deterministic not_verbose silent verbose_findlib expect_test sect
     | Some re, None   -> Re.execp re ""
     | Some re, Some s -> Re.execp re (snd s)
   in
-  Mdx.run expect_test ~f:(fun file_contents items ->
+  let () = match prelude, prelude_str with
+    | None  , None   -> ()
+    | Some f, None   -> eval_raw c ~line:0 (read_lines f)
+    | None  , Some f -> eval_raw c ~line:0 [f]
+    | Some _, Some _ ->
+      Fmt.failwith "only one of --prelude and --prelude-str shoud be used"
+  in
+
+  Mdx.run file ~f:(fun file_contents items ->
       let temp_file = Filename.temp_file "mdx" ".output" in
       at_exit (fun () -> Sys.remove temp_file);
       let buf = Buffer.create (String.length file_contents + 1024) in
@@ -154,27 +172,14 @@ let run () non_deterministic not_verbose silent verbose_findlib expect_test sect
 
 open Cmdliner
 
-let not_verbose =
-  let doc = "Do not show the result of evaluating toplevel phrases." in
-  Arg.(value & flag & info ["silent-eval"] ~doc)
-
-let silent =
-  let doc = "Do not show any (phrases and findlib directives) results." in
-  Arg.(value & flag & info ["silent"] ~doc)
-
-let verbose_findlib =
-  let doc =
-    "Show the result of evaluating findlib directives in toplevel fragments."
-  in
-  Arg.(value & flag & info ["verbose-findlib"] ~doc)
-
 let cmd =
   let exits = Term.default_exits in
   let man = [] in
   let doc = "Test markdown files." in
   Term.(pure run
-        $ Cli.setup $ Cli.non_deterministic $ not_verbose
-        $ silent $ verbose_findlib $ Cli.file $ Cli.section),
+        $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose
+        $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
+        $ Cli.file $ Cli.section),
   Term.info "mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man
 
 let main () = Term.(exit_status @@ eval cmd)

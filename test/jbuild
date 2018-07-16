@@ -68,6 +68,13 @@
            (run mdx test ${<})
            (diff? ${<} ${<}.corrected)))))
 
+(alias
+ ((name runtest)
+  (deps (prelude.md (package mdx)))
+  (action (progn
+           (run mdx test --prelude-str "#require \"lwt\"" ${<})
+           (diff? ${<} ${<}.corrected)))))
+
 (rule
  ((targets (section.ml))
   (deps    (section.md (package mdx)))
