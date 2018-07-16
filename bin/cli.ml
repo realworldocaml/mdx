@@ -14,6 +14,28 @@ let section =
   in
   Arg.(value & opt (some string) None & info ["section"; "s"] ~doc ~docv:"PAT")
 
+let not_verbose =
+  let doc = "Do not show the result of evaluating toplevel phrases." in
+  Arg.(value & flag & info ["silent-eval"] ~doc)
+
+let silent =
+  let doc = "Do not show any (phrases and findlib directives) results." in
+  Arg.(value & flag & info ["silent"] ~doc)
+
+let verbose_findlib =
+  let doc =
+    "Show the result of evaluating findlib directives in toplevel fragments."
+  in
+  Arg.(value & flag & info ["verbose-findlib"] ~doc)
+
+let prelude =
+  let doc = "A file to load as prelude." in
+  Arg.(value & opt (some string) None & info ["prelude"] ~doc ~docv:"FILE")
+
+let prelude_str =
+  let doc = "A string to load as prelude." in
+  Arg.(value & opt (some string) None & info ["prelude-str"] ~doc ~docv:"STR")
+
 let setup_log style_renderer level =
   Fmt_tty.setup_std_outputs ?style_renderer ();
   Logs.set_level level;
