@@ -108,7 +108,7 @@ module Phrase = struct
   let parse lines =
     let contents = String.concat " " lines in
     let lexbuf = Lexing.from_string contents in
-    let startpos = lexbuf.Lexing.lex_curr_p in
+    let startpos = lexbuf.Lexing.lex_start_p in
     let parsed = match Parse.toplevel_phrase lexbuf with
       | phrase -> Ok phrase
       | exception exn ->
@@ -580,6 +580,7 @@ let patch_env () =
   in ()
 
 let init ~verbose:v ~silent:s ~verbose_findlib () =
+  Clflags.real_paths := false;
   Toploop.set_paths ();
   Compmisc.init_path true;
   Toploop.toplevel_env := Compmisc.initial_env ();
