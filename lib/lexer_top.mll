@@ -10,6 +10,9 @@ rule token = parse
                  { `Output  str :: token lexbuf }
 
 and phrase acc buf = parse
+  | "\n  \\\n  "
+      { Lexing.new_line lexbuf;
+        phrase ("" :: Buffer.contents buf :: acc) (Buffer.create 8) lexbuf }
   | "\n  "
       { Lexing.new_line lexbuf;
         phrase (Buffer.contents buf :: acc) (Buffer.create 8) lexbuf }

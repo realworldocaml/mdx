@@ -42,6 +42,7 @@ let dump ppf ({ line; command; output } : t) =
 let pp_command ?(pad=0) ppf (t : t) = match t.command with
   | [] -> ()
   | l  ->
+    let l = List.map (function "" -> "\\" | s  -> s) l in
     let sep ppf () = Fmt.pf ppf "\n%a  " pp_pad pad in
     Fmt.pf ppf "%a# %a\n" pp_pad pad Fmt.(list ~sep string) l
 

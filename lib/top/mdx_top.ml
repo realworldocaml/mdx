@@ -57,7 +57,7 @@ module Lexbuf = struct
     pos_fname = toplevel_fname;
     pos_lnum = pos.pos_lnum - start.pos_lnum + 1;
     pos_bol  = pos.pos_bol  - start.pos_cnum - 1;
-    pos_cnum = pos.pos_cnum - start.pos_cnum - 1;
+    pos_cnum = pos.pos_cnum - start.pos_cnum ;
   }
 
   let shift_toplevel_location ~start loc =
@@ -108,7 +108,7 @@ module Phrase = struct
   let parse lines =
     let contents = String.concat " " lines in
     let lexbuf = Lexing.from_string contents in
-    let startpos = lexbuf.Lexing.lex_curr_p in
+    let startpos = lexbuf.Lexing.lex_start_p in
     let parsed = match Parse.toplevel_phrase lexbuf with
       | phrase -> Ok phrase
       | exception exn ->
@@ -121,6 +121,7 @@ module Phrase = struct
         if lexbuf.Lexing.lex_last_action <> Lexbuf.semisemi_action then begin
           let rec aux () = match Lexer.token lexbuf with
             | Parser.SEMISEMI | Parser.EOF -> ()
+            | exception Lexer.Error (_, _) -> ()
             | _ -> aux ()
           in
           aux ();
@@ -580,6 +581,7 @@ let patch_env () =
   in ()
 
 let init ~verbose:v ~silent:s ~verbose_findlib () =
+  Clflags.real_paths := false;
   Toploop.set_paths ();
   Compmisc.init_path true;
   Toploop.toplevel_env := Compmisc.initial_env ();
