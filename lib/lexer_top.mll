@@ -10,12 +10,10 @@ rule token = parse
                  { `Output  str :: token lexbuf }
 
 and phrase acc buf = parse
-  | "\n  \\\n  "
+  | ("\n"* as nl) "\n  "
       { Lexing.new_line lexbuf;
-        phrase ("" :: Buffer.contents buf :: acc) (Buffer.create 8) lexbuf }
-  | "\n  "
-      { Lexing.new_line lexbuf;
-        phrase (Buffer.contents buf :: acc) (Buffer.create 8) lexbuf }
+        let nl = List.init (String.length nl) (fun _ -> "") in
+        phrase (nl @ Buffer.contents buf :: acc) (Buffer.create 8) lexbuf }
   | eol
       { Lexing.new_line lexbuf;
         List.rev (Buffer.contents buf :: acc) }
