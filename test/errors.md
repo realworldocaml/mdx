@@ -3,14 +3,14 @@ Errors should be well localized:
 ```ocaml
 # class ['a] stack init = object
     val mutable v = init
-  \
+
     method pop =
       match v with
       | hd :: tl ->
         v <- tl;
         Some hd
       | [] -> None
-  \
+
     method push hd =
       v <- hd :: v
   end;;
