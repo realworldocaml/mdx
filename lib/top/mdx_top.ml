@@ -121,6 +121,7 @@ module Phrase = struct
         if lexbuf.Lexing.lex_last_action <> Lexbuf.semisemi_action then begin
           let rec aux () = match Lexer.token lexbuf with
             | Parser.SEMISEMI | Parser.EOF -> ()
+            | exception Lexer.Error (_, _) -> ()
             | _ -> aux ()
           in
           aux ();
