@@ -57,7 +57,7 @@ module Lexbuf = struct
     pos_fname = toplevel_fname;
     pos_lnum = pos.pos_lnum - start.pos_lnum + 1;
     pos_bol  = pos.pos_bol  - start.pos_cnum - 1;
-    pos_cnum = pos.pos_cnum - start.pos_cnum - 1;
+    pos_cnum = pos.pos_cnum - start.pos_cnum ;
   }
 
   let shift_toplevel_location ~start loc =
