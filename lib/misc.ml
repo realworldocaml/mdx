@@ -73,3 +73,12 @@ let err lexbuf fmt =
   Fmt.kstrf (fun str ->
       Fmt.failwith "%a: %s" pp_position lexbuf str
     ) fmt
+
+let list_init n f =
+  let rec aux i =
+    if i >= n then []
+    else
+      let r = f i in
+      r :: aux (i+1)
+  in
+  aux 0

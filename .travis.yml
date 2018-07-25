@@ -8,4 +8,5 @@ env:
   - PINS="mdx:."
   - DISTRO="debian-stable"
   matrix:
-  - PACKAGE="mdx" OCAML_VERSION="4.06.0"
+  - PACKAGE="mdx" OCAML_VERSION="4.06.1"
+  - PACKAGE="mdx" OCAML_VERSION="4.05.0"
