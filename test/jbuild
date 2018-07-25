@@ -28,6 +28,13 @@
 
 (alias
  ((name runtest)
+  (deps (emptylines.md (package mdx)))
+  (action (progn
+           (run mdx test ${<})
+           (diff? ${<} ${<}.corrected)))))
+
+(alias
+ ((name runtest)
   (deps (heredoc.md section.md (package mdx)))
   (action (progn
            (run mdx test ${<})
