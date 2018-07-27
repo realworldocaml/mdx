@@ -21,6 +21,13 @@
 
 (alias
  ((name runtest)
+  (deps (spaces.md (package mdx)))
+  (action (progn
+           (run mdx test ${<})
+           (diff? ${<} ${<}.corrected)))))
+
+(alias
+ ((name runtest)
   (deps (errors.md (package mdx)))
   (action (progn
            (run mdx test ${<})

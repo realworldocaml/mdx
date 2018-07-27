@@ -18,6 +18,8 @@
 
 (** The type for top-level phrases. *)
 type t = {
+  vpad   : int;
+  hpad   : int;
   line   : int;
   command: string list;
   output : Output.t list;
@@ -29,20 +31,20 @@ val dump: t Fmt.t
 (** [dump] is the printer for dumping toplevel phrases. Useful for
    debugging. *)
 
-val pp: ?pad:int -> t Fmt.t
+val pp: t Fmt.t
 (** [pp] is the pretty-printer for top-level phrases. [pad] is the
    size of the optionnalwhitespace left padding (by default is is
    0). *)
 
-val pp_command: ?pad:int -> t Fmt.t
+val pp_command: t Fmt.t
 (** [pp_command] is the pretty-printer for toplevel commands. *)
 
 (** {2 Parser} *)
 
-val of_lines: file:string -> line:int -> string list -> int * t list
+val of_lines: file:string -> line:int -> string list -> t list
 (** [of_lines ~file ~line lines] is the list of toplevel blocks from
-   file [file] starting at line [line]. Return the whitespace padding
-   as well.*)
+   file [file] starting at line [line]. Return the vertical and
+   horizontal whitespace padding as well.*)
 
 (** {2 Accessors} *)
 
