@@ -19,7 +19,9 @@ depends: [
   "astring"
   "logs"
   "cmdliner"
-  "re"
+  "re" {>= "1.7.2"}
   "ppx_tools"
   "lwt" {test}
 ]
+
+available: ["ocaml-version" >= "4.06.0"]
