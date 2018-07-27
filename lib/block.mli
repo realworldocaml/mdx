@@ -22,7 +22,7 @@ type value =
   | OCaml
   | Error of string list
   | Cram of { pad: int; tests: Cram.t list }
-  | Toplevel of { pad: int; tests: Toplevel.t list }
+  | Toplevel of Toplevel.t list
 
 type section = int * string
 (** The type for sections. *)

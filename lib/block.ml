@@ -23,7 +23,7 @@ type value =
   | OCaml
   | Error of string list
   | Cram of { pad: int; tests: Cram.t list }
-  | Toplevel of { pad: int; tests: Toplevel.t list }
+  | Toplevel of Toplevel.t list
 
 type t = {
   line    : int;
@@ -45,9 +45,8 @@ let dump_value ppf = function
   | Cram { pad; tests } ->
     Fmt.pf ppf "@[Cram@ {pad=%d;@ tests=%a}@]"
       pad Fmt.(Dump.list Cram.dump) tests
-  | Toplevel { pad; tests } ->
-    Fmt.pf ppf "@[Toplevel { pad=%d;@ tests=%a}@]"
-      pad Fmt.(Dump.list Toplevel.dump) tests
+  | Toplevel tests ->
+    Fmt.pf ppf "@[Toplevel %a@]" Fmt.(Dump.list Toplevel.dump) tests
 
 let dump_labels = Fmt.(Dump.list (pair dump_string Dump.(option dump_string)))
 
@@ -159,15 +158,18 @@ let cram lines =
   Cram { pad; tests }
 
 let is_raw_ocaml b =
+  let rec aux = function
+    | []     -> true
+    | h :: t ->
+      let h = String.trim h in
+      if h = "" then aux t
+      else String.length h > 1 && h.[0] <> '#'
+  in
   match b.header, b.contents with
-  | Some "ocaml", h::_ ->
-    let h = String.trim h in
-    String.length h > 1 && h.[0] <> '#'
+  | Some "ocaml", t -> aux t
   | _ -> false
 
-let toplevel ~file ~line lines =
-  let pad, tests = Toplevel.of_lines ~line ~file lines in
-  Toplevel { pad; tests }
+let toplevel ~file ~line lines = Toplevel (Toplevel.of_lines ~line ~file lines)
 
 let eval t =
   match check_labels t with
@@ -199,13 +201,13 @@ let executable_contents b =
     else match b.value with
       | Error _ | Raw | Cram _ -> []
       | OCaml -> line_directive (b.file, b.line) :: b.contents
-      | Toplevel { tests; pad } ->
+      | Toplevel tests ->
         List.flatten (
           List.map (fun t ->
               match Toplevel.command t with
               | [] -> []
               | cs ->
-                let mk s = String.v ~len:(pad+2) (fun _ -> ' ') ^ s in
+                let mk s = String.v ~len:(t.hpad+2) (fun _ -> ' ') ^ s in
                 line_directive (b.file, t.line) :: List.map mk cs
             ) tests)
   in

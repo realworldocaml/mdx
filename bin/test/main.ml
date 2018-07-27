@@ -106,11 +106,11 @@ let eval_test c test =
   Mdx_top.eval c (Toplevel.command test)
 
 let eval_raw c ~line lines =
-  let t = Toplevel.{line; command = lines; output = [] } in
+  let t = Toplevel.{vpad=0; hpad=0; line; command = lines; output = [] } in
   let _ = eval_test c t in
   ()
 
-let run_toplevel_tests c ppf pad tests t =
+let run_toplevel_tests c ppf tests t =
   Block.pp_header ppf t;
   List.iter (fun test ->
       let lines = eval_test c test in
@@ -119,7 +119,8 @@ let run_toplevel_tests c ppf pad tests t =
         if Output.equal output test.output then test.output
         else output
       in
-      Toplevel.pp_command ~pad ppf test;
+      let pad = test.hpad in
+      Toplevel.pp_command ppf test;
       List.iter (function
           | `Ellipsis    -> Output.pp ~pad ppf `Ellipsis
           | `Output line ->
@@ -176,7 +177,7 @@ let run ()
             | true, false, `Non_det `Output, Cram { tests; _ } ->
               Block.pp ppf t;
               List.iter (fun t -> let _ = run_test temp_file t in ()) tests
-            | true, false, `Non_det `Output, Toplevel { tests; _ } ->
+            | true, false, `Non_det `Output, Toplevel tests ->
               Block.pp ppf t;
               List.iter (fun t -> let _ = eval_test c t in ()) tests
             (* Run raw OCaml code *)
@@ -187,8 +188,8 @@ let run ()
             | true, _, _, Cram { tests; pad } ->
               run_cram_tests ?root ppf temp_file pad tests t
             (* Top-level tests. *)
-            | true, _, _, Toplevel { tests; pad } ->
-              run_toplevel_tests c ppf pad tests t
+            | true, _, _, Toplevel tests ->
+              run_toplevel_tests c ppf tests t
         ) items;
       Format.pp_print_flush ppf ();
       Buffer.contents buf);

@@ -4,10 +4,11 @@ let ws = ' ' | '\t'
 rule token = parse
  | eof           { [] }
  | "..." ws* eol { `Ellipsis :: token lexbuf }
+ | '\n'          { `Output "" :: token lexbuf }
  | "# "          { let c = phrase [] (Buffer.create 8) lexbuf in
                    `Command c :: token lexbuf }
- | ([^'#'] [^'\n']* as str) eol
-                 { `Output  str :: token lexbuf }
+ | ([^'#' '\n'] [^'\n']* as str) eol
+                 { `Output str :: token lexbuf }
 
 and phrase acc buf = parse
   | ("\n"* as nl) "\n  "

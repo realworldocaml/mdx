@@ -16,7 +16,7 @@
 
 open Astring
 
-let pad_of_lines = function
+let hpad_of_lines = function
   | []   -> 0
   | h::_ ->
     let i = ref 0 in
