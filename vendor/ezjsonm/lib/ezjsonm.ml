@@ -244,7 +244,7 @@ let map f t path =
     | h::tl ->
       match t with
       | `O d -> Some (`O (map_dict (fun t -> aux t tl) d h))
-      | j    -> None in
+      | _    -> None in
   match aux t path with
   | None   -> raise Not_found
   | Some j -> j
@@ -252,14 +252,16 @@ let map f t path =
 let update t path v =
   map (fun _ -> v) t path
 
+exception Not_utf8
+
 let is_valid_utf8 str =
   try
     Uutf.String.fold_utf_8 (fun _ _ -> function
-        | `Malformed _ -> raise (Failure "utf8")
+        | `Malformed _ -> raise Not_utf8
         | _ -> ()
       ) () str;
     true
-  with Failure "utf8" -> false
+  with Not_utf8 -> false
 
 let encode_string str =
   if is_valid_utf8 str
@@ -271,7 +273,7 @@ let encode_string str =
 let decode_string = function
   | `String str               -> Some str
   | `O [ "hex", `String str ] -> Some (Hex.to_string (`Hex str))
-  | j                         -> None
+  | _                         -> None
 
 let decode_string_exn j =
   match decode_string j with

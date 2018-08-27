@@ -37,6 +37,7 @@ include (Shadow_stdlib
          with module Buffer    := Caml.Buffer
          with module Bytes     := Caml.Bytes
          with module Char      := Caml.Char
+         with module Float     := Caml.Float
          with module Hashtbl   := Caml.Hashtbl
          with module Int32     := Caml.Int32
          with module Int64     := Caml.Int64
@@ -426,9 +427,11 @@ module Export = struct
 
   (** Exceptions stuff *)
 
+  (* Declared as an external so that the compiler may rewrite '%raise' as '%reraise'. *)
+  external raise : exn -> _ = "%raise"
+
   let failwith    = failwith
   let invalid_arg = invalid_arg
-  let raise       = raise
   let raise_s     = Error.raise_s
 
   (** Misc *)

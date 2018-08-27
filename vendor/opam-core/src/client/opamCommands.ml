@@ -319,7 +319,18 @@ let init =
         (not already_init ||
          update_config = None && completion = None && env_hook = None),
         update_config, completion, OpamStd.Option.Op.(env_hook ++ update_config)
-      | Some true -> true, update_config, completion, env_hook
+      | Some true ->
+        if update_config = None && completion = None && env_hook = None then
+          true, None, None, None
+        else
+        let reconfirm = function
+          | None | Some false -> Some false
+          | Some true -> None
+        in
+        true,
+        reconfirm update_config,
+        reconfirm completion,
+        reconfirm env_hook
     in
     let shell = match shell with
       | Some s -> s
@@ -450,7 +461,7 @@ let list ?(force_search=false) () =
           ~doc:"List installed packages only. This is the default when no \
                 further arguments are supplied";
         OpamListCommand.Root, info ~docs ["roots";"installed-roots"]
-          ~doc:"List only packages that were explicitely installed, excluding \
+          ~doc:"List only packages that were explicitly installed, excluding \
                 the ones installed as dependencies";
         OpamListCommand.Available, info ~docs ["a";"available"]
           ~doc:"List only packages that are available on the current system";
@@ -684,14 +695,26 @@ let show =
           show_empty
         else fields, show_empty || fields <> []
       in
+      let atom_locs, locals =
+        List.partition (fun al -> match al with
+            | `Filename _ -> false
+            | _ -> true) atom_locs
+      in
+      let locals, _ = OpamAuxCommands.resolve_locals locals in
+      let mlocals =
+        List.fold_left (fun map (n, _, o) ->
+            OpamPackage.Name.Map.add n (OpamFile.OPAM.read o) map)
+          OpamPackage.Name.Map.empty locals
+      in
       OpamGlobalState.with_ `Lock_none @@ fun gt ->
       let st = OpamListCommand.get_switch_state gt in
       let st, atoms =
-        OpamAuxCommands.simulate_autopin ~quiet:no_lint ~for_view:true st
-          atom_locs
+        if atom_locs = [] then st, [] else
+          OpamAuxCommands.simulate_autopin ~quiet:no_lint ~for_view:true st
+            atom_locs
       in
       OpamListCommand.info st
-        ~fields ~raw_opam:raw ~where ~normalise ~show_empty atoms;
+        ~fields ~raw_opam:raw ~where ~normalise ~show_empty atoms mlocals;
       `Ok ()
     | Some f, [] ->
       let opam = match f with
@@ -1172,16 +1195,8 @@ let install =
        --destdir) to revert."
       Arg.(some dirname) None
   in
-  let locked =
-    mk_flag ["locked"]
-      "With a directory as argument, when a package definition file is found, \
-       if a file by the same name with a $(i,.locked) extension is present \
-       beside it, use the latter. This allows alternate local package \
-       definitions, and is typically useful to provide more constrained \
-       dependencies that describe a precise development environment."
-  in
   let install
-      global_options build_options add_to_roots deps_only restore destdir locked
+      global_options build_options add_to_roots deps_only restore destdir
       assume_built atoms_or_locals =
     apply_global_options global_options;
     apply_build_options build_options;
@@ -1210,7 +1225,7 @@ let install =
     in
     if atoms_or_locals = [] then `Ok () else
     let st, atoms =
-      OpamAuxCommands.autopin st ~simulate:deps_only ~locked atoms_or_locals
+      OpamAuxCommands.autopin st ~simulate:deps_only atoms_or_locals
     in
     if atoms = [] then
       (OpamConsole.msg "Nothing to do\n";
@@ -1228,7 +1243,7 @@ let install =
   in
   Term.ret
     Term.(const install $global_options $build_options
-          $add_to_roots $deps_only $restore $destdir $locked $assume_built
+          $add_to_roots $deps_only $restore $destdir $assume_built
           $atom_or_local_list),
   term_info "install" ~doc ~man
 
@@ -1613,7 +1628,7 @@ let repository =
             repositories. Package definitions are looked in the repositories \
             in increasing rank order, therefore 1 is the highest priority. \
             Negative ints can be used to select from the lowest priority, -1 \
-            being last. $(b,set-repos) can otherwise be used to explicitely \
+            being last. $(b,set-repos) can otherwise be used to explicitly \
             set the repository list at once.")
   in
   let repository global_options command kind short scope rank params =
@@ -1673,7 +1688,12 @@ let repository =
     match command, params with
     | Some `add, name :: url :: security ->
       let name = OpamRepositoryName.of_string name in
-      let url = OpamUrl.parse ?backend:kind url in
+      let backend =
+        match kind with
+        | Some _ -> kind
+        | None -> OpamUrl.guess_version_control url
+      in
+      let url = OpamUrl.parse ?backend url in
       let trust_anchors = match security with
         | [] -> None
         | quorum::fingerprints ->
@@ -1741,7 +1761,12 @@ let repository =
       `Ok ()
     | Some `set_url, (name :: url :: security) ->
       let name = OpamRepositoryName.of_string name in
-      let url = OpamUrl.parse ?backend:kind url in
+      let backend =
+        match kind with
+        | Some _ -> kind
+        | None -> OpamUrl.guess_version_control url
+      in
+      let url = OpamUrl.parse ?backend url in
       let trust_anchors = match security with
         | [] -> None
         | quorum::fingerprints ->
@@ -1934,7 +1959,7 @@ let switch =
       "Don't automatically select newly installed switches." in
   let packages =
     mk_opt ["packages"] "PACKAGES"
-      "When installing a switch, explicitely define the set of packages to set \
+      "When installing a switch, explicitly define the set of packages to set \
        as the compiler."
       Arg.(some (list atom)) None in
   let empty =
@@ -1976,17 +2001,9 @@ let switch =
        containing opam package definitions), install the dependencies of the \
        project but not the project itself."
   in
-  let locked =
-    mk_flag ["locked"]
-      "With a directory as argument, when a package definition file is found, \
-       if a file by the same name with a $(i,.locked) extension is present \
-       beside it, use the latter. This allows alternate local package \
-       definitions, and is typically useful to provide more constrained \
-       dependencies that describe a precise development environment."
-  in
   let switch
       global_options build_options command print_short
-      no_switch packages empty descr full no_install deps_only locked repos
+      no_switch packages empty descr full no_install deps_only repos
       params =
     apply_global_options global_options;
     apply_build_options build_options;
@@ -2004,7 +2021,7 @@ let switch =
         OpamSwitchCommand.guess_compiler_package ?repos rt
           (OpamSwitch.to_string switch)
       | None, None, true ->
-        OpamAuxCommands.get_compatible_compiler ?repos ~locked rt
+        OpamAuxCommands.get_compatible_compiler ?repos rt
           (OpamFilename.dirname_dir
              (OpamSwitch.get_root rt.repos_global.root switch))
       | _ ->
@@ -2084,7 +2101,7 @@ let switch =
       let st =
         if not no_install && not empty && OpamSwitch.is_external switch then
           let st, atoms =
-            OpamAuxCommands.autopin st ~simulate:deps_only ~locked ~quiet:true
+            OpamAuxCommands.autopin st ~simulate:deps_only ~quiet:true
               [`Dirname (OpamFilename.Dir.of_string switch_arg)]
           in
           OpamClient.install st atoms
@@ -2233,7 +2250,7 @@ let switch =
              $global_options $build_options $command
              $print_short_flag
              $no_switch
-             $packages $empty $descr $full $no_install $deps_only $locked
+             $packages $empty $descr $full $no_install $deps_only
              $repos $params)),
   term_info "switch" ~doc ~man
 
@@ -2555,7 +2572,8 @@ let pin ?(unpin_only=false) () =
   Term.ret
     Term.(const pin
           $global_options $build_options
-          $kind $edit $no_act $dev_repo $print_short_flag $command $params),
+          $kind $edit $no_act $dev_repo $print_short_flag
+          $command $params),
   term_info "pin" ~doc ~man
 
 (* SOURCE *)
@@ -2914,16 +2932,16 @@ let clean =
            List.iter (fun d ->
                if not (List.mem d pinning_overlay_dirs) then rmdir d)
              (OpamFilename.dirs (OpamPath.Switch.Overlay.dir root sw));
-           let installed_dev_dirs =
-             OpamPackage.Set.fold (fun nv acc ->
-                 if OpamSwitchState.is_dev_package st nv
-                 then OpamSwitchState.source_dir st nv :: acc
-                 else acc)
-               st.installed []
+           let keep_sources_dir =
+             OpamPackage.Set.elements
+               (OpamPackage.Set.union st.pinned
+                  (OpamPackage.Set.filter (OpamSwitchState.is_dev_package st)
+                     st.installed))
+             |> List.map (OpamSwitchState.source_dir st)
            in
            OpamFilename.dirs (OpamPath.Switch.sources_dir root sw) |>
            List.iter (fun d ->
-               if not (List.mem d installed_dev_dirs) then rmdir d))
+               if not (List.mem d keep_sources_dir) then rmdir d))
          switches);
     if repos then
       (OpamFilename.with_flock `Lock_write (OpamPath.repos_lock gt.root)

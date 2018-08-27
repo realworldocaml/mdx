@@ -39,9 +39,9 @@ val with_tmp_dir_job: (string -> 'a OpamProcess.job) -> 'a OpamProcess.job
     is reached *)
 val verbose_for_base_commands: unit -> bool
 
-(** Returns a directory name, in the temporary directory, composed by [prefix],
-    pid, and random number. *)
-val temp_basename: string -> string
+(** Returns a directory name, in the temporary directory, composed by {i opam}
+    (if [prefix] is not set), pid, and random number. *)
+val mk_temp_dir: ?prefix:string -> unit -> string
 
 (** [copy_file src dst] copies [src] to [dst]. Remove [dst] before the copy
     if it is a link. *)
@@ -252,13 +252,14 @@ val get_lock_fd: lock -> Unix.file_descr
 
 (** {2 Misc} *)
 
-(** Apply a patch file in the current directory. Returns the error if the patch
-    didn't apply. *)
-val patch: dir:string -> string -> exn option OpamProcess.job
+(** Apply a patch file in the current directory. If [preprocess] is set to
+    false, there is no CRLF translation. Returns the error if the patch didn't
+    apply. *)
+val patch: ?preprocess:bool -> dir:string -> string -> exn option OpamProcess.job
 
-(** Create a tempory file in {i ~/.opam/logs/<name>XXX}. ?auto_clean controls
-    whether the file is automatically deleted when opam terminates
-    (default: [true]). *)
+(** Create a temporary file in {i ~/.opam/logs/<name>XXX}, if [dir] is not set.
+    ?auto_clean controls whether the file is automatically deleted when opam
+    terminates (default: [true]). *)
 val temp_file: ?auto_clean:bool -> ?dir:string -> string -> string
 
 (** Print stats *)

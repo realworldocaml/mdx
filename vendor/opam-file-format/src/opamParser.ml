@@ -22,7 +22,7 @@ let parse_from_channel parse_fun ic filename =
   parse_fun OpamLexer.token lexbuf
 
 let parse_from_file parse_fun filename =
-  let ic = open_in filename in
+  let ic = open_in_bin filename in
   try
     let r = parse_from_channel parse_fun ic filename in
     close_in ic;

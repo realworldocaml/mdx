@@ -11,3 +11,6 @@
 *.cmxs
 *.a
 *.o
+_build
+*.install
+.merlin

@@ -23,7 +23,7 @@ add_mounts() {
     done
 }
 
-add_mounts ro /usr /bin /lib /lib32 /lib64 /etc /opt /nix/store /home
+add_mounts ro /usr /bin /lib /lib32 /lib64 /etc /opt /nix/store /rw/usrlocal /home
 
 # C compilers using `ccache` will write to a shared cache directory
 # that remain writeable. ccache seems widespread in some Fedora systems.
@@ -32,7 +32,7 @@ add_ccache_mount() {
       CCACHE_DIR=$HOME/.ccache
       ccache_dir_regex='cache_dir = (.*)$'
       local IFS=$'\n'
-      for f in $(ccache --print-config); do
+      for f in $(ccache --print-config 2>/dev/null); do
         if [[ $f =~ $ccache_dir_regex ]]; then
           CCACHE_DIR=${BASH_REMATCH[1]}
         fi

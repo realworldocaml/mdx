@@ -1,6 +1,6 @@
 opam-version: "1.2"
 name: "opam-file-format"
-version: "2.0.0~rc2"
+version: "2.0.0"
 synopsis: "Parser and printer for the opam file syntax"
 maintainer: "Louis Gesbert <louis.gesbert@ocamlpro.com>"
 authors: "Louis Gesbert <louis.gesbert@ocamlpro.com>"

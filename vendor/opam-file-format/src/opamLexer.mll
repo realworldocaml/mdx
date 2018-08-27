@@ -80,7 +80,9 @@ let buffer_rule r lb =
   Buffer.contents b
 }
 
-let space  = [' ' '\t' '\r']
+let eol = '\r'? '\n'
+
+let space  = [' ' '\t']
 
 let alpha  = ['a'-'z' 'A'-'Z']
 let digit  = ['0'-'9']
@@ -97,7 +99,7 @@ let int    = ('-'? ['0'-'9' '_']+)
 
 rule token = parse
 | space  { token lexbuf }
-| '\n'   { newline lexbuf; token lexbuf }
+| eol    { newline lexbuf; token lexbuf }
 | ":"    { COLON }
 | "{"    { LBRACE }
 | "}"    { RBRACE }
@@ -108,7 +110,8 @@ rule token = parse
 | '\"'   { STRING (buffer_rule string lexbuf) }
 | "\"\"\"" { STRING (buffer_rule string_triple lexbuf) }
 | "(*"   { comment 1 lexbuf; token lexbuf }
-| "#"    { comment_line lexbuf; token lexbuf }
+| '#' [^'\n']*
+         { token lexbuf }
 | "true" { BOOL true }
 | "false"{ BOOL false }
 | int    { INT (int_of_string (Lexing.lexeme lexbuf)) }
@@ -124,7 +127,7 @@ rule token = parse
 
 and string b = parse
 | '\"'    { () }
-| '\n'    { newline lexbuf ;
+| eol     { newline lexbuf ;
             Buffer.add_char b '\n'            ; string b lexbuf }
 | '\\'    { (match escape lexbuf with
             | Some c -> Buffer.add_char b c
@@ -135,7 +138,7 @@ and string b = parse
 
 and string_triple b = parse
 | "\"\"\""    { () }
-| '\n'    { newline lexbuf ;
+| eol     { newline lexbuf ;
             Buffer.add_char b '\n'            ; string_triple b lexbuf }
 | '\\'    { (match escape lexbuf with
             | Some c -> Buffer.add_char b c
@@ -145,7 +148,7 @@ and string_triple b = parse
 | eof     { error "unterminated string" }
 
 and escape = parse
-| '\n' space *
+| eol space *
           { newline lexbuf; None }
 | ['\\' '\"' ''' 'n' 'r' 't' 'b' ' '] as c
           { Some (char_for_backslash c) }
@@ -161,7 +164,3 @@ and comment n = parse
 | eof  { error "unterminated comment" }
 | '\n' { newline lexbuf; comment n lexbuf }
 | _    { comment n lexbuf }
-
-and comment_line = parse
-| [^'\n']* '\n' { newline lexbuf }
-| [^'\n']       { () }

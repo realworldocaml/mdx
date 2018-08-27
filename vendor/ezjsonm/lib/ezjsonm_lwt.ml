@@ -29,7 +29,8 @@ let from_stream (stream: string Lwt_stream.t): value Lwt_stream.t =
       Lwt_stream.get stream >>= function
       | None    -> Lwt.fail (Escape (Jsonm.decoded_range d, (`Expected `Value)))
       | Some str ->
-        Jsonm.Manual.src d str 0 (String.length str);
+        let bytes = Bytes.of_string str in
+        Jsonm.Manual.src d bytes 0 (Bytes.length bytes);
         dec ()
   in
   let rec value v k = match v with
@@ -56,7 +57,7 @@ let from_stream (stream: string Lwt_stream.t): value Lwt_stream.t =
   let open_stream () =
     dec () >>= function
     | `As -> Lwt.return_unit
-    | l   -> Lwt.fail (Escape (Jsonm.decoded_range d, `Expected (`Aval true)))
+    | _   -> Lwt.fail (Escape (Jsonm.decoded_range d, `Expected (`Aval true)))
   in
   let get () =
     dec () >>= fun v ->
