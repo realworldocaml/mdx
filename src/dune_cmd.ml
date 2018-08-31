@@ -153,10 +153,22 @@ let gen_dune_upstream_branches repo () =
                 Cmd.(
                   v "subtree" % "-q" % "add" % "--prefix" % p dir % remote
                   % r.ref % "--squash")
-          | true ->
-              Exec.run_git ~repo
+          | true -> begin
+            let x = Exec.run_git ~repo
                 Cmd.(
                   v "subtree" % "-q" % "pull" % "--prefix" % p dir % remote
                   % r.ref % "--squash" % "-m"
-                  % ("duniverse vendor merge of " ^ r.dir)) )
+                  % ("duniverse vendor merge of " ^ r.dir)) in
+            match x with
+            | Ok () -> Ok ()
+            | Error (`Msg _) ->
+                Logs.info (fun l -> l "Failed to pull subtree, so revendoring %a" Fpath.pp dir);
+                OS.Dir.delete ~recurse:true Fpath.(repo // dir) >>= fun () ->
+                Exec.git_add_all_and_commit ~repo ~message:(Fmt.strf "revendoring %a" Fpath.pp dir) () >>= fun () ->
+              Exec.run_git ~repo
+                Cmd.(
+                  v "subtree" % "-q" % "add" % "--prefix" % p dir % remote
+                  % r.ref % "--squash")
+          end
+                )
     repos
