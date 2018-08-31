@@ -16,7 +16,6 @@
 
 let base_packages =
   [ "menhir"
-  ; "ocamlfind"
   ; "num"
   ; "ppx_tools"
   ; "jbuilder"

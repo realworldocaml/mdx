@@ -69,16 +69,18 @@ let remotes_t =
 
 let pins_t =
   let doc =
-    "Packages to pin for the latest opam metadata and source. You can separate the package name and a url via a comma to specify a manual url (e.g. $(i,mirage,git://github.com/avsm/mirage)).  If a manual is not specified then the $(i,--dev) pin is used.  ppRepeat this flag multiple times for more than one exclusion."
+    "Packages to pin for the latest opam metadata and source. You can separate the package name and a url and a remote branch via commas to specify a manual url (e.g. $(i,mirage,git://github.com/avsm/mirage,fixme)).  If a url is not specified then the $(i,--dev) pin is used.  If a branch is not specified then $(i,master) is used. Repeat this flag multiple times for more than one exclusion."
   in
   let fin s =
-    match String.cut ~sep:"," s with
-    | None -> Ok (s, "--dev")
-    | Some x -> Ok x in
-  let fout ppf (a,b) =
+    match String.cuts ~sep:"," s with
+    | [] -> Ok (s, "--dev","master")
+    | [s;r] -> Ok (s,r,"master") 
+    | [s;r;b] -> Ok (s,r,b)
+    | _ -> failwith "pins must have maximum of 3 commas" in
+  let fout ppf (a,b,c) =
     match b with
     | "--dev" -> Fmt.pf ppf "%s" a
-    | v -> Fmt.pf ppf "%s,%s" a v in
+    | v -> Fmt.pf ppf "%s,%s%s" a v (match c with "master" -> "" | b -> ","^b) in
   let t = Arg.conv ~docv:"PIN" (fin,fout) in
   Arg.(value & opt_all t [] & info ["pin"; "p"] ~docv:"PIN" ~doc)
 

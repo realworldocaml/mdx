@@ -126,7 +126,10 @@ let get_opam_info ~repo ~pins package =
   check_if_dune ~repo package
   >>= fun is_dune ->
   let dev_repo, tag = classify_package ~package ~dev_repo ~archive () in
-  let tag = if List.mem_assoc package.name pins then Some "master" else tag in
+  let tag = 
+    match List.find_opt (fun (a,b,c) -> package.name = a) pins with
+    | None -> Some "master"
+    | Some (_,_,t) -> Some t in
   let is_dune =
     match (is_dune, dev_repo) with
     | true, `Duniverse_fork _ ->
@@ -184,7 +187,8 @@ let calculate_duniverse ~repo file =
   Exec.run_opam_package_deps ~repo (List.map string_of_package roots)
   >>| List.map split_opam_name_and_version
   >>| List.map (fun p ->
-          if List.mem_assoc p.name pins then {p with version= Some "dev"} else p )
+    if List.exists (fun (a,b,c) -> p.name = a) pins then
+          {p with version= Some "dev"} else p )
   >>= fun deps ->
   Logs.app (fun l -> l "Found %d opam dependencies." (List.length deps)) ;
   Logs.debug (fun l ->
@@ -226,7 +230,7 @@ let calculate_duniverse ~repo file =
   Logs.app (fun l -> l "Written %a (%d packages)." Fpath.pp file num_total) ;
   Ok ()
 
-let init_duniverse repo branch roots excludes (pins:(string * string) list) opam_switch remotes () =
+let init_duniverse repo branch roots excludes (pins:(string * string * string) list) opam_switch remotes () =
   let file = Fpath.(repo // Config.opam_lockfile) in
   Bos.OS.Dir.create Fpath.(repo // duniverse_dir)
   >>= fun _ ->

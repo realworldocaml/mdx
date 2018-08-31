@@ -22,6 +22,6 @@ depends: [
   "alcotest" {test}
  ]
 build: [
-  ["dune" "subst" "-p" name "--name" name] {pinned}
+  ["dune" "subst"] {pinned}
   ["dune" "build" "-p" name "-j" jobs]
 ]

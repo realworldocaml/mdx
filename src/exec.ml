@@ -63,6 +63,9 @@ let git_checkout_or_branch ~repo branch =
   | Ok () -> Ok ()
   | Error (`Msg _) -> git_checkout ~args:(Cmd.v "-b") ~repo branch
 
+let git_rm_rf ~repo file =
+  run_git ~repo Cmd.(v "rm" % "-rf" % p file)
+
 let git_add_and_commit ~repo ~message files =
   run_git ~repo Cmd.(v "add" %% files)
   |> ignore_error
@@ -199,11 +202,11 @@ let init_local_opam_switch ~opam_switch ~repo ~remotes () =
         OS.Cmd.(run ~err:err_null cmd)
       ) remotes
 
-let add_opam_dev_pin ~repo (package,url) =
+let add_opam_dev_pin ~repo (package,url,branch) =
   let cmd =
     let open Cmd in
     v "opam" % "pin" %% switch_path repo % "add" % "-n" % (package ^ ".dev")
-    % url
+    % (url ^ "#" ^ branch)
   in
   OS.Cmd.(run ~err:err_null cmd)
 
