@@ -74,6 +74,10 @@ val part: t -> string option
 (** [part t] is the part of the file to synchronize [t] with.
     If lines is not specified synchronize the whole file. *)
 
+val environment: t -> string
+(** [environment t] is the name given to the environment where [t] tests
+    are run. *)
+
 val value: t -> value
 (** [value t] is [t]'s value. *)
 

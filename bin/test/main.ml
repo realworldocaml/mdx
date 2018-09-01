@@ -106,6 +106,56 @@ let run_cram_tests ?root ppf temp_file pad tests t =
     ) tests;
   Block.pp_footer ppf ()
 
+let envs = Hashtbl.create 8
+
+let rec save_summary acc s =
+  let open Env in
+  match s with
+  | Env_value (summary, id, _) ->
+     save_summary (Ident.name id :: acc) summary
+  | Env_module (summary, id, _)
+    | Env_class (summary, id, _)
+    | Env_modtype (summary, id, _)
+    | Env_cltype (summary, id, _)
+    | Env_type (summary, id, _)
+    | Env_functor_arg (summary, id)
+    | Env_open (summary,
+                #if OCAML_MAJOR >= 4 && OCAML_MINOR >= 7
+                _,
+                #endif
+                Pident id)
+    | Env_extension (summary, id, _) ->
+      let acc =
+        if Ident.binding_time id >= 1000
+        then Ident.unique_toplevel_name id :: acc
+        else acc
+      in
+      save_summary acc summary
+  | Env_empty -> acc
+  | Env_constraints (summary, _)
+    | Env_open (summary,
+                #if OCAML_MAJOR >= 4 && OCAML_MINOR >= 7
+                _,
+                #endif
+                _)
+    | Env_copy_types (summary, _) -> save_summary acc summary
+
+let in_env env_name f =
+  let env, names, objs =
+    try Hashtbl.find envs env_name
+    with Not_found ->
+      let env = Compmisc.initial_env () in
+      env, [], []
+  in
+  Toploop.toplevel_env := env;
+  List.iter2 Toploop.setvalue names objs;
+  let res = f () in
+  let env = !Toploop.toplevel_env in
+  let names = save_summary [] (Env.summary env) in
+  let objs = List.map Toploop.getvalue names in
+  Hashtbl.replace envs env_name (env, names, objs);
+  res
+
 let eval_test c test =
   Log.debug (fun l ->
       l "eval_test %a" Fmt.(Dump.list string) (Toplevel.command test));
@@ -223,41 +273,44 @@ let run ()
           | Section _
           | Text _ as t -> Mdx.pp_line ppf t
           | Block t ->
-            match active t, non_deterministic, Block.mode t, Block.value t with
-            (* Print errors *)
-            | _, _, _, Error _ -> Block.pp ppf t
-            (* Skip raw blocks. *)
-            | true, _, _, Raw -> Block.pp ppf t
-            (* The command is not active, skip it. *)
-            | false, _, _, _ -> Block.pp ppf t
-            (* the command is active but non-deterministic so skip everything *)
-            | true, false, `Non_det `Command, _ -> Block.pp ppf t
-            (* the command is active but it''s output is
-               non-deterministic; run it but keep the old output. *)
-            | true, false, `Non_det `Output, Cram { tests; _ } ->
-              Block.pp ppf t;
-              List.iter (fun t -> let _ = run_test temp_file t in ()) tests
-            | true, false, `Non_det `Output, Toplevel tests ->
-              Block.pp ppf t;
-              List.iter (fun t -> let _ = eval_test c t in ()) tests
-            (* Run raw OCaml code *)
-            | true, _, _, OCaml ->
-               (match Block.file t with
-                | Some ml_file ->
-                   update_file_or_block ppf file ml_file t direction
-                | None ->
-                   eval_raw c ~line:t.line t.contents;
-                   Block.pp ppf t )
-            (* Cram tests. *)
-            | true, _, _, Cram { tests; pad } ->
-              run_cram_tests ?root ppf temp_file pad tests t
-            (* Top-level tests. *)
-            | true, _, _, Toplevel tests ->
-               match Block.file t with
-               | Some ml_file ->
-                  update_file_or_block ppf file ml_file t direction
-               | None ->
-                  run_toplevel_tests c ppf tests t
+            in_env (Block.environment t)
+              (fun () ->
+                 match active t, non_deterministic, Block.mode t, Block.value t with
+                 (* Print errors *)
+                 | _, _, _, Error _ -> Block.pp ppf t
+                 (* Skip raw blocks. *)
+                 | true, _, _, Raw -> Block.pp ppf t
+                 (* The command is not active, skip it. *)
+                 | false, _, _, _ -> Block.pp ppf t
+                 (* the command is active but non-deterministic so skip everything *)
+                 | true, false, `Non_det `Command, _ -> Block.pp ppf t
+                 (* the command is active but it''s output is
+                    non-deterministic; run it but keep the old output. *)
+                 | true, false, `Non_det `Output, Cram { tests; _ } ->
+                   Block.pp ppf t;
+                   List.iter (fun t -> let _ = run_test temp_file t in ()) tests
+                 | true, false, `Non_det `Output, Toplevel tests ->
+                   Block.pp ppf t;
+                   List.iter (fun t -> let _ = eval_test c t in ()) tests
+                 (* Run raw OCaml code *)
+                 | true, _, _, OCaml ->
+                   (match Block.file t with
+                    | Some ml_file ->
+                      update_file_or_block ppf file ml_file t direction
+                    | None ->
+                      eval_raw c ~line:t.line t.contents;
+                      Block.pp ppf t )
+                 (* Cram tests. *)
+                 | true, _, _, Cram { tests; pad } ->
+                   run_cram_tests ?root ppf temp_file pad tests t
+                 (* Top-level tests. *)
+                 | true, _, _, Toplevel tests ->
+                   match Block.file t with
+                   | Some ml_file ->
+                     update_file_or_block ppf file ml_file t direction
+                   | None ->
+                     run_toplevel_tests c ppf tests t
+              )
         ) items;
       Format.pp_print_flush ppf ();
       Buffer.contents buf);
