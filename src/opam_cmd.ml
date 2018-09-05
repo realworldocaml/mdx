@@ -85,18 +85,22 @@ let tag_from_archive archive =
               archive ) ;
         tag_of_last_path ()
 
-let classify_package ~package ~dev_repo ~archive () =
+let classify_package ~package ~dev_repo ~archive ~pins () =
   Logs.debug (fun l -> l "dev-repo=%s" dev_repo) ;
   let err msg = (`Error msg, None) in
-  let uri = Uri.of_string dev_repo in
   if List.mem package.name base_packages then (`Virtual, None)
   else
+    let dev_repo =
+      match List.find_opt (fun {pin;url;tag} -> package.name=pin) pins with
+      | Some { url=Some url } -> url
+      | _ -> dev_repo in
     match dev_repo with
-    | "" -> (`Virtual, None)
+    | "" -> Logs.debug (fun l -> l "Mapped %s to a virtual package as it has a blank dev repo" package.name); (`Virtual, None)
     | dev_repo ->
       match archive with
-      | None -> (`Virtual, None)
+      | None -> Logs.debug (fun l -> l "Mapped %s to a virtual package as it has no archive" package.name); (`Virtual, None)
       | Some archive ->
+          let uri = Uri.of_string dev_repo in
           let tag = tag_from_archive archive in
           Logs.debug (fun l ->
               l "Mapped %s -> %s" archive
@@ -125,11 +129,12 @@ let get_opam_info ~repo ~pins package =
   >>= fun archive ->
   check_if_dune ~repo package
   >>= fun is_dune ->
-  let dev_repo, tag = classify_package ~package ~dev_repo ~archive () in
+  let dev_repo, tag = classify_package ~package ~dev_repo ~archive ~pins () in
+  Logs.info (fun l -> l "Classified %a as %a with tag %a" Fmt.(styled `Yellow pp_package) package pp_repo dev_repo Fmt.(option string) tag);
   let tag = 
-    match List.find_opt (fun (a,b,c) -> package.name = a) pins with
-    | None -> Some "master"
-    | Some (_,_,t) -> Some t in
+    match List.find_opt (fun {pin;url;tag} -> package.name = pin) pins with
+    | Some {pin;url;tag} -> tag
+    | None -> tag in
   let is_dune =
     match (is_dune, dev_repo) with
     | true, `Duniverse_fork _ ->
@@ -187,7 +192,7 @@ let calculate_duniverse ~repo file =
   Exec.run_opam_package_deps ~repo (List.map string_of_package roots)
   >>| List.map split_opam_name_and_version
   >>| List.map (fun p ->
-    if List.exists (fun (a,b,c) -> p.name = a) pins then
+    if List.exists (fun {pin;url;tag} -> p.name = pin) pins then
           {p with version= Some "dev"} else p )
   >>= fun deps ->
   Logs.app (fun l -> l "Found %d opam dependencies." (List.length deps)) ;
@@ -230,7 +235,7 @@ let calculate_duniverse ~repo file =
   Logs.app (fun l -> l "Written %a (%d packages)." Fpath.pp file num_total) ;
   Ok ()
 
-let init_duniverse repo branch roots excludes (pins:(string * string * string) list) opam_switch remotes () =
+let init_duniverse repo branch roots excludes pins opam_switch remotes () =
   let file = Fpath.(repo // Config.opam_lockfile) in
   Bos.OS.Dir.create Fpath.(repo // duniverse_dir)
   >>= fun _ ->

@@ -17,6 +17,7 @@
 open Bos
 open Rresult
 open Astring
+open Types
 
 let rec iter fn l =
   match l with hd :: tl -> fn hd >>= fun () -> iter fn tl | [] -> Ok ()
@@ -32,19 +33,6 @@ let map fn l =
        (Ok [])
   |> function Ok v -> Ok (List.rev v) | e -> e
 
-let load_sexp label conv file =
-  Logs.debug (fun l -> l "Reading file %a for %s" Fpath.pp file label) ;
-  OS.File.read file
-  >>= fun b ->
-  try Sexplib.Sexp.of_string b |> conv |> R.ok with exn ->
-    R.error_msg
-      (Fmt.strf "Error parsing %a: %s" Fpath.pp file (Printexc.to_string exn))
-
-let save_sexp label conv file v =
-  Logs.debug (fun l -> l "Writing file %a for %s" Fpath.pp file label) ;
-  let b = Sexplib.Sexp.to_string_hum (conv v) in
-  OS.File.write file b
-
 let run_git ~repo args =
   OS.Cmd.(run ~err:err_null Cmd.(v "git" % "-C" % p repo %% args))
 
@@ -54,6 +42,27 @@ let ignore_error r =
   | Error (`Msg msg) ->
       Logs.debug (fun l -> l "Ignoring error: %s" msg) ;
       Ok ()
+
+let git_archive ~output_dir ~remote ~tag () =
+  OS.Dir.delete ~recurse:true output_dir >>= fun () ->
+  let cmd = Cmd.(v "git" % "clone" % "--depth=1" % "-b" % tag % remote % p output_dir) in
+  OS.Cmd.(run ~err:(err_file ~append:true Config.duniverse_log) cmd) >>= fun () ->
+  OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
+  OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
+
+let git_default_branch ~remote () =
+  let cmd = Cmd.(v "git" % "remote" % "show" % remote) in
+  OS.Cmd.(run_out cmd |> to_lines) >>= fun l ->
+  List.map String.trim l |> fun l ->
+  List.filter (String.is_prefix ~affix:"HEAD branch") l |>
+  function
+  |[hd] -> begin
+    match String.cut ~sep:":" hd with
+    | Some (_,branch) -> Ok (String.trim branch)
+    | None -> R.error_msg "unable to find remote branch"
+  end
+  |[] -> R.error_msg (Fmt.strf "unable to parse git remote show %s: no HEAD branch lines found (output was:\n%s)" remote (String.concat ~sep:"-\n" l))
+  |_ -> R.error_msg (Fmt.strf "unable to parse git remote show %s: too many HEAD branch lines found" remote)
 
 let git_checkout ?(args= Cmd.empty) ~repo branch =
   run_git ~repo Cmd.(v "checkout" %% args % branch)
@@ -202,11 +211,16 @@ let init_local_opam_switch ~opam_switch ~repo ~remotes () =
         OS.Cmd.(run ~err:err_null cmd)
       ) remotes
 
-let add_opam_dev_pin ~repo (package,url,branch) =
+let add_opam_dev_pin ~repo {Opam.pin;url;tag} =
+  let targ =
+    match url,tag with
+    | None, _ -> "--dev"
+    | Some url, Some tag -> Fmt.strf "%s#%s" url tag
+    | Some url, None -> url in
   let cmd =
     let open Cmd in
-    v "opam" % "pin" %% switch_path repo % "add" % "-n" % (package ^ ".dev")
-    % (url ^ "#" ^ branch)
+    v "opam" % "pin" %% switch_path repo % "add" % "-n" % (pin ^ ".dev")
+    % targ
   in
   OS.Cmd.(run ~err:err_null cmd)
 

@@ -68,19 +68,22 @@ let remotes_t =
   Arg.(value & opt_all string [] & info ["opam-remote"] ~docv:"OPAM_REMOTE" ~doc)
 
 let pins_t =
+  let open Types.Opam in
   let doc =
     "Packages to pin for the latest opam metadata and source. You can separate the package name and a url and a remote branch via commas to specify a manual url (e.g. $(i,mirage,git://github.com/avsm/mirage,fixme)).  If a url is not specified then the $(i,--dev) pin is used.  If a branch is not specified then $(i,master) is used. Repeat this flag multiple times for more than one exclusion."
   in
   let fin s =
     match String.cuts ~sep:"," s with
-    | [] -> Ok (s, "--dev","master")
-    | [s;r] -> Ok (s,r,"master") 
-    | [s;r;b] -> Ok (s,r,b)
+    | [] -> failwith "unexpected pin error"
+    | [pin] -> Ok {pin;url=None;tag=None}
+    | [pin;url] -> Ok {pin;url=Some url;tag=None}
+    | [pin;url;tag] -> Ok {pin; url=Some url; tag=Some tag}
     | _ -> failwith "pins must have maximum of 3 commas" in
-  let fout ppf (a,b,c) =
-    match b with
-    | "--dev" -> Fmt.pf ppf "%s" a
-    | v -> Fmt.pf ppf "%s,%s%s" a v (match c with "master" -> "" | b -> ","^b) in
+  let fout ppf {pin;url;tag} =
+    match url,tag with
+    | None,_ -> Fmt.(pf ppf "%s" pin)
+    | Some url, None -> Fmt.(pf ppf "%s,%s" pin url)
+    | Some url, Some tag -> Fmt.(pf ppf "%s,%s,%s" pin url tag) in
   let t = Arg.conv ~docv:"PIN" (fin,fout) in
   Arg.(value & opt_all t [] & info ["pin"; "p"] ~docv:"PIN" ~doc)
 

@@ -39,10 +39,16 @@ module Opam = struct
     ; is_dune: bool [@default true] [@sexp_drop_default] }
   [@@deriving sexp]
 
+  type pin = {
+    pin: string;
+    url: string option [@default None] [@sexp_drop_default];
+    tag: string option [@default None] [@sexp_drop_default]
+  } [@@deriving sexp]
+
   type t =
     { roots: package list
     ; excludes: package list
-    ; pins: (string * string * string) list
+    ; pins: pin list
     ; pkgs: entry list
     ; remotes: string list [@default []]
     ; branch: string [@default "master"]
@@ -62,9 +68,9 @@ module Opam = struct
 
   let pp = pp_sexp sexp_of_t
 
-  let load file = Exec.load_sexp "opam duniverse" t_of_sexp file
+  let load file = Persist.load_sexp "opam duniverse" t_of_sexp file
 
-  let save file v = Exec.save_sexp "opam duniverse" sexp_of_t file v
+  let save file v = Persist.save_sexp "opam duniverse" sexp_of_t file v
 
   let sort_uniq l = List.sort_uniq (fun a b -> String.compare a.name b.name) l
 end
@@ -82,7 +88,7 @@ module Dune = struct
 
   let pp = pp_sexp sexp_of_t
 
-  let load file = Exec.load_sexp "git duniverse" t_of_sexp file
+  let load file = Persist.load_sexp "git duniverse" t_of_sexp file
 
-  let save file v = Exec.save_sexp "git duniverse" sexp_of_t file v
+  let save file v = Persist.save_sexp "git duniverse" sexp_of_t file v
 end
