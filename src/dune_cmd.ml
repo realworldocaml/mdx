@@ -19,6 +19,10 @@ open Rresult
 open Astring
 open Bos
 
+let pp_header = Fmt.(styled `Blue string)
+
+let header = "==> "
+
 let dune_repo_of_opam ?(verify_refs = true) opam =
   let dir = Opam.(opam.package.name) in
   match opam.Opam.dev_repo with
@@ -45,7 +49,10 @@ let dedup_git_remotes dunes =
      remotes, but for now we error if we require different tags for the same
      git remote *)
   let open Dune in
-  Logs.app (fun l -> l "Deduplicating the git remotes.") ;
+  Logs.app (fun l ->
+      l "%aDeduplicating the %a git remotes." pp_header header
+        Fmt.(styled `Green int)
+        (List.length dunes) ) ;
   let by_repo = Hashtbl.create 7 in
   List.iter
     (fun dune ->
@@ -62,23 +69,31 @@ let dedup_git_remotes dunes =
           let tags = List.map (fun {ref} -> ref) dunes in
           let uniq_tags = List.sort_uniq String.compare tags in
           if List.length uniq_tags = 1 then
-            Logs.app (fun l ->
-                l "Multiple entries found for %s with same tag: %s." upstream
-                  (List.hd uniq_tags) )
+            Logs.info (fun l ->
+                l
+                  "%aMultiple entries found for package %a with same tag, so \
+                   just adding a single entry: %s."
+                  pp_header header
+                  Fmt.(styled `Yellow string)
+                  upstream (List.hd uniq_tags) )
           else
             let latest_tag =
               List.sort OpamVersionCompare.compare tags |> List.rev |> List.hd
             in
             Logs.app (fun l ->
                 l
-                  "Multiple entries found for %s with clashing tags: %s.\n\n\
-                   We are selecting the latest version '%s' for use with all \
-                   the packages that share the same development repo.\n\n\
-                   In the future, we may implement some fancier subtree \
-                   resolution to make it possible to support multiple tags \
-                   from the same repository, but not yet."
+                  "%aMultiple entries found for %a with clashing tags: %a. We \
+                   are selecting the latest version '%a' for use with all the \
+                   packages that share the same development repo In the \
+                   future, we may implement some fancier subtree resolution \
+                   to make it possible to support multiple tags from the same \
+                   repository, but not yet."
+                  pp_header header
+                  Fmt.(styled `Yellow string)
                   upstream
-                  (String.concat ~sep:", " uniq_tags)
+                  Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
+                  uniq_tags
+                  Fmt.(styled `Green string)
                   latest_tag ) ;
             Hashtbl.replace by_repo upstream
               (List.map (fun d -> {d with ref= latest_tag}) dunes) )
@@ -95,6 +110,10 @@ let dedup_git_remotes dunes =
        by_repo [])
 
 let gen_dune_lock repo () =
+  Logs.app (fun l ->
+      l "%aCalculating Git repositories to vendor from %a." pp_header header
+        Fmt.(styled `Cyan Fpath.pp)
+        Config.opam_lockfile ) ;
   Bos.OS.Dir.create Fpath.(repo // Config.duniverse_dir)
   >>= fun _ ->
   let ifile = Fpath.(repo // Config.opam_lockfile) in
@@ -109,12 +128,15 @@ let gen_dune_lock repo () =
   let open Dune in
   Dune.save ofile {repos}
   >>= fun () ->
-  Logs.app (fun l -> l "Wrote Dune lockfile to %a." Fpath.pp ofile) ;
+  Logs.app (fun l ->
+      l "%aWrote Dune lockfile with %a entries to %a." pp_header header
+        Fmt.(styled `Green int)
+        (List.length repos)
+        Fmt.(styled `Cyan Fpath.pp)
+        ofile ) ;
   Ok ()
 
 let status repo target_branch () = Ok ()
-
-let prune_recursive_vendors = Dune.(())
 
 let gen_dune_upstream_branches repo () =
   Bos.OS.Dir.create Fpath.(repo // Config.duniverse_dir)
@@ -126,7 +148,7 @@ let gen_dune_upstream_branches repo () =
   let repos = dune.repos in
   Exec.iter
     (fun r ->
-      let message = Fmt.strf "update vendor for %a" pp_repo r in
+      let message = Fmt.strf "Update vendor for %a" pp_repo r in
       let output_dir = Fpath.(Config.vendor_dir / r.dir) in
       Exec.git_archive ~output_dir ~remote:r.upstream ~tag:r.ref ()
       >>= fun () ->

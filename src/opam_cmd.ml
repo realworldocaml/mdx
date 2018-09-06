@@ -215,7 +215,7 @@ let calculate_duniverse ~repo file =
   Logs.app (fun l ->
       l
         "%aQuerying local opam switch for their metadata and Dune \
-         compatability."
+         compatibility."
         pp_header header ) ;
   Exec.map (fun p -> get_opam_info ~repo ~pins p) deps
   >>= fun pkgs ->
@@ -245,13 +245,18 @@ let calculate_duniverse ~repo file =
           not_dune_pkgs )
   else
     Logs.app (fun l ->
-        l "%aAll %d packages are Dune compatible! It's a spicy miracle!"
-          pp_header header num_total ) ;
+        l "%aAll %a packages are Dune compatible! It's a spicy miracle!"
+          pp_header header
+          Fmt.(styled `Green int)
+          num_total ) ;
   save file t
   >>= fun () ->
   Logs.app (fun l ->
-      l "%aWritten %a (%d packages)." pp_header header Fpath.pp file num_total
-  ) ;
+      l "%aWritten %a opam packages to %a." pp_header header
+        Fmt.(styled `Green int)
+        num_total
+        Fmt.(styled `Cyan Fpath.pp)
+        file ) ;
   Ok ()
 
 let init_duniverse repo branch roots excludes pins opam_switch remotes () =
