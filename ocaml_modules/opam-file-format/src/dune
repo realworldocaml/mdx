@@ -1,0 +1,9 @@
+(library
+  (name opam_file_format)
+  (public_name opam-file-format)
+  (synopsis "opam file format handling library")
+  (wrapped false)
+  (modules_without_implementation opamParserTypes))
+
+(ocamlyacc opamBaseParser)
+(ocamllex opamLexer)

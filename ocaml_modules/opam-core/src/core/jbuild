@@ -1,0 +1,19 @@
+(jbuild_version 1)
+
+(library
+  ((name opam_core)
+   (public_name opam-core)
+   (synopsis "OCaml Package Manager core internal stdlib")
+   (libraries (re ocamlgraph unix bigarray
+               (select opamStubs.ml from
+                      (opam-core.stubs -> opamStubs.ml.win32)
+                      ( -> opamStubs.ml.dummy))))
+   (flags (:standard (:include ../ocaml-flags-standard.sexp) (:include ../ocaml-context-flags.sexp)))
+   (preprocess (per_module
+                  ((action (run ${bin:cppo} -V OCAML:${ocaml_version} ${<})) (opamCompat))))
+   (wrapped false)))
+
+(rule
+  ((targets (opamCoreConfig.ml))
+   (deps (opamCoreConfig.ml.in ../../shell/subst_var.ml))
+   (action (with-stdout-to ${@} (run ocaml ../../shell/subst_var.ml DEVELOPER false opamCoreConfig.ml.in)))))
