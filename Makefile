@@ -1,7 +1,7 @@
 .PHONY: build clean test
 
 build:
-	dune build duniverse.install
+	dune build duniverse.install --profile=release
 
 test:
 	dune runtest

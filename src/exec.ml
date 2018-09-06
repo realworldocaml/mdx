@@ -173,7 +173,7 @@ let get_opam_field ~repo ~field package =
   match r with
   | "" -> Ok OpamParserTypes.(List (("", 0, 0), []))
   | r -> (
-    try Ok (OpamParser.value_from_string r "") with exn ->
+    try Ok (OpamParser.value_from_string r "") with _ ->
       Error (`Msg (Fmt.strf "parsing error for: '%s'" r)) )
 
 let get_opam_field_string_value ~repo ~field package =
@@ -296,7 +296,7 @@ let get_github_branches ~user ~repo =
     Ok
       Ezjsonm.(
         get_list (fun d -> get_dict d |> List.assoc "name" |> get_string) j)
-  with exn ->
+  with _ ->
     R.error_msg
       (Fmt.strf "Unable to get remote branches for github/%s/%s" user repo)
 
@@ -308,7 +308,7 @@ let get_github_tags ~user ~repo =
     Ok
       Ezjsonm.(
         get_list (fun d -> get_dict d |> List.assoc "name" |> get_string) j)
-  with exn ->
+  with _ ->
     R.error_msg
       (Fmt.strf "Unable to get remote branches for github/%s/%s: %s" user repo
          Ezjsonm.(to_string (wrap j)))

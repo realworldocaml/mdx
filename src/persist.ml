@@ -16,7 +16,6 @@
 
 open Bos
 open Rresult
-open Astring
 
 let load_sexp label conv file =
   Logs.debug (fun l -> l "Reading file %a for %s" Fpath.pp file label) ;
