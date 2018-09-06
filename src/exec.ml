@@ -47,8 +47,8 @@ let run_and_log_s ?(ignore_error = false) cmd =
               Fmt.(styled `Cyan Cmd.pp)
               cmd
               Fmt.(styled `Red text)
-              stderr Fmt.text stdout ) ;
-        Error (`Msg (Fmt.strf "Command execution failed: %a" Cmd.pp cmd))
+              stderr Fmt.text (String.trim stdout) ) ;
+        Error (`Msg "Command execution failed")
     | Error (`Msg m) -> Error (`Msg m) )
 
 let run_and_log ?ignore_error cmd =
