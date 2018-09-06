@@ -23,7 +23,10 @@ let rec iter fn l =
   match l with hd :: tl -> fn hd >>= fun () -> iter fn tl | [] -> Ok ()
 
 let err_log = OS.Cmd.err_file ~append:true Config.duniverse_log
-let out_log = OS.Cmd.(to_null) (* TODO log to file *)
+
+let out_log = OS.Cmd.(to_null)
+
+(* TODO log to file *)
 
 let map fn l =
   List.map fn l
@@ -37,7 +40,8 @@ let map fn l =
   |> function Ok v -> Ok (List.rev v) | e -> e
 
 let run_git ~repo args =
-  OS.Cmd.(run_out ~err:err_log Cmd.(v "git" % "-C" % p repo %% args) |> out_log)
+  OS.Cmd.(
+    run_out ~err:err_log Cmd.(v "git" % "-C" % p repo %% args) |> out_log)
 
 let ignore_error r =
   match r with
@@ -111,7 +115,8 @@ let git_push ?(args = Cmd.empty) ~repo remote branch =
   run_git ~repo Cmd.(v "push" %% args % remote % branch)
 
 let git_ls_remote remote =
-  OS.Cmd.(run_out ~err:err_log Cmd.(v "git" % "ls-remote" % remote) |> to_lines)
+  OS.Cmd.(
+    run_out ~err:err_log Cmd.(v "git" % "ls-remote" % remote) |> to_lines)
   >>= map (fun l ->
           match String.cuts ~empty:false ~sep:"\t" l with
           | [_; r] -> (
@@ -133,7 +138,8 @@ let git_ls_remote remote =
   Ok (tags, heads)
 
 let git_local_duniverse_remotes ~repo () =
-  OS.Cmd.(run_out ~err:err_log Cmd.(v "git" % "-C" % p repo % "remote") |> to_lines)
+  OS.Cmd.(
+    run_out ~err:err_log Cmd.(v "git" % "-C" % p repo % "remote") |> to_lines)
   >>| List.filter (String.is_prefix ~affix:"duniverse-")
 
 let switch_path repo =
@@ -211,10 +217,13 @@ let init_local_opam_switch ~opam_switch ~repo ~remotes () =
   OS.Dir.exists Fpath.(Config.duniverse_dir / "_opam")
   >>= function
   | true ->
-      Logs.debug (fun l ->
-          l "Local opam switch already exists, so not creating" ) ;
+      Logs.info (fun l ->
+          l "Local opam switch already exists, so not creating a new one." ) ;
       Ok ()
   | false ->
+      Logs.info (fun l ->
+          l "Initialising a fresh local opam switch in %a." Fpath.pp
+            Fpath.(Config.duniverse_dir / "_opam") ) ;
       OS.Dir.create Config.duniverse_dir
       >>= fun _ ->
       let cmd =
