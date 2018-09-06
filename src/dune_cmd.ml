@@ -84,9 +84,9 @@ let dedup_git_remotes dunes =
                 l
                   "%aMultiple entries found for %a with clashing tags: %a. We \
                    are selecting the latest version '%a' for use with all the \
-                   packages that share the same development repo In the \
-                   future, we may implement some fancier subtree resolution \
-                   to make it possible to support multiple tags from the same \
+                   packages that share the same development repo. We may \
+                   implement some fancier subtree resolution to make it \
+                   possible to support multiple tags from the same \
                    repository, but not yet."
                   pp_header header
                   Fmt.(styled `Yellow string)
@@ -148,6 +148,11 @@ let gen_dune_upstream_branches repo () =
   let repos = dune.repos in
   Exec.iter
     (fun r ->
+      let output_dir = Fpath.(Config.vendor_dir / r.dir) in
+      Logs.app (fun l ->
+          l "%aPulling sources for %a." pp_header header
+            Fmt.(styled `Cyan Fpath.pp)
+            output_dir ) ;
       let message = Fmt.strf "Update vendor for %a" pp_repo r in
       let output_dir = Fpath.(Config.vendor_dir / r.dir) in
       Exec.git_archive ~output_dir ~remote:r.upstream ~tag:r.ref ()

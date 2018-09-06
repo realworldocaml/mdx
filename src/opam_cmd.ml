@@ -245,7 +245,7 @@ let calculate_duniverse ~repo file =
           not_dune_pkgs )
   else
     Logs.app (fun l ->
-        l "%aAll %a packages are Dune compatible! It's a spicy miracle!"
+        l "%aAll %a opam packages are Dune compatible! It's a spicy miracle!"
           pp_header header
           Fmt.(styled `Green int)
           num_total ) ;
