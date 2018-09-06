@@ -3,14 +3,14 @@
 build:
 	dune build duniverse.install --profile=release
 
-test:
-	dune runtest
-
 clean:
 	dune clean
 
 doc:
-	dune build @doc
+	dune build @doc --profile=release
+
+help-%:
+	dune exec --profile=release -- duniverse $(*F) --help
 
 git-lock:
 	dune exec --profile=release -- duniverse git-lock $(DEBUG)
