@@ -1,7 +1,7 @@
 .PHONY: build clean test
 
 build:
-	dune build duniverse.install --profile=release
+	dune build duniverse.install README.md --profile=release
 
 clean:
 	dune clean

@@ -1,0 +1,8 @@
+(env
+ (release
+  (flags (:standard -w -3))))
+
+(rule
+ (targets README.md)
+ (mode promote)
+ (action (copy doc/usage.md %{targets})))

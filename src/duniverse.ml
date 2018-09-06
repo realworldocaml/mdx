@@ -307,9 +307,9 @@ let default_cmd =
          locally:"
     ; `P "\\$ $(b,duniverse git-lock --pin lwt utop craml)"
     ; `Noblank
-    ; `P "\\$ $(b,duniverse git-pull"
+    ; `P "\\$ $(b,duniverse git-pull)"
     ; `Noblank
-    ; `P "\\$ $(b,duniverse git-merge"
+    ; `P "\\$ $(b,duniverse git-merge)"
     ; `P
         "Also see $(i,https://github.com/avsm/platform) for an example of a \
          fully bootstrapping use of this tool." ]
