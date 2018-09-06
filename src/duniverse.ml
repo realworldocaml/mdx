@@ -148,7 +148,7 @@ let vendor_lock_cmd =
     term_result
       ( const Git_cmd.update $ target_repo_t $ branch_t $ pkg_t $ exclude_t
       $ pins_t $ ocaml_switch_t $ remotes_t $ setup_logs () ))
-  , Term.info "vendor-lock" ~doc ~exits ~man )
+  , Term.info "git-lock" ~doc ~exits ~man )
 
 let vendor_pull_cmd =
   let doc = "vendor-pull TODO" in
@@ -156,7 +156,7 @@ let vendor_pull_cmd =
   let man = [`S Manpage.s_description; `P "TODO"] in
   ( (let open Term in
     term_result (const Git_cmd.pull $ target_repo_t $ branch_t $ setup_logs ()))
-  , Term.info "vendor-pull" ~doc ~exits ~man )
+  , Term.info "git-pull" ~doc ~exits ~man )
 
 let vendor_merge_cmd =
   let doc = "vendor-merge TODO" in
@@ -164,7 +164,7 @@ let vendor_merge_cmd =
   let man = [`S Manpage.s_description; `P "TODO"] in
   ( (let open Term in
     term_result (const Git_cmd.merge $ target_repo_t $ branch_t $ setup_logs ()))
-  , Term.info "vendor-merge" ~doc ~exits ~man )
+  , Term.info "git-merge" ~doc ~exits ~man )
 
 let status_cmd =
   let doc = "status TODO" in

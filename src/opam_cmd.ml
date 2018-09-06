@@ -135,21 +135,6 @@ let get_opam_info ~repo ~pins package =
     match List.find_opt (fun {pin;url;tag} -> package.name = pin) pins with
     | Some {pin;url;tag} -> tag
     | None -> tag in
-  let is_dune =
-    match (is_dune, dev_repo) with
-    | true, `Duniverse_fork _ ->
-        Logs.err (fun l ->
-            l
-              "%a appears to be ported to Dune upstream. Do you still need a \
-               Duniverse fork?"
-              pp_package package ) ;
-        true
-    | false, `Duniverse_fork _ ->
-        Logs.info (fun l ->
-            l "%a is a Duniverse fork override" pp_package package ) ;
-        true
-    | is_dune, _ -> is_dune
-  in
   Ok {package; dev_repo; tag; is_dune}
 
 let package_is_valid {package; dev_repo} =
