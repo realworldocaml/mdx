@@ -82,19 +82,19 @@ let dedup_git_remotes dunes =
             in
             Logs.app (fun l ->
                 l
-                  "%aMultiple entries found for %a with clashing tags: %a. We \
-                   are selecting the latest version '%a' for use with all the \
-                   packages that share the same development repo. We may \
-                   implement some fancier subtree resolution to make it \
-                   possible to support multiple tags from the same \
-                   repository, but not yet."
+                  "%a@[Multiple entries found for %a with clashing tags \
+                   @[<1>'%a'@], so selected @[<1>'%a'@]%a@]"
                   pp_header header
                   Fmt.(styled `Yellow string)
                   upstream
                   Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
                   uniq_tags
                   Fmt.(styled `Green string)
-                  latest_tag ) ;
+                  latest_tag Fmt.text
+                  " for use with the opam packages that share the same repo. \
+                   We may implement some fancier subtree resolution to make \
+                   it possible to support multiple tags from the same \
+                   repository, but not yet." ) ;
             Hashtbl.replace by_repo upstream
               (List.map (fun d -> {d with ref= latest_tag}) dunes) )
     by_repo ;
