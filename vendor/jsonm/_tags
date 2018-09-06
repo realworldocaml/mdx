@@ -1,5 +1,0 @@
-true : bin_annot, safe_string, package(bytes), package(uchar), package(uutf)
-<src> : include
-<test> : include
-<test/jsontrip.*> : package(unix)
-<test/examples.*> : package(unix)

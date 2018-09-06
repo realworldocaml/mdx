@@ -1,6 +1,0 @@
-(jbuild_version 1)
-(library
-  ((name topkg_care)
-   (public_name topkg.care)
-   (libraries (topkg opam-format cmdliner bos.setup))
-   (wrapped false)))
