@@ -76,8 +76,8 @@ let pins_t =
      specify a manual url (e.g. \
      $(i,mirage,git://github.com/avsm/mirage,fixme)).  If a url is not \
      specified then the $(i,--dev) pin is used.  If a branch is not specified \
-     then $(i,master) is used. Repeat this flag multiple times for more than \
-     one exclusion."
+     then the default remote branch is used. Repeat this flag multiple times \
+     for more than one exclusion."
   in
   let fin s =
     match String.cuts ~sep:"," s with
@@ -98,7 +98,7 @@ let pins_t =
 
 let ocaml_switch_t =
   let doc =
-    "Name of the ocaml compiler to use to resolve opam packages.  A local \
+    "Name of the OCaml compiler to use to resolve opam packages.  A local \
      switch is created in $(i,.duniverse) where pins and packages can be \
      tracked independently of your main opam switch.  This defaults to \
      $(i,ocaml-system), but you can use this flag to supply a more specific \
@@ -111,12 +111,28 @@ let ocaml_switch_t =
 let pkg_t =
   let open Arg in
   value & pos_all string []
-  & info [] ~doc:"opam packages to calculate duniverse for" ~docv:"PACKAGES"
+  & info []
+      ~doc:
+        "opam packages to calculate duniverse for. If not supplied, any local \
+         opam metadata files are used as the default package list."
+      ~docv:"PACKAGES"
 
 let opam_cmd =
-  let doc = "opam TODO" in
+  let doc = "analyse opam metadata to generate a standalone package list" in
   let exits = Term.default_exits in
-  let man = [`S Manpage.s_description; `P "TODO"] in
+  let man =
+    [ `S Manpage.s_description
+    ; `P
+        "This command analyses the opam package metadata and generates an \
+         $(i,opam.sxp) configuration file that contains the full dependency \
+         list of packages and their compatibility status with Dune."
+    ; `P
+        "In the situation where a package has not been ported to Dune \
+         upstream, we maintain a hardcoded list of forks that contain Dune \
+         overlays at $(i,https://github.com/dune-universe).  This command \
+         will detect these packages and supply the forked version if \
+         available." ]
+  in
   ( (let open Term in
     term_result
       ( const Opam_cmd.init_duniverse
@@ -125,9 +141,26 @@ let opam_cmd =
   , Term.info "opam" ~doc ~exits ~man )
 
 let dune_lock_cmd =
-  let doc = "dune-lock TODO" in
+  let doc = "generate git tags suitable for vendoring from opam metadata" in
   let exits = Term.default_exits in
-  let man = [`S Manpage.s_description; `P "TODO"] in
+  let man =
+    [ `S Manpage.s_description
+    ; `P
+        "This command takes the standalone opam package list calculated using \
+         $(i,duniverse opam) and converts it into a set of git tags that can \
+         be put into the $(b,ocaml_modules/) subdirectory and act as vendored \
+         copies of the source code."
+    ; `P
+        "The opam packages are sorted by their Git remotes and deduplicated \
+         so that only one clone is used per Git remote.  In the event of \
+         multiple conflicting tags being found, the latest one is selected \
+         and a warning printed.  The output is stored in \
+         $(b,.duniverse/dune.sxp) and can be hand-edited if necessary to \
+         tweak your vendoring setup."
+    ; `P
+        "This is currently a separate command as it will be extended in the \
+         future to non-opam package managers as well." ]
+  in
   ( (let open Term in
     term_result (const Dune_cmd.gen_dune_lock $ target_repo_t $ setup_logs ()))
   , Term.info "lock" ~doc ~exits ~man )
