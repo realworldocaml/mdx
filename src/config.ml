@@ -71,3 +71,5 @@ let duniverse_lockfile = Fpath.(duniverse_dir / "dune.sxp")
 let vendor_dir = Fpath.v "ocaml_modules"
 
 let duniverse_log = Fpath.v ".duniverse/log"
+
+let vendor_branch branch = Fmt.strf "duniverse-of-%s" branch

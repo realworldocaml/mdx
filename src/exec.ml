@@ -43,6 +43,12 @@ let run_git ~repo args =
   OS.Cmd.(
     run_out ~err:err_log Cmd.(v "git" % "-C" % p repo %% args) |> out_log)
 
+let is_git_repo_clean ~repo () =
+  let cmd = Cmd.(v "git" % "-C" % p repo % "diff" % "--quiet") in
+  match OS.Cmd.(run_out ~err:err_log cmd |> to_string) with
+  | Ok _ -> Ok true
+  | Error _ -> Ok false
+
 let ignore_error r =
   match r with
   | Ok () -> Ok ()
