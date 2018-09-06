@@ -1,22 +1,22 @@
 (rule
  (targets duniverse.1)
- (action (with-stdout-to %{targets} (run ../src/duniverse.exe --help --pager=none))))
+ (action (with-stdout-to %{targets} (run ../src/duniverse.exe --help=plain))))
 
 (rule
  (targets duniverse-git-pull.1)
- (action (with-stdout-to %{targets} (run ../src/duniverse.exe git-pull --help --pager=none))))
+ (action (with-stdout-to %{targets} (run ../src/duniverse.exe git-pull --help=plain))))
 
 (rule
  (targets duniverse-git-merge.1)
- (action (with-stdout-to %{targets} (run ../src/duniverse.exe git-merge --help --pager=none))))
+ (action (with-stdout-to %{targets} (run ../src/duniverse.exe git-merge --help=plain))))
 
 (rule
  (targets duniverse-git-lock.1)
- (action (with-stdout-to %{targets} (run ../src/duniverse.exe git-lock --help --pager=none))))
+ (action (with-stdout-to %{targets} (run ../src/duniverse.exe git-lock --help=plain))))
 
 (rule
  (targets duniverse-status.1)
- (action (with-stdout-to %{targets} (run ../src/duniverse.exe status --help --pager=none))))
+ (action (with-stdout-to %{targets} (run ../src/duniverse.exe status --help=plain))))
 
 (executable
  (name gen_readme)

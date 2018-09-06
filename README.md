@@ -12,179 +12,168 @@ Please see the manual pages for an explanation of how to use the tool.  Contact
 ## duniverse
 
 ```
-duniverse(1)                   Duniverse Manual                   duniverse(1)
-
-
-
-NNAAMMEE
+NAME
        duniverse - the spice of build life
 
-SSYYNNOOPPSSIISS
-       dduunniivveerrssee _C_O_M_M_A_N_D ...
+SYNOPSIS
+       duniverse COMMAND ...
 
-DDEESSCCRRIIPPTTIIOONN
-       The dduunniivveerrssee tool provides a convenient interface to bridge the ooppaamm
+DESCRIPTION
+       The duniverse tool provides a convenient interface to bridge the opam
        package manager with having a local copy of all the source code
-       required to build a project using the dduunnee build tool.
+       required to build a project using the dune build tool.
 
        It works by analysing opam package metadata and calculating a set of
        git tags that can be cloned into the local repository into an
-       _o_c_a_m_l___m_o_d_u_l_e_s subdirectory. Once the external code has been pulled into
-       the repository, a single dduunnee bbuuiilldd command is sufficient to build the
-       whole project in a standalone fashion, without opam being required.
-       This is a particularly convenient way of publishing CLI tools to users
-       who do not need the full power of opam.
+       ocaml_modules subdirectory. Once the external code has been pulled
+       into the repository, a single dune build command is sufficient to
+       build the whole project in a standalone fashion, without opam being
+       required. This is a particularly convenient way of publishing CLI
+       tools to users who do not need the full power of opam.
 
        The basic flow of the tool is provided by three git commands:
 
-       $ dduunniivveerrssee ggiitt--lloocckk
+       $ duniverse git-lock
            This converts the opam metadata into a set of git remotes, and
-           stores the data in _._d_u_n_i_v_e_r_s_e_/_d_u_n_e_._s_x_p.
+           stores the data in .duniverse/dune.sxp.
 
-       $ dduunniivveerrssee ggiitt--ppuullll
-           Pulls the vendored code into a _d_u_n_i_v_e_r_s_e_-_o_f_-_m_a_s_t_e_r branch, where
+       $ duniverse git-pull
+           Pulls the vendored code into a duniverse-of-master branch, where
            you can test the project builds.
 
-       $ dduunniivveerrssee ggiitt--mmeerrggee
-           Merges the vendor branch into the mainline _m_a_s_t_e_r branch.
-
+       $ duniverse git-merge
+           Merges the vendor branch into the mainline master branch.
        You can access some of the low-level functionality directly via the
-       _d_u_n_i_v_e_r_s_e_-_o_p_a_m, _d_u_n_i_v_e_r_s_e_-_l_o_c_k and _d_u_n_i_v_e_r_s_e_-_p_u_l_l commands, but this
+       duniverse-opam, duniverse-lock and duniverse-pull commands, but this
        should not be necessary usually.
 
-CCOOMMMMAANNDDSS
-       ggiitt--lloocckk
+COMMANDS
+       git-lock
            calculate Dune metadata and git commit the results
 
-       ggiitt--mmeerrggee
+       git-merge
            merge vendored libraries into the mainline branch
 
-       ggiitt--ppuullll
+       git-pull
            pull vendored libraries and commit them to a branch
 
-       lloocckk
+       lock
            generate git tags suitable for vendoring from opam metadata
 
-       ooppaamm
+       opam
            analyse opam metadata to generate a standalone package list
 
-       ppuullll
+       pull
            fetch the latest archives of the vendored libraries
 
-       ssttaattuuss
+       status
            summarise the libraries tracked by the duniverse
 
-CCOOMMMMOONN OOPPTTIIOONNSS
-       ----hheellpp[=_F_M_T] (default=auto)
-           Show this help in format _F_M_T. The value _F_M_T must be one of `auto',
+COMMON OPTIONS
+       --help[=FMT] (default=auto)
+           Show this help in format FMT. The value FMT must be one of `auto',
            `pager', `groff' or `plain'. With `auto', the format is `pager` or
-           `plain' whenever the TTEERRMM env var is `dumb' or undefined.
+           `plain' whenever the TERM env var is `dumb' or undefined.
 
-       ----vveerrssiioonn
+       --version
            Show version information.
 
-EEXXAAMMPPLLEESS
-       These commands will vendor the uuttoopp and ccrraammll commands locally:
+EXAMPLES
+       These commands will vendor the utop and craml commands locally:
 
-       $ dduunniivveerrssee ggiitt--lloocckk ----ppiinn llwwtt uuttoopp ccrraammll
-       $ dduunniivveerrssee ggiitt--ppuullll
-       $ dduunniivveerrssee ggiitt--mmeerrggee
+       $ duniverse git-lock --pin lwt utop craml
+       $ duniverse git-pull
+       $ duniverse git-merge
 
-       Also see _h_t_t_p_s_:_/_/_g_i_t_h_u_b_._c_o_m_/_a_v_s_m_/_p_l_a_t_f_o_r_m for an example of a fully
+       Also see https://github.com/avsm/platform for an example of a fully
        bootstrapping use of this tool.
 
-SSEEEE AALLSSOO
+SEE ALSO
        dune(1), duniverse-git-lock(1), duniverse-git-merge(1),
        duniverse-git-pull(1), git(1), opam(1)
 
-
-
-Duniverse 11VERSION11                                             duniverse(1)
 
 ```
 
 ## duniverse-git-lock
 
 ```
-duniverse-git-lock(1)          Duniverse Manual          duniverse-git-lock(1)
+NAME
+       duniverse-git-lock - calculate Dune metadata and git commit the
+       results
 
+SYNOPSIS
+       duniverse git-lock [OPTION]... [PACKAGES]...
 
-
-NNAAMMEE
-       duniverse-git-lock - calculate Dune metadata and git commit the results
-
-SSYYNNOOPPSSIISS
-       dduunniivveerrssee ggiitt--lloocckk [_O_P_T_I_O_N]... [_P_A_C_K_A_G_E_S]...
-
-DDEESSCCRRIIPPTTIIOONN
+DESCRIPTION
        This initiaises a Git repository with the vendoring metadata for Dune,
-       and commits the results to the current branch. It runs
+       and commits the results to the current branch. It runs 
 
-AARRGGUUMMEENNTTSS
-       _P_A_C_K_A_G_E_S
+ARGUMENTS
+       PACKAGES
            opam packages to calculate duniverse for. If not supplied, any
            local opam metadata files are used as the default package list.
 
-OOPPTTIIOONNSS
-       --bb _B_R_A_N_C_H (absent=master)
+OPTIONS
+       -b BRANCH (absent=master)
            Branch that represents the working tree of the source code. If not
-           supplied, the _m_a_s_t_e_r branch is used.
+           supplied, the master branch is used.
 
-       ----hheellpp[=_F_M_T] (default=auto)
-           Show this help in format _F_M_T. The value _F_M_T must be one of `auto',
+       --help[=FMT] (default=auto)
+           Show this help in format FMT. The value FMT must be one of `auto',
            `pager', `groff' or `plain'. With `auto', the format is `pager` or
-           `plain' whenever the TTEERRMM env var is `dumb' or undefined.
+           `plain' whenever the TERM env var is `dumb' or undefined.
 
-       ----ooppaamm--rreemmoottee=_O_P_A_M___R_E_M_O_T_E
-           Extra opam remotes to add when resolving package names. Repeat this
-           flag multiple times for more than one remote.
+       --opam-remote=OPAM_REMOTE
+           Extra opam remotes to add when resolving package names. Repeat
+           this flag multiple times for more than one remote.
 
-       --pp _P_I_N, ----ppiinn=_P_I_N
+       -p PIN, --pin=PIN
            Packages to pin for the latest opam metadata and source. You can
            separate the package name and a url and a remote branch via commas
            to specify a manual url (e.g.
-           _m_i_r_a_g_e_,_g_i_t_:_/_/_g_i_t_h_u_b_._c_o_m_/_a_v_s_m_/_m_i_r_a_g_e_,_f_i_x_m_e). If a url is not
-           specified then the _-_-_d_e_v pin is used. If a branch is not specified
+           mirage,git://github.com/avsm/mirage,fixme). If a url is not
+           specified then the --dev pin is used. If a branch is not specified
            then the default remote branch is used. Repeat this flag multiple
            times for more than one exclusion.
 
-       --rr _T_A_R_G_E_T___R_E_P_O, --------rreeppoo=_T_A_R_G_E_T___R_E_P_O (absent=.)
+       -r TARGET_REPO, ----repo=TARGET_REPO (absent=.)
            Path to Git repository to store vendored code in.
 
-       --ss _O_P_A_M___S_W_I_T_C_H, ----ooppaamm--sswwiittcchh=_O_P_A_M___S_W_I_T_C_H (absent=ocaml-system)
-           Name of the OCaml compiler to use to resolve opam packages. A local
-           switch is created in _._d_u_n_i_v_e_r_s_e where pins and packages can be
-           tracked independently of your main opam switch. This defaults to
-           _o_c_a_m_l_-_s_y_s_t_e_m, but you can use this flag to supply a more specific
-           version such as ooccaammll..44..0066..11.
+       -s OPAM_SWITCH, --opam-switch=OPAM_SWITCH (absent=ocaml-system)
+           Name of the OCaml compiler to use to resolve opam packages. A
+           local switch is created in .duniverse where pins and packages can
+           be tracked independently of your main opam switch. This defaults
+           to ocaml-system, but you can use this flag to supply a more
+           specific version such as ocaml.4.06.1.
 
-       ----vveerrssiioonn
+       --version
            Show version information.
 
-       --xx _E_X_C_L_U_D_E, ----eexxcclluuddee=_E_X_C_L_U_D_E
+       -x EXCLUDE, --exclude=EXCLUDE
            Packages to exclude from the output list. You can use this to
            remove the root packages so they are not duplicated in the vendor
            directory. Repeat this flag multiple times for more than one
            exclusion.
 
-CCOOMMMMOONN OOPPTTIIOONNSS
-       ----ccoolloorr=_W_H_E_N (absent=auto)
-           Colorize the output. _W_H_E_N must be one of `auto', `always' or
+COMMON OPTIONS
+       --color=WHEN (absent=auto)
+           Colorize the output. WHEN must be one of `auto', `always' or
            `never'.
 
-       --qq, ----qquuiieett
-           Be quiet. Takes over --vv and ----vveerrbboossiittyy.
+       -q, --quiet
+           Be quiet. Takes over -v and --verbosity.
 
-       --vv, ----vveerrbboossee
+       -v, --verbose
            Increase verbosity. Repeatable, but more than twice does not bring
            more.
 
-       ----vveerrbboossiittyy=_L_E_V_E_L (absent=warning)
-           Be more or less verbose. _L_E_V_E_L must be one of `quiet', `error',
-           `warning', `info' or `debug'. Takes over --vv.
+       --verbosity=LEVEL (absent=warning)
+           Be more or less verbose. LEVEL must be one of `quiet', `error',
+           `warning', `info' or `debug'. Takes over -v.
 
-EEXXIITT SSTTAATTUUSS
-       ggiitt--lloocckk exits with the following status:
+EXIT STATUS
+       git-lock exits with the following status:
 
        0   on success.
 
@@ -192,73 +181,66 @@ EEXXIITT SSTTAATTUUSS
 
        125 on unexpected internal errors (bugs).
 
-SSEEEE AALLSSOO
+SEE ALSO
        duniverse-git-merge(1), duniverse-git-pull(1)
 
-
-
-Duniverse 11VERSION11                                    duniverse-git-lock(1)
 
 ```
 
 ## duniverse-git-pull
 
 ```
-duniverse-git-pull(1)          Duniverse Manual          duniverse-git-pull(1)
-
-
-
-NNAAMMEE
+NAME
        duniverse-git-pull - pull vendored libraries and commit them to a
        branch
 
-SSYYNNOOPPSSIISS
-       dduunniivveerrssee ggiitt--ppuullll [_O_P_T_I_O_N]...
+SYNOPSIS
+       duniverse git-pull [OPTION]... 
 
-DDEESSCCRRIIPPTTIIOONN
-       This command wraps _d_u_n_i_v_e_r_s_e _p_u_l_l with a workflow that stores the
-       vendored libraries in a git branch called dduunniivveerrssee--ooff--<<bbrraanncchh>>. By
+DESCRIPTION
+       This command wraps duniverse pull with a workflow that stores the
+       vendored libraries in a git branch called duniverse-of-<branch>. By
        storing them in a separate branch, you can then test that they work
        (e.g. with continuous integration) and then integrate them either in
-       your mmaasstteerr branch or in a separate release branch.
+       your master branch or in a separate release branch.
 
-       Once this command is complete, you can merge the results with _d_u_n_i_v_e_r_s_e
-       _g_i_t_-_m_e_r_g_e.
+       Once this command is complete, you can merge the results with
+       duniverse git-merge.
 
-OOPPTTIIOONNSS
-       --bb _B_R_A_N_C_H (absent=master)
+OPTIONS
+       -b BRANCH (absent=master)
            Branch that represents the working tree of the source code. If not
-           supplied, the _m_a_s_t_e_r branch is used.
+           supplied, the master branch is used.
 
-       ----hheellpp[=_F_M_T] (default=auto)
-           Show this help in format _F_M_T. The value _F_M_T must be one of `auto',
+       --help[=FMT] (default=auto)
+           Show this help in format FMT. The value FMT must be one of `auto',
            `pager', `groff' or `plain'. With `auto', the format is `pager` or
-           `plain' whenever the TTEERRMM env var is `dumb' or undefined.
+           `plain' whenever the TERM env var is `dumb' or undefined.
 
-       --rr _T_A_R_G_E_T___R_E_P_O, --------rreeppoo=_T_A_R_G_E_T___R_E_P_O (absent=.)
+       -r TARGET_REPO, ----repo=TARGET_REPO (absent=.)
            Path to Git repository to store vendored code in.
 
-       ----vveerrssiioonn
+       --version
            Show version information.
 
-CCOOMMMMOONN OOPPTTIIOONNSS
-       ----ccoolloorr=_W_H_E_N (absent=auto)
-           Colorize the output. _W_H_E_N must be one of `auto', `always' or
+COMMON OPTIONS
+       --color=WHEN (absent=auto)
+           Colorize the output. WHEN must be one of `auto', `always' or
            `never'.
 
-       --qq, ----qquuiieett
-           Be quiet. Takes over --vv and ----vveerrbboossiittyy.
+       -q, --quiet
+           Be quiet. Takes over -v and --verbosity.
 
-       --vv, ----vveerrbboossee
+       -v, --verbose
            Increase verbosity. Repeatable, but more than twice does not bring
            more.
 
-       ----vveerrbboossiittyy=_L_E_V_E_L (absent=warning)
-           Be more or less verbose. _L_E_V_E_L must be one of `quiet', `error',
-           `warning', `info' or `debug'. Takes over --vv.
+       --verbosity=LEVEL (absent=warning)
+           Be more or less verbose. LEVEL must be one of `quiet', `error',
+           `warning', `info' or `debug'. Takes over -v.
 
-EEXXIITT SSTTAATTUUSS
-       ggiitt--ppuullll exits with the following status:
+EXIT STATUS
+       git-pull exits with the following status:
 
        0   on success.
 
@@ -266,66 +248,59 @@ EEXXIITT SSTTAATTUUSS
 
        125 on unexpected internal errors (bugs).
 
-SSEEEE AALLSSOO
+SEE ALSO
        duniverse-git-lock(1), duniverse-git-merge(1)
 
-
-
-Duniverse 11VERSION11                                    duniverse-git-pull(1)
 
 ```
 
 ## duniverse-status
 
 ```
-duniverse-status(1)            Duniverse Manual            duniverse-status(1)
-
-
-
-NNAAMMEE
+NAME
        duniverse-status - summarise the libraries tracked by the duniverse
 
-SSYYNNOOPPSSIISS
-       dduunniivveerrssee ssttaattuuss [_O_P_T_I_O_N]...
+SYNOPSIS
+       duniverse status [OPTION]... 
 
-DDEESSCCRRIIPPTTIIOONN
-       This command looks at the various metadata files in the ..dduunniivveerrssee
+DESCRIPTION
+       This command looks at the various metadata files in the .duniverse
        directory and prints them out in a human-readable format.
 
-OOPPTTIIOONNSS
-       --bb _B_R_A_N_C_H (absent=master)
+OPTIONS
+       -b BRANCH (absent=master)
            Branch that represents the working tree of the source code. If not
-           supplied, the _m_a_s_t_e_r branch is used.
+           supplied, the master branch is used.
 
-       ----hheellpp[=_F_M_T] (default=auto)
-           Show this help in format _F_M_T. The value _F_M_T must be one of `auto',
+       --help[=FMT] (default=auto)
+           Show this help in format FMT. The value FMT must be one of `auto',
            `pager', `groff' or `plain'. With `auto', the format is `pager` or
-           `plain' whenever the TTEERRMM env var is `dumb' or undefined.
+           `plain' whenever the TERM env var is `dumb' or undefined.
 
-       --rr _T_A_R_G_E_T___R_E_P_O, --------rreeppoo=_T_A_R_G_E_T___R_E_P_O (absent=.)
+       -r TARGET_REPO, ----repo=TARGET_REPO (absent=.)
            Path to Git repository to store vendored code in.
 
-       ----vveerrssiioonn
+       --version
            Show version information.
 
-CCOOMMMMOONN OOPPTTIIOONNSS
-       ----ccoolloorr=_W_H_E_N (absent=auto)
-           Colorize the output. _W_H_E_N must be one of `auto', `always' or
+COMMON OPTIONS
+       --color=WHEN (absent=auto)
+           Colorize the output. WHEN must be one of `auto', `always' or
            `never'.
 
-       --qq, ----qquuiieett
-           Be quiet. Takes over --vv and ----vveerrbboossiittyy.
+       -q, --quiet
+           Be quiet. Takes over -v and --verbosity.
 
-       --vv, ----vveerrbboossee
+       -v, --verbose
            Increase verbosity. Repeatable, but more than twice does not bring
            more.
 
-       ----vveerrbboossiittyy=_L_E_V_E_L (absent=warning)
-           Be more or less verbose. _L_E_V_E_L must be one of `quiet', `error',
-           `warning', `info' or `debug'. Takes over --vv.
+       --verbosity=LEVEL (absent=warning)
+           Be more or less verbose. LEVEL must be one of `quiet', `error',
+           `warning', `info' or `debug'. Takes over -v.
 
-EEXXIITT SSTTAATTUUSS
-       ssttaattuuss exits with the following status:
+EXIT STATUS
+       status exits with the following status:
 
        0   on success.
 
@@ -333,9 +308,6 @@ EEXXIITT SSTTAATTUUSS
 
        125 on unexpected internal errors (bugs).
 
-
-
-Duniverse 11VERSION11                                      duniverse-status(1)
 
 ```
 
