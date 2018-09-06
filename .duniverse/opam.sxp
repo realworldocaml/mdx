@@ -1,6 +1,8 @@
 ((roots (((name duniverse)))) (excludes (((name duniverse)))) (pins ())
  (pkgs
-  (((package ((name result) (version (1.3))))
+  (((package ((name ocamlfind) (version (1.8.0))))
+    (dev_repo (Duniverse_fork lib-findlib)) (tag (1.8.0)))
+   ((package ((name result) (version (1.3))))
     (dev_repo (Github (janestreet result))) (tag (1.3)))
    ((package ((name ocaml-migrate-parsetree) (version (1.0.11))))
     (dev_repo (Github (ocaml-ppx ocaml-migrate-parsetree))) (tag (v1.0.11)))

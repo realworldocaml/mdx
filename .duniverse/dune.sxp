@@ -19,6 +19,8 @@
     (ref duniverse-v1.0.1))
    ((dir fmt) (upstream git://github.com/dune-universe/fmt.git)
     (ref duniverse-v0.8.5))
+   ((dir ocamlfind) (upstream git://github.com/dune-universe/lib-findlib.git)
+    (ref duniverse-1.8.0))
    ((dir topkg) (upstream git://github.com/dune-universe/topkg.git)
     (ref duniverse-v0.9.1))
    ((dir rresult) (upstream git://github.com/dune-universe/rresult.git)
