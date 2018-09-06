@@ -19,19 +19,20 @@ open Rresult
 open Astring
 open Bos
 
-let dune_repo_of_opam ?(verify_refs= true) opam =
+let pp_header = Fmt.(styled `Blue string)
+
+let header = "==> "
+
+let dune_repo_of_opam ?(verify_refs = true) opam =
   let dir = Opam.(opam.package.name) in
   match opam.Opam.dev_repo with
-  | `Github (user, repo) ->
+  | `Github (user, repo) -> (
       let upstream = Fmt.strf "https://github.com/%s/%s.git" user repo in
-      let ref = match opam.Opam.tag with None -> "master" | Some t -> t in
-      if verify_refs then
-        Exec.git_ls_remote upstream
-        >>= fun (tags, heads) ->
-        if List.mem ref (heads @ tags) then Ok {Dune.dir; upstream; ref}
-        else
-          R.error_msg (Fmt.strf "%s#%s is not a branch or a tag" upstream ref)
-      else Ok {Dune.dir; upstream; ref}
+      match opam.Opam.tag with
+      | None ->
+          Exec.git_default_branch ~remote:upstream ()
+          >>= fun ref -> Ok {Dune.dir; upstream; ref}
+      | Some ref -> Ok {Dune.dir; upstream; ref} )
   | `Duniverse_fork repo ->
       let upstream = Fmt.strf "git://github.com/dune-universe/%s.git" repo in
       let ref =
@@ -39,6 +40,7 @@ let dune_repo_of_opam ?(verify_refs= true) opam =
         | None -> "duniverse-master"
         | Some t -> Config.duniverse_branch t
       in
+      Logs.debug (fun l -> l "Duniverse fork: %s %s %s" dir upstream ref) ;
       Ok {Dune.dir; upstream; ref}
   | x -> R.error_msg (Fmt.strf "TODO cannot handle %a" Opam.pp_entry opam)
 
@@ -47,7 +49,10 @@ let dedup_git_remotes dunes =
      remotes, but for now we error if we require different tags for the same
      git remote *)
   let open Dune in
-  Logs.app (fun l -> l "Deduplicating the git remotes.") ;
+  Logs.app (fun l ->
+      l "%aDeduplicating the %a git remotes." pp_header header
+        Fmt.(styled `Green int)
+        (List.length dunes) ) ;
   let by_repo = Hashtbl.create 7 in
   List.iter
     (fun dune ->
@@ -64,23 +69,31 @@ let dedup_git_remotes dunes =
           let tags = List.map (fun {ref} -> ref) dunes in
           let uniq_tags = List.sort_uniq String.compare tags in
           if List.length uniq_tags = 1 then
-            Logs.app (fun l ->
-                l "Multiple entries found for %s with same tag: %s." upstream
-                  (List.hd uniq_tags) )
+            Logs.info (fun l ->
+                l
+                  "%aMultiple entries found for package %a with same tag, so \
+                   just adding a single entry: %s."
+                  pp_header header
+                  Fmt.(styled `Yellow string)
+                  upstream (List.hd uniq_tags) )
           else
             let latest_tag =
               List.sort OpamVersionCompare.compare tags |> List.rev |> List.hd
             in
             Logs.app (fun l ->
                 l
-                  "Multiple entries found for %s with clashing tags: %s.\n\
-                   We are selecting the latest version '%s' for use with all \
-                   the packages that share the same development repo.\n\
-                   In the future, we may implement some fancier subtree \
-                   resolution to make it possible to support multiple tags \
-                   from the same repository, but not yet."
+                  "%aMultiple entries found for %a with clashing tags: %a. We \
+                   are selecting the latest version '%a' for use with all the \
+                   packages that share the same development repo. We may \
+                   implement some fancier subtree resolution to make it \
+                   possible to support multiple tags from the same \
+                   repository, but not yet."
+                  pp_header header
+                  Fmt.(styled `Yellow string)
                   upstream
-                  (String.concat ~sep:", " uniq_tags)
+                  Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
+                  uniq_tags
+                  Fmt.(styled `Green string)
                   latest_tag ) ;
             Hashtbl.replace by_repo upstream
               (List.map (fun d -> {d with ref= latest_tag}) dunes) )
@@ -97,6 +110,10 @@ let dedup_git_remotes dunes =
        by_repo [])
 
 let gen_dune_lock repo () =
+  Logs.app (fun l ->
+      l "%aCalculating Git repositories to vendor from %a." pp_header header
+        Fmt.(styled `Cyan Fpath.pp)
+        Config.opam_lockfile ) ;
   Bos.OS.Dir.create Fpath.(repo // Config.duniverse_dir)
   >>= fun _ ->
   let ifile = Fpath.(repo // Config.opam_lockfile) in
@@ -111,12 +128,15 @@ let gen_dune_lock repo () =
   let open Dune in
   Dune.save ofile {repos}
   >>= fun () ->
-  Logs.app (fun l -> l "Wrote Dune lockfile to %a." Fpath.pp ofile) ;
+  Logs.app (fun l ->
+      l "%aWrote Dune lockfile with %a entries to %a." pp_header header
+        Fmt.(styled `Green int)
+        (List.length repos)
+        Fmt.(styled `Cyan Fpath.pp)
+        ofile ) ;
   Ok ()
 
 let status repo target_branch () = Ok ()
-
-let prune_recursive_vendors = Dune.(())
 
 let gen_dune_upstream_branches repo () =
   Bos.OS.Dir.create Fpath.(repo // Config.duniverse_dir)
@@ -125,38 +145,17 @@ let gen_dune_upstream_branches repo () =
   let open Dune in
   load ifile
   >>= fun dune ->
-  Exec.git_local_duniverse_remotes ~repo ()
-  >>= fun local_remotes ->
   let repos = dune.repos in
   Exec.iter
     (fun r ->
-      let remote = Config.duniverse_branch r.dir in
-      let dir = Fpath.(Config.vendor_dir / r.dir) in
-      Logs.app (fun l -> l "Pulling %a" Fpath.pp dir) ;
-      let remote_cmd =
-        if List.mem remote local_remotes then
-          Cmd.(v "remote" % "set-url" % remote % r.upstream)
-        else Cmd.(v "remote" % "add" % remote % r.upstream)
-      in
-      Exec.run_git ~repo remote_cmd
+      let output_dir = Fpath.(Config.vendor_dir / r.dir) in
+      Logs.app (fun l ->
+          l "%aPulling sources for %a." pp_header header
+            Fmt.(styled `Cyan Fpath.pp)
+            output_dir ) ;
+      let message = Fmt.strf "Update vendor for %a" pp_repo r in
+      let output_dir = Fpath.(Config.vendor_dir / r.dir) in
+      Exec.git_archive ~output_dir ~remote:r.upstream ~tag:r.ref ()
       >>= fun () ->
-      match Exec.run_git ~repo Bos.Cmd.(v "fetch" % "-q" % remote % r.ref) with
-      | Error (`Msg m) ->
-          Logs.err (fun l -> l "Error fetching repo %s: %s" r.upstream m) ;
-          Ok ()
-          (* just continue for now *)
-      | Ok () ->
-          Bos.OS.Dir.exists Fpath.(repo // dir)
-          >>= function
-          | false ->
-              Exec.run_git ~repo
-                Cmd.(
-                  v "subtree" % "-q" % "add" % "--prefix" % p dir % remote
-                  % r.ref % "--squash")
-          | true ->
-              Exec.run_git ~repo
-                Cmd.(
-                  v "subtree" % "-q" % "pull" % "--prefix" % p dir % remote
-                  % r.ref % "--squash" % "-m"
-                  % ("duniverse vendor merge of " ^ r.dir)) )
+      Exec.git_add_and_commit ~repo ~message Cmd.(v (p output_dir)) )
     repos

@@ -47,8 +47,8 @@ let target_repo_t =
 
 let branch_t =
   let doc =
-    "Branch that represents the working tree of the source code.
-     If not supplied, the $(i,master) branch is used."
+    "Branch that represents the working tree of the source code.\n\
+    \     If not supplied, the $(i,master) branch is used."
   in
   Arg.(value & opt string "master" & info ["b"] ~docv:"VENDOR_BRANCH" ~doc)
 
@@ -62,24 +62,38 @@ let exclude_t =
 
 let remotes_t =
   let doc =
-    "Extra opam remotes to add when resolving package names. \
-     Repeat this flag multiple times for more than one remote."
+    "Extra opam remotes to add when resolving package names. Repeat this flag \
+     multiple times for more than one remote."
   in
-  Arg.(value & opt_all string [] & info ["opam-remote"] ~docv:"OPAM_REMOTE" ~doc)
+  Arg.(
+    value & opt_all string [] & info ["opam-remote"] ~docv:"OPAM_REMOTE" ~doc)
 
 let pins_t =
+  let open Types.Opam in
   let doc =
-    "Packages to pin for the latest opam metadata and source. You can separate the package name and a url via a comma to specify a manual url (e.g. $(i,mirage,git://github.com/avsm/mirage)).  If a manual is not specified then the $(i,--dev) pin is used.  ppRepeat this flag multiple times for more than one exclusion."
+    "Packages to pin for the latest opam metadata and source. You can \
+     separate the package name and a url and a remote branch via commas to \
+     specify a manual url (e.g. \
+     $(i,mirage,git://github.com/avsm/mirage,fixme)).  If a url is not \
+     specified then the $(i,--dev) pin is used.  If a branch is not specified \
+     then $(i,master) is used. Repeat this flag multiple times for more than \
+     one exclusion."
   in
   let fin s =
-    match String.cut ~sep:"," s with
-    | None -> Ok (s, "--dev")
-    | Some x -> Ok x in
-  let fout ppf (a,b) =
-    match b with
-    | "--dev" -> Fmt.pf ppf "%s" a
-    | v -> Fmt.pf ppf "%s,%s" a v in
-  let t = Arg.conv ~docv:"PIN" (fin,fout) in
+    match String.cuts ~sep:"," s with
+    | [] -> failwith "unexpected pin error"
+    | [pin] -> Ok {pin; url= None; tag= None}
+    | [pin; url] -> Ok {pin; url= Some url; tag= None}
+    | [pin; url; tag] -> Ok {pin; url= Some url; tag= Some tag}
+    | _ -> failwith "pins must have maximum of 3 commas"
+  in
+  let fout ppf {pin; url; tag} =
+    match (url, tag) with
+    | None, _ -> Fmt.(pf ppf "%s" pin)
+    | Some url, None -> Fmt.(pf ppf "%s,%s" pin url)
+    | Some url, Some tag -> Fmt.(pf ppf "%s,%s,%s" pin url tag)
+  in
+  let t = Arg.conv ~docv:"PIN" (fin, fout) in
   Arg.(value & opt_all t [] & info ["pin"; "p"] ~docv:"PIN" ~doc)
 
 let ocaml_switch_t =
@@ -106,8 +120,8 @@ let opam_cmd =
   ( (let open Term in
     term_result
       ( const Opam_cmd.init_duniverse
-      $ target_repo_t $ branch_t $ pkg_t $ exclude_t $ pins_t $ ocaml_switch_t $ remotes_t 
-      $ setup_logs () ))
+      $ target_repo_t $ branch_t $ pkg_t $ exclude_t $ pins_t $ ocaml_switch_t
+      $ remotes_t $ setup_logs () ))
   , Term.info "opam" ~doc ~exits ~man )
 
 let dune_lock_cmd =
@@ -143,7 +157,7 @@ let vendor_lock_cmd =
     term_result
       ( const Git_cmd.update $ target_repo_t $ branch_t $ pkg_t $ exclude_t
       $ pins_t $ ocaml_switch_t $ remotes_t $ setup_logs () ))
-  , Term.info "vendor-lock" ~doc ~exits ~man )
+  , Term.info "git-lock" ~doc ~exits ~man )
 
 let vendor_pull_cmd =
   let doc = "vendor-pull TODO" in
@@ -151,7 +165,7 @@ let vendor_pull_cmd =
   let man = [`S Manpage.s_description; `P "TODO"] in
   ( (let open Term in
     term_result (const Git_cmd.pull $ target_repo_t $ branch_t $ setup_logs ()))
-  , Term.info "vendor-pull" ~doc ~exits ~man )
+  , Term.info "git-pull" ~doc ~exits ~man )
 
 let vendor_merge_cmd =
   let doc = "vendor-merge TODO" in
@@ -159,7 +173,7 @@ let vendor_merge_cmd =
   let man = [`S Manpage.s_description; `P "TODO"] in
   ( (let open Term in
     term_result (const Git_cmd.merge $ target_repo_t $ branch_t $ setup_logs ()))
-  , Term.info "vendor-merge" ~doc ~exits ~man )
+  , Term.info "git-merge" ~doc ~exits ~man )
 
 let status_cmd =
   let doc = "status TODO" in
