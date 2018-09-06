@@ -23,7 +23,8 @@ let update repo branch roots excludes pins opam_switch remotes () =
   Exec.git_checkout ~repo branch
   >>= fun () ->
   Logs.info (fun l -> l "Running `duniverse opam`") ;
-  Opam_cmd.init_duniverse repo branch roots excludes pins opam_switch remotes ()
+  Opam_cmd.init_duniverse repo branch roots excludes pins opam_switch remotes
+    ()
   >>= fun () ->
   Logs.info (fun l -> l "Running `duniverse lock`") ;
   Dune_cmd.gen_dune_lock repo ()

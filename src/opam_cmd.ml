@@ -49,7 +49,7 @@ let tag_from_archive archive =
     Logs.err (fun l -> l "Unable to classify archive %s" archive) ;
     None
   in
-  let tag_of_file ?(prefix= "") f =
+  let tag_of_file ?(prefix = "") f =
     match strip_ext f |> String.cut ~rev:true ~sep:"-" with
     | None -> parse_err ()
     | Some (n, v) -> Some (prefix ^ v)
@@ -58,11 +58,9 @@ let tag_from_archive archive =
     List.rev path |> List.hd |> tag_of_file ?prefix
   in
   match Uri.scheme uri with
-  | Some "git+http" | Some "git+https" ->
-      (* TODO handle branches for pins *)
-      Some "master"
+  | Some "git+http" | Some "git+https" -> Some "master"
   | Some "git+file" -> None
-  | _ ->
+  | _ -> (
     match Uri.host uri with
     | Some "github.com" -> (
       match path with
@@ -83,23 +81,31 @@ let tag_from_archive archive =
         Logs.info (fun l ->
             l "Attempting to guess tag for %s from the final part of the URL"
               archive ) ;
-        tag_of_last_path ()
+        tag_of_last_path () )
 
 let classify_package ~package ~dev_repo ~archive ~pins () =
-  Logs.debug (fun l -> l "dev-repo=%s" dev_repo) ;
   let err msg = (`Error msg, None) in
   if List.mem package.name base_packages then (`Virtual, None)
   else
     let dev_repo =
-      match List.find_opt (fun {pin;url;tag} -> package.name=pin) pins with
-      | Some { url=Some url } -> url
-      | _ -> dev_repo in
+      match List.find_opt (fun {pin; url; tag} -> package.name = pin) pins with
+      | Some {url= Some url} -> url
+      | _ -> dev_repo
+    in
     match dev_repo with
-    | "" -> Logs.debug (fun l -> l "Mapped %s to a virtual package as it has a blank dev repo" package.name); (`Virtual, None)
-    | dev_repo ->
+    | "" ->
+        Logs.debug (fun l ->
+            l "Mapped %s to a virtual package as it has a blank dev repo"
+              package.name ) ;
+        (`Virtual, None)
+    | dev_repo -> (
       match archive with
-      | None -> Logs.debug (fun l -> l "Mapped %s to a virtual package as it has no archive" package.name); (`Virtual, None)
-      | Some archive ->
+      | None ->
+          Logs.debug (fun l ->
+              l "Mapped %s to a virtual package as it has no archive"
+                package.name ) ;
+          (`Virtual, None)
+      | Some archive -> (
           let uri = Uri.of_string dev_repo in
           let tag = tag_from_archive archive in
           Logs.debug (fun l ->
@@ -107,7 +113,7 @@ let classify_package ~package ~dev_repo ~archive ~pins () =
                 (match tag with None -> "??" | Some v -> v) ) ;
           match List.assoc_opt dev_repo duniverse_forks with
           | Some repo -> (`Duniverse_fork repo, tag)
-          | None ->
+          | None -> (
             match Uri.host uri with
             | Some "github.com" -> (
               match String.cuts ~empty:false ~sep:"/" (Uri.path uri) with
@@ -116,7 +122,7 @@ let classify_package ~package ~dev_repo ~archive ~pins () =
                   (`Github (user, repo), tag)
               | tl -> err "wierd github url" )
             | Some host -> (`Unknown host, tag)
-            | None -> err "dev-repo without host"
+            | None -> err "dev-repo without host" ) ) )
 
 let check_if_dune ~repo package =
   Exec.get_opam_depends ~repo (string_of_package package)
@@ -130,11 +136,17 @@ let get_opam_info ~repo ~pins package =
   check_if_dune ~repo package
   >>= fun is_dune ->
   let dev_repo, tag = classify_package ~package ~dev_repo ~archive ~pins () in
-  Logs.info (fun l -> l "Classified %a as %a with tag %a" Fmt.(styled `Yellow pp_package) package pp_repo dev_repo Fmt.(option string) tag);
-  let tag = 
-    match List.find_opt (fun {pin;url;tag} -> package.name = pin) pins with
-    | Some {pin;url;tag} -> tag
-    | None -> tag in
+  Logs.info (fun l ->
+      l "Classified %a as %a with tag %a"
+        Fmt.(styled `Yellow pp_package)
+        package pp_repo dev_repo
+        Fmt.(option string)
+        tag ) ;
+  let tag =
+    match List.find_opt (fun {pin; url; tag} -> package.name = pin) pins with
+    | Some {pin; url; tag} -> tag
+    | None -> tag
+  in
   Ok {package; dev_repo; tag; is_dune}
 
 let package_is_valid {package; dev_repo} =
@@ -177,18 +189,20 @@ let calculate_duniverse ~repo file =
   Exec.run_opam_package_deps ~repo (List.map string_of_package roots)
   >>| List.map split_opam_name_and_version
   >>| List.map (fun p ->
-    if List.exists (fun {pin;url;tag} -> p.name = pin) pins then
-          {p with version= Some "dev"} else p )
+          if List.exists (fun {pin; url; tag} -> p.name = pin) pins then
+            {p with version= Some "dev"}
+          else p )
   >>= fun deps ->
   Logs.app (fun l -> l "Found %d opam dependencies." (List.length deps)) ;
-  Logs.debug (fun l ->
+  Logs.info (fun l ->
       l "The dependencies for %a are: %a"
         Fmt.(list ~sep:(unit ",@ ") pp_package)
         roots
         Fmt.(list ~sep:(unit ",@ ") pp_package)
         deps ) ;
-  Logs.info (fun l ->
-      l "Querying opam for the dev repos and Dune compatibility" ) ;
+  Logs.app (fun l ->
+      l "Querying local opam switch for the dev repos and Dune compatibility."
+  ) ;
   Exec.map (fun p -> get_opam_info ~repo ~pins p) deps
   >>= fun pkgs ->
   check_packages_are_valid pkgs

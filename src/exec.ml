@@ -44,27 +44,45 @@ let ignore_error r =
       Ok ()
 
 let git_archive ~output_dir ~remote ~tag () =
-  OS.Dir.delete ~recurse:true output_dir >>= fun () ->
-  let cmd = Cmd.(v "git" % "clone" % "--depth=1" % "-b" % tag % remote % p output_dir) in
-  OS.Cmd.(run ~err:(err_file ~append:true Config.duniverse_log) cmd) >>= fun () ->
-  OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
+  OS.Dir.delete ~recurse:true output_dir
+  >>= fun () ->
+  let cmd =
+    Cmd.(v "git" % "clone" % "--depth=1" % "-b" % tag % remote % p output_dir)
+  in
+  OS.Cmd.(run ~err:(err_file ~append:true Config.duniverse_log) cmd)
+  >>= fun () ->
+  OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git")
+  >>= fun () ->
   OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
 
 let git_default_branch ~remote () =
   let cmd = Cmd.(v "git" % "remote" % "show" % remote) in
-  OS.Cmd.(run_out cmd |> to_lines) >>= fun l ->
-  List.map String.trim l |> fun l ->
-  List.filter (String.is_prefix ~affix:"HEAD branch") l |>
-  function
-  |[hd] -> begin
+  OS.Cmd.(run_out cmd |> to_lines)
+  >>= fun l ->
+  List.map String.trim l
+  |> fun l ->
+  List.filter (String.is_prefix ~affix:"HEAD branch") l
+  |> function
+  | [hd] -> (
     match String.cut ~sep:":" hd with
-    | Some (_,branch) -> Ok (String.trim branch)
-    | None -> R.error_msg "unable to find remote branch"
-  end
-  |[] -> R.error_msg (Fmt.strf "unable to parse git remote show %s: no HEAD branch lines found (output was:\n%s)" remote (String.concat ~sep:"-\n" l))
-  |_ -> R.error_msg (Fmt.strf "unable to parse git remote show %s: too many HEAD branch lines found" remote)
+    | Some (_, branch) -> Ok (String.trim branch)
+    | None -> R.error_msg "unable to find remote branch" )
+  | [] ->
+      R.error_msg
+        (Fmt.strf
+           "unable to parse git remote show %s: no HEAD branch lines found \
+            (output was:\n\
+            %s)"
+           remote
+           (String.concat ~sep:"-\n" l))
+  | _ ->
+      R.error_msg
+        (Fmt.strf
+           "unable to parse git remote show %s: too many HEAD branch lines \
+            found"
+           remote)
 
-let git_checkout ?(args= Cmd.empty) ~repo branch =
+let git_checkout ?(args = Cmd.empty) ~repo branch =
   run_git ~repo Cmd.(v "checkout" %% args % branch)
 
 let git_checkout_or_branch ~repo branch =
@@ -72,8 +90,7 @@ let git_checkout_or_branch ~repo branch =
   | Ok () -> Ok ()
   | Error (`Msg _) -> git_checkout ~args:(Cmd.v "-b") ~repo branch
 
-let git_rm_rf ~repo file =
-  run_git ~repo Cmd.(v "rm" % "-rf" % p file)
+let git_rm_rf ~repo file = run_git ~repo Cmd.(v "rm" % "-rf" % p file)
 
 let git_add_and_commit ~repo ~message files =
   run_git ~repo Cmd.(v "add" %% files)
@@ -84,10 +101,10 @@ let git_add_and_commit ~repo ~message files =
 let git_add_all_and_commit ~repo ~message () =
   run_git ~repo Cmd.(v "commit" % "-a" % "-m" % message) |> ignore_error
 
-let git_merge ?(args= Cmd.empty) ~from ~repo () =
+let git_merge ?(args = Cmd.empty) ~from ~repo () =
   run_git ~repo Cmd.(v "merge" %% args % from)
 
-let git_push ?(args= Cmd.empty) ~repo remote branch =
+let git_push ?(args = Cmd.empty) ~repo remote branch =
   run_git ~repo Cmd.(v "push" %% args % remote % branch)
 
 let git_ls_remote remote =
@@ -140,9 +157,9 @@ let get_opam_field ~repo ~field package =
   >>= fun r ->
   match r with
   | "" -> Ok OpamParserTypes.(List (("", 0, 0), []))
-  | r ->
+  | r -> (
     try Ok (OpamParser.value_from_string r "") with exn ->
-      Error (`Msg (Fmt.strf "parsing error for: '%s'" r))
+      Error (`Msg (Fmt.strf "parsing error for: '%s'" r)) )
 
 let get_opam_field_string_value ~repo ~field package =
   get_opam_field ~repo ~field package
@@ -202,25 +219,31 @@ let init_local_opam_switch ~opam_switch ~repo ~remotes () =
         v "opam" % "switch" % "create" % p Config.duniverse_dir % opam_switch
         % "--no-install"
       in
-      OS.Cmd.(run ~err:err_null cmd) >>= fun () ->
+      OS.Cmd.(run ~err:err_null cmd)
+      >>= fun () ->
       let rcnt = ref 0 in
-      iter (fun remote ->
-        let rname = Fmt.strf "remote%d" !rcnt in
-        incr rcnt;
-        let cmd = Cmd.(v "opam" % "repository" %% switch_path repo % "add" % rname % remote) in
-        OS.Cmd.(run ~err:err_null cmd)
-      ) remotes
+      iter
+        (fun remote ->
+          let rname = Fmt.strf "remote%d" !rcnt in
+          incr rcnt ;
+          let cmd =
+            Cmd.(
+              v "opam" % "repository" %% switch_path repo % "add" % rname
+              % remote)
+          in
+          OS.Cmd.(run ~err:err_null cmd) )
+        remotes
 
-let add_opam_dev_pin ~repo {Opam.pin;url;tag} =
+let add_opam_dev_pin ~repo {Opam.pin; url; tag} =
   let targ =
-    match url,tag with
+    match (url, tag) with
     | None, _ -> "--dev"
     | Some url, Some tag -> Fmt.strf "%s#%s" url tag
-    | Some url, None -> url in
+    | Some url, None -> url
+  in
   let cmd =
     let open Cmd in
-    v "opam" % "pin" %% switch_path repo % "add" % "-n" % (pin ^ ".dev")
-    % targ
+    v "opam" % "pin" %% switch_path repo % "add" % "-n" % (pin ^ ".dev") % targ
   in
   OS.Cmd.(run ~err:err_null cmd)
 

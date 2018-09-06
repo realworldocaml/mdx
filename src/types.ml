@@ -39,11 +39,11 @@ module Opam = struct
     ; is_dune: bool [@default true] [@sexp_drop_default] }
   [@@deriving sexp]
 
-  type pin = {
-    pin: string;
-    url: string option [@default None] [@sexp_drop_default];
-    tag: string option [@default None] [@sexp_drop_default]
-  } [@@deriving sexp]
+  type pin =
+    { pin: string
+    ; url: string option [@default None] [@sexp_drop_default]
+    ; tag: string option [@default None] [@sexp_drop_default] }
+  [@@deriving sexp]
 
   type t =
     { roots: package list

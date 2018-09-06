@@ -19,19 +19,16 @@ open Rresult
 open Astring
 open Bos
 
-let dune_repo_of_opam ?(verify_refs= true) opam =
+let dune_repo_of_opam ?(verify_refs = true) opam =
   let dir = Opam.(opam.package.name) in
   match opam.Opam.dev_repo with
-  | `Github (user, repo) ->
+  | `Github (user, repo) -> (
       let upstream = Fmt.strf "https://github.com/%s/%s.git" user repo in
-      begin
       match opam.Opam.tag with
       | None ->
-          Exec.git_default_branch ~remote:upstream () >>= fun ref ->
-          Ok {Dune.dir; upstream; ref}
-      | Some ref ->
-          Ok {Dune.dir; upstream; ref}
-      end
+          Exec.git_default_branch ~remote:upstream ()
+          >>= fun ref -> Ok {Dune.dir; upstream; ref}
+      | Some ref -> Ok {Dune.dir; upstream; ref} )
   | `Duniverse_fork repo ->
       let upstream = Fmt.strf "git://github.com/dune-universe/%s.git" repo in
       let ref =
@@ -39,7 +36,7 @@ let dune_repo_of_opam ?(verify_refs= true) opam =
         | None -> "duniverse-master"
         | Some t -> Config.duniverse_branch t
       in
-      Logs.debug (fun l -> l "Duniverse fork: %s %s %s" dir upstream ref);
+      Logs.debug (fun l -> l "Duniverse fork: %s %s %s" dir upstream ref) ;
       Ok {Dune.dir; upstream; ref}
   | x -> R.error_msg (Fmt.strf "TODO cannot handle %a" Opam.pp_entry opam)
 
@@ -131,6 +128,7 @@ let gen_dune_upstream_branches repo () =
     (fun r ->
       let message = Fmt.strf "update vendor for %a" pp_repo r in
       let output_dir = Fpath.(Config.vendor_dir / r.dir) in
-      Exec.git_archive ~output_dir ~remote:r.upstream ~tag:r.ref () >>= fun () ->
-      Exec.git_add_and_commit ~repo ~message Cmd.(v (p output_dir))
-    ) repos
+      Exec.git_archive ~output_dir ~remote:r.upstream ~tag:r.ref ()
+      >>= fun () ->
+      Exec.git_add_and_commit ~repo ~message Cmd.(v (p output_dir)) )
+    repos
