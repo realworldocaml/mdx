@@ -195,7 +195,11 @@ let vendor_lock_cmd =
     [ `S Manpage.s_description
     ; `P
         "This initiaises a Git repository with the vendoring metadata for \
-         Dune, and commits the results to the current branch.  It runs " ]
+         Dune, and commits the results to the current branch.  It first runs \
+         $(i,duniverse opam) to generate $(b,.duniverse/opam.sxp), and then \
+         runs $(i,duniverse lock) to generate $(b,.duniverse/dune.sxp). This \
+         contains everything needed to subsequently fetch the remote archives \
+         and store them locally via $(i,duniverse git-pull)." ]
   in
   let man_xrefs = [`Cmd "git-pull"; `Cmd "git-merge"] in
   ( (let open Term in

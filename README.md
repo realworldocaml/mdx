@@ -114,7 +114,11 @@ SYNOPSIS
 
 DESCRIPTION
        This initiaises a Git repository with the vendoring metadata for Dune,
-       and commits the results to the current branch. It runs 
+       and commits the results to the current branch. It first runs duniverse
+       opam to generate .duniverse/opam.sxp, and then runs duniverse lock to
+       generate .duniverse/dune.sxp. This contains everything needed to
+       subsequently fetch the remote archives and store them locally via
+       duniverse git-pull.
 
 ARGUMENTS
        PACKAGES
