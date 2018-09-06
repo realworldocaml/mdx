@@ -22,6 +22,9 @@ open Types
 let rec iter fn l =
   match l with hd :: tl -> fn hd >>= fun () -> iter fn tl | [] -> Ok ()
 
+let err_log = OS.Cmd.err_file ~append:true Config.duniverse_log
+let out_log = OS.Cmd.(to_null) (* TODO log to file *)
+
 let map fn l =
   List.map fn l
   |> List.fold_left
@@ -34,7 +37,7 @@ let map fn l =
   |> function Ok v -> Ok (List.rev v) | e -> e
 
 let run_git ~repo args =
-  OS.Cmd.(run ~err:err_null Cmd.(v "git" % "-C" % p repo %% args))
+  OS.Cmd.(run_out ~err:err_log Cmd.(v "git" % "-C" % p repo %% args) |> out_log)
 
 let ignore_error r =
   match r with
@@ -49,7 +52,7 @@ let git_archive ~output_dir ~remote ~tag () =
   let cmd =
     Cmd.(v "git" % "clone" % "--depth=1" % "-b" % tag % remote % p output_dir)
   in
-  OS.Cmd.(run ~err:(err_file ~append:true Config.duniverse_log) cmd)
+  OS.Cmd.(run ~err:err_log cmd)
   >>= fun () ->
   OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git")
   >>= fun () ->
@@ -57,7 +60,7 @@ let git_archive ~output_dir ~remote ~tag () =
 
 let git_default_branch ~remote () =
   let cmd = Cmd.(v "git" % "remote" % "show" % remote) in
-  OS.Cmd.(run_out cmd |> to_lines)
+  OS.Cmd.(run_out ~err:err_log cmd |> to_lines)
   >>= fun l ->
   List.map String.trim l
   |> fun l ->
@@ -108,7 +111,7 @@ let git_push ?(args = Cmd.empty) ~repo remote branch =
   run_git ~repo Cmd.(v "push" %% args % remote % branch)
 
 let git_ls_remote remote =
-  OS.Cmd.(run_out Cmd.(v "git" % "ls-remote" % remote) |> to_lines)
+  OS.Cmd.(run_out ~err:err_log Cmd.(v "git" % "ls-remote" % remote) |> to_lines)
   >>= map (fun l ->
           match String.cuts ~empty:false ~sep:"\t" l with
           | [_; r] -> (
@@ -130,7 +133,7 @@ let git_ls_remote remote =
   Ok (tags, heads)
 
 let git_local_duniverse_remotes ~repo () =
-  OS.Cmd.(run_out Cmd.(v "git" % "-C" % p repo % "remote") |> to_lines)
+  OS.Cmd.(run_out ~err:err_log Cmd.(v "git" % "-C" % p repo % "remote") |> to_lines)
   >>| List.filter (String.is_prefix ~affix:"duniverse-")
 
 let switch_path repo =
@@ -144,7 +147,7 @@ let run_opam_package_deps ~repo packages =
     v "opam" % "list" %% switch_path repo % "--color=never" % "-s"
     % ("--resolve=" ^ packages) % "-V" % "-S"
   in
-  OS.Cmd.(run_out cmd |> to_lines ~trim:true)
+  OS.Cmd.(run_out ~err:err_log cmd |> to_lines ~trim:true)
 
 let get_opam_field ~repo ~field package =
   let field = field ^ ":" in
@@ -153,7 +156,7 @@ let get_opam_field ~repo ~field package =
     v "opam" % "show" %% switch_path repo % "--color=never" % "--normalise"
     % "-f" % field % package
   in
-  OS.Cmd.(run_out cmd |> to_string ~trim:true)
+  OS.Cmd.(run_out ~err:err_log cmd |> to_string ~trim:true)
   >>= fun r ->
   match r with
   | "" -> Ok OpamParserTypes.(List (("", 0, 0), []))
@@ -219,7 +222,7 @@ let init_local_opam_switch ~opam_switch ~repo ~remotes () =
         v "opam" % "switch" % "create" % p Config.duniverse_dir % opam_switch
         % "--no-install"
       in
-      OS.Cmd.(run ~err:err_null cmd)
+      OS.Cmd.(run_out ~err:err_log cmd |> out_log)
       >>= fun () ->
       let rcnt = ref 0 in
       iter
@@ -245,7 +248,7 @@ let add_opam_dev_pin ~repo {Opam.pin; url; tag} =
     let open Cmd in
     v "opam" % "pin" %% switch_path repo % "add" % "-n" % (pin ^ ".dev") % targ
   in
-  OS.Cmd.(run ~err:err_null cmd)
+  OS.Cmd.(run_out ~err:err_null cmd |> out_log)
 
 let add_opam_local_pin ~repo package =
   let cmd =
@@ -253,11 +256,11 @@ let add_opam_local_pin ~repo package =
     v "opam" % "pin" %% switch_path repo % "add" % "-yn" % (package ^ ".dev")
     % "."
   in
-  OS.Cmd.(run ~err:err_null cmd)
+  OS.Cmd.(run_out ~err:err_null cmd |> out_log)
 
 let opam_update ~repo =
   let cmd = Cmd.(v "opam" % "update" %% switch_path repo) in
-  OS.Cmd.(run ~err:err_null cmd)
+  OS.Cmd.(run_out ~err:err_null cmd |> out_log)
 
 let query_github_repo_exists ~user ~repo =
   let url = Fmt.strf "https://github.com/%s/%s" user repo in
