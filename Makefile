@@ -1,31 +1,25 @@
 .PHONY: build clean test
 
 build:
-	jbuilder build duniverse.install
+	dune build duniverse.install
 
 test:
-	jbuilder runtest
-
-install:
-	jbuilder install
-
-uninstall:
-	jbuilder uninstall
+	dune runtest
 
 clean:
-	jbuilder clean
+	dune clean
 
 doc:
-	jbuilder build @doc
+	dune build @doc
 
-v-lock:
-	dune exec --profile=release -- duniverse vendor-lock -vv
+git-lock:
+	dune exec --profile=release -- duniverse git-lock $(DEBUG)
 
-v-pull:
-	dune exec --profile=release -- duniverse vendor-pull -vv
+git-pull:
+	dune exec --profile=release -- duniverse git-pull $(DEBUG)
 
-v-merge:
-	dune exec --profile=release -- duniverse vendor-merge -vv
+git-merge:
+	dune exec --profile=release -- duniverse git-merge $(DEBUG)
 
 publish-doc: doc
 	rm -rf .gh-pages
