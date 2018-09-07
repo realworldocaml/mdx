@@ -89,6 +89,8 @@ let pp ppf b =
 
 let labels = [
   "dir"              , [`Any];
+  "file"             , [`Any];
+  "lines"            , [`Any];
   "non-deterministic", [`None; `Some "command"; `Some "output"]
 ]
 
@@ -140,6 +142,14 @@ let get_label t label =
 let directory t = match get_label t "dir" with
   | None   -> None
   | Some d -> d
+
+let file t = match get_label t "file" with
+  | None   -> None
+  | Some f -> f
+
+let lines t = match get_label t "lines" with
+  | None   -> None
+  | Some l -> l
 
 let mode t =
   match get_label t "non-deterministic" with

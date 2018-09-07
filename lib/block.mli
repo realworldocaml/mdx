@@ -67,6 +67,17 @@ val mode: t -> [`Non_det of [`Command|`Output] | `Normal]
 val directory: t -> string option
 (** [directory t] is the directory where [t] tests should be run. *)
 
+val file: t -> string option
+(** [file t] is the name of the file to synchronize [t] with. *)
+
+val lines: t -> string option
+(** [lines t] are the lines of the file to synchronize [t] with.
+    If lines is not specified:
+       [lines t] returns [None], synchronize the whole file.
+    If lines=l:
+       [lines t] returns [Some l], [l] has to be either a single line
+       number or two line numbers separated with '-'. *)
+
 val value: t -> value
 (** [value t] is [t]'s value. *)
 
