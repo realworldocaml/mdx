@@ -1,0 +1,12 @@
+Mdx can also understand ocaml code blocks:
+
+
+
+
+
+
+```ocaml
+# print_int x;;
+3
+- : unit = ()
+```
