@@ -84,7 +84,7 @@ let git_archive ~output_dir ~remote ~tag () =
   let cmd =
     Cmd.(v "git" % "clone" % "--depth=1" % "-b" % tag % remote % p output_dir)
   in
-  OS.Cmd.(run ~err:err_log cmd)
+  run_and_log cmd
   >>= fun () ->
   OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git")
   >>= fun () ->
