@@ -90,7 +90,7 @@ let pp ppf b =
 let labels = [
   "dir"              , [`Any];
   "file"             , [`Any];
-  "lines"            , [`Any];
+  "part"             , [`Any];
   "non-deterministic", [`None; `Some "command"; `Some "output"]
 ]
 
@@ -147,7 +147,7 @@ let file t = match get_label t "file" with
   | None   -> None
   | Some f -> f
 
-let lines t = match get_label t "lines" with
+let part t = match get_label t "part" with
   | None   -> None
   | Some l -> l
 

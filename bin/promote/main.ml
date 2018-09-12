@@ -43,63 +43,36 @@ let on_file file ~f =
   close_in ic;
   res
 
-let read_file file =
+let _read_file file =
   on_file file ~f:(fun ic ->
       let len = in_channel_length ic in
       really_input_string ic len
     )
 
-let read_lines_of_file file ~first ~last =
-  let rec aux acc ic l =
-    try
-      let line_read = input_line ic in
-      if l < first then
-        aux acc ic (l+1)
-      else if l = last then
-        (line_read :: acc)
-      else
-        aux (line_read :: acc) ic (l+1)
-    with End_of_file ->
-      let msg =
-        Format.sprintf "End of file %s before reading line %i" file l
-      in
-      print_endline msg;
-      assert false
-  in
-  List.rev (on_file file ~f:(fun ic -> aux [] ic 1))
-
-let update_block_with_file ppf t file lines =
-  Block.pp_header ppf t;
-  (match lines with
-  | Some lines ->
-     (match Astring.String.cut ~sep:"-" lines with
-     | Some (first, last) ->
-        (match Astring.String.to_int first, Astring.String.to_int last with
-         | Some first, Some last ->
-            if first <= last then
-              (match read_lines_of_file file ~first ~last with
-               | [] -> assert false (*TODO: nice message *)
-               | lines ->
-                  let contents = Astring.String.concat ~sep:"\n" lines in
-                  Output.pp ppf (`Output contents))
-            else
-              assert false (* TODO: nice message *)
-         | None, _ -> assert false (* TODO: nice message *)
-         | _, None -> assert false (* TODO: nice message *))
-     | None ->
-        (* lines is actually a single line *)
-        (match Astring.String.to_int lines with
-         | Some line ->
-            (match read_lines_of_file file ~first:line ~last:line with
-             | [contents] ->
-                Output.pp ppf (`Output contents)
-             | _ -> assert false (* TODO: nice message *))
-         | None -> assert false (* TODO: nice message *))
-     )
+let part_from_file ~file ~part =
+  let open Ocaml_topexpect in
+  let lexbuf = Lexbuf.of_file file in
+  let v = Phrase.read_all lexbuf in
+  let doc = Phrase.document lexbuf v ~matched:true in
+  let parts = Document.parts doc in
+  match part with
+  | Some part ->
+     (match List.find_opt (fun p -> String.equal (Part.name p) part) parts with
+      | Some p ->
+         Part.chunks p |> List.rev_map Chunk.code |> List.rev
+      | None ->
+         Fmt.failwith "Part %s not found in file %s" part file)
   | None ->
-     let contents = read_file file in
-     Output.pp ppf (`Output contents)
-  );
+     List.fold_left (fun acc p ->
+         let chunks = Part.chunks p |> List.rev_map Chunk.code in
+         List.fold_left (fun acc x -> x :: acc) ("" :: acc) chunks
+       ) [] parts |> List.rev
+
+let update_block_with_file ppf t file part =
+  Block.pp_header ppf t;
+  let lines = part_from_file ~file ~part in
+  let contents = Astring.String.concat ~sep:"\n" lines in
+  Output.pp ppf (`Output contents);
   Block.pp_footer ppf ()
 
 let run ()
@@ -138,7 +111,7 @@ let run ()
           | Block t ->
              match Block.file t with
              | Some file ->
-                update_block_with_file ppf t file (Block.lines t)
+                update_block_with_file ppf t file (Block.part t)
              | None ->
                 (* Lines are ignored if file is not specified. *)
                 Block.pp ppf t

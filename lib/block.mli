@@ -70,13 +70,9 @@ val directory: t -> string option
 val file: t -> string option
 (** [file t] is the name of the file to synchronize [t] with. *)
 
-val lines: t -> string option
-(** [lines t] are the lines of the file to synchronize [t] with.
-    If lines is not specified:
-       [lines t] returns [None], synchronize the whole file.
-    If lines=l:
-       [lines t] returns [Some l], [l] has to be either a single line
-       number or two line numbers separated with '-'. *)
+val part: t -> string option
+(** [part t] is the part of the file to synchronize [t] with.
+    If lines is not specified synchronize the whole file. *)
 
 val value: t -> value
 (** [value t] is [t]'s value. *)
