@@ -38,18 +38,6 @@ let eval_raw c ~line lines =
   let _ = eval_test c t in
   ()
 
-let on_file file ~f =
-  let ic = open_in_bin file in
-  let res = f ic in
-  close_in ic;
-  res
-
-let _read_file file =
-  on_file file ~f:(fun ic ->
-      let len = in_channel_length ic in
-      really_input_string ic len
-    )
-
 let part_from_file ~file ~part =
   let open Ocaml_topexpect in
   let lexbuf = Lexbuf.of_file file in
@@ -77,8 +65,8 @@ let update_block_with_file ppf t file part =
   Block.pp_footer ppf ()
 
 let run ()
-    _non_deterministic not_verbose silent verbose_findlib prelude prelude_str
-    file section _root
+    _ not_verbose silent verbose_findlib prelude prelude_str
+    file section _
   =
   let c =
     Mdx_top.init ~verbose:(not not_verbose) ~silent ~verbose_findlib ()
@@ -99,7 +87,6 @@ let run ()
     | Some _, Some _ ->
       Fmt.failwith "only one of --prelude and --prelude-str shoud be used"
   in
-
   Mdx.run file ~f:(fun file_contents items ->
       let temp_file = Filename.temp_file "mdx" ".output" in
       at_exit (fun () -> Sys.remove temp_file);
@@ -128,7 +115,7 @@ open Cmdliner
 let cmd =
   let exits = Term.default_exits in
   let man = [] in
-  let doc = "Test markdown files." in
+  let doc = "Promote markdown files." in
   Term.(pure run
         $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose
         $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
