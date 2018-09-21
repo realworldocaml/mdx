@@ -64,9 +64,44 @@ let update_block_with_file ppf t file part =
   Output.pp ppf (`Output contents);
   Block.pp_footer ppf ()
 
+let update_file_with_block ppf t file part =
+  let open Ocaml_topexpect in
+  let lexbuf = Lexbuf.of_file file in
+  let v = Phrase.read_all lexbuf in
+  let doc = Phrase.document lexbuf v ~matched:true in
+  let parts = Document.parts doc in
+  (match part with
+   | Some part ->
+      let on_part p =
+        let name = Part.name p in
+        let lines =
+          if String.equal name part then
+            match Block.value t with
+            | Raw | OCaml | Error _ -> t.Block.contents
+            | Cram _ ->
+               Fmt.failwith "Promoting Cram tests is unsupported for now."
+            | Toplevel tests ->
+               let f t =
+                 t.Toplevel.command |> Astring.String.concat ~sep:"\n" in
+               List.map f tests
+          else
+            Part.chunks p |> List.rev_map Chunk.code |> List.rev
+        in
+        if String.equal name "" then lines
+        else ("[@@@part \"" ^ name ^ "\"];;") :: lines
+      in
+      let lines = List.map on_part parts in
+      let lines = List.map (Astring.String.concat ~sep:"\n") lines in
+      let lines = Astring.String.concat ~sep:"\n" lines in
+      let oc = open_out file in
+      output_string oc lines;
+      close_out oc;
+   | None -> () );
+  Block.pp ppf t
+
 let run ()
     _ not_verbose silent verbose_findlib prelude prelude_str
-    file section _
+    md_file section _
   =
   let c =
     Mdx_top.init ~verbose:(not not_verbose) ~silent ~verbose_findlib ()
@@ -87,7 +122,7 @@ let run ()
     | Some _, Some _ ->
       Fmt.failwith "only one of --prelude and --prelude-str shoud be used"
   in
-  Mdx.run file ~f:(fun file_contents items ->
+  Mdx.run md_file ~f:(fun file_contents items ->
       let temp_file = Filename.temp_file "mdx" ".output" in
       at_exit (fun () -> Sys.remove temp_file);
       let buf = Buffer.create (Astring.String.length file_contents + 1024) in
@@ -99,7 +134,14 @@ let run ()
           | Block t ->
              match Block.file t with
              | Some file ->
-                update_block_with_file ppf t file (Block.part t)
+                let md_file_mtime = (Unix.stat md_file).st_mtime in
+                let file_mtime = (Unix.stat file).st_mtime in
+                if file_mtime < md_file_mtime then
+                  ( print_endline ("MD file is more recent");
+                    update_file_with_block ppf t file (Block.part t) )
+                else
+                  ( print_endline ("ML file is more recent");
+                    update_block_with_file ppf t file (Block.part t) )
              | None ->
                 (* Lines are ignored if file is not specified. *)
                 Block.pp ppf t
