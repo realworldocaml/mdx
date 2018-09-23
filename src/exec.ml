@@ -261,7 +261,7 @@ let add_opam_dev_pin ~repo {Opam.pin; url; tag} =
   in
   let cmd =
     let open Cmd in
-    v "opam" % "pin" %% switch_path repo % "add" % "-n" % (pin ^ ".dev") % targ
+    v "opam" % "pin" %% switch_path repo % "add" % "-yn" % (pin ^ ".dev") % targ
   in
   OS.Cmd.(run_out ~err:err_null cmd |> out_log)
 
