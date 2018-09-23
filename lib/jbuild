@@ -1,8 +1,0 @@
-(library
- ((name        mdx)
-  (public_name mdx)
-  (libraries   (astring fmt logs re))))
-
-(ocamllex (lexer))
-(ocamllex (lexer_cram))
-(ocamllex (lexer_top))

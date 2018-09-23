@@ -171,13 +171,13 @@ This allows to test the consistency of a markdown file using the normal dev
 workflow:
 
 ```
-$ jbuilder runtest
+$ dune runtest
 ```
 
 will display a diff of the output if something has changed. For instance:
 
 ```
-$ jbuilder runtest
+$ dune runtest
 ------ file.md
 ++++++ file.md.corrected
 File "file.md", line 23, characters 0-1:
@@ -195,7 +195,7 @@ File "file.md", line 23, characters 0-1:
 And the changes can then be accepted using:
 
 ```
-$ jbuilder promote
+$ dune promote
 ```
 
 #### Non-deterministic Tests

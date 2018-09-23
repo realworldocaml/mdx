@@ -1,0 +1,139 @@
+(alias
+ (name   runtest)
+ (deps   (:x section.md) (:y section.md.expected) (package mdx))
+ (action (progn
+           (run mdx test -s Testing %{x})
+           (diff? %{y} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x labels.md) (:y labels.md.expected) (package mdx))
+ (action (progn
+           (run mdx test -s Testing %{x})
+           (diff? %{y} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x pp.md) section.md (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x spaces.md) (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x errors.md) (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x heredoc.md) section.md (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x mlt.md) (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x semisemi.md) (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x exit.md) (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x padding.md) (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x multilines.md) (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x lines.md) (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x lwt.md) (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x non-det.md) (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x code.md) (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x dir.md) (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x dir.md) (:y dir.md.expected) (package mdx))
+ (action (progn
+           (run mdx test --root / %{x})
+           (diff? %{y} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x prelude.md) (package mdx))
+ (action (progn
+           (run mdx test --prelude-str "#require \"lwt\"" %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(rule
+ (targets section.ml)
+ (deps    (:x section.md) (package mdx))
+ (action  (with-stdout-to %{targets} (run mdx pp %{x}))))
+
+(executable (name section))
+
+(rule (with-stdout-to section.out (run ./section.exe)))
+
+(alias
+ (name   runtest)
+ (deps   (:x section.out) (:y section.out.expected))
+ (action (diff? %{x} %{y})))

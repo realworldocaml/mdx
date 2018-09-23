@@ -1,5 +1,0 @@
-(library
- ((name        mdx_top)
-  (public_name mdx.top)
-  (libraries   (unix mdx ppx_tools compiler-libs threads compiler-libs.toplevel
-                findlib.top))))
