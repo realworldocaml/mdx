@@ -33,6 +33,7 @@ let base_packages =
 let duniverse_forks =
   [ ("git+http://erratique.ch/repos/uutf.git", "uutf")
   ; ("git+http://erratique.ch/repos/astring.git", "astring")
+  ; ("git+http://erratique.ch/repos/asetmap.git", "asetmap")
   ; ("git+http://erratique.ch/repos/logs.git", "logs")
   ; ("git+http://erratique.ch/repos/react.git", "react")
   ; ("git+http://erratique.ch/repos/xmlm.git", "xmlm")
@@ -70,6 +71,6 @@ let duniverse_lockfile = Fpath.(duniverse_dir / "dune.sxp")
 
 let vendor_dir = Fpath.v "ocaml_modules"
 
-let duniverse_log = Fpath.v ".duniverse/log"
+let duniverse_log = Fpath.v ".duniverse-log"
 
 let vendor_branch branch = Fmt.strf "duniverse-of-%s" branch

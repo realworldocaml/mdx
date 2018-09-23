@@ -70,6 +70,7 @@ let tag_from_archive archive =
       match path with
       | [u; r; "releases"; "download"; v; archive] -> Some v
       | [u; r; "archive"; archive] -> Some (strip_ext archive)
+      | [u; r; "archive"; tag; _] -> Some tag
       | _ -> if Uri.scheme uri = Some "git+https" then None else parse_err () )
     | Some "ocaml.janestreet.com" -> (
       match path with
