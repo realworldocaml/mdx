@@ -147,11 +147,9 @@ let run ()
              | Some file ->
                 let file_mtime = List.assoc file files_mtime in
                 if file_mtime < md_file_mtime then
-                  ( print_endline ("MD file is more recent");
-                    update_file_with_block ppf t file (Block.part t) )
+                  update_file_with_block ppf t file (Block.part t)
                 else
-                  ( print_endline ("ML file is more recent");
-                    update_block_with_file ppf t file (Block.part t) )
+                  update_block_with_file ppf t file (Block.part t)
              | None ->
                 (* Lines are ignored if file is not specified. *)
                 Block.pp ppf t
