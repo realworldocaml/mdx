@@ -56,3 +56,9 @@ let () =
   f x print_int
 
 ```
+
+```ocaml
+# print_int x;;
+3
+- : unit = ()
+```
