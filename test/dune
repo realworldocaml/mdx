@@ -124,6 +124,13 @@
            (run mdx test --prelude-str "#require \"lwt\"" %{x})
            (diff? %{x} %{x}.corrected))))
 
+(alias
+ (name   runtest)
+ (deps   (:x promote_file.md) (:y promote_file.md.expected) (package mdx))
+ (action (progn
+           (run mdx promote %{x})
+           (diff? %{y} %{x}.corrected))))
+
 (rule
  (targets section.ml)
  (deps    (:x section.md) (package mdx))
