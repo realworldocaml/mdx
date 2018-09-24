@@ -127,6 +127,17 @@ let run ()
       at_exit (fun () -> Sys.remove temp_file);
       let buf = Buffer.create (Astring.String.length file_contents + 1024) in
       let ppf = Format.formatter_of_buffer buf in
+      let md_file_mtime = (Unix.stat md_file).st_mtime in
+      let files_mtime =
+        List.fold_left (fun acc -> function
+            | Section _ | Text _ -> acc
+            | Block t when not (active t) -> acc
+            | Block t ->
+               match Block.file t with
+               | Some file -> (file, (Unix.stat file).st_mtime) :: acc
+               | None -> acc
+          ) [] items
+      in
       List.iter (function
           | Section _
           | Text _ as t -> Mdx.pp_line ppf t
@@ -134,8 +145,7 @@ let run ()
           | Block t ->
              match Block.file t with
              | Some file ->
-                let md_file_mtime = (Unix.stat md_file).st_mtime in
-                let file_mtime = (Unix.stat file).st_mtime in
+                let file_mtime = List.assoc file files_mtime in
                 if file_mtime < md_file_mtime then
                   ( print_endline ("MD file is more recent");
                     update_file_with_block ppf t file (Block.part t) )
