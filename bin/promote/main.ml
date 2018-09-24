@@ -123,6 +123,7 @@ let run ()
       Fmt.failwith "only one of --prelude and --prelude-str shoud be used"
   in
   Mdx.run md_file ~f:(fun file_contents items ->
+      let add_dir file = Filename.(concat (dirname md_file) file) in
       let temp_file = Filename.temp_file "mdx" ".output" in
       at_exit (fun () -> Sys.remove temp_file);
       let buf = Buffer.create (Astring.String.length file_contents + 1024) in
@@ -134,7 +135,9 @@ let run ()
             | Block t when not (active t) -> acc
             | Block t ->
                match Block.file t with
-               | Some file -> (file, (Unix.stat file).st_mtime) :: acc
+               | Some file ->
+                  let file = add_dir file in
+                  (file, (Unix.stat file).st_mtime) :: acc
                | None -> acc
           ) [] items
       in
@@ -145,6 +148,7 @@ let run ()
           | Block t ->
              match Block.file t with
              | Some file ->
+                let file = add_dir file in
                 let file_mtime = List.assoc file files_mtime in
                 if file_mtime < md_file_mtime then
                   update_file_with_block ppf t file (Block.part t)
