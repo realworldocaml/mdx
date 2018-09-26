@@ -20,6 +20,13 @@ open Mdx
 let src = Logs.Src.create "cram.test"
 module Log = (val Logs.src_log src : Logs.LOG)
 
+let read_file file =
+  let ic = open_in_bin file in
+  let len = in_channel_length ic in
+  let file_contents = really_input_string ic len in
+  close_in ic;
+  file_contents
+
 let read_lines file =
   let ic = open_in file in
   let r = ref [] in
@@ -130,9 +137,95 @@ let run_toplevel_tests c ppf tests t =
     ) tests;
   Block.pp_footer ppf ()
 
+let part_from_file ~file ~part =
+  let open Ocaml_topexpect in
+  let lexbuf = Lexbuf.of_file file in
+  let v = Phrase.read_all lexbuf in
+  let doc = Phrase.document lexbuf v ~matched:true in
+  let parts = Document.parts doc in
+  match part with
+  | Some part ->
+     (match List.find_opt (fun p -> String.equal (Part.name p) part) parts with
+      | Some p ->
+         Part.chunks p |> List.rev_map Chunk.code |> List.rev
+      | None ->
+         Fmt.failwith "Part %s not found in file %s" part file)
+  | None ->
+     List.fold_left (fun acc p ->
+         let chunks = Part.chunks p |> List.rev_map Chunk.code in
+         List.fold_left (fun acc x -> x :: acc) ("" :: acc) chunks
+       ) [] parts |> List.rev
+
+let update_block_with_file ppf t file part =
+  Block.pp_header ppf t;
+  let lines = part_from_file ~file ~part in
+  let contents = Astring.String.concat ~sep:"\n" lines in
+  Output.pp ppf (`Output contents);
+  Block.pp_footer ppf ()
+
+let update_file_with_block ppf t file part =
+  let output_file = file ^ ".corrected" in
+  let input_file =
+    if Sys.file_exists output_file then output_file
+    else file
+  in
+  let open Ocaml_topexpect in
+  let lexbuf = Lexbuf.of_file input_file in
+  let v = Phrase.read_all lexbuf in
+  let doc = Phrase.document lexbuf v ~matched:true in
+  let parts = Document.parts doc in
+  (match part with
+   | Some part ->
+      let on_part p =
+        let name = Part.name p in
+        let lines =
+          if String.equal name part then
+            match Block.value t with
+            | Raw | OCaml | Error _ -> t.Block.contents
+            | Cram _ ->
+               Fmt.failwith "Promoting Cram tests is unsupported for now."
+            | Toplevel tests ->
+               let f t =
+                 t.Toplevel.command |> Astring.String.concat ~sep:"\n" in
+               List.map f tests
+          else
+            Part.chunks p |> List.rev_map Chunk.code |> List.rev
+        in
+        if String.equal name "" then lines
+        else ("[@@@part \"" ^ name ^ "\"];;") :: lines
+      in
+      let lines = List.map on_part parts in
+      let lines = List.map (Astring.String.concat ~sep:"\n") lines in
+      let lines = Astring.String.concat ~sep:"\n" lines in
+      if String.equal lines (read_file input_file) then
+        ()
+      else
+        let oc = open_out output_file in
+        output_string oc lines;
+        close_out oc
+   | None -> () );
+  Block.pp ppf t
+
+let update_file_or_block ppf md_file ml_file block direction =
+  let direction =
+    match direction with
+    | Some `To_md -> `To_md
+    | Some `To_ml -> `To_ml
+    | Some `Infer_timestamp | None ->
+       let md_file_mtime = (Unix.stat md_file).st_mtime in
+       let ml_file_mtime = (Unix.stat ml_file).st_mtime in
+       if ml_file_mtime < md_file_mtime then `To_ml
+       else `To_md
+  in
+  match direction with
+  | `To_md ->
+     update_block_with_file ppf block ml_file (Block.part block)
+  | `To_ml ->
+     update_file_with_block ppf block ml_file (Block.part block)
+
 let run ()
     non_deterministic not_verbose silent verbose_findlib prelude prelude_str
-    file section root
+    file section root direction
   =
   let c =
     Mdx_top.init ~verbose:(not not_verbose) ~silent ~verbose_findlib ()
@@ -182,14 +275,22 @@ let run ()
               List.iter (fun t -> let _ = eval_test c t in ()) tests
             (* Run raw OCaml code *)
             | true, _, _, OCaml ->
-              eval_raw c ~line:t.line t.contents;
-              Block.pp ppf t
+               (match Block.file t with
+                | Some ml_file ->
+                   update_file_or_block ppf file ml_file t direction
+                | None ->
+                   eval_raw c ~line:t.line t.contents;
+                   Block.pp ppf t )
             (* Cram tests. *)
             | true, _, _, Cram { tests; pad } ->
               run_cram_tests ?root ppf temp_file pad tests t
             (* Top-level tests. *)
             | true, _, _, Toplevel tests ->
-              run_toplevel_tests c ppf tests t
+               match Block.file t with
+               | Some ml_file ->
+                  update_file_or_block ppf file ml_file t direction
+               | None ->
+                  run_toplevel_tests c ppf tests t
         ) items;
       Format.pp_print_flush ppf ();
       Buffer.contents buf);
@@ -199,6 +300,16 @@ let run ()
 
 open Cmdliner
 
+let direction =
+  let doc = "" in
+  let opt_names =
+    [ "infer-timestamp", `Infer_timestamp
+    ; "to-md", `To_md
+    ; "to-ml", `To_ml ]
+  in
+  let names = ["direction"] in
+  Arg.(value & opt (some (enum opt_names)) None & info names ~doc)
+
 let cmd =
   let exits = Term.default_exits in
   let man = [] in
@@ -206,7 +317,7 @@ let cmd =
   Term.(pure run
         $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose
         $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
-        $ Cli.file $ Cli.section $ Cli.root),
+        $ Cli.file $ Cli.section $ Cli.root $ direction),
   Term.info "mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man
 
 let main () = Term.(exit_status @@ eval cmd)

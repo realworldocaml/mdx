@@ -1,6 +1,7 @@
 Mdx can also understand ocaml code blocks:
 
-```ocaml file=promote.ml,part=toto
+
+```ocaml file=promote_to_md.ml,part=toto
 let x = 34
 let f = 42.3
 let s = "toto"
@@ -12,26 +13,26 @@ let () =
 ;;
 ```
 
-```ocaml file=promote.ml,part=zzz
+```ocaml file=promote_to_md.ml,part=zzz
 let () =
   print_string s
 ;;
 ```
 
-```ocaml file=promote.ml,part=42
+```ocaml file=promote_to_md.ml,part=42
 let () =
   f x print_int
 
 ```
 
-```ocaml file=promote.ml,part=
+```ocaml file=promote_to_md.ml,part=
 let () =
   ();
   ()
 ;;
 ```
 
-```ocaml file=promote.ml
+```ocaml file=promote_to_md.ml
 
 let () =
   ();
@@ -58,7 +59,9 @@ let () =
 ```
 
 ```ocaml
+# let x = 2;;
+val x : int = 2
 # print_int x;;
-3
+2
 - : unit = ()
 ```

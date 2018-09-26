@@ -126,10 +126,19 @@
 
 (alias
  (name   runtest)
- (deps   (:x promote_file.md) (:y promote_file.md.expected) (package mdx))
+ (deps   (:x promote_to_md.md) (:y promote_to_md.md.expected) (package mdx))
  (action (progn
-           (run mdx promote %{x})
+           (run mdx test --direction=to-md %{x})
            (diff? %{y} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x promote_to_ml.md) (:y promote_to_ml.md.expected)
+         (:a promote_to_ml.ml) (:b promote_to_ml.ml.expected) (package mdx))
+ (action (progn
+           (run mdx test --direction=to-ml %{x})
+           (diff? %{y} %{x}.corrected)
+           (diff? %{b} %{a}.corrected))))
 
 (rule
  (targets section.ml)
