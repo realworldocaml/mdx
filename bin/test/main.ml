@@ -137,28 +137,9 @@ let run_toplevel_tests c ppf tests t =
     ) tests;
   Block.pp_footer ppf ()
 
-let part_from_file ~file ~part =
-  let open Mdx_top.Ocaml_topexpect in
-  let lexbuf = Lexbuf.of_file file in
-  let v = Phrase.read_all lexbuf in
-  let doc = Phrase.document lexbuf v ~matched:true in
-  let parts = Document.parts doc in
-  match part with
-  | Some part ->
-     (match List.find_opt (fun p -> String.equal (Part.name p) part) parts with
-      | Some p ->
-         Part.chunks p |> List.rev_map Chunk.code |> List.rev
-      | None ->
-         Fmt.failwith "Part %s not found in file %s" part file)
-  | None ->
-     List.fold_left (fun acc p ->
-         let chunks = Part.chunks p |> List.rev_map Chunk.code in
-         List.fold_left (fun acc x -> x :: acc) ("" :: acc) chunks
-       ) [] parts |> List.rev
-
 let update_block_with_file ppf t file part =
   Block.pp_header ppf t;
-  let lines = part_from_file ~file ~part in
+  let lines = Mdx_top.Ocaml_topexpect.lines_of_part ~file ~part in
   let contents = Astring.String.concat ~sep:"\n" lines in
   Output.pp ppf (`Output contents);
   Block.pp_footer ppf ()
@@ -169,32 +150,21 @@ let update_file_with_block ppf t file part =
     if Sys.file_exists output_file then output_file
     else file
   in
-  let open Mdx_top.Ocaml_topexpect in
-  let lexbuf = Lexbuf.of_file input_file in
-  let v = Phrase.read_all lexbuf in
-  let doc = Phrase.document lexbuf v ~matched:true in
-  let parts = Document.parts doc in
   (match part with
    | Some part ->
-      let on_part p =
-        let name = Part.name p in
-        let lines =
-          if String.equal name part then
-            match Block.value t with
-            | Raw | OCaml | Error _ -> t.Block.contents
-            | Cram _ ->
-               Fmt.failwith "Promoting Cram tests is unsupported for now."
-            | Toplevel tests ->
-               let f t =
-                 t.Toplevel.command |> Astring.String.concat ~sep:"\n" in
-               List.map f tests
-          else
-            Part.chunks p |> List.rev_map Chunk.code |> List.rev
-        in
-        if String.equal name "" then lines
-        else ("[@@@part \"" ^ name ^ "\"];;") :: lines
+      let lines =
+        match Block.value t with
+        | Raw | OCaml | Error _ -> t.Block.contents
+        | Cram _ ->
+           Fmt.failwith "Promoting Cram tests is unsupported for now."
+        | Toplevel tests ->
+           let f t =
+             t.Toplevel.command |> Astring.String.concat ~sep:"\n" in
+           List.map f tests
       in
-      let lines = List.map on_part parts in
+      let lines =
+        Mdx_top.Ocaml_topexpect.replace_lines_of_part
+          ~file:input_file ~part ~lines in
       let lines = List.map (Astring.String.concat ~sep:"\n") lines in
       let lines = Astring.String.concat ~sep:"\n" lines in
       if String.equal lines (read_file input_file) then

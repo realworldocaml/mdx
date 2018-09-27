@@ -24,10 +24,10 @@ module Chunk = struct
 
   let v ~ocaml_code ~toplevel_responses = {ocaml_code; toplevel_responses}
   let code c = c.ocaml_code
-  let warnings (_ : t) : string =  ""
-  let responses c = c.toplevel_responses
-  let stdout (_ : t) = ""
-  let evaluated (_ : t) = true
+  let _warnings (_ : t) : string =  ""
+  let _responses c = c.toplevel_responses
+  let _stdout (_ : t) = ""
+  let _evaluated (_ : t) = true
 end
 
 module Part = struct
@@ -46,7 +46,7 @@ module Document = struct
 
   let v ~parts ~matched = {parts; matched}
   let parts {parts;_} = parts
-  let matched {matched;_} = matched
+  let _matched {matched;_} = matched
 end
 
 module Lexbuf = struct
@@ -107,7 +107,7 @@ module Lexbuf = struct
     in
     aux
 
-  let position_mapper start =
+  let _position_mapper start =
     let open Ast_mapper in
     let start = {start with pos_fname = toplevel_fname} in
     let location mapper loc =
@@ -130,8 +130,8 @@ module Phrase = struct
     parsed   : (toplevel_phrase, exn) result;
   }
 
-  let result t = t.parsed
-  let start t = t.startpos
+  let _result t = t.parsed
+  let _start t = t.startpos
 
   let read lexbuf =
     let startpos = lexbuf.Lexing.lex_curr_p in
@@ -168,8 +168,6 @@ module Phrase = struct
                   responses: Chunk.response list;
                   nondeterministic: bool }
     | Part of { location: Location.t; name: string }
-
-  type v = (t * Chunk.response list kind) list
 
   exception Cannot_parse_payload of Location.t
 
@@ -285,7 +283,7 @@ module Phrase = struct
     let parts = parts_of_phrase "" [] phrases in
     Document.v ~matched ~parts
 
-  let is_findlib_directive =
+  let _is_findlib_directive =
     let findlib_directive = function
       | "require" | "use" | "camlp4o" | "camlp4r" | "thread" -> true
       | _ -> false
@@ -434,7 +432,7 @@ let match_outcome xs ys =
 
 (* Check if output matches expectations and keep ellisions when
    possible *)
-let validate ~run_nondeterministic =
+let _validate ~run_nondeterministic =
   let rec aux success acc = function
     | [] -> (success, List.rev acc)
     | (_, Part _ as entry) :: rest ->
@@ -463,7 +461,7 @@ let validate ~run_nondeterministic =
   in
   fun phrases -> aux true [] phrases
 
-let output oc lexbuf =
+let _output oc lexbuf =
   let rec aux = function
     | [] -> ()
     | (phrase, Part {name; location}) :: rest ->
@@ -527,3 +525,39 @@ let output oc lexbuf =
   in aux
 
 end
+
+let lines_of_part ~file ~part =
+  let lexbuf = Lexbuf.of_file file in
+  let v = Phrase.read_all lexbuf in
+  let doc = Phrase.document lexbuf v ~matched:true in
+  let parts = Document.parts doc in
+  match part with
+  | Some part ->
+     (match List.find_opt (fun p -> String.equal (Part.name p) part) parts with
+      | Some p ->
+         Part.chunks p |> List.rev_map Chunk.code |> List.rev
+      | None ->
+         Fmt.failwith "Part %s not found in file %s" part file)
+  | None ->
+     List.fold_left (fun acc p ->
+         let chunks = Part.chunks p |> List.rev_map Chunk.code in
+         List.fold_left (fun acc x -> x :: acc) ("" :: acc) chunks
+       ) [] parts |> List.rev
+
+let replace_lines_of_part ~file ~part ~lines =
+  let lexbuf = Lexbuf.of_file file in
+  let v = Phrase.read_all lexbuf in
+  let doc = Phrase.document lexbuf v ~matched:true in
+  let parts = Document.parts doc in
+  let on_part p =
+    let name = Part.name p in
+    let lines =
+      if String.equal name part then
+        lines
+      else
+        Part.chunks p |> List.rev_map Chunk.code |> List.rev
+    in
+    if String.equal name "" then lines
+    else ("[@@@part \"" ^ name ^ "\"];;") :: lines
+  in
+  List.map on_part parts
