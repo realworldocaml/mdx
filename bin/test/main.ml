@@ -300,16 +300,6 @@ let run ()
 
 open Cmdliner
 
-let direction =
-  let doc = "" in
-  let opt_names =
-    [ "infer-timestamp", `Infer_timestamp
-    ; "to-md", `To_md
-    ; "to-ml", `To_ml ]
-  in
-  let names = ["direction"] in
-  Arg.(value & opt (some (enum opt_names)) None & info names ~doc)
-
 let cmd =
   let exits = Term.default_exits in
   let man = [] in
@@ -317,7 +307,7 @@ let cmd =
   Term.(pure run
         $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose
         $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
-        $ Cli.file $ Cli.section $ Cli.root $ direction),
+        $ Cli.file $ Cli.section $ Cli.root $ Cli.direction),
   Term.info "mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man
 
 let main () = Term.(exit_status @@ eval cmd)
