@@ -54,7 +54,7 @@ let direction =
     ; "to-ml", `To_ml ]
   in
   let names = ["direction"] in
-  let docv = Astring.String.concat ~sep:"|" (List.map fst opt_names) in
+  let docv = String.concat "|" (List.map fst opt_names) in
   let docv = "{" ^ docv ^ "}" in
   Arg.(value & opt (some (enum opt_names)) None & info names ~doc ~docv)
 
