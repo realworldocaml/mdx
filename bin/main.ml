@@ -16,7 +16,7 @@
 
 open Cmdliner
 
-let cmds = [Test.cmd; Pp.cmd; Promote.cmd ]
+let cmds = [Test.cmd; Pp.cmd]
 let main () = `Help (`Pager, None)
 
 let main =
