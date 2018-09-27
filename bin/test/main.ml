@@ -138,7 +138,7 @@ let run_toplevel_tests c ppf tests t =
   Block.pp_footer ppf ()
 
 let part_from_file ~file ~part =
-  let open Ocaml_topexpect in
+  let open Mdx_top.Ocaml_topexpect in
   let lexbuf = Lexbuf.of_file file in
   let v = Phrase.read_all lexbuf in
   let doc = Phrase.document lexbuf v ~matched:true in
@@ -169,7 +169,7 @@ let update_file_with_block ppf t file part =
     if Sys.file_exists output_file then output_file
     else file
   in
-  let open Ocaml_topexpect in
+  let open Mdx_top.Ocaml_topexpect in
   let lexbuf = Lexbuf.of_file input_file in
   let v = Phrase.read_all lexbuf in
   let doc = Phrase.document lexbuf v ~matched:true in
