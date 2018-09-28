@@ -27,4 +27,14 @@ val eval: t -> string list -> string list
 (** [eval t p] evaluates the toplevel phrase [p] (possibly spawning on
     mulitple lines) with the configuration value [t]. *)
 
-module Ocaml_topexpect = Ocaml_topexpect
+val lines_of_part: file:string -> part:string option -> string list
+(** [lines_of_part f p] returns each line of the part [p] in file [f],
+    this function fails if [f] does not contain a part [p]. *)
+
+val replace_lines_of_part:
+  file:string ->
+  part:string ->
+  lines:string list ->
+  string list list
+(** [replace_lines_of_part f p l] returns the lines of the file [f] where the
+    lines of part [p] have been replaced by [l]. *)
