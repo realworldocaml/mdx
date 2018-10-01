@@ -282,7 +282,7 @@ module Phrase = struct
 
 end
 
-let lines_of_part ~file ~part =
+let find ~file ~part =
   let lexbuf = Lexbuf.of_file file in
   let v = Phrase.read_all lexbuf in
   let doc = Phrase.document lexbuf v ~matched:true in
@@ -300,7 +300,7 @@ let lines_of_part ~file ~part =
          List.fold_left (fun acc x -> x :: acc) ("" :: acc) chunks
        ) [] parts |> List.rev
 
-let replace_lines_of_part ~file ~part ~lines =
+let replace ~file ~part ~lines =
   let lexbuf = Lexbuf.of_file file in
   let v = Phrase.read_all lexbuf in
   let doc = Phrase.document lexbuf v ~matched:true in

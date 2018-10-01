@@ -604,5 +604,5 @@ let init ~verbose:v ~silent:s ~verbose_findlib () =
   silent t;
   t
 
-let lines_of_part = Ocaml_topexpect.lines_of_part
-let replace_lines_of_part = Ocaml_topexpect.replace_lines_of_part
+let lines_of_part = Part.find
+let replace_lines_of_part = Part.replace
