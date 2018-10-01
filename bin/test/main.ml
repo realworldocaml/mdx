@@ -14,7 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Astring
 open Mdx
 
 let src = Logs.Src.create "cram.test"
@@ -140,7 +139,7 @@ let run_toplevel_tests c ppf tests t =
 let update_block_with_file ppf t file part =
   Block.pp_header ppf t;
   let lines = Mdx_top.lines_of_part ~file ~part in
-  let contents = Astring.String.concat ~sep:"\n" lines in
+  let contents = String.concat "\n" lines in
   Output.pp ppf (`Output contents);
   Block.pp_footer ppf ()
 
@@ -159,14 +158,14 @@ let update_file_with_block ppf t file part =
            Fmt.failwith "Promoting Cram tests is unsupported for now."
         | Toplevel tests ->
            let f t =
-             t.Toplevel.command |> Astring.String.concat ~sep:"\n" in
+             t.Toplevel.command |> String.concat "\n" in
            List.map f tests
       in
       let lines =
         Mdx_top.replace_lines_of_part
           ~file:input_file ~part ~lines in
-      let lines = List.map (Astring.String.concat ~sep:"\n") lines in
-      let lines = Astring.String.concat ~sep:"\n" lines in
+      let lines = List.map (String.concat "\n") lines in
+      let lines = String.concat "\n" lines in
       if String.equal lines (read_file input_file) then
         ()
       else
