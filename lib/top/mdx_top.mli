@@ -27,14 +27,4 @@ val eval: t -> string list -> string list
 (** [eval t p] evaluates the toplevel phrase [p] (possibly spawning on
     mulitple lines) with the configuration value [t]. *)
 
-val lines_of_part: file:string -> part:string option -> string list
-(** [lines_of_part ~file ~part] returns each line of the part [part] in file
-    [file], this function fails if [file] does not contain a part [part]. *)
-
-val replace_lines_of_part:
-  file:string ->
-  part:string ->
-  lines:string list ->
-  string list list
-(** [replace_lines_of_part ~file ~part ~lines] returns the lines of the
-    file [file] where the lines of part [part] have been replaced by [lines]. *)
+module Part = Part
