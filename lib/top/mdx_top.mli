@@ -28,13 +28,13 @@ val eval: t -> string list -> string list
     mulitple lines) with the configuration value [t]. *)
 
 val lines_of_part: file:string -> part:string option -> string list
-(** [lines_of_part f p] returns each line of the part [p] in file [f],
-    this function fails if [f] does not contain a part [p]. *)
+(** [lines_of_part ~file ~part] returns each line of the part [part] in file
+    [file], this function fails if [file] does not contain a part [part]. *)
 
 val replace_lines_of_part:
   file:string ->
   part:string ->
   lines:string list ->
   string list list
-(** [replace_lines_of_part f p l] returns the lines of the file [f] where the
-    lines of part [p] have been replaced by [l]. *)
+(** [replace_lines_of_part ~file ~part ~lines] returns the lines of the
+    file [file] where the lines of part [part] have been replaced by [lines]. *)
