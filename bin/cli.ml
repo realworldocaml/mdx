@@ -56,7 +56,7 @@ let direction =
   let names = ["direction"] in
   let docv = String.concat "|" (List.map fst opt_names) in
   let docv = "{" ^ docv ^ "}" in
-  Arg.(value & opt (some (enum opt_names)) None & info names ~doc ~docv)
+  Arg.(value & opt (enum opt_names) `Infer_timestamp & info names ~doc ~docv)
 
 let setup_log style_renderer level =
   Fmt_tty.setup_std_outputs ?style_renderer ();

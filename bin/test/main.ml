@@ -179,9 +179,9 @@ let update_file_with_block ppf t file part =
 let update_file_or_block ppf md_file ml_file block direction =
   let direction =
     match direction with
-    | Some `To_md -> `To_md
-    | Some `To_ml -> `To_ml
-    | Some `Infer_timestamp | None ->
+    | `To_md -> `To_md
+    | `To_ml -> `To_ml
+    | `Infer_timestamp ->
        let md_file_mtime = (Unix.stat md_file).st_mtime in
        let ml_file_mtime = (Unix.stat ml_file).st_mtime in
        if ml_file_mtime < md_file_mtime then `To_ml
