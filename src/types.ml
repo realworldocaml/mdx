@@ -23,6 +23,7 @@ module Opam = struct
     [ `Github of string * string
     | `Duniverse_fork of string
       (** [name] which is [https://github.com/dune-universe/name] *)
+    | `Git of string
     | `Unknown of string
     | `Virtual
     | `Error of string ]
