@@ -1,6 +1,6 @@
 ## mdx -- executable code blocks inside markdown files
 
-`mdx` allows to execute code blocks inside markdow files.
+`mdx` allows to execute code blocks inside markdown files.
 There are (currently) two sub-commands, corresponding
 to two modes of operations: pre-processing (`mdx pp`)
 and tests (`mdx test`).
@@ -95,7 +95,7 @@ Here is an examples of toplevel OCaml code:
 
 ### Pre-processing
 
-`mdx pp` allows to transform a markdow file into a valid
+`mdx pp` allows to transform a markdown file into a valid
 OCaml file, which can be passed to OCaml using the `-pp`
 option.
 
