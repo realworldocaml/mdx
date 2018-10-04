@@ -27,6 +27,7 @@ module Output = Output
 module Cram = Cram
 module Toplevel = Toplevel
 module Block = Block
+module Migrate_ast = Migrate_ast
 
 (** {2 Lines} *)
 
