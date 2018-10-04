@@ -63,6 +63,10 @@ let tag_from_archive archive =
   in
   match Uri.scheme uri with
   | Some "git+http" | Some "git+https" -> Some "master"
+  | Some "git+ssh" -> (
+    match String.cuts ~empty:false ~sep:"#" archive with
+    | [repo; tag] -> Some tag
+    | _ -> Some "master")
   | Some "git+file" -> None
   | _ -> (
     match Uri.host uri with
@@ -126,7 +130,12 @@ let classify_package ~package ~dev_repo ~archive ~pins () =
                   let repo = strip_ext repo in
                   (`Github (user, repo), tag)
               | tl -> err "wierd github url" )
-            | Some host -> (`Unknown host, tag)
+            | Some host -> (
+              match String.is_prefix "git" archive with
+              | true -> ( 
+                let base_repo = String.cuts ~empty:false ~sep:"#" archive |> List.hd in
+                (`Git base_repo, tag) )
+              | false -> (`Unknown host, tag) )
             | None -> err "dev-repo without host" ) ) )
 
 let check_if_dune ~repo ~dev_repo package =

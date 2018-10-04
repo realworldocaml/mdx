@@ -33,6 +33,12 @@ let dune_repo_of_opam ?(verify_refs = true) opam =
           Exec.git_default_branch ~remote:upstream ()
           >>= fun ref -> Ok {Dune.dir; upstream; ref}
       | Some ref -> Ok {Dune.dir; upstream; ref} )
+  | `Git upstream -> (
+      match opam.Opam.tag with
+      | None ->
+          Exec.git_default_branch ~remote:upstream ()
+          >>= fun ref -> Ok {Dune.dir; upstream; ref}
+      | Some ref -> Ok {Dune.dir; upstream; ref} )
   | `Duniverse_fork repo ->
       let upstream = Fmt.strf "git://github.com/dune-universe/%s.git" repo in
       let ref =
