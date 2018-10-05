@@ -61,6 +61,13 @@ let to_current =
 let to_406 =
   Migrate_parsetree.Versions.(migrate ocaml_current ocaml_406)
 
+module Typemod = struct
+  open Typemod
+
+  let type_structure e s l =
+    type_structure e (to_current.copy_structure s) l
+end
+
 module Printast = struct
   open Printast
 

@@ -17,6 +17,13 @@
 
 open Mdx.Migrate_ast
 
+module Toploop = struct
+  include Toploop
+
+  let execute_phrase verbose ppf p =
+    execute_phrase verbose ppf (to_current.copy_toplevel_phrase p)
+end
+
 let redirect ~f =
   let stdout_backup = Unix.dup Unix.stdout in
   let stderr_backup = Unix.dup Unix.stdout in
@@ -263,10 +270,7 @@ module Rewrite = struct
         let pstr =
           try
             let tstr, _tsg, env =
-              Typemod.type_structure
-                !Toploop.toplevel_env
-                (to_current.copy_structure pstr)
-                Location.none
+              Typemod.type_structure !Toploop.toplevel_env pstr Location.none
             in
             List.map2 (item ts env) pstr tstr.Typedtree.str_items
           with _ ->
@@ -280,9 +284,7 @@ module Rewrite = struct
   let preload verbose ppf =
     let require pkg =
       let p = Ptop_dir ("require", Pdir_string pkg) in
-      let _ =
-        Toploop.execute_phrase
-          verbose ppf (to_current.copy_toplevel_phrase p) in
+      let _ = Toploop.execute_phrase verbose ppf p in
       ()
     in
     match active_rewriters () with
@@ -325,8 +327,7 @@ let toplevel_exec_phrase t ppf p = match Phrase.result p with
     if !Clflags.dump_parsetree then Printast. top_phrase ppf phrase;
     if !Clflags.dump_source    then Pprintast.top_phrase ppf phrase;
     Env.reset_cache_toplevel ();
-    Toploop.execute_phrase
-      t.verbose ppf (to_current.copy_toplevel_phrase phrase)
+    Toploop.execute_phrase t.verbose ppf phrase
 
 type var_and_value = V : 'a ref * 'a -> var_and_value
 
