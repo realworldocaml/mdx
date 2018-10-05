@@ -15,6 +15,15 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+open Mdx.Migrate_ast
+
+module Toploop = struct
+  include Toploop
+
+  let execute_phrase verbose ppf p =
+    execute_phrase verbose ppf (to_current.copy_toplevel_phrase p)
+end
+
 let redirect ~f =
   let stdout_backup = Unix.dup Unix.stdout in
   let stderr_backup = Unix.dup Unix.stdout in
@@ -455,7 +464,7 @@ let show_exception () =
            ext_type_params = [];
            ext_args = Cstr_tuple desc.cstr_args;
            ext_ret_type = ret_type;
-           ext_private = Asttypes.Public;
+           ext_private = Asttypes_.Public;
            Types.ext_loc = desc.cstr_loc;
            Types.ext_attributes = desc.cstr_attributes; }
        in
@@ -470,7 +479,8 @@ let show_module () =
       Mty_signature (List.map (function
             Sig_module (id, md, rs) ->
             Sig_module (id, {md with md_attributes =
-                                       (Location.mknoloc "...", Parsetree.PStr [])
+                                       (Location.mknoloc "...",
+                                        Parsetree_.PStr [])
                                        :: md.md_attributes},
                         rs)
           (*| Sig_modtype (id, Modtype_manifest mty) ->
