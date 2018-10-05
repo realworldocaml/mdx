@@ -16,7 +16,7 @@
 
 (** [Mdx] is a library to manipulate markdown code blocks.
 
-    [mdx] allows to execute code blocks inside markdow files. The
+    [mdx] allows to execute code blocks inside markdown files. The
    supported code {{!Block}blocks} are either {{!Cram}cram-like}
    tests, raw OCaml fragments or {{!Toplevel}toplevel} phrases.
 
