@@ -14,11 +14,17 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Astring
 open Mdx
 
 let src = Logs.Src.create "cram.test"
 module Log = (val Logs.src_log src : Logs.LOG)
+
+let read_file file =
+  let ic = open_in_bin file in
+  let len = in_channel_length ic in
+  let file_contents = really_input_string ic len in
+  close_in ic;
+  file_contents
 
 let read_lines file =
   let ic = open_in file in
@@ -130,9 +136,63 @@ let run_toplevel_tests c ppf tests t =
     ) tests;
   Block.pp_footer ppf ()
 
+let update_block_with_file ppf t file part =
+  Block.pp_header ppf t;
+  let lines = Mdx_top.Part.find ~file ~part in
+  let contents = String.concat "\n" lines in
+  Output.pp ppf (`Output contents);
+  Block.pp_footer ppf ()
+
+let update_file_with_block ppf t file part =
+  let output_file = file ^ ".corrected" in
+  let input_file =
+    if Sys.file_exists output_file then output_file
+    else file
+  in
+  (match part with
+   | Some part ->
+      let lines =
+        match Block.value t with
+        | Raw | OCaml | Error _ -> t.Block.contents
+        | Cram _ ->
+           Fmt.failwith "Promoting Cram tests is unsupported for now."
+        | Toplevel tests ->
+           let f t =
+             t.Toplevel.command |> String.concat "\n" in
+           List.map f tests
+      in
+      let lines = Mdx_top.Part.replace ~file:input_file ~part ~lines in
+      let lines = List.map (String.concat "\n") lines in
+      let lines = String.concat "\n" lines in
+      if String.equal lines (read_file input_file) then
+        ()
+      else
+        let oc = open_out output_file in
+        output_string oc lines;
+        close_out oc
+   | None -> () );
+  Block.pp ppf t
+
+let update_file_or_block ppf md_file ml_file block direction =
+  let direction =
+    match direction with
+    | `To_md -> `To_md
+    | `To_ml -> `To_ml
+    | `Infer_timestamp ->
+       let md_file_mtime = (Unix.stat md_file).st_mtime in
+       let ml_file_mtime = (Unix.stat ml_file).st_mtime in
+       if ml_file_mtime < md_file_mtime then `To_ml
+       else `To_md
+  in
+  match direction with
+  | `To_md ->
+     update_block_with_file ppf block ml_file (Block.part block)
+  | `To_ml ->
+     update_file_with_block ppf block ml_file (Block.part block)
+
 let run ()
     non_deterministic not_verbose silent verbose_findlib prelude prelude_str
-    file section root
+    file section root direction
   =
   let c =
     Mdx_top.init ~verbose:(not not_verbose) ~silent ~verbose_findlib ()
@@ -182,14 +242,22 @@ let run ()
               List.iter (fun t -> let _ = eval_test c t in ()) tests
             (* Run raw OCaml code *)
             | true, _, _, OCaml ->
-              eval_raw c ~line:t.line t.contents;
-              Block.pp ppf t
+               (match Block.file t with
+                | Some ml_file ->
+                   update_file_or_block ppf file ml_file t direction
+                | None ->
+                   eval_raw c ~line:t.line t.contents;
+                   Block.pp ppf t )
             (* Cram tests. *)
             | true, _, _, Cram { tests; pad } ->
               run_cram_tests ?root ppf temp_file pad tests t
             (* Top-level tests. *)
             | true, _, _, Toplevel tests ->
-              run_toplevel_tests c ppf tests t
+               match Block.file t with
+               | Some ml_file ->
+                  update_file_or_block ppf file ml_file t direction
+               | None ->
+                  run_toplevel_tests c ppf tests t
         ) items;
       Format.pp_print_flush ppf ();
       Buffer.contents buf);
@@ -206,7 +274,7 @@ let cmd =
   Term.(pure run
         $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose
         $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
-        $ Cli.file $ Cli.section $ Cli.root),
+        $ Cli.file $ Cli.section $ Cli.root $ Cli.direction),
   Term.info "mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man
 
 let main () = Term.(exit_status @@ eval cmd)

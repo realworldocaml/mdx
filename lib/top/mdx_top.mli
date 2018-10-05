@@ -26,3 +26,5 @@ val init: verbose:bool -> silent:bool -> verbose_findlib:bool -> unit -> t
 val eval: t -> string list -> string list
 (** [eval t p] evaluates the toplevel phrase [p] (possibly spawning on
     mulitple lines) with the configuration value [t]. *)
+
+module Part = Part

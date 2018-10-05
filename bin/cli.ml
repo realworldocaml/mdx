@@ -40,6 +40,24 @@ let root =
   let doc = "The directory to run the tests from." in
   Arg.(value & opt (some string) None & info ["root"] ~doc ~docv:"DIR")
 
+let direction =
+  let doc = "Direction of file synchronization. $(b,to-ml) assumes \
+             the .md file is the reference and updates the .ml and \
+             the .md files accordingly. $(b,to-md) assumes the .ml \
+             file is the reference and updates the .md file \
+             accordingly. $(b,infer-timestamp) uses the files last \
+             modification timestamps to determine the reference file \
+             and updates the least recent files." in
+  let opt_names =
+    [ "infer-timestamp", `Infer_timestamp
+    ; "to-md", `To_md
+    ; "to-ml", `To_ml ]
+  in
+  let names = ["direction"] in
+  let docv = String.concat "|" (List.map fst opt_names) in
+  let docv = "{" ^ docv ^ "}" in
+  Arg.(value & opt (enum opt_names) `Infer_timestamp & info names ~doc ~docv)
+
 let setup_log style_renderer level =
   Fmt_tty.setup_std_outputs ?style_renderer ();
   Logs.set_level level;

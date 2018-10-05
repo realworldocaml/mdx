@@ -613,3 +613,5 @@ let init ~verbose:v ~silent:s ~verbose_findlib () =
   verbose t;
   silent t;
   t
+
+module Part = Part

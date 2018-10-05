@@ -124,6 +124,22 @@
            (run mdx test --prelude-str "#require \"lwt\"" %{x})
            (diff? %{x} %{x}.corrected))))
 
+(alias
+ (name   runtest)
+ (deps   (:x sync_to_md.md) (:y sync_to_md.md.expected) (package mdx))
+ (action (progn
+           (run mdx test --direction=to-md %{x})
+           (diff? %{y} %{x}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x sync_to_ml.md) (:y sync_to_ml.md.expected)
+         (:a sync_to_ml.ml) (:b sync_to_ml.ml.expected) (package mdx))
+ (action (progn
+           (run mdx test --direction=to-ml %{x})
+           (diff? %{y} %{x}.corrected)
+           (diff? %{b} %{a}.corrected))))
+
 (rule
  (targets section.ml)
  (deps    (:x section.md) (package mdx))

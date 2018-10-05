@@ -1,0 +1,13 @@
+let () =
+  ();
+  ()
+;;
+[@@@part "toto"];;
+let x = 3;;
+let y = 4;;
+print_int x;;
+print_int y;;
+[@@@part "zzz"];;
+[@@@part "42"];;
+let () =
+  f x print_int

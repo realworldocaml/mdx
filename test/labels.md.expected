@@ -6,6 +6,6 @@ $ ls
 ```
 
 ```sh toto,dir=xxx
->> "toto" is not a valid label. Valid labels are are "dir" and "non-deterministic".
+>> "toto" is not a valid label. Valid labels are are "dir", "file", "part" and "non-deterministic".
 $ xxx
 ```
