@@ -47,10 +47,6 @@ module Parsetree = Ast_406.Parsetree
 module Parse = struct
   open Migrate_parsetree
 
-  let implementation = Parse.implementation Versions.ocaml_406
-
-  let interface = Parse.interface Versions.ocaml_406
-
   let toplevel_phrase lexbuf =
     Parse.toplevel_phrase Versions.ocaml_406 lexbuf
 end
@@ -70,25 +66,6 @@ end
 
 module Printast = struct
   open Printast
-
-  let implementation f x = implementation f (to_current.copy_structure x)
-
-  let interface f x = interface f (to_current.copy_signature x)
-
-  let expression n f x = expression n f (to_current.copy_expression x)
-
-  let payload n f (x : Parsetree.payload) =
-    payload n f
-      ( match x with
-      | PStr x -> PStr (to_current.copy_structure x)
-      | PSig x -> PSig (to_current.copy_signature x)
-      | PTyp x -> PTyp (to_current.copy_core_type x)
-      | PPat (x, y) ->
-          PPat
-            ( to_current.copy_pattern x
-            , match y with
-              | Some y -> Some (to_current.copy_expression y)
-              | None -> None ) )
 
   let copy_directive_argument (x : Parsetree.directive_argument) =
     let open Migrate_parsetree.Versions.OCaml_current.Ast.Parsetree in
@@ -110,27 +87,8 @@ end
 module Pprintast = struct
   open Pprintast
 
-  let structure f x = structure f (to_current.copy_structure x)
-
-  let signature f x = signature f (to_current.copy_signature x)
-
-  let core_type f x = core_type f (to_current.copy_core_type x)
-
-  let expression f x = expression f (to_current.copy_expression x)
-
-  let pattern f x = pattern f (to_current.copy_pattern x)
-
   let top_phrase f x = top_phrase f (to_current.copy_toplevel_phrase x)
 end
-
-(* Missing from ocaml_migrate_parsetree *)
-let map_use_file mapper use_file =
-  let open Parsetree in
-  List.map (fun toplevel_phrase ->
-      match (toplevel_phrase : toplevel_phrase) with
-      | Ptop_def structure ->
-          Ptop_def (mapper.Ast_mapper.structure mapper structure)
-      | Ptop_dir _ as d -> d ) use_file
 
 module Printtyp = struct
   include Printtyp
