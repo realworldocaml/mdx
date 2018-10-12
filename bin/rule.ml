@@ -18,19 +18,31 @@ let src = Logs.Src.create "cram.rule"
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
-let print_rule ~md_file ~ml_file =
+let print_rule ~md_file ~ml_files =
   let pct = '%' in
+  let var_names =
+    let f (cpt, acc) _ = cpt + 1, ("y" ^ string_of_int cpt) :: acc in
+    List.fold_left f (0, []) ml_files |> snd
+  in
+  let pp_ml_deps fmt (var_name, ml_file) =
+    Fmt.pf fmt "\         (:%s %s)\n" var_name ml_file
+  in
+  let pp_ml_diff fmt var =
+    Fmt.pf fmt "\           (diff? %c{%s} %c{%s}.corrected)" pct var pct var
+  in
   Fmt.pr
     "\
 (alias\n\
 \ (name   runtest)\n\
-\ (deps   (:x %s) (:y %s.expected)\n\
-\         (:a %s) (:b %s.expected) (package mdx))\n\
+\ (deps   (:x %s)\n%a\
+\         (package mdx))\n\
 \ (action (progn\n\
 \           (run mdx test %c{x})\n\
-\           (diff? %c{y} %c{x}.corrected)\n\
-\           (diff? %c{b} %c{a}.corrected))))\n\n"
-    md_file md_file ml_file ml_file pct pct pct pct pct
+\           (diff? %c{x} %c{x}.corrected)\n%a)))\n"
+    md_file
+    (Fmt.list ~sep:Fmt.nop pp_ml_deps) (List.combine var_names ml_files)
+    pct pct pct
+    (Fmt.list ~sep:Fmt.cut pp_ml_diff) var_names
 
 let run () md_file section =
   let section = match section with
@@ -55,7 +67,7 @@ let run () md_file section =
   in
   let on_file file_contents items =
     let ml_files = List.fold_left on_item [] items in
-    List.iter (fun ml_file -> print_rule ~md_file ~ml_file) ml_files;
+    print_rule ~md_file ~ml_files;
     file_contents
   in
   Mdx.run md_file ~f:on_file;
