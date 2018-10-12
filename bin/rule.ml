@@ -18,7 +18,7 @@ let src = Logs.Src.create "cram.rule"
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
-let print_rule ~md_file ~ml_files =
+let print_rule ~md_file ~ml_files direction =
   let pct = '%' in
   let var_names =
     let f (cpt, acc) _ = cpt + 1, ("y" ^ string_of_int cpt) :: acc in
@@ -30,6 +30,11 @@ let print_rule ~md_file ~ml_files =
   let pp_ml_diff fmt var =
     Fmt.pf fmt "\           (diff? %c{%s} %c{%s}.corrected)" pct var pct var
   in
+  let pp_direction fmt = function
+    | `Infer_timestamp -> Fmt.pf fmt "infer-timestamp"
+    | `To_md -> Fmt.pf fmt "to-md"
+    | `To_ml -> Fmt.pf fmt "to-ml"
+  in
   Fmt.pr
     "\
 (alias\n\
@@ -37,14 +42,15 @@ let print_rule ~md_file ~ml_files =
 \ (deps   (:x %s)\n%a\
 \         (package mdx))\n\
 \ (action (progn\n\
-\           (run mdx test %c{x})\n\
+\           (run mdx test --direction=%a %c{x})\n\
 \           (diff? %c{x} %c{x}.corrected)\n%a)))\n"
     md_file
     (Fmt.list ~sep:Fmt.nop pp_ml_deps) (List.combine var_names ml_files)
+    pp_direction direction
     pct pct pct
     (Fmt.list ~sep:Fmt.cut pp_ml_diff) var_names
 
-let run () md_file section =
+let run () md_file section direction =
   let section = match section with
     | None   -> None
     | Some p -> Some (Re.Perl.compile_pat p)
@@ -67,7 +73,7 @@ let run () md_file section =
   in
   let on_file file_contents items =
     let ml_files = List.fold_left on_item [] items in
-    print_rule ~md_file ~ml_files;
+    print_rule ~md_file ~ml_files direction;
     file_contents
   in
   Mdx.run md_file ~f:on_file;
@@ -77,5 +83,5 @@ open Cmdliner
 
 let cmd =
   let doc = "Produce dune rules to synchronize markdown and OCaml files." in
-  Term.(pure run $ Cli.setup $ Cli.file $ Cli.section),
+  Term.(pure run $ Cli.setup $ Cli.file $ Cli.section $ Cli.direction),
   Term.info "rule" ~doc
