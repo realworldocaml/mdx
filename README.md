@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/realworldocaml/mdx.svg?branch=master)](https://travis-ci.org/realworldocaml/mdx)
+
 ## mdx -- executable code blocks inside markdown files
 
 `mdx` allows to execute code blocks inside markdown files.

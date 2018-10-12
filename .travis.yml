@@ -1,12 +1,26 @@
 language: c
-install: wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-docker.sh
-script: bash -ex .travis-docker.sh
-services:
-- docker
 env:
-  global:
-  - PINS="mdx:."
-  - DISTRO="debian-stable"
-  matrix:
-  - PACKAGE="mdx" OCAML_VERSION="4.06.0"
-  - PACKAGE="mdx" OCAML_VERSION="4.07.0"
+  # Check build and unit tests
+  # NOTE: testing needs OPAMBUILDTEST=true so that test deps are installed
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.06.0
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.07.0
+before_install:
+  # Download and use opam2
+  - wget -O ${HOME}/opam https://github.com/ocaml/opam/releases/download/2.0.0-beta6/opam-2.0.0-beta6-x86_64-linux
+  - chmod +x ${HOME}/opam
+  # Some opam boilerplate
+  - export OPAMYES=1
+  - export OPAMJOBS=2
+  # Init opam, and the default switch with the right ocaml version
+  - ${HOME}/opam init --compiler=${OCAML_VERSION}
+  - eval `${HOME}/opam config env`
+  - export OPAMVERBOSE=1
+install:
+  # Install dependencies
+  - ${HOME}/opam pin add --no-action mdx .
+  - ${HOME}/opam install --deps-only mdx
+script:
+  # Build and launch the tests
+  - if [ "$TO_TEST" = "tests" ]; then make && make test; fi
+  # Try and install the package with opam
+  - if [ "$TO_TEST" = "install" ]; then ${HOME}/opam install mdx; fi
