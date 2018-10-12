@@ -91,6 +91,7 @@ let labels = [
   "dir"              , [`Any];
   "file"             , [`Any];
   "part"             , [`Any];
+  "env"              , [`Any];
   "non-deterministic", [`None; `Some "command"; `Some "output"]
 ]
 
@@ -158,6 +159,12 @@ let mode t =
   | Some (Some "output")  -> `Non_det `Output
   | Some (Some "command") -> `Non_det `Command
   | Some (Some _)         -> `Normal
+
+let environment t = match get_label t "env" with
+  | None
+  | Some None
+  | Some (Some "default") -> "default"
+  | Some (Some s) -> s
 
 let value t = t.value
 let section t = t.section
