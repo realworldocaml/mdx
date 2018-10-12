@@ -166,7 +166,7 @@
 (rule
  (targets dune_rules.inc.gen)
  (deps    (source_tree test-cases) (:x dune_rules.md) (package mdx))
- (action  (with-stdout-to %{targets} (run mdx rule %{x}))))
+ (action  (with-stdout-to %{targets} (run mdx rule --direction=to-ml %{x}))))
 
 (alias
  (name runtest)
