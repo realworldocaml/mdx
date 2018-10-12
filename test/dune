@@ -160,3 +160,14 @@
  (name   runtest)
  (deps   (:x section.out) (:y section.out.expected))
  (action (diff? %{x} %{y})))
+
+(include dune_rules.inc)
+
+(rule
+ (targets dune_rules.inc.gen)
+ (deps    (source_tree test-cases) (:x dune_rules.md) (package mdx))
+ (action  (with-stdout-to %{targets} (run mdx rule --direction=to-ml %{x}))))
+
+(alias
+ (name runtest)
+ (action (diff dune_rules.inc dune_rules.inc.gen)))
