@@ -6,15 +6,17 @@ let commands s = String.cuts ~sep:"\\\n> " s
 let eol = '\n' | eof
 let ws = ' ' | '\t'
 let digit = ['0' - '9']
-
-let cram_cmd = [^'\n' '\\']+ ("\\\n> " [^'\n' '\\'] +)*
+let line = [^'\n']*
 
 rule token = parse
  | eol                             { [] }
  | "[" (digit+ as str) "]" ws* eol { `Exit (int_of_string str) :: token lexbuf }
  | "..." ws* eol                   { `Ellipsis :: token lexbuf }
- | "$ " (cram_cmd as str) eol      { `Command (commands str) :: token lexbuf }
- | ([^'\n']* as str) eol           { `Output str :: token lexbuf }
+ | "$ " (line as str) '\\' eol     { `Command_first str :: token lexbuf }
+ | "> " (line as str) '\\' eol     { `Command_cont  str :: token lexbuf }
+ | "> " (line as str) eol          { `Command_last  str :: token lexbuf }
+ | "$ " (line as str) eol          { `Command str :: token lexbuf }
+ | (line as str) eol               { `Output str :: token lexbuf }
 
 {
 let token lexbuf =
