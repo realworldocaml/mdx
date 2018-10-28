@@ -9,3 +9,9 @@ Arbitrary padding is allowed, as long as it is consistent inside a code block.
      # let x = 3;;
      val x : int = 3
 ```
+
+```sh
+$ ocaml -warn-help | egrep '\b9\b'
+  9 Missing fields in a record pattern.
+  R Alias for warning 9.
+```
