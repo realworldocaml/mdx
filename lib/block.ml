@@ -174,17 +174,18 @@ let cram lines =
   let pad, tests = Cram.of_lines lines in
   Cram { pad; tests }
 
-let is_raw_ocaml b =
+let guess_ocaml_kind b =
   let rec aux = function
-    | []     -> true
+    | []     -> `Code
     | h :: t ->
       let h = String.trim h in
       if h = "" then aux t
-      else String.length h > 1 && h.[0] <> '#'
+      else if String.length h > 1 && h.[0] = '#' then `Toplevel
+      else `Code
   in
   match b.header, b.contents with
-  | Some "ocaml", t -> aux t
-  | _ -> false
+  | Some "ocaml", t -> `OCaml (aux t)
+  | _ -> `Other
 
 let toplevel ~file ~line lines = Toplevel (Toplevel.of_lines ~line ~file lines)
 
@@ -197,10 +198,12 @@ let eval t =
       let value = cram t.contents in
       { t with value }
     | Some "ocaml" ->
-      if is_raw_ocaml t then { t with value = OCaml }
-      else
-        let value = toplevel ~file:t.file ~line:t.line t.contents in
-        { t with value }
+      (match guess_ocaml_kind t with
+       | `OCaml `Code -> { t with value = OCaml }
+       | `OCaml `Toplevel ->
+         let value = toplevel ~file:t.file ~line:t.line t.contents in
+         { t with value }
+       | `Other -> { t with value = Raw })
     | _ -> t
 
 let ends_by_semi_semi c = match List.rev c with
@@ -214,8 +217,10 @@ let line_directive = Fmt.to_to_string pp_line_directive
 
 let executable_contents b =
   let contents =
-    if is_raw_ocaml b then b.contents
-    else match b.value with
+    match guess_ocaml_kind b with
+    | `OCaml `Code -> b.contents
+    | `OCaml `Toplevel | `Other ->
+      match b.value with
       | Error _ | Raw | Cram _ -> []
       | OCaml -> line_directive (b.file, b.line) :: b.contents
       | Toplevel tests ->
