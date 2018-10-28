@@ -83,6 +83,7 @@ let of_lines t =
   in
   match lines with
   | `Command cmd :: t -> pad, aux cmd [] [] t
+  | [] -> 0, []
   | _ -> Fmt.failwith "invalid cram block: %a" Fmt.(Dump.list dump_line) lines
 
 let exit_code t = t.exit_code
