@@ -19,6 +19,17 @@ $ echo $RANDOM
 0
 ```
 
+Check that the command are always executed:
+
+```sh non-deterministic=output
+$ touch hello-world
+```
+
+```ocaml
+# Sys.file_exists "hello-world"
+- : bool = true
+```
+
 ### Non-deterministic Commands
 
 Code blocks with `non-deterministic=command` are never executed unless
