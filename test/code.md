@@ -9,3 +9,10 @@ let () = Printf.printf "n: %d\n%!" (f 42)
 ```
 
 Yo!
+
+```ocaml
+# let x = 3
+val x : int = 3
+# type t = int
+type t = int
+```
