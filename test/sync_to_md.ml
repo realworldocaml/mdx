@@ -1,10 +1,10 @@
-
 let () =
   ();
   ()
 ;;
 
 [@@@part "toto"];;
+
 let x = 34
 let f = 42.3
 let s = "toto"
@@ -16,10 +16,12 @@ let () =
 ;;
 
 [@@@part "zzz"];;
+
 let () =
   print_string s
 ;;
 
 [@@@part "42"];;
+
 let () =
   f x print_int

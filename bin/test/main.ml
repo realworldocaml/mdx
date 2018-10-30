@@ -186,9 +186,19 @@ let run_toplevel_tests c ppf tests t =
     ) tests;
   Block.pp_footer ppf ()
 
+let trim l =
+  let rec aux = function
+    | []   -> []
+    | h::t -> if String.trim h = "" then aux t else  String.trim h :: t
+  in
+  let no_head = aux l in
+  let no_tail = List.rev (aux (List.rev no_head)) in
+  no_tail
+
 let update_block_with_file ppf t file part =
   Block.pp_header ppf t;
   let lines = Mdx_top.Part.find ~file ~part in
+  let lines = trim lines in
   let contents = String.concat "\n" lines in
   Output.pp ppf (`Output contents);
   Block.pp_footer ppf ()

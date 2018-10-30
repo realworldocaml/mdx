@@ -133,7 +133,10 @@
 
 (alias
  (name   runtest)
- (deps   (:x sync_to_md.md) (:y sync_to_md.md.expected) (package mdx))
+ (deps   (:x sync_to_md.md)
+         (:y sync_to_md.md.expected)
+         sync_to_md.ml
+         (package mdx))
  (action (progn
            (run mdx test --direction=to-md %{x})
            (diff? %{y} %{x}.corrected))))
