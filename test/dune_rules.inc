@@ -1,8 +1,8 @@
 (alias
  (name   runtest)
  (deps   (:x dune_rules.md)
-         (:y1 dune_rules_2.ml)
-         (:y0 dune_rules_1.ml)
+         (:y1 dune_rules_1.ml)
+         (:y0 dune_rules_2.ml)
          (package mdx))
  (action (progn
            (run mdx test --direction=to-ml %{x})
