@@ -2,7 +2,7 @@
  (name        mdx)
  (public_name mdx)
  (preprocess (action (run %{bin:cppo} -V OCAML:%{ocaml_version} %{input-file})))
- (libraries   astring cppo fmt logs ocaml-migrate-parsetree re))
+ (libraries   astring fmt logs ocaml-migrate-parsetree re))
 
 (ocamllex lexer)
 (ocamllex lexer_cram)
