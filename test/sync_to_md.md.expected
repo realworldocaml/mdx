@@ -22,7 +22,6 @@ let () =
 ```ocaml file=sync_to_md.ml,part=42
 let () =
   f x print_int
-
 ```
 
 ```ocaml file=sync_to_md.ml,part=
@@ -33,7 +32,6 @@ let () =
 ```
 
 ```ocaml file=sync_to_md.ml
-
 let () =
   ();
   ()
@@ -55,7 +53,6 @@ let () =
 
 let () =
   f x print_int
-
 ```
 
 ```ocaml
