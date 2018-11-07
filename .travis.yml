@@ -17,6 +17,8 @@ before_install:
   - export OPAMVERBOSE=1
 install:
   # Install dependencies
+  - wget https://github.com/jgm/pandoc/releases/download/2.4/pandoc-2.4-linux.tar.gz
+  - sudo tar xvzf pandoc-2.4-linux.tar.gz --strip-components 1 -C /usr/local
   - ${HOME}/opam pin add --no-action mdx .
   - ${HOME}/opam install --deps-only mdx
 script:
