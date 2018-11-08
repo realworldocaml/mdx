@@ -248,6 +248,8 @@ let update_file_with_block ppf t file part =
   Block.pp ppf t
 
 let update_file_or_block ppf md_file ml_file block direction =
+  let dir = Filename.dirname md_file in
+  let ml_file = Filename.concat dir ml_file in
   let direction =
     match direction with
     | `To_md -> `To_md
