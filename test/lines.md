@@ -23,7 +23,7 @@ And
   | 0 -> 1
   | n ->
   n + "foo"
-Characters 39-44:
+Characters 45-50:
 Error: This expression has type string but an expression was expected of type
          int
 ```
