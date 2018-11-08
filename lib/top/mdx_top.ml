@@ -392,6 +392,10 @@ let eval t cmd =
   in
   redirect ~f:(fun ~capture ->
       capture_compiler_stuff ppf ~f:(fun () ->
+          let cmd = match cmd with
+            | [] | [_] -> cmd
+            | h::t     -> h :: List.map ((^) "  ") t
+          in
           match Phrase.parse cmd with
           | Some t -> exec_code ~capture t
           | None   -> []

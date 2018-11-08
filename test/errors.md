@@ -14,7 +14,7 @@ Errors should be well localized:
     method push hd =
       v <- hd :: v
   end;;
-Characters 0-191:
+Characters 0-215:
 Error: Some type variables are unbound in this type:
          class ['a] stack :
            'b list ->
@@ -27,3 +27,12 @@ Error: Some type variables are unbound in this type:
 ```
 
 Hi!
+
+
+```ocaml
+# let x =
+  1 + "42"
+Characters 14-18:
+Error: This expression has type string but an expression was expected of type
+         int
+```
