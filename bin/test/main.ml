@@ -85,8 +85,9 @@ let run_cram_tests ?root ppf temp_file pad tests t =
   Block.pp_header ppf t;
   List.iter (fun test ->
       let root = match root, Mdx.Block.directory t with
-        | Some d, _ -> (* --root always win *) Some d
-        | None  , d -> d
+        | Some d, _      -> (* --root always win *) Some d
+        | None  , None   -> None
+        | None  , Some d -> Some Filename.(concat (dirname t.file) d)
       in
       let n = run_test ?root temp_file test in
       let lines = read_lines temp_file in
