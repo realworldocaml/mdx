@@ -21,6 +21,13 @@
 
 (alias
  (name   runtest)
+ (deps   (:x ellipsis.md) (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
  (deps   (:x envs.md) (package mdx))
  (action (progn
            (run mdx test %{x})

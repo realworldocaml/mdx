@@ -180,10 +180,19 @@ let eval_raw c ~line lines =
   let _ = eval_test c t in
   ()
 
+let split_lines lines =
+  let aux acc s =
+    (* XXX(samoht) support windowns *)
+    let lines = String.split_on_char '\n' s in
+    List.append lines acc
+  in
+  List.fold_left aux [] (List.rev lines)
+
 let run_toplevel_tests c ppf tests t =
   Block.pp_header ppf t;
   List.iter (fun test ->
       let lines = eval_test c test in
+      let lines = split_lines lines in
       let output =
         let output = List.map (fun x -> `Output x) lines in
         if Output.equal output test.output then test.output
