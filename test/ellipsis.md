@@ -17,3 +17,10 @@ $ for i in `seq 1 10`; do echo $i; done
 10
 - : unit = ()
 ```
+
+```sh
+$ echo "foo\"\n\nbar"
+foo"
+
+...
+```
