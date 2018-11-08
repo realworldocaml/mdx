@@ -321,9 +321,8 @@ let run ()
                    (match Block.file t with
                     | Some ml_file ->
                       update_file_or_block ppf file ml_file t direction
-                    | None ->
-                      eval_raw c ~line:t.line t.contents;
-                      Block.pp ppf t )
+                    | None -> Block.pp ppf t);
+                   eval_raw c ~line:t.line t.contents
                  (* Cram tests. *)
                  | true, _, _, Cram { tests; pad } ->
                    run_cram_tests ?root ppf temp_file pad tests t
