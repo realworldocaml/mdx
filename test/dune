@@ -151,6 +151,14 @@
 
 (alias
  (name   runtest)
+ (deps   (:x prelude_file.md) (package mdx))
+ (action (progn
+           (run mdx test --prelude prelude.ml %{x})
+           (diff? %{x} %{x}.corrected))))
+
+
+(alias
+ (name   runtest)
  (deps   (:x sync_to_md.md)
          (:y sync_to_md.md.expected)
          sync_to_md.ml
