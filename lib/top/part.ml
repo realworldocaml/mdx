@@ -14,34 +14,16 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-module Chunk = struct
-  type kind = OCaml | Raw
-  type response = (kind * string)
-
-  type t =
-    { ocaml_code : string;
-      toplevel_responses : response list; }
-
-  let v ~ocaml_code ~toplevel_responses = {ocaml_code; toplevel_responses}
-  let code c = c.ocaml_code
-end
-
 module Part = struct
-  type t =
-    { name : string;
-      chunks : Chunk.t list; }
 
-  let v ~name ~chunks = { name; chunks }
+  type t =
+    { name: string;
+      body: string; }
+
+  let v ~name ~body = { name; body }
   let name {name;_} = name
-  let chunks {chunks;_} = chunks
-end
+  let body {body;_} = body
 
-module Document = struct
-  type t =
-    { parts : Part.t list; matched : bool; }
-
-  let v ~parts ~matched = {parts; matched}
-  let parts {parts;_} = parts
 end
 
 module Lexbuf = struct
@@ -53,37 +35,16 @@ module Lexbuf = struct
     lexbuf  : lexbuf;
   }
 
-  let toplevel_fname = "//toplevel//"
-
-  let shift_toplevel_position ~start pos = {
-    pos_fname = toplevel_fname;
-    pos_lnum = pos.pos_lnum - start.pos_lnum + 1;
-    pos_bol  = pos.pos_bol  - start.pos_cnum - 1;
-    pos_cnum = pos.pos_cnum - start.pos_cnum - 1;
-  }
-
-  let shift_toplevel_location ~start loc =
-    let open Location in
-    {loc with loc_start = shift_toplevel_position ~start loc.loc_start;
-              loc_end = shift_toplevel_position ~start loc.loc_end}
-
-  let initial_pos = {
-    pos_fname = toplevel_fname;
+  let initial_pos name = {
+    pos_fname = name;
     pos_lnum  = 1;
     pos_bol   = 0;
     pos_cnum  = 0;
   }
 
-  let semisemi_action =
-    let lexbuf = Lexing.from_string ";;" in
-    match Lexer.token lexbuf with
-    | Parser.SEMISEMI ->
-      lexbuf.Lexing.lex_last_action
-    | _ -> assert false
-
   let v ~fname contents =
     let lexbuf = Lexing.from_string contents in
-    lexbuf.lex_curr_p <- {initial_pos with pos_fname = fname};
+    lexbuf.lex_curr_p <- initial_pos fname;
     Location.input_name := fname;
     { contents; lexbuf }
 
@@ -94,14 +55,6 @@ module Lexbuf = struct
     close_in_noerr ic;
     v ~fname result
 
-  let shift_location_error start =
-    let open Location in
-    let rec aux (error : Location.error) =
-      {error with sub = List.map aux error.sub;
-                  loc = shift_toplevel_location ~start error.loc}
-    in
-    aux
-
 end
 
 module Phrase = struct
@@ -109,46 +62,7 @@ module Phrase = struct
   open Lexing
   open Parsetree
 
-  (** {1 Phrase parsing} *)
-
-  type t = {
-    startpos : position;
-    endpos   : position;
-    parsed   : (toplevel_phrase, exn) result;
-  }
-
-  let read lexbuf =
-    let startpos = lexbuf.Lexing.lex_curr_p in
-    let parsed = match Parse.toplevel_phrase lexbuf with
-      | phrase -> Ok phrase
-      | exception exn ->
-        let exn = match Location.error_of_exn exn with
-          | None -> raise exn
-          | Some `Already_displayed -> raise exn
-          | Some (`Ok error) ->
-            Location.Error (Lexbuf.shift_location_error startpos error)
-        in
-        if lexbuf.Lexing.lex_last_action <> Lexbuf.semisemi_action then begin
-          let rec aux () = match Lexer.token lexbuf with
-            | Parser.SEMISEMI | Parser.EOF -> ()
-            | _ -> aux ()
-          in
-          aux ();
-        end;
-        Error exn
-    in
-    let endpos = lexbuf.Lexing.lex_curr_p in
-    { startpos; endpos; parsed }
-
-  let read doc = match read doc.Lexbuf.lexbuf with
-    | exception End_of_file -> None
-    | t -> Some t
-
-  (** *)
-
-  type kind =
-    | Code
-    | Part of { location: Location.t; name: string }
+  type kind = Code | Part of string
 
   exception Cannot_parse_payload of Location.t
 
@@ -179,19 +93,20 @@ module Phrase = struct
     | x ->
       let aux = function
         | _, Some {Location.txt = Longident.Lident "ocaml"; _},
-          Pconst_string (str, _) -> (Chunk.OCaml, str)
-        | _, None, Pconst_string (str, _) -> (Chunk.Raw, str)
+          Pconst_string (str, _) -> (`OCaml, str)
+        | _, None, Pconst_string (str, _) -> (`Raw, str)
         | loc, _, _ -> raise (Cannot_parse_payload loc)
       in
       List.map aux (payload_constants loc x)
 
-  let kind phrase = match phrase.parsed with
-    | Ok (Ptop_def [{pstr_desc = Pstr_attribute (name, payload); pstr_loc}])
+  let kind = function
+    | {pstr_desc = Pstr_attribute (name, payload); pstr_loc}
       when name.Asttypes.txt = "part" ->
       begin match payload_strings pstr_loc payload with
-        | [Chunk.Raw, part] -> Part { location = pstr_loc; name = part }
+        | [`Raw, part] -> Part part
         | _ ->
-          prerr_endline (string_of_location pstr_loc ^ ": cannot parse [@@@part] payload");
+          prerr_endline
+            (string_of_location pstr_loc ^ ": cannot parse [@@@part] payload");
           Code
         | exception (Cannot_parse_payload loc) ->
           prerr_endline
@@ -200,90 +115,98 @@ module Phrase = struct
       end
     | _ -> Code
 
-  (* Skip spaces as well as ';;' *)
-  let skip_whitespace contents ?(stop=String.length contents) start =
-    let rec loop start =
-      if start >= stop then start else
-        match contents.[start] with
-        | ' ' | '\t' | '\n' -> loop (start + 1)
-        | ';' when start + 1 < stop && contents.[start+1] = ';' ->
-          loop (start + 2)
-        | _ -> start
-    in
-    loop start
 
-  let contents doc ?start ?stop phrase =
-    let stop = match stop with
-      | None -> phrase.endpos.pos_cnum
-      | Some stop -> stop
+  (* by default, [structure_item] locations do not contain the [;;] token,
+     so here we try to extend the location when this is needed. *)
+  let shift_semi_semi doc loc =
+    let str = doc.Lexbuf.contents in
+    let stop = loc.pos_cnum in
+    let rec aux n =
+      if n+1 >= String.length str then loc
+      else match str.[n], str.[n+1] with
+        | '\n', _  -> aux (n+1)
+        | ';', ';' -> { loc with pos_cnum = n + 2 }
+        | _, _ -> loc
     in
-    let start = match start with
-      | None -> phrase.startpos.pos_cnum
-      | Some start -> start
-    in
-    let start = skip_whitespace doc.Lexbuf.contents ~stop start in
-    String.sub doc.contents start (stop - start)
+    aux stop
 
-  let document doc ~matched phrases =
-    let rec parts_of_phrase part acc = function
-      | (_, Part { name; _ }) :: rest ->
-        Part.v ~name:part ~chunks:(List.rev acc) ::
-        parts_of_phrase name [] rest
-      | (phrase, Code) :: rest ->
-        let ocaml_code = contents doc phrase in
-        let chunk = Chunk.v ~ocaml_code ~toplevel_responses:[] in
-        parts_of_phrase part (chunk :: acc) rest
+  let body doc s =
+    let start = match s with
+      | s::_ -> Some s.pstr_loc.loc_start.pos_cnum
+      | _    -> None
+    in
+    let stop = match List.rev s with
+      | s::_ -> Some (shift_semi_semi doc s.pstr_loc.loc_end).pos_cnum
+      | _    -> None
+    in
+    match start, stop with
+    | Some start, Some stop ->
+      String.sub doc.Lexbuf.contents start (stop - start)
+    | _ -> ""
+
+  let parts doc phrases =
+    let rec aux parts part strs = function
+      | (s, Code) :: rest -> aux parts part (s :: strs) rest
+      | (_, Part name) :: rest ->
+        let body = body doc (List.rev strs) in
+        let parts = Part.v ~name:part ~body :: parts in
+        aux parts name [] rest
       | [] ->
-        if part <> "" || acc <> [] then
-          [Part.v ~name:part ~chunks:(List.rev acc)]
-        else
-          []
+        let parts =
+          if part <> "" || strs <> [] then
+            let body = body doc (List.rev strs) in
+            Part.v ~name:part ~body :: parts
+          else
+            parts
+        in
+        List.rev parts
     in
-    let parts = parts_of_phrase "" [] phrases in
-    Document.v ~matched ~parts
+    aux [] "" [] phrases
 
-  let read_all doc =
-    let rec aux phrases = match read doc with
-      | None        ->  List.rev phrases
-      | Some phrase -> aux ((phrase, kind phrase) :: phrases)
-    in
-    aux []
+  let read doc =
+    let strs = Parse.implementation doc.Lexbuf.lexbuf in
+    List.map (fun x -> x, kind x) strs
 
 end
 
-let find ~file ~part =
+type file = Part.t list
+
+let read file =
   let lexbuf = Lexbuf.of_file file in
-  let v = Phrase.read_all lexbuf in
-  let doc = Phrase.document lexbuf v ~matched:true in
-  let parts = Document.parts doc in
+  lexbuf
+  |> Phrase.read
+  |> Phrase.parts lexbuf
+
+let find file ~part =
   match part with
   | Some part ->
-     (match List.find_opt (fun p -> String.equal (Part.name p) part) parts with
-      | Some p ->
-         Part.chunks p |> List.rev_map Chunk.code |> List.rev
-      | None ->
-         Fmt.failwith "Part %s not found in file %s" part file)
+    (match List.find_opt (fun p -> String.equal (Part.name p) part) file with
+     | Some p -> Some [Part.body p]
+     | None   -> None )
   | None ->
-     List.fold_left (fun acc p ->
-         let chunks = Part.chunks p |> List.rev_map Chunk.code in
-         List.fold_left (fun acc x -> x :: acc) ("" :: acc) chunks
-       ) [] parts |> List.rev
+    List.fold_left (fun acc p -> Part.body p :: [""] @ acc) [] file
+    |> List.rev
+    |> fun x -> Some x
 
-let replace ~file ~part ~lines =
+let replace file ~part ~lines =
   let part = match part with None -> "" | Some p -> p in
-  let lexbuf = Lexbuf.of_file file in
-  let v = Phrase.read_all lexbuf in
-  let doc = Phrase.document lexbuf v ~matched:true in
-  let parts = Document.parts doc in
-  let on_part p =
-    let name = Part.name p in
-    let lines =
+  List.map (fun p ->
+      let name = Part.name p in
       if String.equal name part then
-        lines
+        { p with body = String.concat "\n" lines }
       else
-        Part.chunks p |> List.rev_map Chunk.code |> List.rev
-    in
-    if String.equal name "" then lines
-    else ("\n[@@@part \"" ^ name ^ "\"];;\n") :: lines
+        p
+    ) file
+
+let contents file =
+  let lines =
+    List.fold_left (fun acc p ->
+        let body =  Part.body p in
+        match Part.name p with
+        | "" -> body :: acc
+        | n  -> body :: ("\n[@@@part \"" ^ n ^ "\"] ;;\n") :: acc
+      ) [] file
   in
-  List.map on_part parts
+  let lines = List.rev lines in
+  let lines = String.concat "\n" lines in
+  String.trim lines ^ "\n"

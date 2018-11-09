@@ -27,13 +27,6 @@ let prelude_env_and_file f =
     then None  , f
     else Some e, f
 
-let read_file file =
-  let ic = open_in_bin file in
-  let len = in_channel_length ic in
-  let file_contents = really_input_string ic len in
-  close_in ic;
-  file_contents
-
 let read_lines file =
   let ic = open_in file in
   let r = ref [] in
@@ -227,27 +220,50 @@ let trim l =
   let no_tail = List.rev (aux (List.rev no_head)) in
   no_tail
 
+type file = { first: Mdx_top.Part.file; current: Mdx_top.Part.file }
+
+let files: (string, file) Hashtbl.t = Hashtbl.create 8
+
+let has_changed { first; current } =
+  let contents = Mdx_top.Part.contents current in
+  if contents = Mdx_top.Part.contents first
+  then None
+  else Some contents
+
+let read_parts file =
+  try Hashtbl.find files file
+  with Not_found ->
+    let parts = Mdx_top.Part.read file in
+    let f = { first=parts; current=parts} in
+    Hashtbl.add files file f;
+    f
+
+let write_parts file parts =
+  let output_file = file ^ ".corrected" in
+  match has_changed parts with
+  | None   -> ()
+  | Some c ->
+    let oc = open_out output_file in
+    output_string oc c;
+    flush oc;
+    close_out oc
+
 let update_block_with_file ppf t file part =
   Block.pp_header ppf t;
-  let lines = Mdx_top.Part.find ~file ~part in
-  let lines = trim lines in
-  let contents = String.concat "\n" lines in
-  Output.pp ppf (`Output contents);
-  Block.pp_footer ppf ()
-
-let files = Hashtbl.create 8
+  let parts = read_parts file in
+  match Mdx_top.Part.find parts.current ~part with
+  | None       ->
+    Fmt.failwith "Cannot find part %S in %s"
+      (match part with None -> "" | Some p -> p)
+      file
+  | Some lines ->
+    let lines = trim lines in
+    let contents = String.concat "\n" lines in
+    Output.pp ppf (`Output contents);
+    Block.pp_footer ppf ()
 
 let update_file_with_block ppf t file part =
-  let output_file = file ^ ".corrected" in
-  (* remove .corrected files from previous runs. *)
-  if not (Hashtbl.mem files output_file) then (
-    if Sys.file_exists output_file then Sys.remove output_file;
-    Hashtbl.add files output_file true
-  );
-  let input_file =
-    if Sys.file_exists output_file then output_file
-    else file
-  in
+  let parts = read_parts file in
   let lines =
     match Block.value t with
     | Raw | OCaml | Error _ -> t.Block.contents
@@ -258,19 +274,9 @@ let update_file_with_block ppf t file part =
         t.Toplevel.command |> String.concat "\n\n" in
       List.map f tests
   in
-  let lines = Mdx_top.Part.replace ~file:input_file ~part ~lines in
-  let lines = List.map (String.concat "\n") lines in
-  let lines = String.concat "\n" lines in
-  let output = String.trim lines ^ "\n" in
-  let input = read_file input_file in
-  if String.equal output input then
-    ()
-  else (
-    let oc = open_out output_file in
-    output_string oc output;
-    flush oc;
-    close_out oc
-  );
+  let current = Mdx_top.Part.replace parts.current ~part ~lines in
+  let parts = { parts with current } in
+  Hashtbl.replace files file parts;
   Block.pp ppf t
 
 let update_file_or_block ppf md_file ml_file block direction =
@@ -379,6 +385,7 @@ let run ()
         ) items;
       Format.pp_print_flush ppf ();
       Buffer.contents buf);
+  Hashtbl.iter write_parts files;
   0
 
 (**** Cmdliner ****)
