@@ -357,6 +357,18 @@ let trim_line str =
 let rtrim l = List.rev (ltrim (List.rev l))
 let trim l = ltrim (rtrim (List.map trim_line l))
 
+let cut_into_sentences l =
+  let ends_by_semi_semi h =
+    let len = String.length h in
+    len > 2 && h.[len-1] = ';' && h.[len-2] = ';'
+  in
+  let rec aux acc sentence = function
+    | [] -> List.rev (List.rev sentence :: acc)
+    | h::t when ends_by_semi_semi h -> aux (List.rev (h::sentence) :: acc) [] t
+    | h::t -> aux acc (h::sentence) t
+  in
+  aux [] [] l
+
 let eval t cmd =
   let buf = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buf in
@@ -396,9 +408,13 @@ let eval t cmd =
             | [] | [_] -> cmd
             | h::t     -> h :: List.map ((^) "  ") t
           in
-          match Phrase.parse cmd with
-          | Some t -> exec_code ~capture t
-          | None   -> []
+          let phrases = cut_into_sentences cmd in
+          List.map (fun phrase ->
+              match Phrase.parse phrase with
+              | Some t -> exec_code ~capture t
+              | None   -> []
+            ) phrases
+          |> List.concat
         ))
 
 
