@@ -181,7 +181,7 @@ let in_env env_name f =
 
 let eval_test c test =
   Log.debug (fun l ->
-      l "eval_test %a" Fmt.(Dump.list string) (Toplevel.command test));
+      l "eval_test %a" Fmt.(Dump.list (Fmt.fmt "%S")) (Toplevel.command test));
   Mdx_top.eval c (Toplevel.command test)
 
 let eval_raw c ~line lines =
