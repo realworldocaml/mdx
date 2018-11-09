@@ -125,7 +125,6 @@ let rec save_summary acc s =
   | Env_module (summary, id, _)
     | Env_class (summary, id, _)
     | Env_modtype (summary, id, _)
-    | Env_cltype (summary, id, _)
     | Env_functor_arg (summary, id)
     | Env_open (summary,
                 #if OCAML_MAJOR >= 4 && OCAML_MINOR >= 7
@@ -141,6 +140,7 @@ let rec save_summary acc s =
       save_summary acc summary
   | Env_empty -> acc
   | Env_constraints (summary, _)
+    | Env_cltype (summary, _, _)
     | Env_type (summary, _, _)
     | Env_open (summary,
                 #if OCAML_MAJOR >= 4 && OCAML_MINOR >= 7
