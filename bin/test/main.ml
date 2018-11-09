@@ -19,6 +19,14 @@ open Mdx
 let src = Logs.Src.create "cram.test"
 module Log = (val Logs.src_log src : Logs.LOG)
 
+let prelude_env_and_file f =
+  match Astring.String.cut ~sep:":" f with
+  | None        -> None, f
+  | Some (e, f) ->
+    if Astring.String.exists ((=) ' ') e
+    then None  , f
+    else Some e, f
+
 let read_file file =
   let ic = open_in_bin file in
   let len = in_channel_length ic in
@@ -293,11 +301,24 @@ let run ()
     | Some re, Some s -> Re.execp re (snd s)
   in
   let () = match prelude, prelude_str with
-    | None  , None   -> ()
-    | Some f, None   -> eval_raw c ~line:0 (read_lines f)
-    | None  , Some f -> eval_raw c ~line:0 [f]
-    | Some _, Some _ ->
-      Fmt.failwith "only one of --prelude and --prelude-str shoud be used"
+    | [], [] -> ()
+    | [], fs ->
+      List.iter (fun p ->
+          let env, f = prelude_env_and_file p in
+          let eval () = eval_raw c ~line:0 [f] in
+          match env with
+          | None   -> eval ()
+          | Some e -> in_env e eval
+        ) fs
+    | fs, [] ->
+      List.iter (fun p ->
+          let env, f = prelude_env_and_file p in
+          let eval () = eval_raw c ~line:0 (read_lines f) in
+          match env with
+          | None   -> eval ()
+          | Some e -> in_env e eval
+        ) fs
+    | _ -> Fmt.failwith "only one of --prelude or --prelude-str shoud be used"
   in
 
   Mdx.run file ~f:(fun file_contents items ->
