@@ -16,3 +16,7 @@ val x : int = 3
 # type t = int
 type t = int
 ```
+
+```ocaml
+class istack = object end
+```
