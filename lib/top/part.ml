@@ -146,11 +146,8 @@ module Phrase = struct
 
   (** *)
 
-  type 'a kind =
-    | Code of 'a
-    | Expect of { location: Location.t;
-                  responses: Chunk.response list;
-                  nondeterministic: bool }
+  type kind =
+    | Code
     | Part of { location: Location.t; name: string }
 
   exception Cannot_parse_payload of Location.t
@@ -188,32 +185,20 @@ module Phrase = struct
       in
       List.map aux (payload_constants loc x)
 
-  let attr_is x name = x.Asttypes.txt = name
-
   let kind phrase = match phrase.parsed with
-    | Ok (Ptop_def [{pstr_desc = Pstr_extension((attr, payload), _attrs); pstr_loc}])
-      when List.exists (attr_is attr) ["expect"; "expect.nondeterministic"] ->
-      begin match payload_strings pstr_loc payload with
-        | responses ->
-          let nondeterministic = attr_is attr "expect.nondeterministic" in
-          Expect { location = pstr_loc; responses; nondeterministic }
-        | exception (Cannot_parse_payload loc) ->
-          prerr_endline (string_of_location loc ^ ": cannot parse [%%expect] payload");
-          Code ()
-      end
     | Ok (Ptop_def [{pstr_desc = Pstr_attribute (name, payload); pstr_loc}])
       when name.Asttypes.txt = "part" ->
       begin match payload_strings pstr_loc payload with
         | [Chunk.Raw, part] -> Part { location = pstr_loc; name = part }
         | _ ->
           prerr_endline (string_of_location pstr_loc ^ ": cannot parse [@@@part] payload");
-          Code ()
+          Code
         | exception (Cannot_parse_payload loc) ->
           prerr_endline
             (string_of_location loc ^ ": cannot parse [@@@part] payload");
-          Code ()
+          Code
       end
-    | _ -> Code ()
+    | _ -> Code
 
   (* Skip spaces as well as ';;' *)
   let skip_whitespace contents ?(stop=String.length contents) start =
@@ -244,11 +229,9 @@ module Phrase = struct
       | (_, Part { name; _ }) :: rest ->
         Part.v ~name:part ~chunks:(List.rev acc) ::
         parts_of_phrase name [] rest
-      | (_, Expect _) :: rest ->
-        parts_of_phrase part acc rest
-      | (phrase, Code toplevel_responses) :: rest ->
+      | (phrase, Code) :: rest ->
         let ocaml_code = contents doc phrase in
-        let chunk = Chunk.v ~ocaml_code ~toplevel_responses in
+        let chunk = Chunk.v ~ocaml_code ~toplevel_responses:[] in
         parts_of_phrase part (chunk :: acc) rest
       | [] ->
         if part <> "" || acc <> [] then
@@ -259,26 +242,12 @@ module Phrase = struct
     let parts = parts_of_phrase "" [] phrases in
     Document.v ~matched ~parts
 
-  let dry_exec phrases =
-    let rec aux acc = function
-      | [] -> List.rev acc
-      | (phrase, Code ()) :: rest ->
-        begin match rest with
-          | (_, Expect { responses; _ }) :: _ ->
-            aux ((phrase, Code responses) :: acc) rest
-          | _ -> aux ((phrase, Code []) :: acc) rest
-        end
-      | (_, (Part _ | Expect _) as phrase) :: rest ->
-        aux (phrase :: acc) rest
-    in
-    aux [] phrases
-
   let read_all doc =
     let rec aux phrases = match read doc with
       | None        ->  List.rev phrases
       | Some phrase -> aux ((phrase, kind phrase) :: phrases)
     in
-    dry_exec (aux [])
+    aux []
 
 end
 
