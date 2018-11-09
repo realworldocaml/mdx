@@ -235,34 +235,42 @@ let update_block_with_file ppf t file part =
   Output.pp ppf (`Output contents);
   Block.pp_footer ppf ()
 
+let files = Hashtbl.create 8
+
 let update_file_with_block ppf t file part =
   let output_file = file ^ ".corrected" in
+  (* remove .corrected files from previous runs. *)
+  if not (Hashtbl.mem files output_file) then (
+    if Sys.file_exists output_file then Sys.remove output_file;
+    Hashtbl.add files output_file true
+  );
   let input_file =
     if Sys.file_exists output_file then output_file
     else file
   in
-  (match part with
-   | Some part ->
-      let lines =
-        match Block.value t with
-        | Raw | OCaml | Error _ -> t.Block.contents
-        | Cram _ ->
-           Fmt.failwith "Promoting Cram tests is unsupported for now."
-        | Toplevel tests ->
-           let f t =
-             t.Toplevel.command |> String.concat "\n" in
-           List.map f tests
-      in
-      let lines = Mdx_top.Part.replace ~file:input_file ~part ~lines in
-      let lines = List.map (String.concat "\n") lines in
-      let lines = String.concat "\n" lines in
-      if String.equal lines (read_file input_file) then
-        ()
-      else
-        let oc = open_out output_file in
-        output_string oc lines;
-        close_out oc
-   | None -> () );
+  let lines =
+    match Block.value t with
+    | Raw | OCaml | Error _ -> t.Block.contents
+    | Cram _ ->
+      Fmt.failwith "Promoting Cram tests is unsupported for now."
+    | Toplevel tests ->
+      let f t =
+        t.Toplevel.command |> String.concat "\n\n" in
+      List.map f tests
+  in
+  let lines = Mdx_top.Part.replace ~file:input_file ~part ~lines in
+  let lines = List.map (String.concat "\n") lines in
+  let lines = String.concat "\n" lines in
+  let output = String.trim lines ^ "\n" in
+  let input = read_file input_file in
+  if String.equal output input then
+    ()
+  else (
+    let oc = open_out output_file in
+    output_string oc output;
+    flush oc;
+    close_out oc
+  );
   Block.pp ppf t
 
 let update_file_or_block ppf md_file ml_file block direction =

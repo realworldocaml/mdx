@@ -15,8 +15,12 @@ val y : int = 4
 ```
 
 ```ocaml file=sync_to_ml.ml,part=zzz
+let f = "hello world!"
 ```
 
+```ocaml file=sync_to_ml.ml
+x;;
+```
 
 ```ocaml
 # let x = 2;;

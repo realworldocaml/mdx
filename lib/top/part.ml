@@ -301,6 +301,7 @@ let find ~file ~part =
        ) [] parts |> List.rev
 
 let replace ~file ~part ~lines =
+  let part = match part with None -> "" | Some p -> p in
   let lexbuf = Lexbuf.of_file file in
   let v = Phrase.read_all lexbuf in
   let doc = Phrase.document lexbuf v ~matched:true in
@@ -314,6 +315,6 @@ let replace ~file ~part ~lines =
         Part.chunks p |> List.rev_map Chunk.code |> List.rev
     in
     if String.equal name "" then lines
-    else ("[@@@part \"" ^ name ^ "\"];;") :: lines
+    else ("\n[@@@part \"" ^ name ^ "\"];;\n") :: lines
   in
   List.map on_part parts

@@ -21,5 +21,6 @@ let () =
 ;;
 
 [@@@part "42"];;
+
 let () =
   f x print_int
