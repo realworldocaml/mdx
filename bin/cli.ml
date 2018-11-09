@@ -29,12 +29,22 @@ let verbose_findlib =
   Arg.(value & flag & info ["verbose-findlib"] ~doc)
 
 let prelude =
-  let doc = "A file to load as prelude." in
-  Arg.(value & opt (some string) None & info ["prelude"] ~doc ~docv:"FILE")
+  let doc =
+    "A file to load as prelude. Can be prefixed with $(i,env:) to specify \
+     a specific environment to load the prelude in. Multiple prelude files \
+     can be provided:they will be evaluated in the order they are provided \
+     on the command-line."
+  in
+  Arg.(value & opt_all string [] & info ["prelude"] ~doc ~docv:"FILE")
 
 let prelude_str =
-  let doc = "A string to load as prelude." in
-  Arg.(value & opt (some string) None & info ["prelude-str"] ~doc ~docv:"STR")
+  let doc =
+    "A string to load as prelude. Can be prefixed with $(i,env:) to specify \
+     a specific environment to load the prelude in (the environment name \
+     should not contain any spaces. Multiple prelude strings can be provided: \
+     they will be evaluated in the order they are provided on the command-line."
+  in
+  Arg.(value & opt_all string [] & info ["prelude-str"] ~doc ~docv:"STR")
 
 let root =
   let doc = "The directory to run the tests from." in

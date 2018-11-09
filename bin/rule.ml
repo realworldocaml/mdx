@@ -20,6 +20,11 @@ let src = Logs.Src.create "cram.rule"
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
+let prelude_file f =
+  match String.cut ~sep:":" f with
+  | None -> f
+  | Some (_, f) -> f
+
 let print_rule ~nd ~prelude ~md_file ~ml_files options =
   let pct = '%' in
   let ml_files = String.Set.elements ml_files in
@@ -33,9 +38,11 @@ let print_rule ~nd ~prelude ~md_file ~ml_files options =
   let pp_ml_diff fmt var =
     Fmt.pf fmt "\           (diff? %c{%s} %c{%s}.corrected)" pct var pct var
   in
-  let prelude = match prelude with
-    | None   -> ""
-    | Some f -> Fmt.strf "         %s\n" f
+  let prelude =
+    let files = String.Set.of_list (List.map prelude_file prelude) in
+    String.Set.elements files
+    |> List.map (fun f -> Fmt.strf "         %s\n" f)
+    |> String.concat ~sep:""
   in
   let pp name arg =
     Fmt.pr
@@ -119,10 +126,9 @@ let run () md_file section direction prelude prelude_str =
   in
   let on_file file_contents items =
     let ml_files, nd = List.fold_left on_item (String.Set.empty, false) items in
-    let option pp = function None -> [] | Some s -> [Fmt.to_to_string pp s] in
     let options =
-      (option pp_prelude prelude) @
-      (option pp_prelude_str prelude_str) @
+      List.map (Fmt.to_to_string pp_prelude) prelude @
+      List.map (Fmt.to_to_string pp_prelude_str) prelude_str @
       [Fmt.to_to_string pp_direction direction]
     in
     print_rule ~md_file ~prelude ~nd ~ml_files options;

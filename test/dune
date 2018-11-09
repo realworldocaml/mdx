@@ -142,7 +142,11 @@
  (name   runtest)
  (deps   (:x prelude.md) (package mdx))
  (action (progn
-           (run mdx test --prelude-str "#require \"lwt\"" %{x})
+           (run mdx
+                  test
+                  --prelude-str "#require \"lwt\""
+                  --prelude-str "toto:let x = \"42\""
+                  %{x})
            (diff? %{x} %{x}.corrected))))
 
 (alias
