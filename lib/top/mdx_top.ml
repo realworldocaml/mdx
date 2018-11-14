@@ -635,3 +635,67 @@ let init ~verbose:v ~silent:s ~verbose_findlib () =
   t
 
 module Part = Part
+
+let envs = Hashtbl.create 8
+
+let rec save_summary acc s =
+  let open Env in
+  match s with
+  | Env_value (summary, id, _) ->
+     save_summary (Ident.name id :: acc) summary
+  | Env_module (summary, id, _)
+    | Env_class (summary, id, _)
+    | Env_functor_arg (summary, id)
+    | Env_open (summary,
+                #if OCAML_MAJOR >= 4 && OCAML_MINOR >= 7
+                _,
+                #endif
+                Pident id)
+    | Env_extension (summary, id, _) ->
+      let acc =
+        if Ident.binding_time id >= 1000
+        then Ident.unique_toplevel_name id :: acc
+        else acc
+      in
+      save_summary acc summary
+  | Env_empty -> acc
+  | Env_constraints (summary, _)
+    | Env_cltype (summary, _, _)
+    | Env_modtype (summary, _, _)
+    | Env_type (summary, _, _)
+    | Env_open (summary,
+                #if OCAML_MAJOR >= 4 && OCAML_MINOR >= 7
+                _,
+                #endif
+                _)
+    | Env_copy_types (summary, _) -> save_summary acc summary
+
+let default_env = ref (Compmisc.initial_env ())
+let first_call = ref true
+
+let env_deps env =
+  let names = save_summary [] (Env.summary env) in
+  let objs = List.map Toploop.getvalue names in
+  env, names, objs
+
+let load_env env names objs =
+  Toploop.toplevel_env := env;
+  List.iter2 Toploop.setvalue names objs
+
+let in_env env_name f =
+  if !first_call then (
+    (* We will start from the *correct* initial environment with
+       everything loaded, for each environment. *)
+    default_env := !Toploop.toplevel_env;
+    first_call := false
+  );
+  let env, names, objs =
+    try Hashtbl.find envs env_name
+    with Not_found -> env_deps !default_env
+  in
+  load_env env names objs;
+  let res = f () in
+  let env = !Toploop.toplevel_env in
+  let env, names, objs = env_deps env in
+  Hashtbl.replace envs env_name (env, names, objs);
+  res
