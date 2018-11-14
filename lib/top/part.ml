@@ -164,8 +164,11 @@ module Phrase = struct
     aux [] "" [] phrases
 
   let read doc =
-    let strs = Parse.implementation doc.Lexbuf.lexbuf in
-    List.map (fun x -> x, kind x) strs
+    try
+      let strs = Parse.implementation doc.Lexbuf.lexbuf in
+      List.map (fun x -> x, kind x) strs
+    with Syntaxerr.Error e ->
+      Fmt.failwith "Cannot parse: %a" Syntaxerr.report_error e
 
 end
 
