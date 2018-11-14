@@ -282,7 +282,8 @@ let run ()
           | Block t ->
             Mdx_top.in_env (Block.environment t)
               (fun () ->
-                 match active t, non_deterministic, Block.mode t, Block.value t with
+                 let active = active t && (not (Block.skip t)) in
+                 match active, non_deterministic, Block.mode t, Block.value t with
                  (* Print errors *)
                  | _, _, _, Error _ -> Block.pp ppf t
                  (* Skip raw blocks. *)

@@ -92,6 +92,7 @@ let labels = [
   "file"             , [`Any];
   "part"             , [`Any];
   "env"              , [`Any];
+  "skip"             , [`None];
   "non-deterministic", [`None; `Some "command"; `Some "output"]
 ]
 
@@ -159,6 +160,11 @@ let mode t =
   | Some (Some "output")  -> `Non_det `Output
   | Some (Some "command") -> `Non_det `Command
   | Some (Some _)         -> `Normal
+
+let skip t =
+  match get_label t "skip" with
+  | Some None -> true
+  | _ -> false
 
 let environment t = match get_label t "env" with
   | None
