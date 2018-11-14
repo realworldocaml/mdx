@@ -25,15 +25,19 @@ let prelude_file f =
   | None -> f
   | Some (_, f) -> f
 
-let print_rule ~nd ~prelude ~md_file ~ml_files options =
+let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs options =
   let pct = '%' in
   let ml_files = String.Set.elements ml_files in
+  let dirs = String.Set.elements dirs in
   let var_names =
     let f (cpt, acc) _ = cpt + 1, ("y" ^ string_of_int cpt) :: acc in
     List.fold_left f (0, []) ml_files |> snd
   in
   let pp_ml_deps fmt (var_name, ml_file) =
     Fmt.pf fmt "\         (:%s %s)\n" var_name ml_file
+  in
+  let pp_dir_deps fmt dir =
+    Fmt.pf fmt "\         (source_tree %s)\n" dir
   in
   let pp_ml_diff fmt var =
     Fmt.pf fmt "\           (diff? %c{%s} %c{%s}.corrected)" pct var pct var
@@ -49,7 +53,7 @@ let print_rule ~nd ~prelude ~md_file ~ml_files options =
       "\
 (alias\n\
 \ (name   %s)\n\
-\ (deps   (:x %s)\n%a%s\
+\ (deps   (:x %s)\n%a%a%s\
 \         (package mdx))\n\
 \ (action (progn\n\
 \           (run mdx test %a %s%c{x})\n\
@@ -57,6 +61,7 @@ let print_rule ~nd ~prelude ~md_file ~ml_files options =
       name
       md_file
       (Fmt.list ~sep:Fmt.nop pp_ml_deps) (List.combine var_names ml_files)
+      (Fmt.list ~sep:Fmt.nop pp_dir_deps) dirs
       prelude
       Fmt.(list ~sep:(unit " ") string) options
       arg
@@ -99,12 +104,12 @@ let run () md_file section direction prelude prelude_str =
       (match Mdx.Block.value b, Mdx.Block.file b, Mdx.Block.mode b with
        | (OCaml | Toplevel _), Some ml_file, mode ->
          Log.debug (fun l -> l "rule: (md: %s) (ml: %s)" md_file ml_file);
-         let files, nd = acc in
+         let files, dirs, nd = acc in
          let nd = nd || match mode with `Non_det _ -> true | _ -> false in
          let files = String.Set.add ml_file files in
-         files, nd
+         files, dirs, nd
        | Cram t, _, mode ->
-         let files, nd = acc in
+         let files, dirs, nd = acc in
          let files =
            if not (use_dune t.tests) then files
            else
@@ -120,18 +125,24 @@ let run () md_file section direction prelude prelude_str =
              files
          in
          let nd = nd || match mode with `Non_det _ -> true | _ -> false in
-         files, nd
+         let dirs = match Mdx.Block.directory b with
+           | None   -> dirs
+           | Some d -> String.Set.add d dirs
+         in
+         files, dirs, nd
        | _ -> acc)
     | Block _ -> acc
   in
   let on_file file_contents items =
-    let ml_files, nd = List.fold_left on_item (String.Set.empty, false) items in
+    let ml_files, dirs, nd =
+      List.fold_left on_item (String.Set.empty, String.Set.empty, false) items
+    in
     let options =
       List.map (Fmt.to_to_string pp_prelude) prelude @
       List.map (Fmt.to_to_string pp_prelude_str) prelude_str @
       [Fmt.to_to_string pp_direction direction]
     in
-    print_rule ~md_file ~prelude ~nd ~ml_files options;
+    print_rule ~md_file ~prelude ~nd ~ml_files ~dirs options;
     file_contents
   in
   Mdx.run md_file ~f:on_file;
