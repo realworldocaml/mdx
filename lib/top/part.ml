@@ -172,44 +172,60 @@ module Phrase = struct
 
 end
 
-type file = Part.t list
+type file =
+  | Parts of Part.t list
+  | Body of (exn * string)
 
 let read file =
   let lexbuf = Lexbuf.of_file file in
-  lexbuf
-  |> Phrase.read
-  |> Phrase.parts lexbuf
+  try
+    lexbuf
+    |> Phrase.read
+    |> Phrase.parts lexbuf
+    |> fun x -> Parts x
+  with e ->
+    Body (e, lexbuf.Lexbuf.contents)
 
-let find file ~part =
-  match part with
-  | Some part ->
-    (match List.find_opt (fun p -> String.equal (Part.name p) part) file with
+let err_parse_error (e, _) =
+  Fmt.failwith "Parse error: %a" Fmt.exn e
+
+let find file ~part = match file, part with
+  | Body (_, s), None      -> Some [s]
+  | Body b, _ -> err_parse_error b
+  | Parts parts, Some part ->
+    (match List.find_opt (fun p -> String.equal (Part.name p) part) parts with
      | Some p -> Some [Part.body p]
      | None   -> None )
-  | None ->
-    List.fold_left (fun acc p -> Part.body p :: [""] @ acc) [] file
+  | Parts parts, None      ->
+    List.fold_left (fun acc p -> Part.body p :: [""] @ acc) [] parts
     |> List.rev
     |> fun x -> Some x
 
-let replace file ~part ~lines =
-  let part = match part with None -> "" | Some p -> p in
-  List.map (fun p ->
-      let name = Part.name p in
-      if String.equal name part then
-        { p with body = String.concat "\n" lines }
-      else
-        p
-    ) file
+let replace file ~part ~lines = match file, part with
+  | Body (e, _), None -> Body (e, String.concat "\n" lines)
+  | Body b     , _    -> err_parse_error b
+  | Parts parts, _    ->
+    let part = match part with None -> "" | Some p -> p in
+    List.map (fun p ->
+        let name = Part.name p in
+        if String.equal name part then
+          { p with body = String.concat "\n" lines }
+        else
+          p
+      ) parts
+    |> fun x -> Parts x
 
-let contents file =
-  let lines =
-    List.fold_left (fun acc p ->
-        let body =  Part.body p in
-        match Part.name p with
-        | "" -> body :: acc
-        | n  -> body :: ("\n[@@@part \"" ^ n ^ "\"] ;;\n") :: acc
-      ) [] file
-  in
-  let lines = List.rev lines in
-  let lines = String.concat "\n" lines in
-  String.trim lines ^ "\n"
+let contents = function
+  | Body (_, s) -> s
+  | Parts parts ->
+    let lines =
+      List.fold_left (fun acc p ->
+          let body =  Part.body p in
+          match Part.name p with
+          | "" -> body :: acc
+          | n  -> body :: ("\n[@@@part \"" ^ n ^ "\"] ;;\n") :: acc
+        ) [] parts
+    in
+    let lines = List.rev lines in
+    let lines = String.concat "\n" lines in
+    String.trim lines ^ "\n"
