@@ -25,3 +25,9 @@ class istack = object end
 # module type Foo = sig type t end
 module type Foo = sig type t end
 ```
+
+
+```ocaml skip
+# Pipe.f ()
+- : unit
+```

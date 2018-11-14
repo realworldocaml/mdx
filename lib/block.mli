@@ -78,6 +78,9 @@ val environment: t -> string
 (** [environment t] is the name given to the environment where [t] tests
     are run. *)
 
+val skip: t -> bool
+(** [skip t] is true iff [skip] is in the labels of [t]. *)
+
 val value: t -> value
 (** [value t] is [t]'s value. *)
 
