@@ -14,10 +14,20 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-val find: file:string -> part:string option -> string list
-(** [find ~file ~part] returns each line of the part [part] in file [file],
-    this function fails if [file] does not contain a part [part]. *)
+type file
+(** The type for files. *)
 
-val replace: file:string -> part:string -> lines:string list -> string list list
+val read: string -> file
+(** [read f] is the file [f]. It's a costly operations, better to be
+   done once. *)
+
+val contents: file -> string
+(** [contents f] is [f] contents. *)
+
+val find: file -> part:string option -> string list option
+(** [find f ~part] returns the lines of the part [part] in the file
+   [f]. Return [None] if [f] does not contain the part [part]. *)
+
+val replace: file -> part:string option -> lines:string list -> file
 (** [replace ~file ~part ~lines] returns the lines of the file [file] where
     the lines of part [part] have been replaced by [lines]. *)
