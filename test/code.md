@@ -23,4 +23,5 @@ class istack = object end
 
 ```ocaml
 # module type Foo = sig type t end
+module type Foo = sig type t end
 ```
