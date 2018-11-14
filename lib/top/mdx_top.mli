@@ -28,3 +28,5 @@ val eval: t -> string list -> string list
     mulitple lines) with the configuration value [t]. *)
 
 module Part = Part
+
+val in_env: string -> (unit -> unit) -> unit
