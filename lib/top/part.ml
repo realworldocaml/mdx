@@ -99,7 +99,7 @@ module Phrase = struct
       in
       List.map aux (payload_constants loc x)
 
-  let kind = function
+  let kind_impl = function
     | {pstr_desc = Pstr_attribute (name, payload); pstr_loc}
       when name.Asttypes.txt = "part" ->
       begin match payload_strings pstr_loc payload with
@@ -107,6 +107,22 @@ module Phrase = struct
         | _ ->
           prerr_endline
             (string_of_location pstr_loc ^ ": cannot parse [@@@part] payload");
+          Code
+        | exception (Cannot_parse_payload loc) ->
+          prerr_endline
+            (string_of_location loc ^ ": cannot parse [@@@part] payload");
+          Code
+      end
+    | _ -> Code
+
+    let kind_intf = function
+    | {psig_desc = Psig_attribute (name, payload); psig_loc}
+      when name.Asttypes.txt = "part" ->
+      begin match payload_strings psig_loc payload with
+        | [`Raw, part] -> Part part
+        | _ ->
+          prerr_endline
+            (string_of_location psig_loc ^ ": cannot parse [@@@part] payload");
           Code
         | exception (Cannot_parse_payload loc) ->
           prerr_endline
@@ -130,7 +146,7 @@ module Phrase = struct
     in
     aux stop
 
-  let body doc s =
+  let body_impl doc s =
     let start = match s with
       | s::_ -> Some s.pstr_loc.loc_start.pos_cnum
       | _    -> None
@@ -144,7 +160,21 @@ module Phrase = struct
       String.sub doc.Lexbuf.contents start (stop - start)
     | _ -> ""
 
-  let parts doc phrases =
+  let body_intf doc s =
+    let start = match s with
+      | s::_ -> Some s.psig_loc.loc_start.pos_cnum
+      | _    -> None
+    in
+    let stop = match List.rev s with
+      | s::_ -> Some (shift_semi_semi doc s.psig_loc.loc_end).pos_cnum
+      | _    -> None
+    in
+    match start, stop with
+    | Some start, Some stop ->
+      String.sub doc.Lexbuf.contents start (stop - start)
+    | _ -> ""
+
+  let parts ~body doc phrases =
     let rec aux parts part strs = function
       | (s, Code) :: rest -> aux parts part (s :: strs) rest
       | (_, Part name) :: rest ->
@@ -163,10 +193,17 @@ module Phrase = struct
     in
     aux [] "" [] phrases
 
-  let read doc =
+  let read_impl doc =
     try
       let strs = Parse.implementation doc.Lexbuf.lexbuf in
-      List.map (fun x -> x, kind x) strs
+      List.map (fun x -> x, kind_impl x) strs
+    with Syntaxerr.Error e ->
+      Fmt.failwith "Cannot parse: %a" Syntaxerr.report_error e
+
+  let read_intf doc =
+    try
+      let strs = Parse.interface doc.Lexbuf.lexbuf in
+      List.map (fun x -> x, kind_intf x) strs
     with Syntaxerr.Error e ->
       Fmt.failwith "Cannot parse: %a" Syntaxerr.report_error e
 
@@ -176,12 +213,22 @@ type file =
   | Parts of Part.t list
   | Body of (exn * string)
 
+let read_impl lexbuf =
+  Phrase.(parts ~body:body_impl lexbuf (read_impl lexbuf))
+
+let read_intf lexbuf =
+  Phrase.(parts ~body:body_intf lexbuf (read_intf lexbuf))
+
 let read file =
   let lexbuf = Lexbuf.of_file file in
+  let read = match Filename.extension file with
+    | ".ml"  -> read_impl
+    | ".mli" -> read_intf
+    | s      -> Fmt.failwith "unknown extension: %s" s
+  in
   try
     lexbuf
-    |> Phrase.read
-    |> Phrase.parts lexbuf
+    |> read
     |> fun x -> Parts x
   with e ->
     Body (e, lexbuf.Lexbuf.contents)
