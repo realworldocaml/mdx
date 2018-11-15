@@ -38,6 +38,9 @@ type t = {
   value   : value;
 }
 
+val empty: t
+(** [empty] is the empty block. *)
+
 (** {2 Printers} *)
 
 val dump: t Fmt.t

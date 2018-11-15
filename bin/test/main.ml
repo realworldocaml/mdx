@@ -82,14 +82,16 @@ let run_test ?root temp_file t =
   | WEXITED n -> n
   | _ -> 255
 
-let run_cram_tests ?root ppf temp_file pad tests t =
+let root_dir ?root t =
+  match root, Mdx.Block.directory t with
+  | Some d, _      -> (* --root always win *) Some d
+  | None  , None   -> None
+  | None  , Some d -> Some Filename.(concat (dirname t.file) d)
+
+let run_cram_tests t ?root ppf temp_file pad tests =
   Block.pp_header ppf t;
   List.iter (fun test ->
-      let root = match root, Mdx.Block.directory t with
-        | Some d, _      -> (* --root always win *) Some d
-        | None  , None   -> None
-        | None  , Some d -> Some Filename.(concat (dirname t.file) d)
-      in
+      let root = root_dir ?root t in
       let n = run_test ?root temp_file test in
       let lines = read_lines temp_file in
       let output =
@@ -108,14 +110,15 @@ let run_cram_tests ?root ppf temp_file pad tests t =
     ) tests;
   Block.pp_footer ppf ()
 
-let eval_test c test =
+let eval_test t ?root c test =
   Log.debug (fun l ->
       l "eval_test %a" Fmt.(Dump.list (Fmt.fmt "%S")) (Toplevel.command test));
-  Mdx_top.eval c (Toplevel.command test)
+  let root = root_dir ?root t in
+  with_dir root (fun () -> Mdx_top.eval c (Toplevel.command test))
 
-let eval_raw c ~line lines =
-  let t = Toplevel.{vpad=0; hpad=0; line; command = lines; output = [] } in
-  let _ = eval_test c t in
+let eval_raw t ?root c ~line lines =
+  let test = Toplevel.{vpad=0; hpad=0; line; command = lines; output = [] } in
+  let _ = eval_test t ?root c test in
   ()
 
 let split_lines lines =
@@ -126,10 +129,10 @@ let split_lines lines =
   in
   List.fold_left aux [] (List.rev lines)
 
-let run_toplevel_tests c ppf tests t =
+let run_toplevel_tests ?root c ppf tests t =
   Block.pp_header ppf t;
   List.iter (fun test ->
-      let lines = eval_test c test in
+      let lines = eval_test ?root t c test in
       let lines = split_lines lines in
       let output =
         let output = List.map (fun x -> `Output x) lines in
@@ -255,7 +258,7 @@ let run ()
     | [], fs ->
       List.iter (fun p ->
           let env, f = prelude_env_and_file p in
-          let eval () = eval_raw c ~line:0 [f] in
+          let eval () = eval_raw Block.empty c ~line:0 [f] in
           match env with
           | None   -> eval ()
           | Some e -> Mdx_top.in_env e eval
@@ -263,7 +266,7 @@ let run ()
     | fs, [] ->
       List.iter (fun p ->
           let env, f = prelude_env_and_file p in
-          let eval () = eval_raw c ~line:0 (read_lines f) in
+          let eval () = eval_raw Block.empty c ~line:0 (read_lines f) in
           match env with
           | None   -> eval ()
           | Some e -> Mdx_top.in_env e eval
@@ -296,28 +299,32 @@ let run ()
                     non-deterministic; run it but keep the old output. *)
                  | true, false, `Non_det `Output, Cram { tests; _ } ->
                    Block.pp ppf t;
-                   List.iter (fun t -> let _ = run_test temp_file t in ()) tests
+                   List.iter (fun t ->
+                       let _: int = run_test ?root temp_file t in ()
+                     ) tests
                  | true, false, `Non_det `Output, Toplevel tests ->
                    Block.pp ppf t;
-                   List.iter (fun t -> let _ = eval_test c t in ()) tests
+                   List.iter (fun test ->
+                       let _: string list = eval_test t ?root c test in ()
+                     ) tests
                  (* Run raw OCaml code *)
                  | true, _, _, OCaml ->
                    (match Block.file t with
                     | Some ml_file ->
                       update_file_or_block ppf file ml_file t direction
                     | None ->
-                      eval_raw c ~line:t.line t.contents;
+                      eval_raw t ?root c ~line:t.line t.contents;
                       Block.pp ppf t )
                  (* Cram tests. *)
                  | true, _, _, Cram { tests; pad } ->
-                   run_cram_tests ?root ppf temp_file pad tests t
+                   run_cram_tests t ?root ppf temp_file pad tests
                  (* Top-level tests. *)
                  | true, _, _, Toplevel tests ->
                    match Block.file t with
                    | Some ml_file ->
                      update_file_or_block ppf file ml_file t direction
                    | None ->
-                     run_toplevel_tests c ppf tests t
+                     run_toplevel_tests ?root c ppf tests t
               )
         ) items;
       Format.pp_print_flush ppf ();
