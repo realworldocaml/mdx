@@ -177,7 +177,7 @@ let read_parts file =
 let write_parts file parts =
   let output_file = file ^ ".corrected" in
   match has_changed parts with
-  | None   -> ()
+  | None   -> if Sys.file_exists output_file then Sys.remove output_file
   | Some c ->
     let oc = open_out output_file in
     output_string oc c;
