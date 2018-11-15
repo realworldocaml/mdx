@@ -86,7 +86,9 @@ let of_lines t =
     | []                  -> List.rev (mk command output 0 :: acc)
     | `Exit i        :: t -> aux [] [] (mk command output i :: acc) t
     | `Ellipsis as o :: t -> aux command (o :: output) acc t
-    | `Command cmd   :: t -> aux [cmd] [] (mk command output 0 :: acc) t
+    | `Command cmd   :: t ->
+      if command = [] then aux [cmd] [] acc t
+      else aux [cmd] [] (mk command output 0 :: acc) t
     | `Command_first cmd :: t ->
       let cmd, t = command_cont [cmd] t in
       aux cmd [] (mk command output 0 :: acc) t
