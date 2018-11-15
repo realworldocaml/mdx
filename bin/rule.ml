@@ -79,14 +79,7 @@ let pp_direction fmt = function
 let pp_prelude fmt s = Fmt.pf fmt "--prelude=%s" s
 let pp_prelude_str fmt s = Fmt.pf fmt "--prelude-str=%S" s
 
-let use_dune t =
-  List.exists (fun t ->
-      match t.Mdx.Cram.command with
-      | []   -> false
-      | h::_ -> match Astring.String.cuts ~sep:" " ~empty:false h with
-        | "dune"::_ -> true
-        | _ -> false
-    ) t
+let add_opt e s = match e with None -> s | Some e -> String.Set.add e s
 
 let run () md_file section direction prelude prelude_str =
   let section = match section with
@@ -101,36 +94,19 @@ let run () md_file section direction prelude prelude_str =
   let on_item acc = function
     | Mdx.Section _ | Text _ -> acc
     | Block b when active b ->
-      (match Mdx.Block.value b, Mdx.Block.file b, Mdx.Block.mode b with
-       | (OCaml | Toplevel _), Some ml_file, mode ->
-         Log.debug (fun l -> l "rule: (md: %s) (ml: %s)" md_file ml_file);
-         let files, dirs, nd = acc in
-         let nd = nd || match mode with `Non_det _ -> true | _ -> false in
-         let files = String.Set.add ml_file files in
-         files, dirs, nd
-       | Cram t, _, mode ->
-         let files, dirs, nd = acc in
-         let files =
-           if not (use_dune t.tests) then files
-           else
-             let dir = match Mdx.Block.directory b with
-               | None -> "."
-               | Some d -> d
-             in
-             let dune_files =
-               List.map (Filename.concat dir)
-                 [ "dune"; "dune-project"; "dune-workspace" ]
-             in
-             let files = List.fold_right String.Set.add dune_files files in
-             files
-         in
-         let nd = nd || match mode with `Non_det _ -> true | _ -> false in
-         let dirs = match Mdx.Block.directory b with
-           | None   -> dirs
-           | Some d -> String.Set.add d dirs
-         in
-         files, dirs, nd
-       | _ -> acc)
+      let files, dirs, nd = acc in
+      let nd = nd || match Mdx.Block.mode b with
+        | `Non_det _ -> true
+        | _          -> false
+      in
+      let source_trees = String.Set.of_list (Mdx.Block.source_trees b) in
+      let dirs =
+        dirs
+        |> add_opt (Mdx.Block.directory b)
+        |> String.Set.union source_trees
+      in
+      let files = add_opt (Mdx.Block.file b) files in
+      files, dirs, nd
     | Block _ -> acc
   in
   let on_file file_contents items =

@@ -11,7 +11,7 @@ val x : int = 3
 val x : int = 4
 ```
 
-```ocaml
+```ocaml source-tree=foo
 # let x = 2;;
 val x : int = 2
 ```

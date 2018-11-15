@@ -67,6 +67,10 @@ val mode: t -> [`Non_det of [`Command|`Output] | `Normal]
 val directory: t -> string option
 (** [directory t] is the directory where [t] tests should be run. *)
 
+val source_trees: t -> string list
+(** [source_trees t] is the list of extra source-trees to add as
+   dependency of the code-block. *)
+
 val file: t -> string option
 (** [file t] is the name of the file to synchronize [t] with. *)
 
