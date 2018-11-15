@@ -170,18 +170,23 @@
 (alias
  (name   runtest)
  (deps   (:x sync_to_ml.md) (:y sync_to_ml.md.expected)
-         (:a sync_to_ml.ml) (:b sync_to_ml.ml.expected) (package mdx))
+         (:a sync_to_ml.ml) (:b sync_to_ml.ml.expected)
+         (:c sync_to_broken_ml.ml)
+         (package mdx))
  (action (progn
            (run mdx test --direction=to-ml %{x})
            (diff? %{y} %{x}.corrected)
-           (diff? %{b} %{a}.corrected))))
+           (diff? %{b} %{a}.corrected)
+           (diff? %{c} %{c}.corrected))))
 
 (rule
  (targets section.ml)
  (deps    (:x section.md) (package mdx))
  (action  (with-stdout-to %{targets} (run mdx pp %{x}))))
 
-(executable (name section))
+(executable
+  (name section)
+  (modules section))
 
 (rule (with-stdout-to section.out (run ./section.exe)))
 
