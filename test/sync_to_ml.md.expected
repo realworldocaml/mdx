@@ -29,3 +29,9 @@ val x : int = 2
 2
 - : unit = ()
 ```
+
+```ocaml file=sync_to_broken_ml.ml
+let () =
+  module MyString = String;
+  ()
+```

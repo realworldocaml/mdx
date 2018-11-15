@@ -216,7 +216,7 @@ let replace file ~part ~lines = match file, part with
     |> fun x -> Parts x
 
 let contents = function
-  | Body (_, s) -> s
+  | Body (_, s) -> String.trim s ^ "\n"
   | Parts parts ->
     let lines =
       List.fold_left (fun acc p ->
