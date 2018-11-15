@@ -140,7 +140,7 @@
 
 (alias
  (name   runtest)
- (deps   (:x prelude.md) (package mdx))
+ (deps   (:x prelude.md) prelude.ml (package mdx))
  (action (progn
            (run mdx
                   test
