@@ -35,6 +35,16 @@ type t = {
   value   : value;
 }
 
+let empty = {
+  line=0;
+  file="";
+  section=None;
+  labels=[];
+  header=None;
+  contents=[];
+  value=Raw
+}
+
 let dump_string ppf s = Fmt.pf ppf "%S" s
 let dump_section = Fmt.(Dump.pair int string)
 
