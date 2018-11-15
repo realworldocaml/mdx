@@ -35,3 +35,7 @@ let () =
   module MyString = String;
   ()
 ```
+
+```ocaml file=sync_to_ml.mli,part=3
+type t = Some of int | Many
+```
