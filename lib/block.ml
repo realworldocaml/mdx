@@ -48,7 +48,8 @@ let dump_value ppf = function
   | Toplevel tests ->
     Fmt.pf ppf "@[Toplevel %a@]" Fmt.(Dump.list Toplevel.dump) tests
 
-let dump_labels = Fmt.(Dump.list (pair dump_string Dump.(option dump_string)))
+let dump_labels =
+  Fmt.(Dump.list (Dump.pair dump_string Dump.(option dump_string)))
 
 let dump ppf { file; line; section; labels; header; contents; value } =
   Fmt.pf ppf
@@ -89,6 +90,7 @@ let pp ppf b =
 
 let labels = [
   "dir"              , [`Any];
+  "source-tree"      , [`Any];
   "file"             , [`Any];
   "part"             , [`Any];
   "env"              , [`Any];
@@ -141,6 +143,14 @@ let get_label t label =
   try Some (List.assoc label t.labels)
   with Not_found -> None
 
+let get_labels t label =
+  List.fold_left (fun acc (k, v) ->
+      if k=label then match v with
+        | None   -> assert false
+        | Some v -> v ::acc
+      else acc
+    ) [] t.labels
+
 let directory t = match get_label t "dir" with
   | None   -> None
   | Some d -> d
@@ -152,6 +162,9 @@ let file t = match get_label t "file" with
 let part t = match get_label t "part" with
   | None   -> None
   | Some l -> l
+
+let source_trees t =
+  get_labels t "source-tree"
 
 let mode t =
   match get_label t "non-deterministic" with
