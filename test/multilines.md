@@ -26,3 +26,12 @@ And it should work fine for toplevel too:
   ;;
 val fact : int -> int = <fun>
 ```
+
+```ocaml
+# print_string "foo \
+  \" \
+  toto\
+  \ bar\""
+foo " toto bar"
+- : unit = ()
+```
