@@ -120,7 +120,7 @@ let eval_test t ?root c test =
   with_dir root (fun () -> Mdx_top.eval c (Toplevel.command test))
 
 let err_eval ~cmd lines =
-    Fmt.epr "Got an error while evaluating:\n---\n%a\n---\n%a"
+    Fmt.epr "Got an error while evaluating:\n---\n%a\n---\n%a\n%!"
       Fmt.(list ~sep:(unit "\n") string) cmd
       Fmt.(list ~sep:(unit "\n") string) lines;
     exit 1
@@ -323,7 +323,10 @@ let run ()
                    List.iter (fun test ->
                        match eval_test t ?root c test with
                        | Ok _    -> ()
-                       | Error e -> err_eval ~cmd:test.command e
+                       | Error e ->
+                         let output = List.map (fun l -> `Output l) e in
+                         if Output.equal test.output output then ()
+                         else err_eval ~cmd:test.command e
                      ) tests
                  (* Run raw OCaml code *)
                  | true, _, _, OCaml ->

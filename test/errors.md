@@ -36,3 +36,9 @@ Characters 14-18:
 Error: This expression has type string but an expression was expected of type
          int
 ```
+
+
+```ocaml non-deterministic
+# raise Not_found
+Exception: Not_found.
+```
