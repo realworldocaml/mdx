@@ -45,10 +45,10 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root options =
     List.fold_left f (0, []) ml_files |> snd
   in
   let pp_ml_deps fmt (var_name, ml_file) =
-    Fmt.pf fmt "\         (:%s %s)\n" var_name ml_file
+    Fmt.pf fmt "\         (:%s %s)" var_name ml_file
   in
   let pp_dir_deps fmt dir =
-    Fmt.pf fmt "\         (source_tree %s)\n" dir
+    Fmt.pf fmt "\         (source_tree %s)" dir
   in
   let pp_ml_diff fmt var =
     Fmt.pf fmt "\           (diff? %%{%s} %%{%s}.corrected)" var var
@@ -56,25 +56,36 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root options =
   let prelude =
     let files = String.Set.of_list (List.map prelude_file prelude) in
     String.Set.elements files
-    |> List.map (fun f -> Fmt.strf "         %s\n" f)
-    |> String.concat ~sep:""
+    |> List.map (fun f -> Fmt.strf "         %s" f)
+    |> String.concat ~sep:"\n"
   in
   let root = match root with None -> "" | Some r -> Fmt.strf "--root=%s " r in
+  let deps =
+    let sep1 = if var_names <> [] then "\n" else "" in
+    let sep2 = if dirs <> [] && prelude <> "" then "\n" else "" in
+    let x = Fmt.strf "%a%s%a%s%s"
+        Fmt.(list ~sep:(unit "\n") pp_ml_deps) (List.combine var_names ml_files)
+        sep1
+        Fmt.(list ~sep:(unit "\n") pp_dir_deps) dirs
+        sep2
+        prelude
+    in
+    match x with
+    | "" -> ""
+    | s  -> "\n" ^ s
+  in
   let pp name arg =
     Fmt.pr
       "\
 (alias\n\
 \ (name   %s)\n\
-\ (deps   (:x %s)\n%a%a%s\
-\         (package mdx))\n\
+\ (deps   (:x %s)%s)\n\
 \ (action (progn\n\
 \           (run mdx test %a %s%s%%{x})\n\
 \           (diff? %%{x} %%{x}.corrected)\n%a)))\n"
       name
       md_file
-      (Fmt.list ~sep:Fmt.nop pp_ml_deps) (List.combine var_names ml_files)
-      (Fmt.list ~sep:Fmt.nop pp_dir_deps) dirs
-      prelude
+      deps
       Fmt.(list ~sep:(unit " ") string) options
       arg root
       (Fmt.list ~sep:Fmt.cut pp_ml_diff) var_names
