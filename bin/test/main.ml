@@ -84,9 +84,10 @@ let run_test ?root temp_file t =
 
 let root_dir ?root t =
   match root, Mdx.Block.directory t with
-  | Some d, _      -> (* --root always win *) Some d
   | None  , None   -> None
   | None  , Some d -> Some Filename.(concat (dirname t.file) d)
+  | Some r, Some d -> Some Filename.(concat r d)
+  | Some d, None   -> Some d
 
 let run_cram_tests t ?root ppf temp_file pad tests =
   Block.pp_header ppf t;

@@ -1,8 +1,7 @@
 It's possible to run cram tests in separate directories:
 
 
-```sh dir=../lib
-$ ls ./mdx.ml
-ls: ./mdx.ml: No such file or directory
-[1]
+```sh dir=test
+$ basename $(dirname $(pwd))
+default
 ```
