@@ -32,8 +32,14 @@ let prepend_root r b = match r with
 let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root options =
   let ml_files = String.Set.elements ml_files in
   let ml_files = List.map (prepend_root root) ml_files in
-  let dirs = String.Set.elements dirs in
-  let dirs = List.map (prepend_root root) dirs in
+  let dirs = match root with
+    | None      -> String.Set.elements dirs
+    | Some root ->
+      (* only keep absolute dirs *)
+      let dirs = String.Set.filter (fun x -> not (Filename.is_relative x)) dirs in
+      let dirs = String.Set.add root dirs in
+      String.Set.elements dirs
+  in
   let var_names =
     let f (cpt, acc) _ = cpt + 1, ("y" ^ string_of_int cpt) :: acc in
     List.fold_left f (0, []) ml_files |> snd
