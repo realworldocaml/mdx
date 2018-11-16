@@ -36,3 +36,31 @@ let equal a b =
     | _ -> false
   in
   aux a b
+
+let drop_until xs x =
+  let rec loop = function
+    | (`Output v)::xs when not (String.equal v x) -> loop xs
+    | xs -> xs
+  in
+  loop xs
+
+let merge (a : [`Output of string] list) (b : t list) =
+  let rec aux (acc : t list) in_sync = function
+    | a, [] -> List.rev_append acc (a : [`Output of string] list :> [> `Output of string] list)
+    | a, ([`Ellipsis] as b) -> List.rev_append acc ((a : [`Output of string] list :> [> `Output of string] list) @ b)
+    | [], _ -> List.rev acc
+    | (`Output l)::xs, (`Output r)::ys ->
+      aux (`Output l::acc) (String.equal l r) (xs, ys)
+    | xs, `Ellipsis::((`Ellipsis::_) as ys) ->
+      aux acc in_sync (xs, ys)
+    | xs, `Ellipsis::((`Output y::_) as ys) ->
+      if in_sync then
+        let rest = drop_until xs y in
+        if List.compare_length_with rest 0 = 0 then
+          aux acc in_sync (xs, ys)
+        else
+          aux (`Ellipsis::acc) in_sync (rest, ys)
+      else
+        aux acc in_sync (xs, ys)
+  in
+  aux [] true (a, b)
