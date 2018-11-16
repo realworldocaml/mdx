@@ -115,7 +115,7 @@ module Phrase = struct
   let start t = t.startpos
 
   let parse lines =
-    let contents = String.concat " " lines in
+    let contents = String.concat "\n" lines in
     let lexbuf = Lexing.from_string contents in
     let startpos = lexbuf.Lexing.lex_start_p in
     let parsed = match Parse.toplevel_phrase lexbuf with
