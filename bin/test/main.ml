@@ -19,6 +19,8 @@ open Mdx
 let src = Logs.Src.create "cram.test"
 module Log = (val Logs.src_log src : Logs.LOG)
 
+let (/) = Filename.concat
+
 let prelude_env_and_file f =
   match Astring.String.cut ~sep:":" f with
   | None        -> None, f
@@ -84,9 +86,10 @@ let run_test ?root temp_file t =
 
 let root_dir ?root t =
   match root, Mdx.Block.directory t with
-  | Some d, _      -> (* --root always win *) Some d
   | None  , None   -> None
-  | None  , Some d -> Some Filename.(concat (dirname t.file) d)
+  | None  , Some d -> Some (Filename.dirname t.file / d)
+  | Some r, Some d -> Some (r / d)
+  | Some d, None   -> Some d
 
 let run_cram_tests t ?root ppf temp_file pad tests =
   Block.pp_header ppf t;
@@ -227,9 +230,13 @@ let update_file_with_block ppf t file part =
   Hashtbl.replace files file parts;
   Block.pp ppf t
 
-let update_file_or_block ppf md_file ml_file block direction =
+let update_file_or_block ?root ppf md_file ml_file block direction =
+  let root = root_dir ?root block in
   let dir = Filename.dirname md_file in
-  let ml_file = Filename.concat dir ml_file in
+  let ml_file = match root with
+    | None   -> dir / ml_file
+    | Some r -> r / dir / ml_file
+  in
   let direction =
     match direction with
     | `To_md -> `To_md
@@ -267,7 +274,7 @@ let run ()
     | [], fs ->
       List.iter (fun p ->
           let env, f = prelude_env_and_file p in
-          let eval () = eval_raw Block.empty c ~line:0 [f] in
+          let eval () = eval_raw Block.empty ?root c ~line:0 [f] in
           match env with
           | None   -> eval ()
           | Some e -> Mdx_top.in_env e eval
@@ -275,7 +282,7 @@ let run ()
     | fs, [] ->
       List.iter (fun p ->
           let env, f = prelude_env_and_file p in
-          let eval () = eval_raw Block.empty c ~line:0 (read_lines f) in
+          let eval () = eval_raw Block.empty ?root c ~line:0 (read_lines f) in
           match env with
           | None   -> eval ()
           | Some e -> Mdx_top.in_env e eval
@@ -322,7 +329,7 @@ let run ()
                  | true, _, _, OCaml ->
                    (match Block.file t with
                     | Some ml_file ->
-                      update_file_or_block ppf file ml_file t direction
+                      update_file_or_block ?root ppf file ml_file t direction
                     | None ->
                       eval_raw t ?root c ~line:t.line t.contents;
                       Block.pp ppf t )
@@ -333,7 +340,7 @@ let run ()
                  | true, _, _, Toplevel tests ->
                    match Block.file t with
                    | Some ml_file ->
-                     update_file_or_block ppf file ml_file t direction
+                     update_file_or_block ?root ppf file ml_file t direction
                    | None ->
                      run_toplevel_tests ?root c ppf tests t
               )

@@ -25,10 +25,21 @@ let prelude_file f =
   | None -> f
   | Some (_, f) -> f
 
-let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs options =
-  let pct = '%' in
+let prepend_root r b = match r with
+  | None   -> b
+  | Some r -> Filename.concat r b
+
+let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root options =
   let ml_files = String.Set.elements ml_files in
-  let dirs = String.Set.elements dirs in
+  let ml_files = List.map (prepend_root root) ml_files in
+  let dirs = match root with
+    | None      -> String.Set.elements dirs
+    | Some root ->
+      (* only keep absolute dirs *)
+      let dirs = String.Set.filter (fun x -> not (Filename.is_relative x)) dirs in
+      let dirs = String.Set.add root dirs in
+      String.Set.elements dirs
+  in
   let var_names =
     let f (cpt, acc) _ = cpt + 1, ("y" ^ string_of_int cpt) :: acc in
     List.fold_left f (0, []) ml_files |> snd
@@ -40,7 +51,7 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs options =
     Fmt.pf fmt "\         (source_tree %s)\n" dir
   in
   let pp_ml_diff fmt var =
-    Fmt.pf fmt "\           (diff? %c{%s} %c{%s}.corrected)" pct var pct var
+    Fmt.pf fmt "\           (diff? %%{%s} %%{%s}.corrected)" var var
   in
   let prelude =
     let files = String.Set.of_list (List.map prelude_file prelude) in
@@ -48,6 +59,7 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs options =
     |> List.map (fun f -> Fmt.strf "         %s\n" f)
     |> String.concat ~sep:""
   in
+  let root = match root with None -> "" | Some r -> Fmt.strf "--root=%s " r in
   let pp name arg =
     Fmt.pr
       "\
@@ -56,16 +68,15 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs options =
 \ (deps   (:x %s)\n%a%a%s\
 \         (package mdx))\n\
 \ (action (progn\n\
-\           (run mdx test %a %s%c{x})\n\
-\           (diff? %c{x} %c{x}.corrected)\n%a)))\n"
+\           (run mdx test %a %s%s%%{x})\n\
+\           (diff? %%{x} %%{x}.corrected)\n%a)))\n"
       name
       md_file
       (Fmt.list ~sep:Fmt.nop pp_ml_deps) (List.combine var_names ml_files)
       (Fmt.list ~sep:Fmt.nop pp_dir_deps) dirs
       prelude
       Fmt.(list ~sep:(unit " ") string) options
-      arg
-      pct pct pct
+      arg root
       (Fmt.list ~sep:Fmt.cut pp_ml_diff) var_names
   in
   pp "runtest" "";
@@ -81,7 +92,7 @@ let pp_prelude_str fmt s = Fmt.pf fmt "--prelude-str=%S" s
 
 let add_opt e s = match e with None -> s | Some e -> String.Set.add e s
 
-let run () md_file section direction prelude prelude_str =
+let run () md_file section direction prelude prelude_str root =
   let section = match section with
     | None   -> None
     | Some p -> Some (Re.Perl.compile_pat p)
@@ -118,7 +129,7 @@ let run () md_file section direction prelude prelude_str =
       List.map (Fmt.to_to_string pp_prelude_str) prelude_str @
       [Fmt.to_to_string pp_direction direction]
     in
-    print_rule ~md_file ~prelude ~nd ~ml_files ~dirs options;
+    print_rule ~md_file ~prelude ~nd ~ml_files ~dirs ~root options;
     file_contents
   in
   Mdx.run md_file ~f:on_file;
@@ -130,5 +141,5 @@ let cmd =
   let doc = "Produce dune rules to synchronize markdown and OCaml files." in
   Term.(pure run
         $ Cli.setup $ Cli.file $ Cli.section $ Cli.direction
-        $ Cli.prelude $ Cli.prelude_str),
+        $ Cli.prelude $ Cli.prelude_str $ Cli.root),
   Term.info "rule" ~doc
