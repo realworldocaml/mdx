@@ -116,10 +116,19 @@ let eval_test t ?root c test =
   let root = root_dir ?root t in
   with_dir root (fun () -> Mdx_top.eval c (Toplevel.command test))
 
+let err_eval ~cmd lines =
+    Fmt.epr "Got an error while evaluating:\n---\n%a\n---\n%a"
+      Fmt.(list ~sep:(unit "\n") string) cmd
+      Fmt.(list ~sep:(unit "\n") string) lines;
+    exit 1
+
 let eval_raw t ?root c ~line lines =
   let test = Toplevel.{vpad=0; hpad=0; line; command = lines; output = [] } in
-  let _ = eval_test t ?root c test in
-  ()
+  match eval_test t ?root c test with
+  | Ok _    -> ()
+  | Error e -> err_eval ~cmd:lines e
+
+let lines = function Ok x | Error x -> x
 
 let split_lines lines =
   let aux acc s =
@@ -132,7 +141,7 @@ let split_lines lines =
 let run_toplevel_tests ?root c ppf tests t =
   Block.pp_header ppf t;
   List.iter (fun test ->
-      let lines = eval_test ?root t c test in
+      let lines = lines (eval_test ?root t c test) in
       let lines = split_lines lines in
       let output =
         let output = List.map (fun x -> `Output x) lines in
@@ -295,7 +304,7 @@ let run ()
                  | false, _, _, _ -> Block.pp ppf t
                  (* the command is active but non-deterministic so skip everything *)
                  | true, false, `Non_det `Command, _ -> Block.pp ppf t
-                 (* the command is active but it''s output is
+                 (* the command is active but it's output is
                     non-deterministic; run it but keep the old output. *)
                  | true, false, `Non_det `Output, Cram { tests; _ } ->
                    Block.pp ppf t;
@@ -305,7 +314,9 @@ let run ()
                  | true, false, `Non_det `Output, Toplevel tests ->
                    Block.pp ppf t;
                    List.iter (fun test ->
-                       let _: string list = eval_test t ?root c test in ()
+                       match eval_test t ?root c test with
+                       | Ok _    -> ()
+                       | Error e -> err_eval ~cmd:test.command e
                      ) tests
                  (* Run raw OCaml code *)
                  | true, _, _, OCaml ->

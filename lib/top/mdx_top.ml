@@ -372,6 +372,7 @@ let cut_into_sentences l =
 let eval t cmd =
   let buf = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buf in
+  let errors = ref false in
   let exec_code ~capture phrase =
     let lines = ref [] in
     let capture () =
@@ -391,8 +392,9 @@ let eval t cmd =
     Oprint.out_phrase := out_phrase;
     let restore () = Oprint.out_phrase := out_phrase' in
     begin match toplevel_exec_phrase t ppf phrase with
-      | (_ : bool) -> restore ()
+      | ok -> errors := not ok || !errors; restore ()
       | exception exn ->
+        errors := true;
         restore ();
         Location.report_exception ppf exn
     end;
@@ -415,6 +417,7 @@ let eval t cmd =
               | None   -> []
             ) phrases
           |> List.concat
+          |> fun x -> if !errors then Error x else Ok x
         ))
 
 
