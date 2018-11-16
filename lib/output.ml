@@ -26,13 +26,31 @@ let pp ?(pad=0) ppf = function
   | `Output s -> Fmt.pf ppf "%a%s\n" pp_pad pad s
   | `Ellipsis -> Fmt.pf ppf "%a...\n" pp_pad pad
 
+let equals_sub l r start length =
+  let stop = start + length in
+  let rec loop i =
+    i = stop || l.[i] = r.[i] && loop (succ i)
+  in
+  loop start
+
+let ellipsis_equal = function
+  | `Output l, `Output r ->
+      let length_r = String.length r in
+      let length_l = String.length l in
+      length_r > 3 && r.[length_r - 3] = '.'
+                   && r.[length_r - 2] = '.'
+                   && r.[length_r - 1] = '.'
+      && length_l > length_r - 4
+      && equals_sub l r 0 (length_r - 3)
+  | _, _ -> false
+
 let equal a b =
   let rec aux x y = match x, y with
     | [], []  | [`Ellipsis], _   | _, [`Ellipsis]  -> true
     | (`Ellipsis::a as x), (_::b as y) | (_::b as y), (`Ellipsis::a as x) ->
       aux x b || (* n+ matches: skip y's head *)
       aux a y    (* 0  match  : skip x's head *)
-    | a::b, h::t -> a = h && aux b t
+    | a::b, h::t -> (a = h || ellipsis_equal (a, h)) && aux b t
     | _ -> false
   in
   aux a b
