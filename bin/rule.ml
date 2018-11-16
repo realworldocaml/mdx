@@ -25,10 +25,15 @@ let prelude_file f =
   | None -> f
   | Some (_, f) -> f
 
+let prepend_root r b = match r with
+  | None   -> b
+  | Some r -> Filename.concat r b
+
 let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root options =
   let ml_files = String.Set.elements ml_files in
+  let ml_files = List.map (prepend_root root) ml_files in
   let dirs = String.Set.elements dirs in
-  let root = match root with None -> "" | Some r -> Fmt.strf "--root=%s " r in
+  let dirs = List.map (prepend_root root) dirs in
   let var_names =
     let f (cpt, acc) _ = cpt + 1, ("y" ^ string_of_int cpt) :: acc in
     List.fold_left f (0, []) ml_files |> snd
@@ -48,6 +53,7 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root options =
     |> List.map (fun f -> Fmt.strf "         %s\n" f)
     |> String.concat ~sep:""
   in
+  let root = match root with None -> "" | Some r -> Fmt.strf "--root=%s " r in
   let pp name arg =
     Fmt.pr
       "\
