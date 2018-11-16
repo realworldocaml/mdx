@@ -267,7 +267,7 @@ let run ()
     | [], fs ->
       List.iter (fun p ->
           let env, f = prelude_env_and_file p in
-          let eval () = eval_raw Block.empty c ~line:0 [f] in
+          let eval () = eval_raw Block.empty ?root c ~line:0 [f] in
           match env with
           | None   -> eval ()
           | Some e -> Mdx_top.in_env e eval
@@ -275,7 +275,7 @@ let run ()
     | fs, [] ->
       List.iter (fun p ->
           let env, f = prelude_env_and_file p in
-          let eval () = eval_raw Block.empty c ~line:0 (read_lines f) in
+          let eval () = eval_raw Block.empty ?root c ~line:0 (read_lines f) in
           match env with
           | None   -> eval ()
           | Some e -> Mdx_top.in_env e eval
