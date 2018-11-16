@@ -3,8 +3,7 @@
  (deps   (:x dune_rules.md)
          (:y1 dune_rules_1.ml)
          (:y0 dune_rules_2.ml)
-         (source_tree foo)
-         (package mdx))
+         (source_tree foo))
  (action (progn
            (run mdx test --direction=to-ml %{x})
            (diff? %{x} %{x}.corrected)
