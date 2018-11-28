@@ -49,6 +49,12 @@ module Parse = struct
 
   let toplevel_phrase lexbuf =
     Parse.toplevel_phrase Versions.ocaml_406 lexbuf
+
+  let implementation lexbuf =
+    Parse.implementation Versions.ocaml_406 lexbuf
+
+  let interface lexbuf =
+    Parse.interface Versions.ocaml_406 lexbuf
 end
 
 let to_current =
@@ -72,7 +78,11 @@ module Printast = struct
     match x with
     | Pdir_none -> Pdir_none
     | Pdir_string s -> Pdir_string s
+#if OCAML_MAJOR >= 4 && OCAML_MINOR > 2
     | Pdir_int (s, c) -> Pdir_int (s, c)
+#else
+    | Pdir_int (s, _) -> Pdir_int (int_of_string s)
+#endif
     | Pdir_ident i -> Pdir_ident i
     | Pdir_bool b -> Pdir_bool b
 
@@ -107,6 +117,27 @@ module Pparse = struct
   let apply_rewriters_str ~tool_name s =
     apply_rewriters_str ~tool_name (to_current.copy_structure s)
     |> to_406.copy_structure
+end
+
+module String = struct
+  include String
+
+#if OCAML_MAJOR >= 4 && OCAML_MINOR < 3
+    let equal x y = String.compare x y = 0
+#endif
+
+#if OCAML_MAJOR >= 4 && OCAML_MINOR < 4
+  let split_on_char sep s =
+    let r = ref [] in
+    let j = ref (String.length s) in
+    for i = String.length s - 1 downto 0 do
+      if String.unsafe_get s i = sep then begin
+          r := String.sub s (i + 1) (!j - i - 1) :: !r;
+          j := i
+        end
+    done;
+    String.sub s 0 !j :: !r
+#endif
 end
 
 module Position = struct
@@ -164,4 +195,73 @@ module Location = struct
   let width x = Position.distance x.loc_start x.loc_end
 
   let compare_width_decreasing l1 l2 = (width l2) - (width l1)
+end
+
+module Result = struct
+#if OCAML_MAJOR >= 4 && OCAML_MINOR > 2
+  include Result
+#else
+  type ('a, 'b) result = Ok of 'a | Error of 'b
+#endif
+end
+
+module Filename = struct
+  include Filename
+
+#if OCAML_MAJOR >= 4 && OCAML_MINOR < 4
+  let is_dir_sep s i = s.[i] = '/' (* Unix only *)
+
+  let extension_len name =
+    let rec check i0 i =
+      if i < 0 || is_dir_sep name i then 0
+      else if name.[i] = '.' then check i0 (i - 1)
+      else String.length name - i0
+    in
+    let rec search_dot i =
+      if i < 0 || is_dir_sep name i then 0
+      else if name.[i] = '.' then check i (i - 1)
+      else search_dot (i - 1)
+    in
+    search_dot (String.length name - 1)
+
+  let extension name =
+    let l = extension_len name in
+    if l = 0 then "" else String.sub name (String.length name - l) l
+#endif
+end
+
+module List = struct
+  include List
+
+#if OCAML_MAJOR >= 4 && OCAML_MINOR < 6
+  let rec init_aux i n f =
+    if i >= n then []
+    else (f i) :: init_aux (i+1) n f
+
+  let init n f = init_aux 0 n f
+#endif
+
+#if OCAML_MAJOR >= 4 && OCAML_MINOR < 5
+  let rec find_opt p = function
+    | [] -> None
+    | x :: l -> if p x then Some x else find_opt p l
+#endif
+end
+
+module Warnings = struct
+  include Warnings
+
+#if OCAML_MAJOR >= 4 && OCAML_MINOR < 3
+  (* Can't be overriden *)
+  let reset_fatal () = ()
+#endif
+end
+
+module Env = struct
+  include Env
+
+#if OCAML_MAJOR >= 4 && OCAML_MINOR < 3
+  (* Can't be overriden *)
+  let without_cmis f x = f x
+#endif
 end

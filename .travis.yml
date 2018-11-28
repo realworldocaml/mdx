@@ -2,6 +2,7 @@ language: c
 env:
   # Check build and unit tests
   # NOTE: testing needs OPAMBUILDTEST=true so that test deps are installed
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.02.3
   - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.06.1
   - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.07.0
 before_install:

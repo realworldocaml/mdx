@@ -18,11 +18,13 @@ open Astring
 
 type section = int * string
 
+type cram_value = { pad: int; tests: Cram.t list }
+
 type value =
   | Raw
   | OCaml
   | Error of string list
-  | Cram of { pad: int; tests: Cram.t list }
+  | Cram of cram_value
   | Toplevel of Toplevel.t list
 
 type t = {
@@ -147,7 +149,7 @@ let check_labels t =
         :: acc
     ) [] t.labels
   |> function
-  | [] -> Ok ()
+  | [] -> Result.Ok ()
   | es -> Result.Error es
 
 let get_label t label =

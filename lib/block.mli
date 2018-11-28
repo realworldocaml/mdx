@@ -16,12 +16,14 @@
 
 (** Code blocks. *)
 
+type cram_value = { pad: int; tests: Cram.t list }
+
 (** The type for block values. *)
 type value =
   | Raw
   | OCaml
   | Error of string list
-  | Cram of { pad: int; tests: Cram.t list }
+  | Cram of cram_value
   | Toplevel of Toplevel.t list
 
 type section = int * string

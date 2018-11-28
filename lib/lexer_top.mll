@@ -13,7 +13,7 @@ rule token = parse
 and phrase acc buf = parse
   | ("\n"* as nl) "\n  "
       { Lexing.new_line lexbuf;
-        let nl = List.init (String.length nl) (fun _ -> "") in
+        let nl = Migrate_ast.List.init (String.length nl) (fun _ -> "") in
         phrase (nl @ Buffer.contents buf :: acc) (Buffer.create 8) lexbuf }
   | eol
       { Lexing.new_line lexbuf;
