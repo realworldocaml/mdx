@@ -16,6 +16,7 @@
  *)
 
 open Mdx.Migrate_ast
+open Mdx.Compat
 
 module Toploop = struct
   include Toploop
@@ -103,8 +104,6 @@ module Phrase = struct
 
   open Lexing
   open Parsetree
-
-  module Result = Mdx.Migrate_ast.Result
 
   type t = {
     doc      : Lexbuf.t;

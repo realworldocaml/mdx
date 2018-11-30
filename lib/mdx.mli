@@ -28,6 +28,7 @@ module Cram = Cram
 module Toplevel = Toplevel
 module Block = Block
 module Migrate_ast = Migrate_ast
+module Compat = Compat
 
 (** {2 Lines} *)
 

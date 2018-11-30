@@ -15,11 +15,11 @@
  *)
 
 open Mdx
+open Compat
+open Result
 
 let src = Logs.Src.create "cram.test"
 module Log = (val Logs.src_log src : Logs.LOG)
-module Result = Mdx.Migrate_ast.Result
-module String = Mdx.Migrate_ast.String
 
 let (/) = Filename.concat
 
@@ -130,10 +130,10 @@ let err_eval ~cmd lines =
 let eval_raw t ?root c ~line lines =
   let test = Toplevel.{vpad=0; hpad=0; line; command = lines; output = [] } in
   match eval_test t ?root c test with
-  | Result.Ok _    -> ()
-  | Result.Error e -> err_eval ~cmd:lines e
+  | Ok _    -> ()
+  | Error e -> err_eval ~cmd:lines e
 
-let lines = function Result.Ok x | Result.Error x -> x
+let lines = function Ok x | Error x -> x
 
 let split_lines lines =
   let aux acc s =
@@ -324,8 +324,8 @@ let run ()
                    Block.pp ppf t;
                    List.iter (fun test ->
                        match eval_test t ?root c test with
-                       | Result.Ok _    -> ()
-                       | Result.Error e ->
+                       | Ok _    -> ()
+                       | Error e ->
                          let output = List.map (fun l -> `Output l) e in
                          if Output.equal test.output output then ()
                          else err_eval ~cmd:test.command e

@@ -15,6 +15,7 @@
  *)
 
 open Mdx.Migrate_ast
+open Mdx.Compat
 
 module Part = struct
 
