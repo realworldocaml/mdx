@@ -17,11 +17,11 @@
 module String = struct
   include String
 
-#if OCAML_MAJOR >= 4 && OCAML_MINOR < 3
+#if OCAML_MAJOR = 4 && OCAML_MINOR < 3
     let equal x y = String.compare x y = 0
 #endif
 
-#if OCAML_MAJOR >= 4 && OCAML_MINOR < 4
+#if OCAML_MAJOR = 4 && OCAML_MINOR < 4
   let split_on_char sep s =
     let r = ref [] in
     let j = ref (String.length s) in
@@ -38,7 +38,7 @@ end
 module Filename = struct
   include Filename
 
-#if OCAML_MAJOR >= 4 && OCAML_MINOR < 4
+#if OCAML_MAJOR = 4 && OCAML_MINOR < 4
   let is_dir_sep s i = s.[i] = '/' (* Unix only *)
 
   let extension_len name =
@@ -63,7 +63,7 @@ end
 module List = struct
   include List
 
-#if OCAML_MAJOR >= 4 && OCAML_MINOR < 6
+#if OCAML_MAJOR = 4 && OCAML_MINOR < 6
   let rec init_aux i n f =
     if i >= n then []
     else (f i) :: init_aux (i+1) n f
@@ -71,7 +71,7 @@ module List = struct
   let init n f = init_aux 0 n f
 #endif
 
-#if OCAML_MAJOR >= 4 && OCAML_MINOR < 5
+#if OCAML_MAJOR = 4 && OCAML_MINOR < 5
   let rec find_opt p = function
     | [] -> None
     | x :: l -> if p x then Some x else find_opt p l
@@ -81,7 +81,7 @@ end
 module Warnings = struct
   include Warnings
 
-#if OCAML_MAJOR >= 4 && OCAML_MINOR < 3
+#if OCAML_MAJOR = 4 && OCAML_MINOR < 3
   (* Can't be overriden *)
   let reset_fatal () = ()
 #endif
@@ -90,7 +90,7 @@ end
 module Env = struct
   include Env
 
-#if OCAML_MAJOR >= 4 && OCAML_MINOR < 3
+#if OCAML_MAJOR = 4 && OCAML_MINOR < 3
   (* Can't be overriden *)
   let without_cmis f x = f x
 #endif
