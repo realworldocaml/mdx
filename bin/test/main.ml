@@ -330,14 +330,14 @@ let run ()
                      ) tests
                  (* Run raw OCaml code *)
                  | true, _, _, OCaml ->
-                    let version_enabled = Block.version_enabled t in
-                    (match Block.file t with
+                   let version_enabled = Block.version_enabled t in
+                   (match Block.file t with
                     | Some ml_file when version_enabled ->
                       update_file_or_block ?root ppf file ml_file t direction
-                     | None when version_enabled ->
+                    | None when version_enabled ->
                       eval_raw t ?root c ~line:t.line t.contents;
                       Block.pp ppf t
-                     | _ -> Block.pp ppf t )
+                    | _ -> Block.pp ppf t )
                  (* Cram tests. *)
                  | true, _, _, Cram { tests; pad } ->
                    run_cram_tests t ?root ppf temp_file pad tests
