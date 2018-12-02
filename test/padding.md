@@ -11,7 +11,6 @@ Arbitrary padding is allowed, as long as it is consistent inside a code block.
 ```
 
 ```sh
-$ ocaml -warn-help | egrep '\b9\b'
+$ ocaml -warn-help | egrep '\b9 Missing\b'
   9 Missing fields in a record pattern.
-  R Alias for warning 9.
 ```
