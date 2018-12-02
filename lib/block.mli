@@ -102,6 +102,13 @@ val executable_contents: t -> string list
    or a cram block, or [t]'s commands if [t] is a toplevel fragments
    (e.g. the phrase result is discarded). *)
 
+val version: t -> int option * int option * int option
+(** [version t] is [t]'s OCaml version. *)
+
+val version_enabled: t -> bool
+(** [version_supported t] if the current OCaml version complies with [t]'s
+    version. *)
+
 (** {2 Evaluation} *)
 
 val eval: t -> t

@@ -105,7 +105,8 @@ let labels = [
   "part"             , [`Any];
   "env"              , [`Any];
   "skip"             , [`None];
-  "non-deterministic", [`None; `Some "command"; `Some "output"]
+  "non-deterministic", [`None; `Some "command"; `Some "output"];
+  "version"          , [`Any];
 ]
 
 let pp_value ppf = function
@@ -172,6 +173,10 @@ let file t = match get_label t "file" with
 let part t = match get_label t "part" with
   | None   -> None
   | Some l -> l
+
+let version t = match get_label t "version" with
+  | Some (Some v) -> Misc.parse_version v
+  | _ -> None, None, None
 
 let source_trees t =
   get_labels t "source-tree"
@@ -272,3 +277,13 @@ let labels_of_string s =
       | None        -> s, None
       | Some (k, v) -> k, Some v
     ) labels
+
+let version_enabled t =
+  let current_version = Misc.parse_version Sys.ocaml_version in
+  match current_version, version t with
+  | _, (None, _ ,_) -> true
+  | (Some x, _, _), (Some x', None, _) -> x = x'
+  | (Some x, Some y, _), (Some x', Some y', None) -> x = x' && y = y'
+  | (Some x, Some y, Some z), (Some x', Some y', Some z') ->
+     x = x' && y = y' && z = z'
+  | _, _ -> Fmt.failwith "invalid OCaml version: %s" Sys.ocaml_version
