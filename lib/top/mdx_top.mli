@@ -15,6 +15,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+open Result
+
 (** Toplevel logic for [mdx]. *)
 
 type t
@@ -23,10 +25,7 @@ type t
 val init: verbose:bool -> silent:bool -> verbose_findlib:bool -> unit -> t
 (** [init ()] is a new configuration value. *)
 
-val eval:
-  t
-  -> string list
-  -> (string list, string list) Result.result
+val eval: t -> string list -> (string list, string list) result
 (** [eval t p] evaluates the toplevel phrase [p] (possibly spawning on
     mulitple lines) with the configuration value [t]. *)
 
