@@ -1,8 +1,0 @@
-(library
- ((name parsexp_bench)
-  (flags (:standard -safe-string))
-  (libraries (core_kernel parsexp sexplib))
-  (preprocess (pps (ppx_jane ppxlib.runner)))))
-
-
-(jbuild_version 1)
