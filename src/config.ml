@@ -50,7 +50,7 @@ let duniverse_forks =
   ; ("git+http://erratique.ch/repos/topkg.git", "topkg")
   ; ("git+http://erratique.ch/repos/cmdliner.git", "cmdliner")
   ; ("git+https://github.com/hannesm/duration.git", "duration")
-  ; ("git+https://github.com/hannesm/randoconv.git", "randomconv")
+  ; ("git+https://github.com/hannesm/randomconv.git", "randomconv")
   ; ("git+https://github.com/backtracking/ocaml-hashcons", "ocaml-hashcons")
   ; ("git+https://github.com/backtracking/ocamlgraph.git", "ocamlgraph")
   ; ("git+https://gitlab.camlcity.org/gerd/lib-findlib.git", "lib-findlib")
