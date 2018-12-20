@@ -100,7 +100,7 @@ let run_cram_tests t ?root ppf temp_file pad tests =
       let output =
         let output = List.map (fun x -> `Output x) lines in
         if Output.equal output test.output then test.output
-        else output
+        else Output.merge output test.output
       in
       Cram.pp_command ~pad ppf test;
       List.iter (function

@@ -24,3 +24,10 @@ foo"
 
 ...
 ```
+
+Lines ending with ellipsis
+
+```sh
+$ echo Hello world
+Hello...
+```
