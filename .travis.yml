@@ -12,7 +12,7 @@ before_install:
   - export OPAMYES=1
   - export OPAMJOBS=2
   # Init opam, and the default switch with the right ocaml version
-  - ${HOME}/opam init --compiler=${OCAML_VERSION}
+  - ${HOME}/opam init --compiler=${OCAML_VERSION} --disable-sandboxing
   - eval `${HOME}/opam config env`
   - export OPAMVERBOSE=1
 install:
