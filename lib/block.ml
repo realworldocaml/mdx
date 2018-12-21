@@ -29,7 +29,8 @@ type t = {
   line    : int;
   file    : string;
   section : section option;
-  labels  : (string * string option) list;
+  labels  :
+    (string * ([`Eq | `Neq | `Le | `Lt | `Ge | `Gt] * string) option) list;
   header  : string option;
   contents: string list;
   value   : value;
@@ -58,8 +59,16 @@ let dump_value ppf = function
   | Toplevel tests ->
     Fmt.pf ppf "@[Toplevel %a@]" Fmt.(Dump.list Toplevel.dump) tests
 
+let dump_relation ppf = function
+  | `Eq -> Fmt.string ppf "="
+  | `Neq -> Fmt.string ppf "<>"
+  | `Gt -> Fmt.string ppf ">"
+  | `Ge -> Fmt.string ppf ">="
+  | `Lt -> Fmt.string ppf "<"
+  | `Le -> Fmt.string ppf "<="
+
 let dump_labels =
-  Fmt.(Dump.list (Dump.pair dump_string Dump.(option dump_string)))
+  Fmt.(Dump.(list (pair dump_string (option (pair dump_relation dump_string)))))
 
 let dump ppf { file; line; section; labels; header; contents; value } =
   Fmt.pf ppf
@@ -76,9 +85,17 @@ let pp_lines pp = Fmt.(list ~sep:(unit "\n") pp)
 let pp_contents ppf t = Fmt.pf ppf "%a\n" (pp_lines Fmt.string) t.contents
 let pp_footer ppf () = Fmt.string ppf "```\n"
 
+let pp_cmp ppf = function
+  | `Eq -> Fmt.pf ppf "="
+  | `Neq -> Fmt.pf ppf "<>"
+  | `Lt -> Fmt.pf ppf "<"
+  | `Le -> Fmt.pf ppf "<="
+  | `Gt -> Fmt.pf ppf ">"
+  | `Ge -> Fmt.pf ppf ">="
+
 let pp_label ppf (k, v) = match v with
   | None   -> Fmt.string ppf k
-  | Some v -> Fmt.pf ppf "%s=%s" k v
+  | Some (o, v) -> Fmt.pf ppf "%s%a%s" k pp_cmp o v
 
 let pp_labels ppf = function
   | [] -> ()
@@ -117,12 +134,12 @@ let pp_value ppf = function
 let match_label l p = match p, l with
   | `Any   , Some _ -> true
   | `None  , None   -> true
-  | `Some p, Some l -> p=l
+  | `Some p, Some (_, l) -> String.equal p l
   | _ -> false
 
 let pp_v ppf = function
   | None   -> Fmt.string ppf "<none>"
-  | Some v -> Fmt.string ppf v
+  | Some (_, v) -> Fmt.string ppf v
 
 let rec pp_list pp ppf = function
   | []    -> ()
@@ -156,7 +173,7 @@ let get_label t label =
 
 let get_labels t label =
   List.fold_left (fun acc (k, v) ->
-      if k=label then match v with
+      if String.equal k label then match v with
         | None   -> assert false
         | Some v -> v ::acc
       else acc
@@ -164,41 +181,53 @@ let get_labels t label =
 
 let directory t = match get_label t "dir" with
   | None   -> None
-  | Some d -> d
+  | Some None -> None
+  | Some (Some (`Eq, d)) -> Some d
+  | Some (Some _) -> Fmt.failwith "invalid `dir` label value"
 
 let file t = match get_label t "file" with
   | None   -> None
-  | Some f -> f
+  | Some None -> None
+  | Some (Some (`Eq, f)) -> Some f
+  | Some (Some _) -> Fmt.failwith "invalid `file` label value"
 
 let part t = match get_label t "part" with
   | None   -> None
-  | Some l -> l
+  | Some None -> None
+  | Some (Some (`Eq, l)) -> Some l
+  | Some (Some _) -> Fmt.failwith "invalid `part` label value"
 
 let version t = match get_label t "version" with
-  | Some (Some v) -> Misc.parse_version v
-  | _ -> None, None, None
+  | Some (Some (op, v)) ->
+    let x, y, z = Misc.parse_version v in
+    op, x, y, z
+  | _ -> `Eq, None, None, None
 
 let source_trees t =
-  get_labels t "source-tree"
+  let f = function
+    | `Eq, x -> x
+    | _ -> Fmt.failwith "invalid `source-tree` label value"
+  in
+  List.map f (get_labels t "source-tree")
 
-let mode t =
-  match get_label t "non-deterministic" with
+let mode t = match get_label t "non-deterministic" with
   | None                  -> `Normal
   | Some None
-  | Some (Some "output")  -> `Non_det `Output
-  | Some (Some "command") -> `Non_det `Command
-  | Some (Some _)         -> `Normal
+  | Some (Some (`Eq, "output"))  -> `Non_det `Output
+  | Some (Some (`Eq, "command")) -> `Non_det `Command
+  | Some (Some (`Eq, _))         -> `Normal
+  | Some (Some _) -> Fmt.failwith "invalid `non-deterministic` label value"
 
-let skip t =
-  match get_label t "skip" with
+let skip t = match get_label t "skip" with
   | Some None -> true
   | _ -> false
 
 let environment t = match get_label t "env" with
   | None
   | Some None
-  | Some (Some "default") -> "default"
-  | Some (Some s) -> s
+  | Some (Some (`Eq, "default")) -> "default"
+  | Some (Some (`Eq, s)) -> s
+  | Some (Some _) -> Fmt.failwith "invalid `env` label value"
 
 let value t = t.value
 let section t = t.section
@@ -270,20 +299,49 @@ let executable_contents b =
   if contents = [] || ends_by_semi_semi contents then contents
   else contents @ [";;"]
 
+let split sep s op =
+  match String.cut ~sep s with
+  | None -> s, None (* operator does not matter here *)
+  | Some (k, v) -> k, Some (op, v)
+
+let ( ||| ) x y =
+  match x with
+  | _, None -> y
+  | x -> x
+
 let labels_of_string s =
   let labels = String.cuts ~empty:false ~sep:"," s in
   List.map (fun s ->
-      match String.cut ~sep:"=" s with
-      | None        -> s, None
-      | Some (k, v) -> k, Some v
+      split "<>" s `Neq |||
+      split ">=" s `Ge |||
+      split ">"  s `Gt |||
+      split "<=" s `Le |||
+      split "<"  s `Lt |||
+      split "="  s `Eq
     ) labels
 
-let version_enabled t =
-  let current_version = Misc.parse_version Sys.ocaml_version in
-  match current_version, version t with
-  | _, (None, _ ,_) -> true
-  | (Some x, _, _), (Some x', None, _) -> x = x'
-  | (Some x, Some y, _), (Some x', Some y', None) -> x = x' && y = y'
+let compare_versions v1 v2 =
+  match (v1, v2) with
+  | (Some _, Some _, Some _), (None, _, _) -> 0
+  | (Some x, Some _, Some _), (Some x', None, _) -> x - x'
+  | (Some x, Some y, Some _), (Some x', Some y', None) ->
+    if x = x' then y - y' else x - x'
   | (Some x, Some y, Some z), (Some x', Some y', Some z') ->
-     x = x' && y = y' && z = z'
-  | _, _ -> Fmt.failwith "invalid OCaml version: %s" Sys.ocaml_version
+    if x = x' then
+      if y = y' then z - z'
+      else y - y'
+    else x - x'
+  | _ -> Fmt.failwith "incomplete OCaml version"
+
+let compare = function
+  | `Eq -> ( = )
+  | `Neq -> ( <> )
+  | `Lt -> ( < )
+  | `Le -> ( <= )
+  | `Gt -> ( > )
+  | `Ge -> ( >= )
+
+let version_enabled t =
+  let curr_version = Misc.parse_version Sys.ocaml_version in
+  let op, x, y, z = version t in
+  (compare op) (compare_versions curr_version (x, y, z)) 0
