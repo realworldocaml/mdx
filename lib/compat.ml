@@ -75,6 +75,15 @@ module List = struct
   let rec find_opt p = function
     | [] -> None
     | x :: l -> if p x then Some x else find_opt p l
+
+  let rec compare_length_with l n =
+    match l with
+    | [] ->
+       if n = 0 then 0 else
+         if n > 0 then -1 else 1
+    | _ :: l ->
+       if n <= 0 then 1 else
+         compare_length_with l (n-1)
 #endif
 end
 
