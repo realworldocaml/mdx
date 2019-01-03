@@ -24,6 +24,8 @@
  * DEALINGS IN THE SOFTWARE.
  *)
 
+open Compat
+
 (* original modules *)
 module Asttypes_ = Asttypes
 module Parsetree_ = Parsetree
@@ -49,6 +51,12 @@ module Parse = struct
 
   let toplevel_phrase lexbuf =
     Parse.toplevel_phrase Versions.ocaml_406 lexbuf
+
+  let implementation lexbuf =
+    Parse.implementation Versions.ocaml_406 lexbuf
+
+  let interface lexbuf =
+    Parse.interface Versions.ocaml_406 lexbuf
 end
 
 let to_current =
@@ -72,7 +80,11 @@ module Printast = struct
     match x with
     | Pdir_none -> Pdir_none
     | Pdir_string s -> Pdir_string s
+#if OCAML_MAJOR = 4 && OCAML_MINOR <= 2
+    | Pdir_int (s, _) -> Pdir_int (int_of_string s)
+#else
     | Pdir_int (s, c) -> Pdir_int (s, c)
+#endif
     | Pdir_ident i -> Pdir_ident i
     | Pdir_bool b -> Pdir_bool b
 
@@ -95,7 +107,7 @@ module Printtyp = struct
 
   let wrap_printing_env e f =
     wrap_printing_env
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 7
+#if (OCAML_MAJOR = 4 && OCAML_MINOR >= 7) || OCAML_MAJOR > 4
       ~error:false
 #endif
       e f

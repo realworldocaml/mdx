@@ -14,6 +14,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+open Mdx.Migrate_ast
+open Mdx.Compat
+
 module Part = struct
 
   type t =

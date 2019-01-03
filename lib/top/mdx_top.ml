@@ -16,6 +16,7 @@
  *)
 
 open Mdx.Migrate_ast
+open Mdx.Compat
 
 module Toploop = struct
   include Toploop
@@ -108,7 +109,7 @@ module Phrase = struct
     doc      : Lexbuf.t;
     startpos : position;
     endpos   : position;
-    parsed   : (toplevel_phrase, exn) result;
+    parsed   : (toplevel_phrase, exn) Result.result;
   }
 
   let result t = t.parsed
@@ -119,13 +120,18 @@ module Phrase = struct
     let lexbuf = Lexing.from_string contents in
     let startpos = lexbuf.Lexing.lex_start_p in
     let parsed = match Parse.toplevel_phrase lexbuf with
-      | phrase -> Ok phrase
+      | phrase -> Result.Ok phrase
       | exception exn ->
         let exn = match Location.error_of_exn exn with
           | None -> raise exn
+#if OCAML_MAJOR >= 4 && OCAML_MINOR > 2
           | Some `Already_displayed -> raise exn
           | Some (`Ok error) ->
             Location.Error (Lexbuf.shift_location_error startpos error)
+#else
+          | Some error ->
+            Location.Error (Lexbuf.shift_location_error startpos error)
+#endif
         in
         if lexbuf.Lexing.lex_last_action <> Lexbuf.semisemi_action then begin
           let rec aux () = match Lexer.token lexbuf with
@@ -171,7 +177,7 @@ module Rewrite = struct
     typ    : Longident.t;
     witness: Longident.t;
     runner : Longident.t;
-    rewrite: Warnings.loc -> expression -> expression;
+    rewrite: Location.t -> expression -> expression;
     mutable preload: string option;
   }
 
@@ -230,7 +236,12 @@ module Rewrite = struct
     let rec aux = function
       | []   -> pstr_item
       | h::t ->
-        let ty = normalize_type_path env (Env.lookup_type h.typ env) in
+#if OCAML_MAJOR >= 4 && OCAML_MINOR < 4
+        let looked_up_path = Env.lookup_type h.typ env |> fst in
+#else
+        let looked_up_path = Env.lookup_type h.typ env in
+#endif
+        let ty = normalize_type_path env looked_up_path in
         if Path.same ty (normalize_type_path env path) then (
           let loc = pstr_item.Parsetree.pstr_loc in
           { Parsetree.pstr_desc = Parsetree.Pstr_eval (h.rewrite loc e, []);
@@ -417,16 +428,19 @@ let eval t cmd =
               | None   -> []
             ) phrases
           |> List.concat
-          |> fun x -> if !errors then Error x else Ok x
+          |> fun x -> if !errors then Result.Error x else Result.Ok x
         ))
 
 
 let all_show_funs = ref []
 
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
 let section_env = "Environment queries"
+#endif
 
 let std_out = lazy (Format.formatter_of_out_channel stdout)
 
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
 let show_prim to_sig ppf lid =
   let env = !Toploop.toplevel_env in
   let loc = Location.none in
@@ -447,20 +461,25 @@ let show_prim to_sig ppf lid =
   with
   | Not_found -> Format.fprintf ppf "@[Unknown element.@]@."
   | Exit -> ()
+#endif
 
 let reg_show_prim name to_sig doc =
   let lazy ppf = std_out in
   all_show_funs := to_sig :: !all_show_funs;
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
   Toploop.add_directive
     name
-    (Directive_ident (show_prim to_sig ppf))
+    (Toploop.Directive_ident (show_prim to_sig ppf))
     { section = section_env; doc }
+#else
+  ignore (name, doc, ppf)
+#endif
 
 let show_val () =
   reg_show_prim "show_val"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_value env loc lid in
-       [ Sig_value (id, desc) ]
+       [ Types.Sig_value (id, desc) ]
     )
     "Print the signature of the corresponding value."
 
@@ -485,7 +504,11 @@ let show_exception () =
        let ext =
          { ext_type_path = Predef.path_exn;
            ext_type_params = [];
+#if OCAML_MAJOR >= 4 && OCAML_MINOR < 3
+           ext_args = desc.cstr_args;
+#else
            ext_args = Cstr_tuple desc.cstr_args;
+#endif
            ext_ret_type = ret_type;
            ext_private = Asttypes_.Public;
            Types.ext_loc = desc.cstr_loc;
@@ -520,7 +543,11 @@ let show_module () =
            Sig_module (id, {md with md_type = trim_signature md.md_type},
                        Trec_not) :: acc in
          match md.md_type with
+#if OCAML_MAJOR >= 4 && OCAML_MINOR > 3
          | Mty_alias(_, path) -> accum_aliases path acc
+#else
+         | Mty_alias path -> accum_aliases path acc
+#endif
          | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
            List.rev acc
        in
@@ -553,35 +580,50 @@ let show_class_type () =
     )
     "Print the signature of the corresponding class type."
 
-let show env loc id lid =
-  let sg =
-    List.fold_left
-      (fun sg f -> try (f env loc id lid) @ sg with _ -> sg)
-      [] !all_show_funs
-  in
-  if sg = [] then raise Not_found else sg
-
 let show () =
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
   let lazy pp = std_out in
-  Toploop.add_directive "show" (Directive_ident (show_prim show pp))
+  let show env loc id lid =
+    let sg =
+      List.fold_left
+        (fun sg f -> try (f env loc id lid) @ sg with _ -> sg)
+        [] !all_show_funs
+    in
+    if sg = [] then raise Not_found else sg
+  in
+  Toploop.add_directive "show" (Toploop.Directive_ident (show_prim show pp))
     {
       section = section_env;
       doc = "Print the signatures of components \
              from any of the categories below.";
     }
+#else
+  ()
+#endif
 
 let verbose t =
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
   Toploop.add_directive "verbose"
     (Toploop.Directive_bool (fun x -> t.verbose <- x))
     { section = section_env ; doc = "Be verbose" }
+#else
+  ignore t
+#endif
 
-let silent t = Toploop.add_directive "silent"
+let silent t =
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
+  Toploop.add_directive "silent"
     (Toploop.Directive_bool (fun x -> t.silent <- x))
     { section = section_env; doc = "Be silent" }
+#else
+  ignore t
+#endif
 
 module Linked = struct
   include (Topdirs : sig end)
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
   include (Ephemeron : sig end)
+#endif
   include (Uchar : sig end)
   include (Condition : sig end)
 end
@@ -662,7 +704,9 @@ let rec save_summary acc s =
       in
       save_summary acc summary
   | Env_empty -> acc
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 4
   | Env_constraints (summary, _)
+#endif
     | Env_cltype (summary, _, _)
     | Env_modtype (summary, _, _)
     | Env_type (summary, _, _)
@@ -671,7 +715,10 @@ let rec save_summary acc s =
                 _,
                 #endif
                 _)
-    | Env_copy_types (summary, _) -> save_summary acc summary
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 6
+    | Env_copy_types (summary, _)
+#endif
+    -> save_summary acc summary
 
 let default_env = ref (Compmisc.initial_env ())
 let first_call = ref true
