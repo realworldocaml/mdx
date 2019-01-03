@@ -37,15 +37,7 @@ Error: This expression has type bytes but an expression was expected of type
          int
 ```
 
-```ocaml version=4.06
-# let x =
-  1 + "42"
-Characters 14-18:
-Error: This expression has type string but an expression was expected of type
-         int
-```
-
-```ocaml version=4.07
+```ocaml version>=4.06
 # let x =
   1 + "42"
 Characters 14-18:

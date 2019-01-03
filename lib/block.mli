@@ -32,7 +32,8 @@ type t = {
   line    : int;
   file    : string;
   section : section option;
-  labels  : (string * string option) list;
+  labels  :
+    (string * ([`Eq | `Neq | `Le | `Lt | `Ge | `Gt] * string) option) list;
   header  : string option;
   contents: string list;
   value   : value;
@@ -102,7 +103,9 @@ val executable_contents: t -> string list
    or a cram block, or [t]'s commands if [t] is a toplevel fragments
    (e.g. the phrase result is discarded). *)
 
-val version: t -> int option * int option * int option
+val version:
+  t ->
+  [`Eq | `Neq | `Ge | `Gt | `Le | `Lt] * int option * int option * int option
 (** [version t] is [t]'s OCaml version. *)
 
 val version_enabled: t -> bool
@@ -117,5 +120,7 @@ val eval: t -> t
 
 (** {2 Parsers} *)
 
-val labels_of_string: string -> (string * string option) list
+val labels_of_string:
+  string ->
+  (string * ([`Eq | `Neq | `Gt | `Ge | `Lt | `Le] * string) option) list
 (** [labels_of_string s] cuts [s] into a list of labels. *)
