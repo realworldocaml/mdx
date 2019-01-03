@@ -23,26 +23,37 @@ let pp_section ppf (n, title) =
 
 let pp_list pp = Fmt.(list ~sep:(unit "") pp)
 
+let pp_html ppf s =
+  let add = function
+    | '"' -> Fmt.string ppf "&quot;"
+    | '&' -> Fmt.string ppf "&amp;"
+    | '<' -> Fmt.string ppf "&lt;"
+    | '>' -> Fmt.string ppf "&gt;"
+    | c   -> Fmt.char ppf c
+  in
+  String.iter add s
+
 let pp_output ppf = function
-  |`Output s -> Fmt.pf ppf ">%s\n" s
+  |`Output s -> Fmt.pf ppf ">%a\n" pp_html s
   |`Ellipsis -> Fmt.pf ppf "...\n"
+
+let pp_line ppf l = Fmt.pf ppf "%a\n" pp_html l
 
 let pp_toplevel ppf (t:Mdx.Toplevel.t) =
   let cmds = match t.command with [c] -> [c ^ ";;"] | l -> l @ [";;"] in
-  let cmds = List.map (fun s -> s ^ "\n") cmds in
-  Fmt.pf ppf "%a%a" Fmt.(pp_list string) cmds (pp_list pp_output) t.output
+  Fmt.pf ppf "%a%a" (pp_list pp_line) cmds (pp_list pp_output) t.output
 
 let pp_contents (t:Mdx.Block.t) ppf =
-  Fmt.(list ~sep:(unit "\n") string) ppf t.contents
+  Fmt.(list ~sep:(unit "\n") pp_html) ppf t.contents
 
 let pp_cram ppf (t:Mdx.Cram.t) =
   let pp_exit ppf = match t.exit_code with
     | 0 -> ()
     | i -> Fmt.pf ppf "[%d]" i
   in
-  let cmds = List.map (fun s -> s ^ "\n") t.command in
   Fmt.pf ppf "%a%a%t"
-    Fmt.(pp_list string) cmds (pp_list pp_output) t.output pp_exit
+    (pp_list pp_line) t.command
+    (pp_list pp_output) t.output pp_exit
 
 let pp_block ppf (b:Mdx.Block.t) =
   let lang, pp_code, attrs = match b.value with

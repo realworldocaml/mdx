@@ -17,4 +17,11 @@
 <section id="test4-toto-a.nd.-io" class="level1">
 <h1>–Test4, ?toto! a.nd. I/O</h1>
 <p>foo</p>
+<div class="highlight">
+<pre><code class="language-ocaml">type &lt;record-name&gt; =
+    { &lt;field&gt; : &lt;type&gt;;
+      &lt;field&gt; : &lt;type&gt;;
+      ...
+    }</code></pre>
+</div>
 </section>

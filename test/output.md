@@ -17,3 +17,12 @@ haha!!
 # --Test4, ?toto! a.nd. I/O
 
 foo
+
+
+```ocaml
+type <record-name> =
+    { <field> : <type>;
+      <field> : <type>;
+      ...
+    }
+```
