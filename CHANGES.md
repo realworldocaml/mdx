@@ -1,8 +1,14 @@
-### dev
+### 1.2.0 (2018-01-03)
 
-- Upgrade Travis tests to use opam 2.0.2
-- Do not depend on `ppx_tools` for toplevel
-- Fix embedding in a larger Dune project with a cppo override
+- Support end-of-line ellipsis (@dra27, #85)
+- Support OCaml 4.02.3 (@gpetiot, #86)
+- Support `version=..`, `version<=..` and `version>=..` keywords to run
+  a code-block depending on the currently installed OCaml version
+  (@gpetiot, #87, #90)
+- Upgrade Travis tests to use opam 2.0.2 (@avsm, #89)
+- Do not depend on `ppx_tools` for toplevel (@avsm, #89)
+- Fix embedding in a larger Dune project with a cppo override (@avsm, #89)
+- `mdx output`: escape HTML entities in code blocks (#91, @samoht)
 
 ### 1.1.0 (2018-11-16)
 
