@@ -17,7 +17,7 @@ depends: [
   "ocaml" {>= "4.02.3"}
   "dune" {build}
   "fmt"
-  "cppo"
+  "cppo" {build}
   "astring"
   "logs"
   "cmdliner"
