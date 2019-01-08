@@ -2,12 +2,12 @@ language: c
 env:
   # Check build and unit tests
   # NOTE: testing needs OPAMBUILDTEST=true so that test deps are installed
-  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.02
-  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.03
-  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.04
-  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.05
-  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.06
-  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.07
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.02.3
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.03.0
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.04.2
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.05.0
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.06.1
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.07.0
 before_install:
   # Download and use opam2
   - wget -O ${HOME}/opam https://github.com/ocaml/opam/releases/download/2.0.2/opam-2.0.2-x86_64-linux
