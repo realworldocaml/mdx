@@ -124,7 +124,7 @@ module Phrase = struct
       | exception exn ->
         let exn = match Location.error_of_exn exn with
           | None -> raise exn
-#if OCAML_MAJOR >= 4 && OCAML_MINOR > 2
+#if OCAML_MAJOR >= 4 && OCAML_MINOR > 5
           | Some `Already_displayed -> raise exn
           | Some (`Ok error) ->
             Location.Error (Lexbuf.shift_location_error startpos error)
