@@ -42,6 +42,13 @@
 
 (alias
  (name   runtest)
+ (deps   (:x empty_lines.md) (:y empty_lines.md.expected) (package mdx))
+ (action (progn
+           (run mdx test %{x})
+           (diff? %{y} %{x}.corrected))))
+
+(alias
+ (name   runtest)
  (deps   (:x output.md) (:y output.html.expected) (package mdx))
  (action (progn
            (run mdx output %{x} -o output.html)
