@@ -87,7 +87,8 @@ let vpad_of_lines t =
 let of_lines ~file ~line t =
   let hpad = hpad_of_lines t in
   let unpad line =
-    if String.length line < hpad then Fmt.failwith "invalide padding: %S" line
+    if String.is_empty line then line
+    else if String.length line < hpad then Fmt.failwith "invalide padding: %S" line
     else String.with_index_range line ~first:hpad
   in
   let lines = List.map unpad t in
