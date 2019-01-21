@@ -65,7 +65,8 @@ let pad_of_lines = function
 let of_lines t =
   let pad = pad_of_lines t in
   let unpad line =
-    if String.length line < pad then Fmt.failwith "invalid padding: %S" line
+    if String.is_empty line then line
+    else if String.length line < pad then Fmt.failwith "invalid padding: %S" line
     else String.with_index_range line ~first:pad
   in
   let lines = List.map unpad t in
