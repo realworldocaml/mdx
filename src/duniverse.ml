@@ -188,66 +188,6 @@ let dune_fetch_cmd =
       $ target_repo_t $ setup_logs () ))
   , Term.info "pull" ~doc ~exits ~man )
 
-let vendor_lock_cmd =
-  let doc = "calculate Dune metadata and git commit the results" in
-  let exits = Term.default_exits in
-  let man =
-    [ `S Manpage.s_description
-    ; `P
-        "This initiaises a Git repository with the vendoring metadata for \
-         Dune, and commits the results to the current branch.  It first runs \
-         $(i,duniverse opam) to generate $(b,.duniverse/opam.sxp), and then \
-         runs $(i,duniverse lock) to generate $(b,.duniverse/dune.sxp). This \
-         contains everything needed to subsequently fetch the remote archives \
-         and store them locally via $(i,duniverse git-pull)." ]
-  in
-  let man_xrefs = [`Cmd "git-pull"; `Cmd "git-merge"] in
-  ( (let open Term in
-    term_result
-      ( const Git_cmd.update $ target_repo_t $ branch_t $ pkg_t $ exclude_t
-      $ pins_t $ ocaml_switch_t $ remotes_t $ setup_logs () ))
-  , Term.info "git-lock" ~doc ~exits ~man ~man_xrefs )
-
-let vendor_pull_cmd =
-  let doc = "pull vendored libraries and commit them to a branch" in
-  let exits = Term.default_exits in
-  let man =
-    [ `S Manpage.s_description
-    ; `P
-        "This command wraps $(i,duniverse pull) with a workflow that stores \
-         the vendored libraries in a git branch called \
-         $(b,duniverse-of-<branch>).  By storing them in a separate branch, \
-         you can then test that they work (e.g. with continuous integration) \
-         and then integrate them either in your $(b,master) branch or in a \
-         separate release branch."
-    ; `P
-        "Once this command is complete, you can merge the results with \
-         $(i,duniverse git-merge)." ]
-  in
-  let man_xrefs = [`Cmd "git-lock"; `Cmd "git-merge"] in
-  ( (let open Term in
-    term_result (const Git_cmd.pull $ target_repo_t $ branch_t $ setup_logs ()))
-  , Term.info "git-pull" ~doc ~exits ~man ~man_xrefs )
-
-let vendor_merge_cmd =
-  let doc = "merge vendored libraries into the mainline branch" in
-  let exits = Term.default_exits in
-  let man =
-    [ `S Manpage.s_description
-    ; `P
-        "The $(i,duniverse pull) command populates a vendor branch with the \
-         external libraries. Once you have tested that it works, this command \
-         will merge that vendor branch into your mainline git branch (usually \
-         $(b,master))."
-    ; `P
-        "If at any point you wish to undo the vendoring, just delete the \
-         contents of the $(b,ocaml_modules/) directory." ]
-  in
-  let man_xrefs = [`Cmd "git-lock"; `Cmd "git-pull"] in
-  ( (let open Term in
-    term_result (const Git_cmd.merge $ target_repo_t $ branch_t $ setup_logs ()))
-  , Term.info "git-merge" ~doc ~exits ~man_xrefs ~man )
-
 let status_cmd =
   let doc = "summarise the libraries tracked by the duniverse" in
   let exits = Term.default_exits in
@@ -269,10 +209,7 @@ let default_cmd =
   let man_xrefs =
     [ `Tool "dune"
     ; `Tool "opam"
-    ; `Tool "git"
-    ; `Cmd "git-lock"
-    ; `Cmd "git-pull"
-    ; `Cmd "git-merge" ]
+    ; `Tool "git" ]
   in
   let man =
     [ `S Manpage.s_description
@@ -289,31 +226,10 @@ let default_cmd =
          without opam being required.  This is a particularly convenient way \
          of publishing CLI tools to users who do not need the full power of \
          opam."
-    ; `P "The basic flow of the tool is provided by three git commands:"
-    ; `I
-        ( "\\$ $(tname) $(b,git-lock)"
-        , "This converts the opam metadata into a set of git remotes, and \
-           stores the data in $(i,.duniverse/dune.sxp)." )
-    ; `I
-        ( "\\$ $(tname) $(b,git-pull)"
-        , "Pulls the vendored code into a $(i,duniverse-of-master) branch, \
-           where you can test the project builds." )
-    ; `I
-        ( "\\$ $(tname) $(b,git-merge)"
-        , "Merges the vendor branch into the mainline $(i,master) branch." )
     ; `P
-        "You can access some of the low-level functionality directly via the \
+        "You can access the functionality directly via the \
          $(i,duniverse-opam), $(i,duniverse-lock) and $(i,duniverse-pull) \
-         commands, but this should not be necessary usually."
-    ; `S Manpage.s_examples
-    ; `P
-        "These commands will vendor the $(b,utop) and $(b,craml) commands \
-         locally:"
-    ; `P "\\$ $(b,duniverse git-lock --pin lwt utop craml)"
-    ; `Noblank
-    ; `P "\\$ $(b,duniverse git-pull)"
-    ; `Noblank
-    ; `P "\\$ $(b,duniverse git-merge)"
+         commands,"
     ; `P
         "Also see $(i,https://github.com/avsm/platform) for an example of a \
          fully bootstrapping use of this tool." ]
@@ -325,9 +241,6 @@ let cmds =
   [ opam_cmd
   ; dune_lock_cmd
   ; dune_fetch_cmd
-  ; status_cmd
-  ; vendor_lock_cmd
-  ; vendor_pull_cmd
-  ; vendor_merge_cmd ]
+  ; status_cmd ]
 
 let () = Term.(exit @@ eval_choice default_cmd cmds)

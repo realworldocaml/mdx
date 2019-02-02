@@ -3,18 +3,6 @@
  (action (with-stdout-to %{targets} (run ../src/duniverse.exe --help=plain))))
 
 (rule
- (targets duniverse-git-pull.1)
- (action (with-stdout-to %{targets} (run ../src/duniverse.exe git-pull --help=plain))))
-
-(rule
- (targets duniverse-git-merge.1)
- (action (with-stdout-to %{targets} (run ../src/duniverse.exe git-merge --help=plain))))
-
-(rule
- (targets duniverse-git-lock.1)
- (action (with-stdout-to %{targets} (run ../src/duniverse.exe git-lock --help=plain))))
-
-(rule
  (targets duniverse-status.1)
  (action (with-stdout-to %{targets} (run ../src/duniverse.exe status --help=plain))))
 
@@ -24,5 +12,5 @@
 
 (rule
  (targets usage.md)
- (deps header.md duniverse.1 duniverse-git-lock.1 duniverse-git-pull.1 duniverse-status.1)
- (action (with-stdout-to %{targets} (run ./gen_readme.exe duniverse duniverse-git-lock duniverse-git-pull duniverse-status))))
+ (deps header.md duniverse.1 duniverse-status.1)
+ (action (with-stdout-to %{targets} (run ./gen_readme.exe duniverse duniverse-status))))
