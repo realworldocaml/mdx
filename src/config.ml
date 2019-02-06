@@ -25,7 +25,6 @@ let base_packages =
   ; "oasis"
   ; "ocamlify"
   ; "uchar"
-  ; "ocplib-endian"
   ; "ocaml"
   ; "ocaml-base-compiler"
   ; "ocaml-variants" ]
@@ -60,7 +59,10 @@ let duniverse_forks =
   ; ("git+https://github.com/ocaml/opam-depext.git#2.0", "opam-depext")
   ; ("git+https://github.com/ocaml/opam.git", "opam")
   ; ("git+https://github.com/superbobry/ocaml-textwrap.git", "ocaml-textwrap")
-  ; ("git://github.com/ygrek/ocaml-extlib.git", "ocaml-extlib") ]
+  ; ("git://github.com/ygrek/ocaml-extlib.git", "ocaml-extlib")
+  ; ("git+https://github.com/pqwy/lru.git", "lru")
+  ; ("git+https://github.com/pqwy/psq.git", "psq")
+  ; ("git+https://github.com/OCamlPro/ocplib-endian.git", "ocplib-endian") ]
 
 let duniverse_branch f = Fmt.strf "duniverse-%s" f
 
