@@ -65,6 +65,7 @@ let duniverse_forks =
   ; ("git+https://github.com/mirleft/ocaml-x509.git", "ocaml-x509")
   ; ("git+https://github.com/mirleft/ocaml-asn1-combinators.git", "ocaml-asn1-combinators")
   ; ("git+https://github.com/mirleft/ocaml-nocrypto.git", "ocaml-nocrypto")
+  ; ("git+https://github.com/inhabitedtype/ocaml-dispatch.git", "ocaml-dispatch")
   ; ("git+https://github.com/OCamlPro/ocplib-endian.git", "ocplib-endian") ]
 
 let duniverse_branch f = Fmt.strf "duniverse-%s" f
