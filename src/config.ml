@@ -60,7 +60,8 @@ let duniverse_forks =
   ; ("git+https://github.com/ocaml/opam-depext.git#2.0", "opam-depext")
   ; ("git+https://github.com/ocaml/opam.git", "opam")
   ; ("git+https://github.com/superbobry/ocaml-textwrap.git", "ocaml-textwrap")
-  ; ("git://github.com/ygrek/ocaml-extlib.git", "ocaml-extlib") ]
+  ; ("git://github.com/ygrek/ocaml-extlib.git", "ocaml-extlib")
+  ; ("git+https://github.com/mirage/mirage-xen.git", "mirage-xen") ]
 
 let duniverse_branch f = Fmt.strf "duniverse-%s" f
 
