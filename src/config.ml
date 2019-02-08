@@ -25,7 +25,6 @@ let base_packages =
   ; "oasis"
   ; "ocamlify"
   ; "uchar"
-  ; "ocplib-endian"
   ; "ocaml"
   ; "ocaml-base-compiler"
   ; "ocaml-variants" ]
@@ -51,7 +50,7 @@ let duniverse_forks =
   ; ("git+http://erratique.ch/repos/cmdliner.git", "cmdliner")
   ; ("git+https://github.com/hannesm/duration.git", "duration")
   ; ("git+https://github.com/hannesm/randomconv.git", "randomconv")
-  ; ("git+https://github.com/backtracking/ocaml-hashcons", "ocaml-hashcons")
+  ; ("git+https://github.com/backtracking/ocaml-hashcons.git", "ocaml-hashcons")
   ; ("git+https://github.com/backtracking/ocamlgraph.git", "ocamlgraph")
   ; ("git+https://gitlab.camlcity.org/gerd/lib-findlib.git", "lib-findlib")
   ; ("git+https://gforge.inria.fr/git/dose/dose.git", "dose3")
@@ -61,7 +60,15 @@ let duniverse_forks =
   ; ("git+https://github.com/ocaml/opam.git", "opam")
   ; ("git+https://github.com/superbobry/ocaml-textwrap.git", "ocaml-textwrap")
   ; ("git://github.com/ygrek/ocaml-extlib.git", "ocaml-extlib")
-  ; ("git+https://github.com/mirage/mirage-xen.git", "mirage-xen") ]
+  ; ("git+https://github.com/mirage/mirage-xen.git", "mirage-xen")
+  ; ("git+https://github.com/pqwy/lru.git", "lru")
+  ; ("git+https://github.com/pqwy/psq.git", "psq")
+  ; ("git+https://github.com/mirleft/ocaml-x509.git", "ocaml-x509")
+  ; ("git+https://github.com/mirleft/ocaml-asn1-combinators.git", "ocaml-asn1-combinators")
+  ; ("git+https://github.com/mirleft/ocaml-nocrypto.git", "ocaml-nocrypto")
+  ; ("git+https://github.com/mirleft/ocaml-tls.git", "ocaml-tls")
+  ; ("git+https://github.com/inhabitedtype/ocaml-dispatch.git", "ocaml-dispatch")
+  ; ("git+https://github.com/OCamlPro/ocplib-endian.git", "ocplib-endian") ]
 
 let duniverse_branch f = Fmt.strf "duniverse-%s" f
 
