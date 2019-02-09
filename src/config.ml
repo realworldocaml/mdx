@@ -62,10 +62,12 @@ let duniverse_forks =
   ; ("git://github.com/ygrek/ocaml-extlib.git", "ocaml-extlib")
   ; ("git+https://github.com/pqwy/lru.git", "lru")
   ; ("git+https://github.com/pqwy/psq.git", "psq")
-  ; ("git+https://github.com/mirleft/ocaml-x509.git", "x509")
-  ; ("git+https://github.com/mirleft/ocaml-asn1-combinators.git", "asn1-combinators")
-  ; ("git+https://github.com/mirleft/ocaml-nocrypto.git", "nocrypto")
   ; ("git+https://github.com/ocsigen/reactiveData.git", "reactiveData")
+  ; ("git+https://github.com/mirleft/ocaml-x509.git", "ocaml-x509")
+  ; ("git+https://github.com/mirleft/ocaml-asn1-combinators.git", "ocaml-asn1-combinators")
+  ; ("git+https://github.com/mirleft/ocaml-nocrypto.git", "ocaml-nocrypto")
+  ; ("git+https://github.com/mirleft/ocaml-tls.git", "ocaml-tls")
+  ; ("git+https://github.com/inhabitedtype/ocaml-dispatch.git", "ocaml-dispatch")
   ; ("git+https://github.com/OCamlPro/ocplib-endian.git", "ocplib-endian") ]
 
 let duniverse_branch f = Fmt.strf "duniverse-%s" f
