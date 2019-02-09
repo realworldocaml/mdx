@@ -63,6 +63,7 @@ let duniverse_forks =
   ; ("git+https://github.com/mirage/mirage-xen.git", "mirage-xen")
   ; ("git+https://github.com/pqwy/lru.git", "lru")
   ; ("git+https://github.com/pqwy/psq.git", "psq")
+  ; ("git+https://github.com/ocsigen/reactiveData.git", "reactiveData")
   ; ("git+https://github.com/mirleft/ocaml-x509.git", "ocaml-x509")
   ; ("git+https://github.com/mirleft/ocaml-asn1-combinators.git", "ocaml-asn1-combinators")
   ; ("git+https://github.com/mirleft/ocaml-nocrypto.git", "ocaml-nocrypto")
