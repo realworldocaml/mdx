@@ -234,3 +234,28 @@ It is possible to test or execute only a subset of the file using
 sections using the `--section` option (short name is `-s`). For
 instance `mdx pp -s foo` will only consider the section matching the
 perl regular expression `foo`.
+
+### Dune rules (since mdx 1.1.0)
+
+`mdx` can generate `dune` rules to synchronize .md files with .ml files.
+
+Consider the test/dune_rules.md file that contains blocks referring to files dune_rules_1.ml and dune_rules_2.ml, running:
+
+```
+$ mdx rule test/dune_rules.md
+```
+
+generates the following `dune` rules on the standard output:
+```
+(alias
+ (name   runtest)
+ (deps   (:x test/dune_rules.md)
+         (:y1 dune_rules_1.ml)
+         (:y0 dune_rules_2.ml)
+         (source_tree foo))
+ (action (progn
+           (run mdx test --direction=infer-timestamp %{x})
+           (diff? %{x} %{x}.corrected)
+           (diff? %{y1} %{y1}.corrected)
+           (diff? %{y0} %{y0}.corrected))))
+```
