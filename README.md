@@ -228,9 +228,97 @@ back to the default behaviour.
 In that case, `mdx test <file>` will *not* run the command. Use `mdx test
 --non-deterministic <file>` to come back to the default behaviour.
 
+#### Named execution environments (since mdx 1.1.0)
+
+Separate environments can be defined for blocks:
+
+`x` holds the value `1` in the environment `e1`.
+
+    ```ocaml env=e1
+    let x = 1;;
+    ```
+
+    ```ocaml env=e1
+    module M = struct let k = 42 let f x = x * k end;;
+    ```
+
+`x` holds the value `3` in the environment `e2`.
+
+    ```ocaml env=e2
+    let x = 3;;
+    ```
+
+We can retrieve the value of `x` in environment `e1`:
+
+    ```ocaml env=e1
+    # print_int x;;
+    1
+    - : unit = ()
+    # print_int M.k;;
+    42
+    - : unit = ()
+    # M.f;;
+    - : int -> int = <fun>
+    ```
+
+#### Matching on the OCaml version (since mdx 1.2.0)
+
+Blocks can be processed or ignored depending on the current version of OCaml.
+
+For example to have a different outcome whether we are past OCaml 4.06:
+
+    ```ocaml version<4.06
+    # let f x = x + 1
+    val f : int -> int = <fun>
+    # let f y =
+      y^"foo"
+    val f : bytes -> bytes = <fun>
+    ```
+
+    ```ocaml version>=4.06
+    # let f x = x + 1
+    val f : int -> int = <fun>
+    # let f y =
+      y^"foo"
+      val f : string -> string = <fun>
+      ```
+
+The available operators are `<>`, `>=`, `>`, `<=`, `<` and `=`.
+The version number can be of the following forms:
+- `*`
+- `X`
+- `X.Y`
+- `X.Y.Z`
+
 ### Sections
 
 It is possible to test or execute only a subset of the file using
 sections using the `--section` option (short name is `-s`). For
 instance `mdx pp -s foo` will only consider the section matching the
 perl regular expression `foo`.
+
+### Dune rules (since mdx 1.1.0)
+
+`mdx` can generate `dune` rules to synchronize .md files with .ml files.
+
+Consider the test/dune_rules.md file that contains blocks referring to files
+dune_rules_1.ml and dune_rules_2.ml, running:
+
+```
+$ mdx rule test/dune_rules.md
+```
+
+generates the following `dune` rules on the standard output:
+```
+(alias
+ (name   runtest)
+ (deps   (:x test/dune_rules.md)
+         (:y1 dune_rules_1.ml)
+         (:y0 dune_rules_2.ml)
+         (source_tree foo))
+ (action (progn
+           (run mdx test --direction=infer-timestamp %{x})
+           (diff? %{x} %{x}.corrected)
+           (diff? %{y1} %{y1}.corrected)
+           (diff? %{y0} %{y0}.corrected))))
+```
