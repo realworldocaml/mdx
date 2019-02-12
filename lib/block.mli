@@ -22,6 +22,7 @@ type cram_value = { pad: int; tests: Cram.t list }
 type value =
   | Raw
   | OCaml
+  | Reason of string list
   | Error of string list
   | Cram of cram_value
   | Toplevel of Toplevel.t list

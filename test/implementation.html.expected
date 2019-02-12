@@ -1,0 +1,57 @@
+<section id="some-implementation" class="level1">
+<h1>Some Implementation</h1>
+<div class="highlight">
+<pre><code class="language-reason">let src = Logs.Src.create(&quot;cram.test&quot;);
+module Log = (val Logs.src_log(src): Logs.LOG);
+
+let (/) = (x, y) =&gt;
+  switch (x) {
+  | &quot;.&quot; =&gt; y
+  | _ =&gt; Filename.concat(x, y)
+  };
+
+let run = ((), _, _, _, _, _, _, _, _, _, _) =&gt; {
+  let base = Filename.basename(Sys.argv[0]);
+  let dir = Filename.dirname(Sys.argv[0]);
+  let cmd =
+    switch (base) {
+    | &quot;main.exe&quot; =&gt; dir / &quot;test&quot; / &quot;main.exe&quot;
+    | x =&gt; dir / x ++ &quot;-test&quot;
+    };
+
+  let argv = Array.sub(Sys.argv, 1, Array.length(Sys.argv) - 1);
+  argv[0] = cmd;
+  Log.debug(l =&gt; l(&quot;executing %a&quot;, Fmt.(Dump.array(string)), argv));
+  Unix.execvp(cmd, argv);
+};
+
+open Cmdliner;
+
+let cmd: (Term.t(int), Term.info) = (
+  {
+    let doc = &quot;Test markdown files.&quot;;
+    (
+      Term.(
+        pure(run)
+        $ Cli.setup
+        $ Cli.non_deterministic
+        $ Cli.not_verbose
+        $ Cli.silent
+        $ Cli.verbose_findlib
+        $ Cli.prelude
+        $ Cli.prelude_str
+        $ Cli.file
+        $ Cli.section
+        $ Cli.root
+        $ Cli.direction
+      ),
+      Term.info(&quot;test&quot;, ~doc),
+    );
+  }: (
+    Term.t(int),
+    Term.info,
+  )
+);
+</code></pre>
+</div>
+</section>

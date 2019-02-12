@@ -23,6 +23,7 @@
     Cram tests and toplevel phrases are sequences of commands and
    {{!Output}outputs}.  *)
 
+module Reason = Reason
 module Output = Output
 module Cram = Cram
 module Toplevel = Toplevel

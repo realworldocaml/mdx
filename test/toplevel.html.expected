@@ -1,0 +1,24 @@
+<section id="toplevel-reason" class="level1">
+<h1>Toplevel Reason</h1>
+<div class="highlight">
+<pre class="command-line" data-prompt="#" data-filter-output=">"><code class="language-reason">open Base;
+
+let digit_alist = [
+  (0, &quot;zero&quot;),
+  (1, &quot;one&quot;),
+  (2, &quot;two&quot;),
+  (3, &quot;three&quot;),
+  (4, &quot;four&quot;),
+  (5, &quot;five&quot;),
+  (6, &quot;six&quot;),
+  (7, &quot;seven&quot;),
+  (8, &quot;eight&quot;),
+  (9, &quot;nine&quot;),
+];
+
+>val digit_alist : (int * string) list =
+>  [(0, &quot;zero&quot;); (1, &quot;one&quot;); (2, &quot;two&quot;); (3, &quot;three&quot;); (4, &quot;four&quot;);
+>   (5, &quot;five&quot;); (6, &quot;six&quot;); (7, &quot;seven&quot;); (8, &quot;eight&quot;); (9, &quot;nine&quot;)]
+</code></pre>
+</div>
+</section>

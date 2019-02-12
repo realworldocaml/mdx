@@ -17,6 +17,7 @@
 let src = Logs.Src.create "ocaml-mdx"
 module Log = (val Logs.src_log src : Logs.LOG)
 
+module Reason = Reason
 module Output = Output
 module Cram = Cram
 module Toplevel = Toplevel
@@ -67,7 +68,8 @@ let parse l =
   List.map (function
       | `Text t -> Text t
       | `Section s -> Section s
-      | `Block b   -> Block b
+      (* IMPORTANT *)
+      | `Block b  -> Block b
     ) l
 
 type syntax = Syntax.t =

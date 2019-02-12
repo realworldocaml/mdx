@@ -23,6 +23,7 @@ type cram_value = { pad: int; tests: Cram.t list }
 type value =
   | Raw
   | OCaml
+  | Reason of string list
   | Error of string list
   | Cram of cram_value
   | Toplevel of Toplevel.t list
@@ -54,6 +55,7 @@ let dump_section = Fmt.(Dump.pair int string)
 let dump_value ppf = function
   | Raw -> Fmt.string ppf "Raw"
   | OCaml -> Fmt.string ppf "OCaml"
+  | Reason _ -> Fmt.string ppf "Reason"
   | Error e -> Fmt.pf ppf "Error %a" Fmt.(Dump.list dump_string) e
   | Cram { pad; tests } ->
     Fmt.pf ppf "@[Cram@ {pad=%d;@ tests=%a}@]"
@@ -300,6 +302,12 @@ let guess_ocaml_kind b =
   | Some "ocaml", t -> `OCaml (aux t)
   | _ -> `Other
 
+let try_converting_to_reason b =
+  let possibly_reason_contents = Reason.reason_of_lines b.contents in
+  match possibly_reason_contents with
+  | Some contents -> { b with value = Reason contents }
+  | None -> { b with value = OCaml }
+
 let toplevel ~file ~line lines = Toplevel (Toplevel.of_lines ~line ~file lines)
 
 let eval t =
@@ -312,7 +320,7 @@ let eval t =
       { t with value }
     | Some "ocaml" ->
       (match guess_ocaml_kind t with
-       | `OCaml `Code -> { t with value = OCaml }
+       | `OCaml `Code -> try_converting_to_reason t
        | `OCaml `Toplevel ->
          let value = toplevel ~file:t.file ~line:t.line t.contents in
          { t with value }
@@ -327,7 +335,6 @@ let ends_by_semi_semi c = match List.rev c with
 
 let pp_line_directive ppf (file, line) = Fmt.pf ppf "#%d %S" line file
 let line_directive = Fmt.to_to_string pp_line_directive
-
 let executable_contents b =
   let contents =
     match guess_ocaml_kind b with
@@ -335,7 +342,7 @@ let executable_contents b =
     | `OCaml `Toplevel | `Other ->
       match b.value with
       | Error _ | Raw | Cram _ -> []
-      | OCaml -> line_directive (b.file, b.line) :: b.contents
+      | OCaml | Reason _ -> line_directive (b.file, b.line) :: b.contents
       | Toplevel tests ->
         List.flatten (
           List.map (fun t ->
