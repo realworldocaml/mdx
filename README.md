@@ -283,7 +283,8 @@ For example to have a different outcome whether we are past OCaml 4.06:
       val f : string -> string = <fun>
       ```
 
-The available operators are `<>`, `>=`, `>`, `<=`, `<` and `=`. The version number can be of the following forms:
+The available operators are `<>`, `>=`, `>`, `<=`, `<` and `=`.
+The version number can be of the following forms:
 - `*`
 - `X`
 - `X.Y`
@@ -300,7 +301,8 @@ perl regular expression `foo`.
 
 `mdx` can generate `dune` rules to synchronize .md files with .ml files.
 
-Consider the test/dune_rules.md file that contains blocks referring to files dune_rules_1.ml and dune_rules_2.ml, running:
+Consider the test/dune_rules.md file that contains blocks referring to files
+dune_rules_1.ml and dune_rules_2.ml, running:
 
 ```
 $ mdx rule test/dune_rules.md
