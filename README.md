@@ -261,6 +261,34 @@ We can retrieve the value of `x` in environment `e1`:
     - : int -> int = <fun>
     ```
 
+#### Matching on the OCaml version (since mdx 1.2.0)
+
+Blocks can be processed or ignored depending on the current version of OCaml.
+
+For example to have a different outcome whether we are past OCaml 4.06:
+
+    ```ocaml version<4.06
+    # let f x = x + 1
+    val f : int -> int = <fun>
+    # let f y =
+      y^"foo"
+    val f : bytes -> bytes = <fun>
+    ```
+
+    ```ocaml version>=4.06
+    # let f x = x + 1
+    val f : int -> int = <fun>
+    # let f y =
+      y^"foo"
+      val f : string -> string = <fun>
+      ```
+
+The available operators are `<>`, `>=`, `>`, `<=`, `<` and `=`. The version number can be of the following forms:
+- `*`
+- `X`
+- `X.Y`
+- `X.Y.Z`
+
 ### Sections
 
 It is possible to test or execute only a subset of the file using
