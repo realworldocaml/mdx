@@ -9,6 +9,7 @@ rule token = parse
                    `Command c :: token lexbuf }
  | ([^'#' '\n'] [^'\n']* as str) eol
                  { `Output str :: token lexbuf }
+ | _ as c        { failwith (Printf.sprintf "unexpected character '%c'. Did you forget a space after the '#' at the start of the line?" c) }
 
 and phrase acc buf = parse
   | ("\n"* as nl) "\n  "
@@ -24,5 +25,5 @@ and phrase acc buf = parse
 {
 let token lexbuf =
   try token lexbuf
-  with Failure _ -> Misc.err lexbuf "incomplete toplevel"
+  with Failure e -> Misc.err lexbuf "incomplete toplevel entry: %s" e
 }

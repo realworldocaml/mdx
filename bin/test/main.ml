@@ -255,7 +255,7 @@ let update_file_or_block ?root ppf md_file ml_file block direction =
   | `To_ml ->
      update_file_with_block ppf block ml_file (Block.part block)
 
-let run ()
+let run_exn ()
     non_deterministic not_verbose silent verbose_findlib prelude prelude_str
     file section root direction
   =
@@ -359,6 +359,15 @@ let run ()
   Hashtbl.iter write_parts files;
   0
 
+let run ()
+    non_deterministic not_verbose silent verbose_findlib prelude prelude_str
+    file section root direction
+  =
+    try
+    run_exn () non_deterministic not_verbose silent verbose_findlib prelude prelude_str
+    file section root direction
+    with Failure f -> prerr_endline f; exit 1
+ 
 (**** Cmdliner ****)
 
 open Cmdliner
