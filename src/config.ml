@@ -61,6 +61,7 @@ let duniverse_forks =
   ; ("git+https://github.com/superbobry/ocaml-textwrap.git", "ocaml-textwrap")
   ; ("git://github.com/ygrek/ocaml-extlib.git", "ocaml-extlib")
   ; ("git+https://github.com/mirage/mirage-xen.git", "mirage-xen")
+  ; ("git+https://github.com/mirage/mirage-entropy.git", "mirage-entropy")
   ; ("git+https://github.com/pqwy/lru.git", "lru")
   ; ("git+https://github.com/pqwy/psq.git", "psq")
   ; ("git+https://github.com/ocsigen/reactiveData.git", "reactiveData")
