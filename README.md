@@ -48,7 +48,7 @@ syntax is the following:
        world
        ```
 - Lines beginning without a dollar sign are considered command *outputs*.
-- Command outputs can contains *ellipsis*: `...`. These will
+- Command outputs can contain *ellipses*: `...`. These will
   match any possible outputs (on zero, one or multiple lines).
 - Arbitrary padding with whitespace is supported, as long as it is consistent
   inside a code block.
@@ -76,11 +76,11 @@ of success).
 #### OCaml Code
 
 `mdx` interprets OCaml fragments. It understands _normal_ code fragments and
-_toplevel_ code fragments (starting with a `#` sign and optionally ending by
+_toplevel_ code fragments (starting with a `#` sign and optionally ending with
 `;;`). Arbitrary whitespace padding is supported, at long as it stays
 consistent within a code block.
 
-Toplevel fragments interleaves OCaml code and their corresponding outputs.
+Toplevel fragments interleave OCaml code and their corresponding outputs.
 
 Here is an example of normal OCaml code:
 
@@ -157,7 +157,7 @@ If the output is not consistent with what is expected
 
 #### Integration with Dune
 
-To test that the code blocks of `file.md` stays consistent, one can use
+To test that the code blocks of `file.md` stay consistent, one can use
 dune's `diff?` stanza:
 
 ```
