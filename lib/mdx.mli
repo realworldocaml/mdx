@@ -50,16 +50,18 @@ val pp: t Fmt.t
 (** [pp] is the pretty printer for mdx documents. Should be idempotent
    with {!of_string}. *)
 
+type syntax = Normal | Cram
+
 val to_string: t -> string
 (** [to_string t] converts the document [t] to a string. *)
 
-val of_string: string -> t
-(** [of_string s] is the document [t] such that [to_string t = s]. *)
+val of_string: syntax -> string -> t
+(** [of_string syn s] is the document [t] such that [to_string t = s]. *)
 
-val parse_file: string ->  t
+val parse_file: syntax -> string ->  t
 (** [parse_file s] is {!of_string} of [s]'s contents. *)
 
-val parse_lexbuf: Lexing.lexbuf -> t
+val parse_lexbuf: syntax -> Lexing.lexbuf -> t
 (** [parse_lexbuf l] is {!of_string} of [l]'s contents. *)
 
 (** {2 Evaluation} *)

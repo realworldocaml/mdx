@@ -18,7 +18,7 @@ let src = Logs.Src.create "cram.pp"
 module Log = (val Logs.src_log src : Logs.LOG)
 
 let run () file section =
-  let t = Mdx.parse_file file in
+  let t = Mdx.parse_file Normal file in
   let t = match section with
     | None   -> t
     | Some s ->

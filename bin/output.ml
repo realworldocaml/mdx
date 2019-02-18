@@ -85,7 +85,7 @@ let pp_block ppf (b:Mdx.Block.t) =
     pp_attrs () pp_lang () pp_code
 
 let run () file output =
-  let t = Mdx.parse_file file in
+  let t = Mdx.parse_file Normal file in
   match t with
   | [] -> 1
   | _  ->

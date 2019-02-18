@@ -78,7 +78,12 @@ and cram_block = parse
   | "  " ([^'\n'] * as str) eol { str :: cram_block lexbuf }
 
 {
-let token lexbuf =
-  try text None lexbuf
+type syntax = Normal | Cram
+
+let token syntax lexbuf =
+  try
+    match syntax with
+    | Normal -> text      None lexbuf
+    | Cram   -> cram_text None lexbuf
   with Failure _ -> Misc.err lexbuf "incomplete code block"
 }

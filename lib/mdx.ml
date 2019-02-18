@@ -69,9 +69,13 @@ let parse l =
       | `Block b   -> Block b
     ) l
 
-let parse_lexbuf l = parse (Lexer.token l)
-let parse_file f = parse (Lexer.token (snd (Misc.init f)))
-let of_string s = parse_lexbuf (Lexing.from_string s)
+type syntax = Lexer.syntax =
+  | Normal
+  | Cram
+
+let parse_lexbuf syntax l = parse (Lexer.token syntax l)
+let parse_file syntax f = parse (Lexer.token syntax (snd (Misc.init f)))
+let of_string syntax s = parse_lexbuf syntax (Lexing.from_string s)
 
 let eval = function
   | Section _ | Text _ as x -> x
@@ -81,7 +85,7 @@ let eval = function
 
 let run ~f n =
   Misc.run_expect_test n ~f:(fun c l ->
-      let items = parse_lexbuf l in
+      let items = parse_lexbuf Normal l in
       let items = List.map eval items in
       Log.debug (fun l -> l "run @[%a@]" dump items);
       f c items
