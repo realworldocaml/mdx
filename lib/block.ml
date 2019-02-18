@@ -92,10 +92,9 @@ let pp_lines syntax =
   Fmt.(list ~sep:(unit "\n") pp)
 let pp_contents ?syntax ppf t = Fmt.pf ppf "%a\n" (pp_lines syntax) t.contents
 let pp_footer ?syntax ppf () =
-  Fmt.string ppf
-    (match syntax with
-     | Some Syntax.Cram -> "\n"
-     | _ -> "```\n")
+  match syntax with
+  | Some Syntax.Cram -> ()
+  | _ -> Fmt.string ppf "```\n"
 
 let pp_cmp ppf = function
   | `Eq -> Fmt.pf ppf "="

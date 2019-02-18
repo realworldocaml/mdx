@@ -46,34 +46,38 @@ and cram_text section = parse
         `Section section :: cram_text (Some section) lexbuf }
   | "  " ([^'\n']* as first_line) eol
       { let header = Syntax.cram_default_header in
-        let contents = first_line :: cram_block lexbuf in
+        let requires_empty_line, contents = cram_block lexbuf in
+        let contents = first_line :: contents in
         let labels = [] in
         let value = Block.Raw in
         let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
-        newline lexbuf;
+        let rest = cram_text section lexbuf in
         `Block { Block.file; line; section; header; contents; labels; value }
-        :: cram_text section lexbuf }
+        :: (if requires_empty_line then `Text "" :: rest else rest) }
   | "<-- non-deterministic" ws* (("command"|"output") as choice) eol
       { let header = Syntax.cram_default_header in
-        let contents = cram_block lexbuf in
+        let requires_empty_line, contents = cram_block lexbuf in
         let labels = ["non-deterministic", Some (`Eq, choice)] in
         let value = Block.Raw in
         let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
         newline lexbuf;
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
-        newline lexbuf;
+        let rest = cram_text section lexbuf in
         `Block { Block.file; line; section; header; contents; labels; value }
-        :: cram_text section lexbuf }
+        :: (if requires_empty_line then `Text "" :: rest else rest) }
   | ([^'\n']* as str) eol
       { newline lexbuf;
         `Text str :: cram_text section lexbuf }
 
 and cram_block = parse
-  | eof | eol                   { [] }
-  | "  " ([^'\n'] * as str) eol { str :: cram_block lexbuf }
+  | eof { false, [] }
+  | eol { newline lexbuf; true, [] }
+  | "  " ([^'\n'] * as str) eol
+      { let requires_empty_line, lst = cram_block lexbuf in
+        requires_empty_line, str :: lst }
 
 {
 let token syntax lexbuf =
