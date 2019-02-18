@@ -6,8 +6,6 @@ let line_ref = ref 1
 let newline lexbuf =
   Lexing.new_line lexbuf;
   incr line_ref
-
-let cram_header = Some "sh" (* FIXME: bash? *)
 }
 
 let eol = '\n' | eof
@@ -47,7 +45,7 @@ and cram_text section = parse
         newline lexbuf;
         `Section section :: cram_text (Some section) lexbuf }
   | "  " ([^'\n']* as first_line) eol
-      { let header = cram_header in
+      { let header = Syntax.cram_default_header in
         let contents = first_line :: cram_block lexbuf in
         let labels = [] in
         let value = Block.Raw in
@@ -58,7 +56,7 @@ and cram_text section = parse
         `Block { Block.file; line; section; header; contents; labels; value }
         :: cram_text section lexbuf }
   | "<-- non-deterministic" ws* (("command"|"output") as choice) eol
-      { let header = cram_header in
+      { let header = Syntax.cram_default_header in
         let contents = cram_block lexbuf in
         let labels = ["non-deterministic", Some (`Eq, choice)] in
         let value = Block.Raw in
@@ -78,12 +76,10 @@ and cram_block = parse
   | "  " ([^'\n'] * as str) eol { str :: cram_block lexbuf }
 
 {
-type syntax = Normal | Cram
-
 let token syntax lexbuf =
   try
     match syntax with
-    | Normal -> text      None lexbuf
-    | Cram   -> cram_text None lexbuf
+    | Syntax.Normal -> text      None lexbuf
+    | Syntax.Cram   -> cram_text None lexbuf
   with Failure _ -> Misc.err lexbuf "incomplete code block"
 }

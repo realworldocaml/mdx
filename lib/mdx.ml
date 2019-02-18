@@ -38,12 +38,13 @@ let dump_line ppf (l: line) = match l with
 
 let dump = Fmt.Dump.list dump_line
 
-let pp_line ppf (l: line) = match l with
-  | Block b        -> Fmt.pf ppf "%a\n" Block.pp b
+let pp_line ?syntax ppf (l: line) = match l with
+  | Block b        -> Fmt.pf ppf "%a\n" (Block.pp ?syntax) b
   | Section (d, s) -> Fmt.pf ppf "%s %s\n" (String.make d '#') s
   | Text s         -> Fmt.pf ppf "%s\n" s
 
-let pp ppf t = Fmt.pf ppf "%a\n" Fmt.(list ~sep:(unit "\n") pp_line) t
+let pp ?syntax ppf t =
+  Fmt.pf ppf "%a\n" Fmt.(list ~sep:(unit "\n") (pp_line ?syntax)) t
 
 let to_string = Fmt.to_to_string pp
 
@@ -69,7 +70,7 @@ let parse l =
       | `Block b   -> Block b
     ) l
 
-type syntax = Lexer.syntax =
+type syntax = Syntax.t =
   | Normal
   | Cram
 
