@@ -83,9 +83,9 @@ let eval = function
     let t' = Block.eval t in
     if t == t' then x else Block t'
 
-let run ~f n =
+let run ?(syntax=Normal) ~f n =
   Misc.run_expect_test n ~f:(fun c l ->
-      let items = parse_lexbuf Normal l in
+      let items = parse_lexbuf syntax l in
       let items = List.map eval items in
       Log.debug (fun l -> l "run @[%a@]" dump items);
       f c items

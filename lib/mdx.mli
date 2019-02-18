@@ -66,8 +66,8 @@ val parse_lexbuf: syntax -> Lexing.lexbuf -> t
 
 (** {2 Evaluation} *)
 
-val run: f:(string -> t -> string) -> string -> unit
-(** [run ~f n] runs the expect callback [f] over the file named
+val run: ?syntax:syntax -> f:(string -> t -> string) -> string -> unit
+(** [run ?syntax ~f n] runs the expect callback [f] over the file named
    [n]. [f] is called with the raw contents of [n] and its structured
    contents; it returns the new file contents. If the result of [f] is
    different from the initial contents, then [$n.corrected] is created

@@ -256,8 +256,8 @@ let update_file_or_block ?root ppf md_file ml_file block direction =
      update_file_with_block ppf block ml_file (Block.part block)
 
 let run_exn ()
-    non_deterministic not_verbose silent verbose_findlib prelude prelude_str
-    file section root direction
+    non_deterministic not_verbose syntax silent verbose_findlib prelude
+    prelude_str file section root direction
   =
   let c =
     Mdx_top.init ~verbose:(not not_verbose) ~silent ~verbose_findlib ()
@@ -292,7 +292,7 @@ let run_exn ()
     | _ -> Fmt.failwith "only one of --prelude or --prelude-str shoud be used"
   in
 
-  Mdx.run file ~f:(fun file_contents items ->
+  Mdx.run ?syntax file ~f:(fun file_contents items ->
       let temp_file = Filename.temp_file "mdx" ".output" in
       at_exit (fun () -> Sys.remove temp_file);
       let buf = Buffer.create (String.length file_contents + 1024) in
@@ -360,12 +360,12 @@ let run_exn ()
   0
 
 let run ()
-    non_deterministic not_verbose silent verbose_findlib prelude prelude_str
-    file section root direction
+    non_deterministic not_verbose syntax silent verbose_findlib prelude
+    prelude_str file section root direction
   =
     try
-    run_exn () non_deterministic not_verbose silent verbose_findlib prelude prelude_str
-    file section root direction
+    run_exn () non_deterministic not_verbose syntax silent verbose_findlib
+      prelude prelude_str file section root direction
     with Failure f -> prerr_endline f; exit 1
  
 (**** Cmdliner ****)
@@ -377,7 +377,7 @@ let cmd =
   let man = [] in
   let doc = "Test markdown files." in
   Term.(pure run
-        $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose
+        $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose $ Cli.syntax
         $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
         $ Cli.file $ Cli.section $ Cli.root $ Cli.direction),
   Term.info "mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man
