@@ -49,16 +49,16 @@ val empty: t
 val dump: t Fmt.t
 (** [dump] is the printer for dumping code blocks. Useful for debugging. *)
 
-val pp_header: t Fmt.t
+val pp_header: ?syntax:Syntax.t -> t Fmt.t
 (** [pp_header] pretty-prints block headers. *)
 
-val pp_contents: t Fmt.t
+val pp_contents: ?syntax:Syntax.t -> t Fmt.t
 (** [pp_contents] pretty-prints block contents. *)
 
-val pp_footer: unit Fmt.t
+val pp_footer: ?syntax:Syntax.t -> unit Fmt.t
 (** [pp_footer] pretty-prints block footer. *)
 
-val pp: t Fmt.t
+val pp: ?syntax:Syntax.t -> t Fmt.t
 (** [pp] pretty-prints blocks. *)
 
 val pp_line_directive: (string * int) Fmt.t

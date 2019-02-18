@@ -93,8 +93,13 @@ let root_dir ?root t =
   | Some r, Some d -> Some (r / d)
   | Some d, None   -> Some d
 
-let run_cram_tests t ?root ppf temp_file pad tests =
-  Block.pp_header ppf t;
+let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
+  Block.pp_header ?syntax ppf t;
+  let pad =
+    match syntax with
+    | Some Cram -> pad + 2
+    | _ -> pad
+  in
   List.iter (fun test ->
       let root = root_dir ?root t in
       let n = run_test ?root temp_file test in
@@ -113,7 +118,7 @@ let run_cram_tests t ?root ppf temp_file pad tests =
         ) output;
       Cram.pp_exit_code ~pad ppf n;
     ) tests;
-  Block.pp_footer ppf ()
+  Block.pp_footer ?syntax ppf ()
 
 let eval_test t ?root c test =
   Log.debug (fun l ->
@@ -256,8 +261,8 @@ let update_file_or_block ?root ppf md_file ml_file block direction =
      update_file_with_block ppf block ml_file (Block.part block)
 
 let run_exn ()
-    non_deterministic not_verbose silent verbose_findlib prelude prelude_str
-    file section root direction
+    non_deterministic not_verbose syntax silent verbose_findlib prelude
+    prelude_str file section root direction
   =
   let c =
     Mdx_top.init ~verbose:(not not_verbose) ~silent ~verbose_findlib ()
@@ -292,35 +297,36 @@ let run_exn ()
     | _ -> Fmt.failwith "only one of --prelude or --prelude-str shoud be used"
   in
 
-  Mdx.run file ~f:(fun file_contents items ->
+  Mdx.run ?syntax file ~f:(fun file_contents items ->
       let temp_file = Filename.temp_file "mdx" ".output" in
       at_exit (fun () -> Sys.remove temp_file);
       let buf = Buffer.create (String.length file_contents + 1024) in
       let ppf = Format.formatter_of_buffer buf in
       List.iter (function
           | Section _
-          | Text _ as t -> Mdx.pp_line ppf t
+          | Text _ as t -> Mdx.pp_line ?syntax ppf t
           | Block t ->
             Mdx_top.in_env (Block.environment t)
               (fun () ->
                  let active = active t && (not (Block.skip t)) in
                  match active, non_deterministic, Block.mode t, Block.value t with
                  (* Print errors *)
-                 | _, _, _, Error _ -> Block.pp ppf t
+                 | _, _, _, Error _ -> Block.pp ?syntax ppf t
                  (* Skip raw blocks. *)
-                 | true, _, _, Raw -> Block.pp ppf t
+                 | true, _, _, Raw -> Block.pp ?syntax ppf t
                  (* The command is not active, skip it. *)
-                 | false, _, _, _ -> Block.pp ppf t
+                 | false, _, _, _ -> Block.pp ?syntax ppf t
                  (* the command is active but non-deterministic so skip everything *)
-                 | true, false, `Non_det `Command, _ -> Block.pp ppf t
+                 | true, false, `Non_det `Command, _ -> Block.pp ?syntax ppf t
                  (* the command is active but it's output is
                     non-deterministic; run it but keep the old output. *)
                  | true, false, `Non_det `Output, Cram { tests; _ } ->
-                   Block.pp ppf t;
+                   Block.pp ?syntax ppf t;
                    List.iter (fun t ->
                        let _: int = run_test ?root temp_file t in ()
                      ) tests
                  | true, false, `Non_det `Output, Toplevel tests ->
+                   assert (syntax <> Some Cram);
                    Block.pp ppf t;
                    List.iter (fun test ->
                        match eval_test t ?root c test with
@@ -332,6 +338,7 @@ let run_exn ()
                      ) tests
                  (* Run raw OCaml code *)
                  | true, _, _, OCaml ->
+                   assert (syntax <> Some Cram);
                    let version_enabled = Block.version_enabled t in
                    (match Block.file t with
                     | Some ml_file when version_enabled ->
@@ -342,9 +349,10 @@ let run_exn ()
                     | _ -> Block.pp ppf t )
                  (* Cram tests. *)
                  | true, _, _, Cram { tests; pad } ->
-                   run_cram_tests t ?root ppf temp_file pad tests
+                   run_cram_tests ?syntax t ?root ppf temp_file pad tests
                  (* Top-level tests. *)
                  | true, _, _, Toplevel tests ->
+                   assert (syntax <> Some Cram);
                    let version_enabled = Block.version_enabled t in
                    match Block.file t with
                    | Some ml_file when version_enabled ->
@@ -360,12 +368,12 @@ let run_exn ()
   0
 
 let run ()
-    non_deterministic not_verbose silent verbose_findlib prelude prelude_str
-    file section root direction
+    non_deterministic not_verbose syntax silent verbose_findlib prelude
+    prelude_str file section root direction
   =
     try
-    run_exn () non_deterministic not_verbose silent verbose_findlib prelude prelude_str
-    file section root direction
+    run_exn () non_deterministic not_verbose syntax silent verbose_findlib
+      prelude prelude_str file section root direction
     with Failure f -> prerr_endline f; exit 1
  
 (**** Cmdliner ****)
@@ -377,7 +385,7 @@ let cmd =
   let man = [] in
   let doc = "Test markdown files." in
   Term.(pure run
-        $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose
+        $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose $ Cli.syntax
         $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
         $ Cli.file $ Cli.section $ Cli.root $ Cli.direction),
   Term.info "mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man

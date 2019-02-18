@@ -38,7 +38,7 @@ open Cmdliner
 let cmd: int Term.t * Term.info =
   let doc = "Test markdown files." in
   Term.(pure run
-        $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose
+        $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose $ Cli.syntax
         $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
         $ Cli.file $ Cli.section $ Cli.root $ Cli.direction),
   Term.info "test" ~doc

@@ -4,6 +4,22 @@ let non_deterministic =
   let doc = "Run non-deterministic tests." in
   Arg.(value & flag & info ["non-deterministic"; "n"] ~doc)
 
+let syntax =
+  let parse = function
+    | "normal" -> `Ok Mdx.Normal
+    | "cram" -> `Ok Mdx.Cram
+    | s -> `Error (Format.sprintf "unrecognized syntax %S" s)
+  in
+  let print fmt syn =
+    Format.fprintf fmt "%s"
+      (match syn with
+       | Mdx.Normal -> "normal"
+       | Mdx.Cram -> "cram")
+  in
+  let syntax = parse, print in
+  let doc = "Which syntax to use. Either 'normal' or 'cram'." in
+  Arg.(value & opt (some syntax) None & info ["syntax"] ~doc ~docv:"SYNTAX")
+
 let file =
   let doc = "The file to use." in
   Arg.(required & pos 0 (some string) None & info [] ~doc ~docv:"FILE")

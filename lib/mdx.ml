@@ -38,12 +38,13 @@ let dump_line ppf (l: line) = match l with
 
 let dump = Fmt.Dump.list dump_line
 
-let pp_line ppf (l: line) = match l with
-  | Block b        -> Fmt.pf ppf "%a\n" Block.pp b
+let pp_line ?syntax ppf (l: line) = match l with
+  | Block b        -> Fmt.pf ppf "%a\n" (Block.pp ?syntax) b
   | Section (d, s) -> Fmt.pf ppf "%s %s\n" (String.make d '#') s
   | Text s         -> Fmt.pf ppf "%s\n" s
 
-let pp ppf t = Fmt.pf ppf "%a\n" Fmt.(list ~sep:(unit "\n") pp_line) t
+let pp ?syntax ppf t =
+  Fmt.pf ppf "%a\n" Fmt.(list ~sep:(unit "\n") (pp_line ?syntax)) t
 
 let to_string = Fmt.to_to_string pp
 
@@ -69,9 +70,13 @@ let parse l =
       | `Block b   -> Block b
     ) l
 
-let parse_lexbuf l = parse (Lexer.token l)
-let parse_file f = parse (Lexer.token (snd (Misc.init f)))
-let of_string s = parse_lexbuf (Lexing.from_string s)
+type syntax = Syntax.t =
+  | Normal
+  | Cram
+
+let parse_lexbuf syntax l = parse (Lexer.token syntax l)
+let parse_file syntax f = parse (Lexer.token syntax (snd (Misc.init f)))
+let of_string syntax s = parse_lexbuf syntax (Lexing.from_string s)
 
 let eval = function
   | Section _ | Text _ as x -> x
@@ -79,9 +84,9 @@ let eval = function
     let t' = Block.eval t in
     if t == t' then x else Block t'
 
-let run ~f n =
+let run ?(syntax=Normal) ~f n =
   Misc.run_expect_test n ~f:(fun c l ->
-      let items = parse_lexbuf l in
+      let items = parse_lexbuf syntax l in
       let items = List.map eval items in
       Log.debug (fun l -> l "run @[%a@]" dump items);
       f c items

@@ -83,9 +83,18 @@ let dump ppf { file; line; section; labels; header; contents; value } =
     Fmt.(Dump.list dump_string) contents
     dump_value value
 
-let pp_lines pp = Fmt.(list ~sep:(unit "\n") pp)
-let pp_contents ppf t = Fmt.pf ppf "%a\n" (pp_lines Fmt.string) t.contents
-let pp_footer ppf () = Fmt.string ppf "```\n"
+let pp_lines syntax =
+  let pp =
+    match syntax with
+    | Some Syntax.Cram -> Fmt.fmt "  %s"
+    | _ -> Fmt.string
+  in
+  Fmt.(list ~sep:(unit "\n") pp)
+let pp_contents ?syntax ppf t = Fmt.pf ppf "%a\n" (pp_lines syntax) t.contents
+let pp_footer ?syntax ppf () =
+  match syntax with
+  | Some Syntax.Cram -> ()
+  | _ -> Fmt.string ppf "```\n"
 
 let pp_cmp ppf = function
   | `Eq -> Fmt.pf ppf "="
@@ -103,19 +112,33 @@ let pp_labels ppf = function
   | [] -> ()
   | l  -> Fmt.pf ppf " %a" Fmt.(list ~sep:(unit ",") pp_label) l
 
-let pp_header ppf t =
-  Fmt.pf ppf "```%a%a\n" Fmt.(option string) t.header pp_labels t.labels
+let pp_header ?syntax ppf t =
+  match syntax with
+  | Some Syntax.Cram ->
+    assert (t.header = Syntax.cram_default_header);
+    begin match t.labels with
+    | [] -> ()
+    | ["non-deterministic", Some (`Eq, choice)] ->
+      Fmt.pf ppf "<-- non-deterministic %s\n" choice
+    | _ ->
+      let err =
+        Fmt.strf "Block.pp_header: [ %a ]" pp_labels t.labels
+      in
+      invalid_arg err
+    end
+  | _ ->
+    Fmt.pf ppf "```%a%a\n" Fmt.(option string) t.header pp_labels t.labels
 
 let pp_error ppf b =
   match b.value with
   | Error e -> List.iter (fun e -> Fmt.pf ppf ">> @[<h>%a@]@." Fmt.words e) e
   | _ -> ()
 
-let pp ppf b =
-  pp_header ppf b;
+let pp ?syntax ppf b =
+  pp_header ?syntax ppf b;
   pp_error ppf b;
-  pp_contents ppf b;
-  pp_footer ppf ()
+  pp_contents ?syntax ppf b;
+  pp_footer ?syntax ppf ()
 
 let labels = [
   "dir"              , [`Any];

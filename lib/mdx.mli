@@ -32,40 +32,45 @@ module Compat = Compat
 
 (** {2 Lines} *)
 
-(** The type for the lines of a markdown file. *)
+type syntax = Syntax.t =
+  | Normal
+  | Cram
+
+(** The type for the lines of a markdown or cram file. *)
 type line =
   | Section of (int * string)
   | Text    of string
   | Block   of Block.t
 
-val pp_line: line Fmt.t
-(** [pp_line] is the pretty-printer for markdown lines. *)
+val pp_line: ?syntax:syntax -> line Fmt.t
+(** [pp_line] is the pretty-printer for markdown or cram lines. *)
 
 (** {2 Document} *)
 
 type t = line list
 (** The type for mdx documents. *)
 
-val pp: t Fmt.t
+val pp: ?syntax:syntax -> t Fmt.t
 (** [pp] is the pretty printer for mdx documents. Should be idempotent
    with {!of_string}. *)
 
 val to_string: t -> string
 (** [to_string t] converts the document [t] to a string. *)
 
-val of_string: string -> t
-(** [of_string s] is the document [t] such that [to_string t = s]. *)
+val of_string: syntax -> string -> t
+(** [of_string syntax s] is the document [t] such that
+    [to_string ~syntax t = s]. *)
 
-val parse_file: string ->  t
+val parse_file: syntax -> string ->  t
 (** [parse_file s] is {!of_string} of [s]'s contents. *)
 
-val parse_lexbuf: Lexing.lexbuf -> t
+val parse_lexbuf: syntax -> Lexing.lexbuf -> t
 (** [parse_lexbuf l] is {!of_string} of [l]'s contents. *)
 
 (** {2 Evaluation} *)
 
-val run: f:(string -> t -> string) -> string -> unit
-(** [run ~f n] runs the expect callback [f] over the file named
+val run: ?syntax:syntax -> f:(string -> t -> string) -> string -> unit
+(** [run ?syntax ~f n] runs the expect callback [f] over the file named
    [n]. [f] is called with the raw contents of [n] and its structured
    contents; it returns the new file contents. If the result of [f] is
    different from the initial contents, then [$n.corrected] is created
