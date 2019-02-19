@@ -10,7 +10,7 @@ Long lines can be replaced by ellipsis:
   ...
   10
 
-  $ echo "foo\"\n\nbar"
+  $ printf "foo\"\n\nbar"
   foo"
   
   ...

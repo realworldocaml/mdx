@@ -19,7 +19,7 @@ $ for i in `seq 1 10`; do echo $i; done
 ```
 
 ```sh
-$ echo "foo\"\n\nbar"
+$ printf "foo\"\n\nbar"
 foo"
 
 ...
