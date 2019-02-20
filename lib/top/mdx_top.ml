@@ -363,7 +363,7 @@ let trim_line str =
   if len = 0 then str else
     let trim_from = if str.[0] = '\n' then 1 else 0 in
     let trim_to = if str.[len - 1] = '\n' then len - 1 else len in
-    String.sub str trim_from (trim_to - trim_from)
+    if trim_to - trim_from <= 0 then "" else String.sub str trim_from (trim_to - trim_from)
 
 let rtrim l = List.rev (ltrim (List.rev l))
 let trim l = ltrim (rtrim (List.map trim_line l))
