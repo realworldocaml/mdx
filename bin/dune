@@ -5,7 +5,12 @@
 
 (executable
  (name        main)
- (public_name mdx)
+ (public_name ocaml-mdx)
  (package     mdx)
  (modules     :standard \ cli)
  (libraries   cli mdx))
+
+(install
+ (section bin)
+ (files
+  (main.exe as mdx)))

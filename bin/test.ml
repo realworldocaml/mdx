@@ -26,7 +26,8 @@ let run () _ _ _ _ _ _ _ _ _ _ =
   let dir = Filename.dirname Sys.argv.(0) in
   let cmd = match base with
     | "main.exe" -> dir / "test" / "main.exe"
-    | x -> dir / x ^ "-test"
+    | x when String.length x > 6 && String.sub x 0 6 = "ocaml-" -> dir / x ^ "-test"
+    | x -> dir / "ocaml-" ^ x ^ "-test"
   in
   let argv = Array.sub Sys.argv 1 (Array.length Sys.argv - 1) in
   argv.(0) <- cmd;

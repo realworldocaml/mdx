@@ -1,6 +1,6 @@
 (executable
  (name        main)
- (public_name mdx-test)
+ (public_name ocaml-mdx-test)
  (package     mdx)
  (modes       byte)  ;; no native code toplevel libs yet
  (link_flags  -linkall)
