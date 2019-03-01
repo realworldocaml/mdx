@@ -1,4 +1,4 @@
-`mdx` supports non-determinitic code blocks.
+`ocaml-mdx` supports non-determinitic code blocks.
 
 There are two kinds of blocks:
 
@@ -6,7 +6,7 @@ There are two kinds of blocks:
 
 Code blocks with `non-deterministic=output` have their command always
 executed but their output is never checked, unless `--non-deterministic`
-is passed as argument to `mdx`.
+is passed as argument to `ocaml-mdx`.
 
 
 ```sh non-deterministic=output
@@ -33,7 +33,7 @@ $ touch hello-world
 ### Non-deterministic Commands
 
 Code blocks with `non-deterministic=command` are never executed unless
-`--non-deterministic` is passed as argument to `mdx`.
+`--non-deterministic` is passed as argument to `ocaml-mdx`.
 
 ```sh non-deterministic=command
 $ touch toto

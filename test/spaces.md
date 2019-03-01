@@ -27,7 +27,7 @@ bar
 ```
 
 ```sh
-$ mdx pp spaces.md
+$ ocaml-mdx pp spaces.md
 #2 "spaces.md"
 
 

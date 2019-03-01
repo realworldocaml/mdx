@@ -1,4 +1,4 @@
-`mdx test` can also take a prelude file.
+`ocaml-mdx test` can also take a prelude file.
 
 ```ocaml
 # Lwt.return 4

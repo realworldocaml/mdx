@@ -28,7 +28,7 @@ end
 let redirect ~f =
   let stdout_backup = Unix.dup Unix.stdout in
   let stderr_backup = Unix.dup Unix.stdout in
-  let filename = Filename.temp_file "mdx" "stdout" in
+  let filename = Filename.temp_file "ocaml-mdx" "stdout" in
   let fd_out = Unix.openfile filename Unix.[O_WRONLY; O_CREAT; O_TRUNC] 0o600 in
   Unix.dup2 fd_out Unix.stdout;
   Unix.dup2 fd_out Unix.stderr;
@@ -331,7 +331,7 @@ let toplevel_exec_phrase t ppf p = match Phrase.result p with
     in
     let phrase = match phrase with
       | Ptop_dir _ as x -> x
-      | Ptop_def s -> Ptop_def (Pparse.apply_rewriters_str ~tool_name:"mdx" s)
+      | Ptop_def s -> Ptop_def (Pparse.apply_rewriters_str ~tool_name:"ocaml-mdx" s)
     in
     Rewrite.preload t.verbose_findlib ppf;
     let phrase = Rewrite.phrase phrase in

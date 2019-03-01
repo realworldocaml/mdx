@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-let src = Logs.Src.create "mdx"
+let src = Logs.Src.create "ocaml-mdx"
 module Log = (val Logs.src_log src : Logs.LOG)
 
 module Output = Output
