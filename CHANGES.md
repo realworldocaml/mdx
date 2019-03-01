@@ -1,3 +1,12 @@
+### 1.3.0 (2019-03-01)
+- Updated readme file with the new features: dune rules, named environment and
+  ocaml versions, Some grammar correction too (@gpetiot, #101, aantron, #102)
+- Better lexer error messages (@avsm, #103)
+- Added cram syntax parsing (@trefis, #106)
+- Renamed mdx to ocaml-mdx to avoid conflicts/for more precision (@clecat, #110, #115)
+- Fix blank spaces causing parsing errors (@gpetiot, #97)
+- Fix empty lines causing a String.sub (@clecat, #107)
+
 ### 1.2.0 (2018-01-03)
 
 - Support end-of-line ellipsis (@dra27, #85)
