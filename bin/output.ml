@@ -89,7 +89,7 @@ let run () file output =
   match t with
   | [] -> 1
   | _  ->
-    let tmp = Filename.temp_file "mdx" "pandoc" in
+    let tmp = Filename.temp_file "ocaml-mdx" "pandoc" in
     let oc = open_out tmp in
     let ppf = Format.formatter_of_out_channel oc in
     List.iter (function

@@ -5,7 +5,7 @@
          (:y0 dune_rules_2.ml)
          (source_tree foo))
  (action (progn
-           (run mdx test --direction=to-ml %{x})
+           (run ocaml-mdx test --direction=to-ml %{x})
            (diff? %{x} %{x}.corrected)
            (diff? %{y1} %{y1}.corrected)
            (diff? %{y0} %{y0}.corrected))))

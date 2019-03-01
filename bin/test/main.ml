@@ -298,7 +298,7 @@ let run_exn ()
   in
 
   Mdx.run ?syntax file ~f:(fun file_contents items ->
-      let temp_file = Filename.temp_file "mdx" ".output" in
+      let temp_file = Filename.temp_file "ocaml-mdx" ".output" in
       at_exit (fun () -> Sys.remove temp_file);
       let buf = Buffer.create (String.length file_contents + 1024) in
       let ppf = Format.formatter_of_buffer buf in
@@ -388,7 +388,7 @@ let cmd =
         $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose $ Cli.syntax
         $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
         $ Cli.file $ Cli.section $ Cli.root $ Cli.direction),
-  Term.info "mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man
+  Term.info "ocaml-mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man
 
 let main () = Term.(exit_status @@ eval cmd)
 
