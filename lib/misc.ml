@@ -48,11 +48,11 @@ let init file =
     };
   file_contents, lexbuf
 
-let run_expect_test file ~f =
+let run_expect_test force_output file ~f =
   let file_contents, lexbuf = init file in
   let expected = f file_contents lexbuf in
   let corrected_file = file ^ ".corrected" in
-  if file_contents <> expected then begin
+  if force_output || file_contents <> expected then begin
     let oc = open_out_bin corrected_file in
     output_string oc expected;
     close_out oc;
