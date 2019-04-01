@@ -139,8 +139,9 @@ argument after each package name. When no such argument are specified,
 the duniverse tool will assume that the user wants to work on the
 latest stable version of opam packages.
 
-#### Pinning the dev version of a dependency
+#### Pinning the dev version of a dependency
 
+TODO how to pin just one package? Mark it in `dune-get` file perhaps.
 
 ### Checking the status of a workspace
 
