@@ -48,7 +48,7 @@ let init file =
     };
   file_contents, lexbuf
 
-let run_expect_test force_output file ~f =
+let run_expect_test ~force_output file ~f =
   let file_contents, lexbuf = init file in
   let expected = f file_contents lexbuf in
   let corrected_file = file ^ ".corrected" in

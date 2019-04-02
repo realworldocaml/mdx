@@ -297,7 +297,7 @@ let run_exn ()
     | _ -> Fmt.failwith "only one of --prelude or --prelude-str shoud be used"
   in
 
-  Mdx.run ?syntax force_output file ~f:(fun file_contents items ->
+  Mdx.run ?syntax ~force_output file ~f:(fun file_contents items ->
       let temp_file = Filename.temp_file "ocaml-mdx" ".output" in
       at_exit (fun () -> Sys.remove temp_file);
       let buf = Buffer.create (String.length file_contents + 1024) in
