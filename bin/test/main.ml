@@ -306,6 +306,9 @@ let run_exn ()
           | Section _
           | Text _ as t -> Mdx.pp_line ?syntax ppf t
           | Block t ->
+            (match Block.variable t with
+            | None -> ()
+            | Some (var, value) -> Unix.putenv var value);
             Mdx_top.in_env (Block.environment t)
               (fun () ->
                  let active = active t && (not (Block.skip t)) in

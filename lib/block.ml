@@ -149,6 +149,7 @@ let labels = [
   "skip"             , [`None];
   "non-deterministic", [`None; `Some "command"; `Some "output"];
   "version"          , [`Any];
+  "var"              , [`Any];
 ]
 
 let pp_value ppf = function
@@ -253,6 +254,15 @@ let environment t = match get_label t "env" with
   | Some (Some (`Eq, "default")) -> "default"
   | Some (Some (`Eq, s)) -> s
   | Some (Some _) -> Fmt.failwith "invalid `env` label value"
+
+let variable t = match get_label t "var" with
+  | None
+  | Some None -> None
+  | Some (Some (`Eq, f)) ->
+    (match (Misc.parse_env_var f) with
+    | None -> None
+    | Some f -> Some f)
+  | Some (Some _) -> Fmt.failwith "invalid `var` label value"
 
 let value t = t.value
 let section t = t.section
