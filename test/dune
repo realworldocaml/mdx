@@ -181,6 +181,13 @@
 
 (alias
  (name   runtest)
+ (deps   (:x environment_variable.md) (package mdx))
+ (action (progn
+           (run ocaml-mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
  (deps   (:x prelude_file.md) prelude.ml (package mdx))
  (action (progn
            (run ocaml-mdx test --prelude prelude.ml %{x})

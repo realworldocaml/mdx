@@ -89,3 +89,13 @@ let parse_version v =
         let minor = String.sub ~stop:i_dot_2 remain |> to_string |> to_int in
         let remain = String.sub ~start:(i_dot_2+1) remain |> to_string in
         major, minor, to_int remain
+
+let parse_env_var e =
+  let to_string = String.Sub.to_string in
+  let is_semicolon c = c = '=' in
+  match String.find is_semicolon e with
+  | None -> None
+  | Some i ->
+    let var = String.sub ~stop:i e |> to_string in
+    let value = String.sub ~start:(i+1) e |> to_string in
+    Some (var, value)
