@@ -143,7 +143,7 @@ let run () md_file section direction prelude prelude_str root =
     print_rule ~md_file ~prelude ~nd ~ml_files ~dirs ~root options;
     file_contents
   in
-  Mdx.run ~force_output:false md_file ~f:on_file;
+  Mdx.run md_file ~f:on_file;
   0
 
 open Cmdliner
