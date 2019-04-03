@@ -73,7 +73,7 @@ val run: ?syntax:syntax -> ?force_output:bool -> f:(string -> t -> string) -> st
 (** [run ?syntax ~f n] runs the expect callback [f] over the file named
    [n]. [f] is called with the raw contents of [n] and its structured
    contents; it returns the new file contents. If the result of [f] is
-   different from the initial contents of force_output was set to true, then
+   different from the initial contents or if force_output was set to true, then
    [$n.corrected] is created with the new contents. *)
 
 (** {2 Filtering} *)
