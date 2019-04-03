@@ -262,7 +262,7 @@ let update_file_or_block ?root ppf md_file ml_file block direction =
 
 let run_exn ()
     non_deterministic not_verbose syntax silent verbose_findlib prelude
-    prelude_str file section root direction
+    prelude_str file section root direction force_output
   =
   let c =
     Mdx_top.init ~verbose:(not not_verbose) ~silent ~verbose_findlib ()
@@ -297,7 +297,7 @@ let run_exn ()
     | _ -> Fmt.failwith "only one of --prelude or --prelude-str shoud be used"
   in
 
-  Mdx.run ?syntax file ~f:(fun file_contents items ->
+  Mdx.run ?syntax ~force_output file ~f:(fun file_contents items ->
       let temp_file = Filename.temp_file "ocaml-mdx" ".output" in
       at_exit (fun () -> Sys.remove temp_file);
       let buf = Buffer.create (String.length file_contents + 1024) in
@@ -387,7 +387,7 @@ let cmd =
   Term.(pure run
         $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose $ Cli.syntax
         $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
-        $ Cli.file $ Cli.section $ Cli.root $ Cli.direction),
+        $ Cli.file $ Cli.section $ Cli.root $ Cli.direction $ Cli.force_output),
   Term.info "ocaml-mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man
 
 let main () = Term.(exit_status @@ eval cmd)

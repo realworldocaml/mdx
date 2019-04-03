@@ -84,6 +84,10 @@ let direction =
   let docv = "{" ^ docv ^ "}" in
   Arg.(value & opt (enum opt_names) `Infer_timestamp & info names ~doc ~docv)
 
+let force_output =
+  let doc = "Force generation of corrected file (even if there was no diff)" in
+  Arg.(value & flag & info ["force-output"] ~doc)
+
 let setup_log style_renderer level =
   Fmt_tty.setup_std_outputs ?style_renderer ();
   Logs.set_level level;
