@@ -290,6 +290,27 @@ The version number can be of the following forms:
 - `X.Y`
 - `X.Y.Z`
 
+#### Environment variables declaration
+
+Environment variables can be declared at the beginning of a block:
+
+```ocaml set-FOO=bar,set-BAR=foo
+  # print_endline (Sys.getenv "FOO")
+  bar
+  - : unit = ()
+  # print_endline (Sys.getenv "BAR")
+  foo
+  - : unit = ()
+```
+
+Those variables are then available in the subsequent blocks
+
+```ocaml
+  # print_endline (Sys.getenv "FOO")
+  bar
+  - : unit = ()
+```
+
 ### Sections
 
 It is possible to test or execute only a subset of the file using
