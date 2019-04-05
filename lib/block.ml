@@ -141,14 +141,15 @@ let pp ?syntax ppf b =
   pp_footer ?syntax ppf ()
 
 let labels = [
-  "dir"              , [`Any];
-  "source-tree"      , [`Any];
-  "file"             , [`Any];
-  "part"             , [`Any];
-  "env"              , [`Any];
-  "skip"             , [`None];
-  "non-deterministic", [`None; `Some "command"; `Some "output"];
-  "version"          , [`Any];
+  `Label "dir"              , [`Any];
+  `Label "source-tree"      , [`Any];
+  `Label "file"             , [`Any];
+  `Label "part"             , [`Any];
+  `Label "env"              , [`Any];
+  `Label "skip"             , [`None];
+  `Label "non-deterministic", [`None; `Some "command"; `Some "output"];
+  `Label "version"          , [`Any];
+  `Prefix "set-"            , [`Any];
 ]
 
 let pp_value ppf = function
@@ -175,7 +176,10 @@ let rec pp_list pp ppf = function
 let check_labels t =
   List.fold_left (fun acc (k, v) ->
       try
-        let vs = List.assoc k labels in
+        let f = function
+        | `Label s, _ -> s = k
+        | `Prefix s, _ -> String.equal (String.with_range ~len:(String.length s) k) s in
+        let _, vs = List.find f labels in
         if List.exists (match_label v) vs then acc
         else
           Fmt.strf "%a is not a valid value for label %S. \
@@ -183,9 +187,15 @@ let check_labels t =
             pp_v v k (pp_list pp_value) vs
           :: acc
       with Not_found ->
-        Fmt.strf "%S is not a valid label. \
-                  Valid labels are are %a."
-          k (pp_list dump_string) (List.map fst labels)
+        let f = function
+        | `Label _, _ -> true
+        | _ -> false in
+        let g = function `Label s, _ | `Prefix s, _ -> s in
+        let ls, ps = List.partition f labels in
+        Fmt.strf "%S is not a valid label or prefix. \
+                  Valid labels are %a and valid prefixes are %a."
+          k (pp_list dump_string) (List.map g ls)
+          (pp_list dump_string) (List.map g ps)
         :: acc
     ) [] t.labels
   |> function
@@ -201,6 +211,14 @@ let get_labels t label =
       if String.equal k label then match v with
         | None   -> assert false
         | Some v -> v ::acc
+      else acc
+    ) [] t.labels
+
+let get_prefixed_labels t prefix =
+  List.fold_left (fun acc (k, v) ->
+      if String.equal (String.with_range ~len:(String.length prefix) k) prefix then match v with
+        | None   -> assert false
+        | Some (e, s) -> (e, (String.with_range ~first:(String.length prefix) k, s)) ::acc
       else acc
     ) [] t.labels
 
@@ -253,6 +271,13 @@ let environment t = match get_label t "env" with
   | Some (Some (`Eq, "default")) -> "default"
   | Some (Some (`Eq, s)) -> s
   | Some (Some _) -> Fmt.failwith "invalid `env` label value"
+
+let variables t =
+  let f = function
+    | `Eq, x -> x
+    | _ -> Fmt.failwith "invalid env variable operator (use '=' only)"
+  in
+  List.map f (get_prefixed_labels t "set-")
 
 let value t = t.value
 let section t = t.section
