@@ -62,8 +62,8 @@ let tag_from_archive archive =
     List.rev path |> List.hd |> tag_of_file ?prefix
   in
   match Uri.scheme uri with
-  | Some "git+http" | Some "git+https" -> Some "master"
-  | Some "git+ssh" -> (
+  | Some "git+http" | Some "git+https"
+  | Some "git+ssh" | Some "git" -> (
     match String.cuts ~empty:false ~sep:"#" archive with
     | [repo; tag] -> Some tag
     | _ -> Some "master")
@@ -120,30 +120,24 @@ let classify_package ~package ~dev_repo ~archive ~pins () =
           Logs.debug (fun l ->
               l "Mapped %s -> %s" archive
                 (match tag with None -> "??" | Some v -> v) ) ;
-          match List.assoc_opt dev_repo duniverse_forks with
-          | Some repo -> (`Duniverse_fork repo, tag)
-          | None -> (
-            match Uri.host uri with
-            | Some "github.com" -> (
-              match String.cuts ~empty:false ~sep:"/" (Uri.path uri) with
-              | [user; repo] ->
-                  let repo = strip_ext repo in
-                  (`Github (user, repo), tag)
-              | tl -> err "wierd github url" )
-            | Some host -> (
-              match String.is_prefix "git" archive with
-              | true -> ( 
+          match Uri.host uri with
+          | Some "github.com" -> (
+            match String.cuts ~empty:false ~sep:"/" (Uri.path uri) with
+            | [user; repo] ->
+                let repo = strip_ext repo in
+                (`Github (user, repo), tag)
+            | tl -> err "wierd github url" )
+          | Some host -> (
+            match String.is_prefix "git" archive with
+            | true -> (
                 let base_repo = String.cuts ~empty:false ~sep:"#" archive |> List.hd in
                 (`Git base_repo, tag) )
-              | false -> (`Unknown host, tag) )
-            | None -> err "dev-repo without host" ) ) )
+            | false -> (`Unknown host, tag) )
+          | None -> err "dev-repo without host" ) )
 
-let check_if_dune ~repo ~dev_repo package =
-  match dev_repo with
-  | `Duniverse_fork _ -> Ok true
-  | _ ->
-      Exec.get_opam_depends ~repo (string_of_package package)
-      >>| List.exists (fun l -> l = "jbuilder" || l = "dune")
+let check_if_dune ~repo package =
+  Exec.get_opam_depends ~repo (string_of_package package)
+  >>| List.exists (fun l -> l = "jbuilder" || l = "dune")
 
 let get_opam_info ~repo ~pins package =
   Exec.get_opam_dev_repo ~repo (string_of_package package)
@@ -151,7 +145,7 @@ let get_opam_info ~repo ~pins package =
   Exec.get_opam_archive_url ~repo (string_of_package package)
   >>= fun archive ->
   let dev_repo, tag = classify_package ~package ~dev_repo ~archive ~pins () in
-  check_if_dune ~repo ~dev_repo package
+  check_if_dune ~repo package
   >>= fun is_dune ->
   Logs.info (fun l ->
       l "Classified %a as %a with tag %a"

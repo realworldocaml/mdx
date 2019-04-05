@@ -21,8 +21,6 @@ let pp_sexp fn ppf v = Fmt.pf ppf "%s" (Sexplib.Sexp.to_string_hum (fn v))
 module Opam = struct
   type repo =
     [ `Github of string * string
-    | `Duniverse_fork of string
-      (** [name] which is [https://github.com/dune-universe/name] *)
     | `Git of string
     | `Unknown of string
     | `Virtual

@@ -39,15 +39,6 @@ let dune_repo_of_opam ?(verify_refs = true) opam =
           Exec.git_default_branch ~remote:upstream ()
           >>= fun ref -> Ok {Dune.dir; upstream; ref}
       | Some ref -> Ok {Dune.dir; upstream; ref} )
-  | `Duniverse_fork repo ->
-      let upstream = Fmt.strf "git://github.com/dune-universe/%s.git" repo in
-      let ref =
-        match opam.Opam.tag with
-        | None -> "duniverse-master"
-        | Some t -> Config.duniverse_branch t
-      in
-      Logs.debug (fun l -> l "Duniverse fork: %s %s %s" dir upstream ref) ;
-      Ok {Dune.dir; upstream; ref}
   | x -> R.error_msg (Fmt.strf "TODO cannot handle %a" Opam.pp_entry opam)
 
 let dedup_git_remotes dunes =
