@@ -170,6 +170,13 @@
 
 (alias
  (name   runtest)
+ (deps   (:x environment_variable.md) (package mdx))
+ (action (progn
+           (run ocaml-mdx test %{x})
+           (diff? %{x} %{x}.corrected))))
+
+(alias
+ (name   runtest)
  (deps   (:x prelude.md) (package mdx))
  (action (progn
            (run ocaml-mdx
