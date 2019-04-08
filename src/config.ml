@@ -77,7 +77,7 @@ let opam_lockfile = Fpath.(duniverse_dir / "opam.sxp")
 
 let duniverse_lockfile = Fpath.(duniverse_dir / "dune.sxp")
 
-let vendor_dir = Fpath.v "ocaml_modules"
+let vendor_dir = Fpath.v "duniverse"
 
 let duniverse_log = Fpath.v ".duniverse-log"
 

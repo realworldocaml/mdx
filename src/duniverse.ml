@@ -148,7 +148,7 @@ let dune_lock_cmd =
     ; `P
         "This command takes the standalone opam package list calculated using \
          $(i,duniverse opam) and converts it into a set of git tags that can \
-         be put into the $(b,ocaml_modules/) subdirectory and act as vendored \
+         be put into the $(b,duniverse/) subdirectory and act as vendored \
          copies of the source code."
     ; `P
         "The opam packages are sorted by their Git remotes and deduplicated \
@@ -180,7 +180,7 @@ let dune_fetch_cmd =
     ; `P
         "This command reads the Git metadata calculated with $(i,duniverse \
          lock) and fetches them from their respective Git remotes and stores \
-         them in the $(b,ocaml_modules/) directory in the repository." ]
+         them in the $(b,duniverse/) directory in the repository." ]
   in
   ( (let open Term in
     term_result
@@ -220,7 +220,7 @@ let default_cmd =
     ; `P
         "It works by analysing opam package metadata and calculating a set of \
          git tags that can be cloned into the local repository into an \
-         $(i,ocaml_modules) subdirectory.  Once the external code has been \
+         $(i,duniverse) subdirectory.  Once the external code has been \
          pulled into the repository, a single $(b,dune build) command is \
          sufficient to build the whole project in a standalone fashion, \
          without opam being required.  This is a particularly convenient way \

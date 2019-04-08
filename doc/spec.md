@@ -209,9 +209,6 @@ dune overrides.  Instead, it just adds `dune-universe/opam-repository` to its
 remote list before calculating the packages, and that is sufficient to pull in
 the overridden packages.
 
-TODO: what should the name of the vendor directory be? We currently use
-`ocaml_modules` since `vendor/` is used by some packages (such as ocamlformat).
-
 The automatic git invocations have also been problematic.  For phase 1,
 we could remove all automatic `git commit` and simply fetch the archives
 for the user to manually git add/remove/commit.
