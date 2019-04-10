@@ -16,6 +16,7 @@
 
 open Cmdliner
 open Astring
+open Duniverse_lib
 
 let copts = ()
 

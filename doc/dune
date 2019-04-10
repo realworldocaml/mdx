@@ -1,14 +1,14 @@
 (rule
  (targets duniverse.1)
- (action (with-stdout-to %{targets} (run ../src/duniverse.exe --help=plain))))
+ (action (with-stdout-to %{targets} (run ../bin/duniverse.exe --help=plain))))
 
 (rule
  (targets duniverse-status.1)
- (action (with-stdout-to %{targets} (run ../src/duniverse.exe status --help=plain))))
+ (action (with-stdout-to %{targets} (run ../bin/duniverse.exe status --help=plain))))
 
 (executable
  (name gen_readme)
- (libraries bos rresult))
+ (libraries bos fpath rresult))
 
 (rule
  (targets usage.md)

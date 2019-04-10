@@ -1,0 +1,19 @@
+(library
+  (name duniverse_lib)
+  (libraries
+    bos
+    ezjsonm
+    fmt
+    logs
+    opam-core
+    opam-file-format
+    rresult
+    sexplib
+    uri
+  )
+  (preprocess
+    (per_module
+      ((pps ppx_sexp_conv) types)
+    )
+  )
+)
