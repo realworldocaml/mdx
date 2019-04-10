@@ -15,3 +15,4 @@ opam pin add --no-action duniverse .
 opam update
 opam install --deps-only -t duniverse
 make
+make test
