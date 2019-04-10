@@ -23,7 +23,7 @@ let pp_header = Fmt.(styled `Blue string)
 
 let header = "==> "
 
-let dune_repo_of_opam ?(verify_refs = true) opam =
+let dune_repo_of_opam opam =
   let dir = Opam.(opam.package.name) in
   match opam.Opam.dev_repo with
   | `Github (user, repo) -> (
@@ -39,7 +39,7 @@ let dune_repo_of_opam ?(verify_refs = true) opam =
           Exec.git_default_branch ~remote:upstream ()
           >>= fun ref -> Ok {Dune.dir; upstream; ref}
       | Some ref -> Ok {Dune.dir; upstream; ref} )
-  | x -> R.error_msg (Fmt.strf "TODO cannot handle %a" Opam.pp_entry opam)
+  | _ -> R.error_msg (Fmt.strf "TODO cannot handle %a" Opam.pp_entry opam)
 
 let dedup_git_remotes dunes =
   (* In the future we should be able to select the subtrees from different git
@@ -63,7 +63,7 @@ let dedup_git_remotes dunes =
       | [] -> assert false
       | [_] -> ()
       | dunes ->
-          let tags = List.map (fun {ref} -> ref) dunes in
+          let tags = List.map (fun {ref; _} -> ref) dunes in
           let uniq_tags = List.sort_uniq String.compare tags in
           if List.length uniq_tags = 1 then
             Logs.info (fun l ->
@@ -133,7 +133,7 @@ let gen_dune_lock repo () =
         ofile ) ;
   Ok ()
 
-let status repo target_branch () = Ok ()
+let status _repo _target_branch () = Ok ()
 
 let gen_dune_upstream_branches repo () =
   Bos.OS.Dir.create Fpath.(repo // Config.duniverse_dir)

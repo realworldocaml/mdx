@@ -14,9 +14,7 @@
  *
  *)
 
-open Types
 open Rresult
-open Astring
 open Bos
 
 let pp_header = Fmt.(styled `Blue string)
