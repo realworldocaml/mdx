@@ -220,7 +220,7 @@ let default_cmd =
          code required to build a project using the $(b,dune) build tool."
     ; `P
         "It works by analysing opam package metadata and calculating a set of \
-         git tags that can be cloned into the local repository into an \
+         git tags that can be cloned into the local repository into a \
          $(i,duniverse) subdirectory.  Once the external code has been \
          pulled into the repository, a single $(b,dune build) command is \
          sufficient to build the whole project in a standalone fashion, \

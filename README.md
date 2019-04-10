@@ -31,12 +31,12 @@ DESCRIPTION
        required to build a project using the dune build tool.
 
        It works by analysing opam package metadata and calculating a set of
-       git tags that can be cloned into the local repository into an
-       duniverse subdirectory. Once the external code has been pulled
-       into the repository, a single dune build command is sufficient to
-       build the whole project in a standalone fashion, without opam being
-       required. This is a particularly convenient way of publishing CLI
-       tools to users who do not need the full power of opam.
+       git tags that can be cloned into the local repository into a duniverse
+       subdirectory. Once the external code has been pulled into the
+       repository, a single dune build command is sufficient to build the
+       whole project in a standalone fashion, without opam being required.
+       This is a particularly convenient way of publishing CLI tools to users
+       who do not need the full power of opam.
 
        You can access the functionality directly via the duniverse-opam,
        duniverse-lock and duniverse-pull commands,
