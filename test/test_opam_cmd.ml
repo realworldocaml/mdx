@@ -10,6 +10,7 @@ let test_tag_from_archive =
   [ make_test ~archive:"git+http://a.com/user/repo" ~expected:(Some "master")
   ; make_test ~archive:"git+https://a.com/user/repo" ~expected:(Some "master")
   ; make_test ~archive:"git+https://a.com/user/repo#v0.0.0" ~expected:(Some "v0.0.0")
+  ; make_test ~archive:"git+https://github.com/user/repo#v0.0.0" ~expected:(Some "v0.0.0")
   ; make_test ~archive:"git+ssh://a.com/user/repo#v0.0.0" ~expected:(Some "v0.0.0")
   ; make_test ~archive:"git+file://a.com/user/repo/something" ~expected:None
   ; make_test ~archive:"https://github.com/user/repo/releases/download/v0.0.0/archive.tbz" ~expected:(Some "v0.0.0")
