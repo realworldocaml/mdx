@@ -11,6 +11,8 @@ esac
 
 sudo chown -R opam /home/opam/src
 cd /home/opam/src
-opam install -y dune 
+opam pin add --no-action duniverse .
+opam update
+opam install --deps-only -t duniverse
 cd /home/opam/src
 make
