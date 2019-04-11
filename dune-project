@@ -27,12 +27,14 @@
   (csexp
    (>= 1.3.2))
   astring
+  atdgen
   (logs (>= 0.7.0))
   (cmdliner
    (>= 1.0.0))
   (re
    (>= 1.7.2))
   result
+  yojson
   (ocaml-version
    (>= 2.3.0))
   (odoc-parser (>= 0.9.0))

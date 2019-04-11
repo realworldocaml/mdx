@@ -2,6 +2,8 @@
 
 #### Added
 
+- Add Jupyter Notebook output (#124, @avsm, @CraigFe, @jonludlam)
+
 #### Changed
 
 #### Deprecated
