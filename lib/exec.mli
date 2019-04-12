@@ -70,38 +70,38 @@ val git_merge :
   unit ->
   (unit, [> Rresult.R.msg]) result
 
-(** [get_opam_depends ~repo package] returns the list of version constrained packages [package]
-    depends on using the local duniverse switch in [repo]. *)
-val get_opam_depends : repo: Fpath.t -> string -> (string list, [> Rresult.R.msg]) result
+(** [get_opam_depends ~root package] returns the list of version constrained packages [package]
+    depends on using [root] as OPAMROOT. *)
+val get_opam_depends : root: Fpath.t -> string -> (string list, [> Rresult.R.msg]) result
 
-(** [get_opam_dev_repo ~repo package] returns the dev-repo for [package], using the local duniverse
-    switch in [repo]. *)
-val get_opam_dev_repo : repo: Fpath.t -> string -> (string, [> Rresult.R.msg]) result
+(** [get_opam_dev_repo ~root package] returns the dev-repo for [package], using [root] as
+    OPAMROOT. *)
+val get_opam_dev_repo : root: Fpath.t -> string -> (string, [> Rresult.R.msg]) result
 
-(** [get_opam_archive_url ~repo package] returns the url.src for [package] or [None] if it isn't
-    specified, using the local duniverse switch in [repo]. *)
-val get_opam_archive_url : repo: Fpath.t -> string -> (string option, [> Rresult.R.msg]) result
+(** [get_opam_archive_url ~root package] returns the url.src for [package] or [None] if it isn't
+    specified, using [root] as OPAMROOT. *)
+val get_opam_archive_url : root: Fpath.t -> string -> (string option, [> Rresult.R.msg]) result
 
-(** [run_opam_packages_deps ~repo packages] returns a list of versioned constrained packages that
+(** [run_opam_packages_deps ~root packages] returns a list of versioned constrained packages that
     resolves the transitive dependencies of [packages]. *)
-val run_opam_package_deps : repo: Fpath.t -> string list -> (string list, [> Rresult.R.msg]) result
+val run_opam_package_deps : root: Fpath.t -> string list -> (string list, [> Rresult.R.msg]) result
 
-(** [init_local_opam_switch ~opam_switch ~repo ~remotes ()] creates a new opam switch in a
-    .duniverse directory in [repo] with compiler [opam_switch] and adds the [remotes]
-    opam repositories to it. *)
-val init_local_opam_switch :
-  opam_switch: string ->
-  repo: Fpath.t ->
-  remotes: string list ->
+(** [init_local_opam_switch ~opam_switch ~root ~remotes ()] creates a fresh opam state and switch
+    with compiler [compiler] using [root] as OPAMROOT and adds the [remotes] opam repositories
+    to it. *)
+val init_opam_and_remotes :
+  root: Fpath.t ->
+  compiler: string ->
+  remotes: Types.Opam.Remote.t list ->
   unit ->
   (unit, [> Rresult.R.msg]) result
 
-(** [add_opam_dev_pin ~repo pin] pins [pin] in the local duniverse switch in [repo]. *)
+(** [add_opam_dev_pin ~root pin] pins [pin] in the active switch using [root] as OPAMROOT. *)
 val add_opam_dev_pin :
-  repo: Fpath.t ->
+  root: Fpath.t ->
   Types.Opam.pin ->
   (unit, [> Rresult.R.msg]) result
 
-(** [add_opam_local_pin ~repo package] pins the package in the current working dir under
-    [package ^ ".dev"] in the local duniverse switch in [repo]. *)
-val add_opam_local_pin : repo: Fpath.t -> string -> (unit, [> Rresult.R.msg]) result
+(** [add_opam_local_pin ~root package] pins the package in the current working dir under
+    [package ^ ".dev"] in the active switch using [root] as OPAMROOT. *)
+val add_opam_local_pin : root: Fpath.t -> string -> (unit, [> Rresult.R.msg]) result

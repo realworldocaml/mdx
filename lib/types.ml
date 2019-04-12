@@ -19,6 +19,16 @@ open Sexplib.Conv
 let pp_sexp fn ppf v = Fmt.pf ppf "%s" (Sexplib.Sexp.to_string_hum (fn v))
 
 module Opam = struct
+  module Remote = struct
+    type t =
+      { name : string
+      ; url : string
+      }
+    [@@deriving sexp]
+
+    let pp = pp_sexp sexp_of_t
+  end
+
   type repo =
     [ `Github of string * string
     | `Git of string
