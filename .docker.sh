@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-DISTRO=${DISTRO:-alpine-3.9}
+DISTRO=${DISTRO:-alpine}
 
 set -ex
 # TODO opam2 depext
@@ -14,5 +14,4 @@ cd /home/opam/src
 opam pin add --no-action duniverse .
 opam update
 opam install --deps-only -t duniverse
-cd /home/opam/src
 make
