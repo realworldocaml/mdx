@@ -330,6 +330,7 @@ let ends_by_semi_semi c = match List.rev c with
 
 let pp_line_directive ppf (file, line) = Fmt.pf ppf "#%d %S" line file
 let line_directive = Fmt.to_to_string pp_line_directive
+
 let executable_contents b =
   let contents =
     match guess_ocaml_kind b with

@@ -1,3 +1,9 @@
-val reason_of_ocaml: string -> string option
+  module FromOCamlToReason :
+  sig
+    val transform : string list -> string list option
+  end
 
-val reason_of_lines: string list -> string list option
+module FromReasonToOCaml :
+  sig
+    val transform : string list -> string list option
+  end

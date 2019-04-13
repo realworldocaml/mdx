@@ -39,24 +39,12 @@ let pp_output ppf = function
 
 let pp_line ppf l = Fmt.pf ppf "%a\n" pp_html l
 
-(* let convert_toplevel_output (output:Mdx.Output.t list) =
-  output
-  |> List.fold_left (fun current -> function | `Ellipsis -> current | `Output line -> [line] @ current) []
-  |> List.rev
-  |> String.concat "\n"
-  |> Lexing.from_string
-  |> Reason_toolchain.ML.toplevel_phrase
-  |> Reason_oprint.print_out_phrase
-  (* |> String.split_on_char '\n' *)
-  |> List.map (fun output_line -> `Output output_line) *)
-
 let pp_toplevel ppf (t:Mdx.Toplevel.t) =
-  let cmds = match t.command with [c] -> [c ^ ";;" ] | l -> l @ [";;"] in
+  let cmds = match t.command with [c] -> [c ^ ";;"] | l -> l @ [";;"] in
   Fmt.pf ppf "%a%a" (pp_list pp_line) cmds (pp_list pp_output) t.output
 
-let pp_code code_lines ppf = Fmt.(list ~sep:(unit "\n") pp_html) ppf code_lines
-
-let pp_contents (t:Mdx.Block.t) = pp_code t.contents
+let pp_contents (t:Mdx.Block.t) ppf =
+  Fmt.(list ~sep:(unit "\n") pp_html) ppf t.contents
 
 let pp_cram ppf (t:Mdx.Cram.t) =
   let pp_exit ppf = match t.exit_code with
@@ -68,9 +56,15 @@ let pp_cram ppf (t:Mdx.Cram.t) =
     (pp_list pp_output) t.output pp_exit
 
 let try_converting_to_reason (b:Mdx.Block.t) : Mdx.Block.t =
-  let possibly_reason_contents = Mdx.Reason.reason_of_lines b.contents in
+  let possibly_reason_contents = Mdx.Reason.FromOCamlToReason.transform b.contents in
   match possibly_reason_contents with
   | Some contents -> { b with value = Reason; contents = contents; }
+  | None -> b
+
+let try_converting_to_ocaml (b:Mdx.Block.t) : Mdx.Block.t =
+  let possibly_ocaml_contents = Mdx.Reason.FromReasonToOCaml.transform b.contents in
+  match possibly_ocaml_contents with
+  | Some contents -> { b with value = OCaml; contents = contents; }
   | None -> b
 
 let pp_block ~print_form ppf (b:Mdx.Block.t) =
@@ -87,7 +81,13 @@ let pp_block ~print_form ppf (b:Mdx.Block.t) =
         | Reason -> Some "reason", pp_contents new_block, []
         | _ -> Some "ocaml", pp_contents b, [] (* transform to reason failed, so let's fallback to ocaml *)
     )
-    | Reason, _ -> failwith "reasonml block not supported"
+    | Reason, `Reason -> Some "reason", pp_contents b, []
+    | Reason, `OCaml -> (
+      let new_block = try_converting_to_ocaml b in
+      match new_block.value with
+        | OCaml -> Some "ocaml", pp_contents new_block, []
+        | _ -> Some "reason", pp_contents b, [] (* transform to ocaml failed, so let's fallback to reason *)
+    )
     | Cram t, _ -> Some "bash" , (fun ppf -> pp_list pp_cram ppf t.tests), [
         ("class"             , "command-line");
         ("data-user"         , "fun");

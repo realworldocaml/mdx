@@ -35,7 +35,6 @@ let dump_line ppf = function
 let dump_lines = Fmt.(Dump.list dump_line)
 
 let command t = t.command
- (* match Reason.reason_of_lines t.command with | None -> t.command | Some r -> r *)
 let output t = t.output
 
 let dump ppf ({vpad; hpad; line; command; output} : t) =

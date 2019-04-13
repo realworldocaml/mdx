@@ -70,17 +70,17 @@
 
 (alias
  (name   runtest)
- (deps   (:x toplevel.md) (:y toplevel.html.expected) (package mdx))
+ (deps   (:x output.md) (:y output.ml.html.expected) (package mdx))
  (action (progn
-           (run mdx output -p reason %{x} -o toplevel.html)
-           (diff? %{y} toplevel.html))))
+           (run ocaml-mdx output -p ocaml %{x} -o output.ml.html)
+           (diff? %{y} output.ml.html))))
 
 (alias
  (name   runtest)
- (deps   (:x output.md) (:y output.html.expected) (package mdx))
+ (deps   (:x output.md) (:y output.re.html.expected) (package mdx))
  (action (progn
-           (run ocaml-mdx output %{x} -o output.html)
-           (diff? %{y} output.html))))
+           (run ocaml-mdx output -p reason %{x} -o output.re.html)
+           (diff? %{y} output.re.html))))
 
 (alias
  (name   runtest)
