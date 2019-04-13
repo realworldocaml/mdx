@@ -270,6 +270,13 @@ let init_local_opam_switch ~opam_switch ~repo ~remotes () =
           in
           OS.Cmd.(run ~err:err_null cmd) )
         remotes
+      >>= fun () ->
+      let cmd =
+        Cmd.(
+          v "opam" % "repository" %% switch_path repo % "add"
+          % "dune-overlays" % Config.duniverse_overlays_repo)
+      in
+      OS.Cmd.(run ~err:err_null cmd)
 
 let add_opam_dev_pin ~repo {Opam.pin; url; tag} =
   let targ =

@@ -29,47 +29,7 @@ let base_packages =
   ; "ocaml-base-compiler"
   ; "ocaml-variants" ]
 
-let duniverse_forks =
-  [ ("git+http://erratique.ch/repos/uutf.git", "uutf")
-  ; ("git+http://erratique.ch/repos/astring.git", "astring")
-  ; ("git+http://erratique.ch/repos/asetmap.git", "asetmap")
-  ; ("git+http://erratique.ch/repos/logs.git", "logs")
-  ; ("git+http://erratique.ch/repos/react.git", "react")
-  ; ("git+http://erratique.ch/repos/xmlm.git", "xmlm")
-  ; ("git+http://erratique.ch/repos/webbrowser.git", "webbrowser")
-  ; ("git+http://erratique.ch/repos/uuidm.git", "uuidm")
-  ; ("git+http://erratique.ch/repos/uutf.git", "uutf")
-  ; ("git+http://erratique.ch/repos/mtime.git", "mtime")
-  ; ("git+http://erratique.ch/repos/ptime.git", "ptime")
-  ; ("git+http://erratique.ch/repos/fmt.git", "fmt")
-  ; ("git+http://erratique.ch/repos/rresult.git", "rresult")
-  ; ("git+http://erratique.ch/repos/jsonm.git", "jsonm")
-  ; ("git+http://erratique.ch/repos/fpath.git", "fpath")
-  ; ("git+http://erratique.ch/repos/bos.git", "bos")
-  ; ("git+http://erratique.ch/repos/topkg.git", "topkg")
-  ; ("git+http://erratique.ch/repos/cmdliner.git", "cmdliner")
-  ; ("git+https://github.com/backtracking/ocaml-hashcons.git", "ocaml-hashcons")
-  ; ("git+https://github.com/backtracking/ocamlgraph.git", "ocamlgraph")
-  ; ("git+https://gitlab.camlcity.org/gerd/lib-findlib.git", "lib-findlib")
-  ; ("git+https://gforge.inria.fr/git/dose/dose.git", "dose3")
-  ; ("git+https://github.com/ocaml/opam-file-format", "opam-file-format")
-  ; ("git+https://scm.gforge.inria.fr/anonscm/git/cudf/cudf.git", "cudf")
-  ; ("git+https://github.com/ocaml/opam-depext.git#2.0", "opam-depext")
-  ; ("git+https://github.com/ocaml/opam.git", "opam")
-  ; ("git+https://github.com/superbobry/ocaml-textwrap.git", "ocaml-textwrap")
-  ; ("git://github.com/ygrek/ocaml-extlib.git", "ocaml-extlib")
-  ; ("git+https://github.com/mirage/mirage-xen.git", "mirage-xen")
-  ; ("git+https://github.com/mirage/mirage-entropy.git", "mirage-entropy")
-  ; ("git+https://github.com/pqwy/lru.git", "lru")
-  ; ("git+https://github.com/pqwy/psq.git", "psq")
-  ; ("git+https://github.com/ocsigen/reactiveData.git", "reactiveData")
-  ; ("git+https://github.com/mirleft/ocaml-asn1-combinators.git", "ocaml-asn1-combinators")
-  ; ("git+https://github.com/mirleft/ocaml-nocrypto.git", "ocaml-nocrypto")
-  ; ("git+https://github.com/mirleft/ocaml-tls.git", "ocaml-tls")
-  ; ("git+https://github.com/inhabitedtype/ocaml-dispatch.git", "ocaml-dispatch")
-  ; ("git+https://github.com/OCamlPro/ocplib-endian.git", "ocplib-endian") ]
-
-let duniverse_branch f = Fmt.strf "duniverse-%s" f
+let duniverse_overlays_repo = "git://github.com/dune-universe/opam-overlays.git"
 
 let duniverse_dir = Fpath.v ".duniverse"
 
