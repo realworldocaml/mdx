@@ -58,21 +58,21 @@
  (name   runtest)
  (deps   (:x interface.md) (:y interface.html.expected) (package mdx))
  (action (progn
-           (run mdx output %{x} -o interface.html)
+           (run mdx output -p reason %{x} -o interface.html)
            (diff? %{y} interface.html))))
 
 (alias
  (name   runtest)
  (deps   (:x implementation.md) (:y implementation.html.expected) (package mdx))
  (action (progn
-           (run mdx output %{x} -o implementation.html)
+           (run mdx output -p reason %{x} -o implementation.html)
            (diff? %{y} implementation.html))))
 
 (alias
  (name   runtest)
  (deps   (:x toplevel.md) (:y toplevel.html.expected) (package mdx))
  (action (progn
-           (run mdx output %{x} -o toplevel.html)
+           (run mdx output -p reason %{x} -o toplevel.html)
            (diff? %{y} toplevel.html))))
 
 (alias

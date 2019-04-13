@@ -52,18 +52,11 @@ let pp_line ppf l = Fmt.pf ppf "%a\n" pp_html l
 
 let pp_toplevel ppf (t:Mdx.Toplevel.t) =
   let cmds = match t.command with [c] -> [c ^ ";;" ] | l -> l @ [";;"] in
-  let reason_cmds = cmds |> Mdx.Reason.reason_of_lines in
-  let final_cmds = match reason_cmds with
-    | Some reason_cmds -> reason_cmds
-    | None -> cmds in
-  Fmt.pf ppf "%a%a" (pp_list pp_line) final_cmds (pp_list pp_output) t.output
+  Fmt.pf ppf "%a%a" (pp_list pp_line) cmds (pp_list pp_output) t.output
 
 let pp_code code_lines ppf = Fmt.(list ~sep:(unit "\n") pp_html) ppf code_lines
 
 let pp_contents (t:Mdx.Block.t) = pp_code t.contents
-
-(* let pp_reason_contents (t:Mdx.Block.t) =
-  pp_code (t.contents |> String.concat "\n" |> Mdx.Reason.reason_of_ocaml |> String.split_on_char '\n') *)
 
 let pp_cram ppf (t:Mdx.Cram.t) =
   let pp_exit ppf = match t.exit_code with
@@ -74,23 +67,35 @@ let pp_cram ppf (t:Mdx.Cram.t) =
     (pp_list pp_line) t.command
     (pp_list pp_output) t.output pp_exit
 
-let pp_block ppf (b:Mdx.Block.t) =
-  let lang, pp_code, attrs = match b.value with
-    | Toplevel t -> Some "reason", (fun ppf -> pp_list pp_toplevel ppf t), [
+let try_converting_to_reason (b:Mdx.Block.t) : Mdx.Block.t =
+  let possibly_reason_contents = Mdx.Reason.reason_of_lines b.contents in
+  match possibly_reason_contents with
+  | Some contents -> { b with value = Reason; contents = contents; }
+  | None -> b
+
+let pp_block ~print_form ppf (b:Mdx.Block.t) =
+  let lang, pp_code, attrs = match b.value, print_form with
+    | Toplevel t, _ -> Some "ocaml", (fun ppf -> pp_list pp_toplevel ppf t), [
         ("class"             , "command-line");
         ("data-prompt"       , "#");
         ("data-filter-output", ">");
       ]
-    | OCaml  -> Some "ocaml", pp_contents b, []
-    | Reason reason_contents  -> Some "reason", pp_code reason_contents, []
-    | Cram t -> Some "bash" , (fun ppf -> pp_list pp_cram ppf t.tests), [
+    | OCaml, `OCaml -> Some "ocaml", pp_contents b, []
+    | OCaml, `Reason -> (
+      let new_block = try_converting_to_reason b in
+      match new_block.value with
+        | Reason -> Some "reason", pp_contents new_block, []
+        | _ -> Some "ocaml", pp_contents b, [] (* transform to reason failed, so let's fallback to ocaml *)
+    )
+    | Reason, _ -> failwith "reasonml block not supported"
+    | Cram t, _ -> Some "bash" , (fun ppf -> pp_list pp_cram ppf t.tests), [
         ("class"             , "command-line");
         ("data-user"         , "fun");
         ("data-host"         , "lama");
         ("data-filter-output", ">");
       ]
-    | Raw     -> b.header, pp_contents b, []
-    | Error s -> Some "error", (fun ppf -> pp_list Fmt.string ppf s), []
+    | Raw, _     -> b.header, pp_contents b, []
+    | Error s, _ -> Some "error", (fun ppf -> pp_list Fmt.string ppf s), []
   in
   let pp_attr ppf (k, v) = Fmt.pf ppf "%s=%S" k v in
   let pp_lang ppf () = match lang with
@@ -104,7 +109,7 @@ let pp_block ppf (b:Mdx.Block.t) =
   Fmt.pf ppf "<div class=\"highlight\"><pre%a><code%a>%t</code></pre></div>"
     pp_attrs () pp_lang () pp_code
 
-let run () file output =
+let run () print_form file output =
   let t = Mdx.parse_file Normal file in
   match t with
   | [] -> 1
@@ -118,7 +123,7 @@ let run () file output =
         | Block b ->
           let b = Mdx.Block.eval b in
           Log.debug (fun l -> l "output: %a" Mdx.Block.dump b);
-          Fmt.pf ppf "%a\n" pp_block b
+          Fmt.pf ppf "%a\n" (pp_block ~print_form) b
       ) t;
     Fmt.pf ppf "%!";
     close_out oc;
@@ -140,8 +145,17 @@ let output =
              output will go to stdout," in
   Arg.(value & opt (some string) None & info ["o";"output"] ~doc ~docv:"FILE")
 
+let print =
+  let docv = "FORM" in
+  let doc = "Print code blocks in FORM, which is one of: \
+             (ocaml (default) | re | both)" in
+  let opts = Arg.enum ["ocaml", `OCaml; "reason", `Reason;]
+  in
+  Arg.(value & opt opts `OCaml & info ["p"; "print"] ~docv ~doc)
+
+
 let cmd =
   let doc = "Pre-process markdown files to produce OCaml code." in
   let exits = Term.default_exits in
-  Term.(pure run $ Cli.setup $ Cli.file $ output),
+  Term.(pure run $ Cli.setup $ print $ Cli.file $ output),
   Term.info "output" ~doc ~exits

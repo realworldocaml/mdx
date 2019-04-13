@@ -68,7 +68,6 @@ let parse l =
   List.map (function
       | `Text t -> Text t
       | `Section s -> Section s
-      (* IMPORTANT *)
       | `Block b  -> Block b
     ) l
 

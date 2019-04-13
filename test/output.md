@@ -26,3 +26,11 @@ type <record-name> =
       ...
     }
 ```
+
+```reason
+type <record-name> =
+    { <field> : <type>,
+      <field> : <type>,
+      ...
+    }
+```
