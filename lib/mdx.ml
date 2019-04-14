@@ -68,7 +68,7 @@ let parse l =
   List.map (function
       | `Text t -> Text t
       | `Section s -> Section s
-      | `Block b  -> Block b
+      | `Block b   -> Block b
     ) l
 
 type syntax = Syntax.t =
