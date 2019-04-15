@@ -1,5 +1,4 @@
 (executable
- (name duniverse)
  (public_name duniverse)
  (libraries
     cmdliner
