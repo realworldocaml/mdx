@@ -1,6 +1,0 @@
-(executables
- (names duniverse)
- (public_names duniverse)
- (libraries bos cmdliner fmt.cli logs.fmt fmt.tty logs.cli rresult sexplib uri opam-file-format ezjsonm opam-core)
- (preprocess (per_module ((pps ppx_sexp_conv) types)))
-)

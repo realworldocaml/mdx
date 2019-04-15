@@ -56,7 +56,7 @@ let tag_from_archive archive =
   let tag_of_file ?(prefix = "") f =
     match strip_ext f |> String.cut ~rev:true ~sep:"-" with
     | None -> parse_err ()
-    | Some (n, v) -> Some (prefix ^ v)
+    | Some (_n, v) -> Some (prefix ^ v)
   in
   let tag_of_last_path ?prefix () =
     List.rev path |> List.hd |> tag_of_file ?prefix
@@ -65,22 +65,22 @@ let tag_from_archive archive =
   | Some "git+http" | Some "git+https"
   | Some "git+ssh" | Some "git" -> (
     match String.cuts ~empty:false ~sep:"#" archive with
-    | [repo; tag] -> Some tag
+    | [_repo; tag] -> Some tag
     | _ -> Some "master")
   | Some "git+file" -> None
   | _ -> (
     match Uri.host uri with
     | Some "github.com" -> (
       match path with
-      | [u; r; "releases"; "download"; v; archive] -> Some v
-      | [u; r; "archive"; archive] -> Some (strip_ext archive)
-      | [u; r; "archive"; tag; _] -> Some tag
+      | [_u; _r; "releases"; "download"; v; _archive] -> Some v
+      | [_u; _r; "archive"; archive] -> Some (strip_ext archive)
+      | [_u; _r; "archive"; tag; _] -> Some tag
       | _ -> if Uri.scheme uri = Some "git+https" then None else parse_err () )
     | Some "ocaml.janestreet.com" -> (
       match path with
-      | ["ocaml-core"; ver; "files"; f] -> tag_of_file f
-      | ["janestreet"; r; "releases"; "download"; v; f] -> Some v
-      | ["janestreet"; r; "archive"; f] -> Some (strip_ext f)
+      | ["ocaml-core"; _ver; "files"; f] -> tag_of_file f
+      | ["janestreet"; _r; "releases"; "download"; v; _f] -> Some v
+      | ["janestreet"; _r; "archive"; f] -> Some (strip_ext f)
       | _ -> parse_err () )
     | Some "gitlab.camlcity.org" | Some "download.camlcity.org" ->
         tag_of_last_path ()
@@ -97,8 +97,8 @@ let classify_package ~package ~dev_repo ~archive ~pins () =
   if List.mem package.name base_packages then (`Virtual, None)
   else
     let dev_repo =
-      match List.find_opt (fun {pin; url; tag} -> package.name = pin) pins with
-      | Some {url= Some url} -> url
+      match List.find_opt (fun {pin; _} -> package.name = pin) pins with
+      | Some {url= Some url; _} -> url
       | _ -> dev_repo
     in
     match dev_repo with
@@ -126,9 +126,9 @@ let classify_package ~package ~dev_repo ~archive ~pins () =
             | [user; repo] ->
                 let repo = strip_ext repo in
                 (`Github (user, repo), tag)
-            | tl -> err "wierd github url" )
+            | _ -> err "weird github url" )
           | Some host -> (
-            match String.is_prefix "git" archive with
+            match String.is_prefix ~affix:"git" archive with
             | true -> (
                 let base_repo = String.cuts ~empty:false ~sep:"#" archive |> List.hd in
                 (`Git base_repo, tag) )
@@ -154,13 +154,13 @@ let get_opam_info ~repo ~pins package =
         Fmt.(option string)
         tag ) ;
   let tag =
-    match List.find_opt (fun {pin; url; tag} -> package.name = pin) pins with
-    | Some {pin; url; tag} -> tag
+    match List.find_opt (fun {pin; _} -> package.name = pin) pins with
+    | Some {tag; _} -> tag
     | None -> tag
   in
   Ok {package; dev_repo; tag; is_dune}
 
-let package_is_valid {package; dev_repo} =
+let package_is_valid {package; dev_repo; _} =
   match dev_repo with
   | `Error msg ->
       R.error_msg
@@ -170,7 +170,7 @@ let package_is_valid {package; dev_repo} =
         (Fmt.strf "Need a Duniverse fork for %a: %s" pp_package package msg)
   | _ -> R.ok ()
 
-let rec check_packages_are_valid pkgs =
+let check_packages_are_valid pkgs =
   Logs.app (fun l ->
       l "%aChecking that all dependencies are understood by the Duniverse."
         pp_header header ) ;
@@ -180,7 +180,7 @@ let rec check_packages_are_valid pkgs =
   in
   fn pkgs
 
-let rec filter_duniverse_packages ~excludes pkgs =
+let filter_duniverse_packages ~excludes pkgs =
   Logs.app (fun l ->
       l "%aFiltering out packages that are irrelevant to the Duniverse."
         pp_header header ) ;
@@ -198,11 +198,11 @@ let rec filter_duniverse_packages ~excludes pkgs =
 
 let calculate_duniverse ~repo file =
   load file
-  >>= fun {roots; excludes; pkgs; pins; opam_switch; branch; remotes} ->
+  >>= fun {roots; excludes; pins; opam_switch; branch; remotes; _} ->
   Exec.run_opam_package_deps ~repo (List.map string_of_package roots)
   >>| List.map split_opam_name_and_version
   >>| List.map (fun p ->
-          if List.exists (fun {pin; url; tag} -> p.name = pin) pins then
+          if List.exists (fun {pin; _} -> p.name = pin) pins then
             {p with version= Some "dev"}
           else p )
   >>= fun deps ->
@@ -228,7 +228,7 @@ let calculate_duniverse ~repo file =
   filter_duniverse_packages ~excludes pkgs
   >>= fun pkgs ->
   let is_dune_pkgs, not_dune_pkgs =
-    List.partition (fun {is_dune} -> is_dune) pkgs
+    List.partition (fun {is_dune; _} -> is_dune) pkgs
   in
   let num_dune = List.length is_dune_pkgs in
   let num_not_dune = List.length not_dune_pkgs in

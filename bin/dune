@@ -1,0 +1,11 @@
+(executable
+ (public_name duniverse)
+ (libraries
+    cmdliner
+    duniverse_lib
+    fmt.cli
+    logs.fmt
+    fmt.tty
+    logs.cli
+ )
+)

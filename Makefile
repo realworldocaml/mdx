@@ -9,6 +9,9 @@ clean:
 doc:
 	dune build @doc --profile=release
 
+test:
+	dune runtest
+
 help-%:
 	dune exec --profile=release -- duniverse $(*F) --help
 
