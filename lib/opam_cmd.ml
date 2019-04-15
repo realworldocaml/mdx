@@ -126,7 +126,7 @@ let classify_package ~package ~dev_repo ~archive ~pins () =
             | [user; repo] ->
                 let repo = strip_ext repo in
                 (`Github (user, repo), tag)
-            | _ -> err "wierd github url" )
+            | _ -> err "weird github url" )
           | Some host -> (
             match String.is_prefix ~affix:"git" archive with
             | true -> (
