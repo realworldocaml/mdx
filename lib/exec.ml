@@ -24,8 +24,6 @@ let rec iter fn l =
 
 let err_log = OS.Cmd.err_file ~append:true Config.duniverse_log
 
-let out_log = OS.Cmd.(to_null)
-
 let run_and_log_s ?(ignore_error = false) cmd =
   OS.File.tmp "duniverse-run-%s.stderr"
   >>= fun tmp_file ->
@@ -125,8 +123,6 @@ let git_checkout_or_branch ~repo branch =
   | Ok () -> Ok ()
   | Error (`Msg _) -> git_checkout ~args:(Cmd.v "-b") ~repo branch
 
-let git_rm_rf ~repo file = run_git ~repo Cmd.(v "rm" % "-rf" % p file)
-
 let git_add_and_commit ~repo ~message files =
   run_git ~ignore_error:true ~repo Cmd.(v "add" %% files)
   >>= fun () ->
@@ -137,35 +133,6 @@ let git_add_all_and_commit ~repo ~message () =
 
 let git_merge ?(args = Cmd.empty) ~from ~repo () =
   run_git ~repo Cmd.(v "merge" %% args % from)
-
-let git_push ?(args = Cmd.empty) ~repo remote branch =
-  run_git ~repo Cmd.(v "push" %% args % remote % branch)
-
-let git_ls_remote remote =
-  run_and_log_l Cmd.(v "git" % "ls-remote" % remote)
-  >>= map (fun l ->
-          match String.cuts ~empty:false ~sep:"\t" l with
-          | [_; r] -> (
-            match String.cuts ~sep:"/" r with
-            | ["refs"; "tags"; tag] -> Ok (`Tag tag)
-            | ["refs"; "heads"; head] -> Ok (`Head head)
-            | _ -> Ok `Other )
-          | _ ->
-              R.error_msg
-                (Fmt.strf "unable to parse git ls-remote for %s: '%s'" remote l)
-      )
-  >>= fun l ->
-  let tags, heads =
-    List.fold_left
-      (fun (tags, heads) -> function `Other -> (tags, heads)
-        | `Tag t -> (t :: tags, heads) | `Head h -> (tags, h :: heads) )
-      ([], []) l
-  in
-  Ok (tags, heads)
-
-let git_local_duniverse_remotes ~repo () =
-  run_and_log_l Cmd.(v "git" % "-C" % p repo % "remote")
-  >>| List.filter (String.is_prefix ~affix:"duniverse-")
 
 let switch_path repo =
   let path = Fpath.(repo / ".duniverse") in
@@ -295,42 +262,3 @@ let add_opam_local_pin ~repo package =
     Cmd.(
       v "opam" % "pin" %% switch_path repo % "add" % "-yn" % (package ^ ".dev")
       % ".")
-
-let opam_update ~repo =
-  run_and_log Cmd.(v "opam" % "update" %% switch_path repo)
-
-let query_github_repo_exists ~user ~repo =
-  let url = Fmt.strf "https://github.com/%s/%s" user repo in
-  let cmd = Cmd.(v "curl" % "--silent" % url) in
-  OS.Cmd.(run_out cmd |> to_string ~trim:true) >>| fun r -> r <> "Not Found"
-
-(* Currently unused due to API limits *)
-let query_github_api ~user ~repo frag =
-  let url = Fmt.strf "https://api.github.com/repos/%s/%s/%s" user repo frag in
-  let cmd = Cmd.(v "curl" % "--silent" % url) in
-  OS.Cmd.(run_out cmd |> to_string ~trim:true) >>| Ezjsonm.from_string
-
-(* Currently unused due to API limits *)
-let get_github_branches ~user ~repo =
-  query_github_api ~user ~repo "branches"
-  >>= fun j ->
-  try
-    Ok
-      Ezjsonm.(
-        get_list (fun d -> get_dict d |> List.assoc "name" |> get_string) j)
-  with _ ->
-    R.error_msg
-      (Fmt.strf "Unable to get remote branches for github/%s/%s" user repo)
-
-(* Currently unused due to API limits *)
-let get_github_tags ~user ~repo =
-  query_github_api ~user ~repo "tags"
-  >>= fun j ->
-  try
-    Ok
-      Ezjsonm.(
-        get_list (fun d -> get_dict d |> List.assoc "name" |> get_string) j)
-  with _ ->
-    R.error_msg
-      (Fmt.strf "Unable to get remote branches for github/%s/%s: %s" user repo
-         Ezjsonm.(to_string (wrap j)))
