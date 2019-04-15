@@ -126,57 +126,6 @@ let run_opam_package_deps ~root packages =
   in
   run_and_log_l cmd
 
-let get_opam_field ~root ~field package =
-  let field = field ^ ":" in
-  let cmd =
-    let open Cmd in
-    opam_cmd ~root "show" % "--color=never" % "--normalise" % "-f" % field % package
-  in
-  run_and_log_s cmd >>= fun r ->
-  match r with
-  | "" -> Ok OpamParserTypes.(List (("", 0, 0), []))
-  | r -> (
-    try Ok (OpamParser.value_from_string r "")
-    with _ -> Error (`Msg (Fmt.strf "parsing error for: '%s'" r)) )
-
-let get_opam_field_string_value ~root ~field package =
-  get_opam_field ~root ~field package >>= fun v ->
-  let open OpamParserTypes in
-  match v with
-  | String (_, v) -> Ok v
-  | List (_, []) -> Ok ""
-  | _ ->
-      R.error_msg
-        (Fmt.strf "Unable to parse opam string.\nTry `opam show --normalise -f %s: %s`" field
-           package)
-
-let get_opam_dev_repo ~root package = get_opam_field_string_value ~root ~field:"dev-repo" package
-
-let get_opam_archive_url ~root package =
-  get_opam_field_string_value ~root ~field:"url.src" package >>= function
-  | "" -> Ok None
-  | uri -> Ok (Some uri)
-
-let get_opam_depends ~root package =
-  get_opam_field ~root ~field:"depends" package >>= fun v ->
-  let open OpamParserTypes in
-  match v with
-  | List (_, vs) ->
-      let ss =
-        List.fold_left
-          (fun acc -> function String (_, v) -> v :: acc | Option (_, String (_, v), _) -> v :: acc
-            | _ -> acc )
-          [] vs
-      in
-      Logs.debug (fun l -> l "Depends for %s: %s" package (String.concat ~sep:" " ss));
-      Ok ss
-  | _ ->
-      R.error_msg
-        (Fmt.strf
-           "Unable to parse opam depends for %s\n\
-            Try `opam show --normalise -f depends: %s` manually"
-           package package)
-
 let opam_init_bare ~root () =
   let open Cmd in
   let cmd = opam_cmd ~root "init" % "--no-setup" % "--bare" in
@@ -186,6 +135,43 @@ let opam_switch_create_empty ~root () =
   let open Cmd in
   let cmd = opam_cmd ~root "switch" % "create" % "empty" % "--empty" % "--no-install" in
   run_and_log cmd
+
+let get_opam_fields_lines ~root fields packages =
+  let fields = List.map (fun s -> s^":") fields in
+  let fields = "name"::fields in
+  let fields_str = String.concat ~sep:"," fields
+  in
+  let packages_str = List.map Types.Opam.string_of_package packages
+  in
+  let cmd =
+    let open Cmd in
+    opam_cmd ~root "show" %"--color=never" % "--normalise"
+    % "-f" % fields_str %% (of_list packages_str)
+  in
+  run_and_log_l cmd
+
+let get_opam_fields ~root fields packages =
+  get_opam_fields_lines ~root fields packages
+  >>= fun lines ->
+  let rec parse cur_name map = function
+  | [] -> Ok map
+  | line::next -> (
+    match String.cut ~sep:" " line with
+    | None -> parse cur_name map next
+    | Some ("name", value) -> parse (String.trim value) map next
+    | Some (field, value_str) ->
+      (match (String.trim value_str) with
+      | "" -> Ok OpamParserTypes.(List (("", 0, 0), []))
+      | r -> (
+        try Ok (OpamParser.value_from_string r "") with _ ->
+          Error (`Msg (Fmt.strf "parsing error for: '%s'" r)) ))
+      >>= fun value ->
+      let field = String.trim ~drop:(fun x -> x == ':') field in
+      let map = StrMap.add (cur_name^"."^field) value map in
+      parse cur_name map next
+  )
+  in
+  parse "" Types.StrMap.empty lines
 
 let opam_add_remote ~root { Types.Opam.Remote.name; url } =
   let open Cmd in

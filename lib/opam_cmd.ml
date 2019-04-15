@@ -125,27 +125,87 @@ let classify_package ~package ~dev_repo ~archive ~pins () =
             | false -> (`Unknown host, tag) )
           | None -> err "dev-repo without host" ) )
 
-let check_if_dune ~root package =
-  Exec.get_opam_depends ~root (string_of_package package)
-  >>| List.exists (fun l -> l = "jbuilder" || l = "dune")
 
-let get_opam_info ~root ~pins package =
-  Exec.get_opam_dev_repo ~root (string_of_package package) >>= fun dev_repo ->
-  Exec.get_opam_archive_url ~root (string_of_package package) >>= fun archive ->
-  let dev_repo, tag = classify_package ~package ~dev_repo ~archive ~pins () in
-  check_if_dune ~root package >>= fun is_dune ->
-  Logs.info (fun l ->
+let parse_string ~field ~package v =
+  let open OpamParserTypes in
+  match v with
+  | Some (String (_, v)) -> Ok v
+  | Some (List (_, [])) -> Ok ""
+  | None -> Ok ""
+  | _ ->
+      R.error_msg
+        (Fmt.strf
+           "Unable to parse opam string.\n\
+            Try `opam show --normalise -f %s: %s`"
+           field package)
+
+let parse_dev_repo = parse_string ~field:"dev-repo"
+
+let parse_archive_url ~package v =
+  parse_string ~field:"url.src" ~package v
+  >>= function
+  | "" -> Ok None
+  | uri -> Ok (Some uri)
+
+let parse_opam_depends ~package v =
+  let open OpamParserTypes in
+  match v with
+  | Some (List (_, vs)) ->
+      let ss =
+        List.fold_left
+          (fun acc -> function String (_, v) -> v :: acc
+            | Option (_, String (_, v), _) -> v :: acc | _ -> acc )
+          [] vs
+      in
+      Logs.debug (fun l ->
+          l "Depends for %s: %s" package (String.concat ~sep:" " ss) ) ;
+      Ok ss
+  | None -> Ok []
+  | _ ->
+      R.error_msg
+        (Fmt.strf
+           "Unable to parse opam depends for %s\n\
+            Try `opam show --normalise -f depends: %s` manually"
+           package package)
+
+
+let get_opam_info ~root ~pins packages =
+  let fields = ["dev-repo"; "url.src"; "depends"] in
+  Exec.get_opam_fields ~root fields packages
+   >>= fun data ->
+  let packages = List.map
+    (fun pkg ->
+      let name = pkg.name in
+      let archive_url_line = Types.StrMap.find_opt (name^".url.src") data in
+      let archive = parse_archive_url ~package:name archive_url_line
+      in
+      let dev_repo_line = Types.StrMap.find_opt (name^".dev-repo") data in
+      let dev_repo = parse_dev_repo ~package:name dev_repo_line
+      in
+      let depends_line = Types.StrMap.find_opt (name^".depends") data in
+      let depends = parse_opam_depends ~package:name depends_line
+      in
+      dev_repo >>= fun dev_repo ->
+      archive >>= fun archive ->
+      depends >>| fun depends ->
+      let dev_repo, tag = classify_package ~package:pkg ~dev_repo ~archive ~pins () in
+      let is_dune = List.exists (fun l -> l = "jbuilder" || l = "dune") depends in
+      Logs.info (fun l ->
       l "Classified %a as %a with tag %a"
         Fmt.(styled `Yellow pp_package)
-        package pp_repo dev_repo
+        pkg pp_repo dev_repo
         Fmt.(option string)
         tag );
-  let tag =
-    match List.find_opt (fun { pin; _ } -> package.name = pin) pins with
-    | Some { tag; _ } -> tag
-    | None -> tag
+      let tag =
+        match List.find_opt (fun {pin; _} -> pkg.name = pin) pins with
+        | Some {tag; _} -> tag
+        | None -> tag
+      in
+      {package=pkg; dev_repo; tag; is_dune}
+    )
+    packages
   in
-  Ok { package; dev_repo; tag; is_dune }
+  List.fold_left (fun lst elem -> lst >>= (fun lst -> elem >>| fun elem -> elem::lst)) (Ok []) packages
 
 let package_is_valid { package; dev_repo; _ } =
   match dev_repo with
@@ -194,12 +254,18 @@ let calculate_duniverse ~root file =
         Fmt.(list ~sep:(unit ",@ ") pp_package)
         deps );
   Logs.app (fun l ->
-      l "%aQuerying local opam switch for their metadata and Dune compatibility." pp_header header
-  );
-  Exec.map (fun p -> get_opam_info ~root ~pins p) deps >>= fun pkgs ->
-  check_packages_are_valid pkgs >>= fun () ->
-  filter_duniverse_packages ~excludes pkgs >>= fun pkgs ->
-  let is_dune_pkgs, not_dune_pkgs = List.partition (fun { is_dune; _ } -> is_dune) pkgs in
+      l
+        "%aQuerying local opam switch for their metadata and Dune compatibility."
+        pp_header header ) ;
+  get_opam_info ~root ~pins deps
+  >>= fun pkgs ->
+  check_packages_are_valid pkgs
+  >>= fun () ->
+  filter_duniverse_packages ~excludes pkgs
+  >>= fun pkgs ->
+  let is_dune_pkgs, not_dune_pkgs =
+    List.partition (fun {is_dune; _} -> is_dune) pkgs
+  in
   let num_dune = List.length is_dune_pkgs in
   let num_not_dune = List.length not_dune_pkgs in
   let num_total = List.length pkgs in
