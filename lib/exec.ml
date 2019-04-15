@@ -24,8 +24,6 @@ let rec iter fn l =
 
 let err_log = OS.Cmd.err_file ~append:true Config.duniverse_log
 
-let out_log = OS.Cmd.(to_null)
-
 let run_and_log_s ?(ignore_error = false) cmd =
   OS.File.tmp "duniverse-run-%s.stderr"
   >>= fun tmp_file ->
@@ -125,8 +123,6 @@ let git_checkout_or_branch ~repo branch =
   | Ok () -> Ok ()
   | Error (`Msg _) -> git_checkout ~args:(Cmd.v "-b") ~repo branch
 
-let git_rm_rf ~repo file = run_git ~repo Cmd.(v "rm" % "-rf" % p file)
-
 let git_add_and_commit ~repo ~message files =
   run_git ~ignore_error:true ~repo Cmd.(v "add" %% files)
   >>= fun () ->
@@ -138,54 +134,23 @@ let git_add_all_and_commit ~repo ~message () =
 let git_merge ?(args = Cmd.empty) ~from ~repo () =
   run_git ~repo Cmd.(v "merge" %% args % from)
 
-let git_push ?(args = Cmd.empty) ~repo remote branch =
-  run_git ~repo Cmd.(v "push" %% args % remote % branch)
+let opam_cmd ~root sub_cmd =
+  let open Cmd in
+  v "opam" % sub_cmd % (Fmt.strf "--root=%a" Fpath.pp root)
 
-let git_ls_remote remote =
-  run_and_log_l Cmd.(v "git" % "ls-remote" % remote)
-  >>= map (fun l ->
-          match String.cuts ~empty:false ~sep:"\t" l with
-          | [_; r] -> (
-            match String.cuts ~sep:"/" r with
-            | ["refs"; "tags"; tag] -> Ok (`Tag tag)
-            | ["refs"; "heads"; head] -> Ok (`Head head)
-            | _ -> Ok `Other )
-          | _ ->
-              R.error_msg
-                (Fmt.strf "unable to parse git ls-remote for %s: '%s'" remote l)
-      )
-  >>= fun l ->
-  let tags, heads =
-    List.fold_left
-      (fun (tags, heads) -> function `Other -> (tags, heads)
-        | `Tag t -> (t :: tags, heads) | `Head h -> (tags, h :: heads) )
-      ([], []) l
-  in
-  Ok (tags, heads)
-
-let git_local_duniverse_remotes ~repo () =
-  run_and_log_l Cmd.(v "git" % "-C" % p repo % "remote")
-  >>| List.filter (String.is_prefix ~affix:"duniverse-")
-
-let switch_path repo =
-  let path = Fpath.(repo / ".duniverse") in
-  Cmd.(v (Fmt.strf "--switch=%a" Fpath.pp path))
-
-let run_opam_package_deps ~repo packages =
+let run_opam_package_deps ~root packages =
   let packages = String.concat ~sep:"," packages in
   let cmd =
     let open Cmd in
-    v "opam" % "list" %% switch_path repo % "--color=never" % "-s"
-    % ("--resolve=" ^ packages) % "-V" % "-S"
+    opam_cmd ~root "list" % "--color=never" % "-s" % ("--resolve=" ^ packages) % "-V" % "-S"
   in
   run_and_log_l cmd
 
-let get_opam_field ~repo ~field package =
+let get_opam_field ~root ~field package =
   let field = field ^ ":" in
   let cmd =
     let open Cmd in
-    v "opam" % "show" %% switch_path repo % "--color=never" % "--normalise"
-    % "-f" % field % package
+    opam_cmd ~root "show" % "--color=never" % "--normalise" % "-f" % field % package
   in
   run_and_log_s cmd
   >>= fun r ->
@@ -195,8 +160,8 @@ let get_opam_field ~repo ~field package =
     try Ok (OpamParser.value_from_string r "") with _ ->
       Error (`Msg (Fmt.strf "parsing error for: '%s'" r)) )
 
-let get_opam_field_string_value ~repo ~field package =
-  get_opam_field ~repo ~field package
+let get_opam_field_string_value ~root ~field package =
+  get_opam_field ~root ~field package
   >>= fun v ->
   let open OpamParserTypes in
   match v with
@@ -209,15 +174,15 @@ let get_opam_field_string_value ~repo ~field package =
             Try `opam show --normalise -f %s: %s`"
            field package)
 
-let get_opam_dev_repo ~repo package =
-  get_opam_field_string_value ~repo ~field:"dev-repo" package
+let get_opam_dev_repo ~root package =
+  get_opam_field_string_value ~root ~field:"dev-repo" package
 
-let get_opam_archive_url ~repo package =
-  get_opam_field_string_value ~repo ~field:"url.src" package
+let get_opam_archive_url ~root package =
+  get_opam_field_string_value ~root ~field:"url.src" package
   >>= function "" -> Ok None | uri -> Ok (Some uri)
 
-let get_opam_depends ~repo package =
-  get_opam_field ~repo ~field:"depends" package
+let get_opam_depends ~root package =
+  get_opam_field ~root ~field:"depends" package
   >>= fun v ->
   let open OpamParserTypes in
   match v with
@@ -238,47 +203,23 @@ let get_opam_depends ~repo package =
             Try `opam show --normalise -f depends: %s` manually"
            package package)
 
-let init_local_opam_switch ~opam_switch ~repo ~remotes () =
-  OS.Dir.exists Fpath.(Config.duniverse_dir / "_opam")
-  >>= function
-  | true ->
-      Logs.info (fun l ->
-          l "Local opam switch already exists, so not creating a new one." ) ;
-      Ok ()
-  | false ->
-      Logs.info (fun l ->
-          l "Initialising a fresh local opam switch in %a." Fpath.pp
-            Fpath.(Config.duniverse_dir / "_opam") ) ;
-      OS.Dir.create Config.duniverse_dir
-      >>= fun _ ->
-      let cmd =
-        let open Cmd in
-        v "opam" % "switch" % "create" % p Config.duniverse_dir % opam_switch
-        % "--no-install"
-      in
-      run_and_log cmd
-      >>= fun () ->
-      let rcnt = ref 0 in
-      iter
-        (fun remote ->
-          let rname = Fmt.strf "remote%d" !rcnt in
-          incr rcnt ;
-          let cmd =
-            Cmd.(
-              v "opam" % "repository" %% switch_path repo % "add" % rname
-              % remote)
-          in
-          OS.Cmd.(run ~err:err_null cmd) )
-        remotes
-      >>= fun () ->
-      let cmd =
-        Cmd.(
-          v "opam" % "repository" %% switch_path repo % "add"
-          % "dune-overlays" % Config.duniverse_overlays_repo)
-      in
-      OS.Cmd.(run ~err:err_null cmd)
+let opam_init ~root ~compiler () =
+  let open Cmd in
+  let cmd = opam_cmd ~root "init" % ("--compiler=" ^ compiler) % "--no-setup" in
+  run_and_log cmd
 
-let add_opam_dev_pin ~repo {Opam.pin; url; tag} =
+let opam_add_remote ~root {Types.Opam.Remote.name; url} =
+  let open Cmd in
+  let cmd = opam_cmd ~root "repository" % "add" % name % url in
+  run_and_log cmd 
+
+let init_opam_and_remotes ~root ~compiler ~remotes () =
+  Logs.info (fun l -> l "Initialising a fresh local opam switch in %a." Fpath.pp root);
+  opam_init ~root ~compiler ()
+  >>= fun () ->
+  iter (opam_add_remote ~root) remotes
+
+let add_opam_dev_pin ~root {Opam.pin; url; tag} =
   let targ =
     match (url, tag) with
     | None, _ -> "--dev"
@@ -287,50 +228,8 @@ let add_opam_dev_pin ~repo {Opam.pin; url; tag} =
   in
   run_and_log
     Cmd.(
-      v "opam" % "pin" %% switch_path repo % "add" % "-yn" % (pin ^ ".dev")
+      opam_cmd ~root "pin" % "add" % "-yn" % (pin ^ ".dev")
       % targ)
 
-let add_opam_local_pin ~repo package =
-  run_and_log
-    Cmd.(
-      v "opam" % "pin" %% switch_path repo % "add" % "-yn" % (package ^ ".dev")
-      % ".")
-
-let opam_update ~repo =
-  run_and_log Cmd.(v "opam" % "update" %% switch_path repo)
-
-let query_github_repo_exists ~user ~repo =
-  let url = Fmt.strf "https://github.com/%s/%s" user repo in
-  let cmd = Cmd.(v "curl" % "--silent" % url) in
-  OS.Cmd.(run_out cmd |> to_string ~trim:true) >>| fun r -> r <> "Not Found"
-
-(* Currently unused due to API limits *)
-let query_github_api ~user ~repo frag =
-  let url = Fmt.strf "https://api.github.com/repos/%s/%s/%s" user repo frag in
-  let cmd = Cmd.(v "curl" % "--silent" % url) in
-  OS.Cmd.(run_out cmd |> to_string ~trim:true) >>| Ezjsonm.from_string
-
-(* Currently unused due to API limits *)
-let get_github_branches ~user ~repo =
-  query_github_api ~user ~repo "branches"
-  >>= fun j ->
-  try
-    Ok
-      Ezjsonm.(
-        get_list (fun d -> get_dict d |> List.assoc "name" |> get_string) j)
-  with _ ->
-    R.error_msg
-      (Fmt.strf "Unable to get remote branches for github/%s/%s" user repo)
-
-(* Currently unused due to API limits *)
-let get_github_tags ~user ~repo =
-  query_github_api ~user ~repo "tags"
-  >>= fun j ->
-  try
-    Ok
-      Ezjsonm.(
-        get_list (fun d -> get_dict d |> List.assoc "name" |> get_string) j)
-  with _ ->
-    R.error_msg
-      (Fmt.strf "Unable to get remote branches for github/%s/%s: %s" user repo
-         Ezjsonm.(to_string (wrap j)))
+let add_opam_local_pin ~root package =
+  run_and_log Cmd.(opam_cmd ~root "pin" % "add" % "-yn" % (package ^ ".dev") % ".")
