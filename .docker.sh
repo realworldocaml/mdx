@@ -16,3 +16,6 @@ opam update
 opam install --deps-only -t duniverse
 make
 make test
+make install
+cd examples
+./build-examples.sh
