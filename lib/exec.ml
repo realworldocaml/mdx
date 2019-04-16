@@ -203,9 +203,14 @@ let get_opam_depends ~root package =
             Try `opam show --normalise -f depends: %s` manually"
            package package)
 
-let opam_init ~root ~compiler () =
+let opam_init_bare ~root () =
   let open Cmd in
-  let cmd = opam_cmd ~root "init" % ("--compiler=" ^ compiler) % "--no-setup" in
+  let cmd = opam_cmd ~root "init" % "--no-setup" % "--bare" in
+  run_and_log cmd
+
+let opam_switch_create_empty ~root () =
+  let open Cmd in
+  let cmd = opam_cmd ~root "switch" % "create" % "empty" % "--empty" % "--no-install" in
   run_and_log cmd
 
 let opam_add_remote ~root {Types.Opam.Remote.name; url} =
@@ -213,9 +218,11 @@ let opam_add_remote ~root {Types.Opam.Remote.name; url} =
   let cmd = opam_cmd ~root "repository" % "add" % name % url in
   run_and_log cmd 
 
-let init_opam_and_remotes ~root ~compiler ~remotes () =
-  Logs.info (fun l -> l "Initialising a fresh local opam switch in %a." Fpath.pp root);
-  opam_init ~root ~compiler ()
+let init_opam_and_remotes ~root ~remotes () =
+  Logs.info (fun l -> l "Initialising a fresh temprorary opam with an empty switch in %a." Fpath.pp root);
+  opam_init_bare ~root ()
+  >>= fun () ->
+  opam_switch_create_empty ~root ()
   >>= fun () ->
   iter (opam_add_remote ~root) remotes
 

@@ -263,13 +263,13 @@ let calculate_duniverse ~root file =
         file ) ;
   Ok ()
 
-let init_opam ~root ~compiler ~remotes () =
+let init_opam ~root ~remotes () =
   let open Types.Opam.Remote in
   let dune_overlays = {name = "dune-overlays"; url = Config.duniverse_overlays_repo} in
   let user_specified_remotes =
     List.mapi (fun i url -> {name = Fmt.strf "remote%d" i; url}) remotes
   in
-  Exec.init_opam_and_remotes ~root ~compiler ~remotes:(dune_overlays::user_specified_remotes) ()
+  Exec.init_opam_and_remotes ~root ~remotes:(dune_overlays::user_specified_remotes) ()
 
 let init_duniverse repo branch roots excludes pins compiler remotes () =
   Logs.app (fun l ->
@@ -281,7 +281,7 @@ let init_duniverse repo branch roots excludes pins compiler remotes () =
   >>= fun root ->
   Bos.OS.Dir.create Fpath.(repo // duniverse_dir)
   >>= fun _ ->
-  init_opam ~compiler ~root ~remotes ()
+  init_opam ~root ~remotes ()
   >>= fun () ->
   Exec.(iter (add_opam_dev_pin ~root) pins)
   >>= fun () ->
