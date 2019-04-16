@@ -221,10 +221,10 @@ let default_cmd =
     ; `P
         "It works by analysing opam package metadata and calculating a set of \
          git tags that can be cloned into the local repository into a \
-         $(b,duniverse/) subdirectory.  Once the external code has been \
+         $(b,duniverse/) subdirectory. Once the external code has been \
          pulled into the repository, a single $(b,dune build) command is \
          sufficient to build the whole project in a standalone fashion, \
-         without opam being required.  This is a particularly convenient way \
+         without opam being required. This is a particularly convenient way \
          of publishing CLI tools to users who do not need the full power of \
          opam."
     ; `P
