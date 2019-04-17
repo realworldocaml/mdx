@@ -212,16 +212,17 @@ let get_opam_info ~root ~pins packages =
 let package_is_valid { package; dev_repo; _ } =
   match dev_repo with
   | `Error msg ->
-      R.error_msg (Fmt.strf "Do not know how to deal with %a: %s" pp_package package msg)
+      Logs.warn (fun l -> l "Do not know how to deal with %a: %s" pp_package package msg);
+      false
   | `Unknown msg ->
-      R.error_msg (Fmt.strf "Need a Duniverse fork for %a: %s" pp_package package msg)
-  | _ -> R.ok ()
+      Logs.warn (fun l -> l "Need a Duniverse fork for %a: %s" pp_package package msg);
+      false
+  | _ -> true
 
 let check_packages_are_valid pkgs =
   Logs.app (fun l ->
-      l "%aChecking that all dependencies are understood by the Duniverse." pp_header header );
-  let rec fn = function hd :: tl -> package_is_valid hd >>= fun () -> fn tl | [] -> R.ok () in
-  fn pkgs
+      l "%aEliminating dependencies that are not understood by the Duniverse." pp_header header );
+  List.filter package_is_valid pkgs
 
 let filter_duniverse_packages ~excludes pkgs =
   Logs.app (fun l ->
@@ -258,7 +259,7 @@ let calculate_opam ~root ~root_packages ~excludes ~pins ~branch ~remotes =
       l "%aQuerying local opam switch for their metadata and Dune compatibility." pp_header header
   );
   get_opam_info ~root ~pins deps >>= fun packages ->
-  check_packages_are_valid packages >>= fun () ->
+  let packages = check_packages_are_valid packages in
   filter_duniverse_packages ~excludes packages >>= fun packages ->
   Ok { packages; root_packages; excludes; pins; branch; remotes }
 
