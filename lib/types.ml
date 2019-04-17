@@ -60,8 +60,7 @@ module Opam = struct
     ; pins: pin list
     ; pkgs: entry list
     ; remotes: string list [@default []]
-    ; branch: string [@default "master"]
-    ; opam_switch: string }
+    ; branch: string [@default "master"] }
   [@@deriving sexp]
 
   let pp_repo = pp_sexp sexp_of_repo

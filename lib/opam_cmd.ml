@@ -198,7 +198,7 @@ let filter_duniverse_packages ~excludes pkgs =
 
 let calculate_duniverse ~root file =
   load file
-  >>= fun {roots; excludes; pins; opam_switch; branch; remotes; _} ->
+  >>= fun {roots; excludes; pins; branch; remotes; _} ->
   Exec.run_opam_package_deps ~root (List.map string_of_package roots)
   >>| List.map split_opam_name_and_version
   >>| List.map (fun p ->
@@ -233,7 +233,7 @@ let calculate_duniverse ~root file =
   let num_dune = List.length is_dune_pkgs in
   let num_not_dune = List.length not_dune_pkgs in
   let num_total = List.length pkgs in
-  let t = {pkgs; roots; excludes; pins; opam_switch; branch; remotes} in
+  let t = {pkgs; roots; excludes; pins; branch; remotes} in
   if num_not_dune > 0 then
     Logs.app (fun l ->
         l
@@ -263,15 +263,15 @@ let calculate_duniverse ~root file =
         file ) ;
   Ok ()
 
-let init_opam ~root ~compiler ~remotes () =
+let init_opam ~root ~remotes () =
   let open Types.Opam.Remote in
   let dune_overlays = {name = "dune-overlays"; url = Config.duniverse_overlays_repo} in
   let user_specified_remotes =
     List.mapi (fun i url -> {name = Fmt.strf "remote%d" i; url}) remotes
   in
-  Exec.init_opam_and_remotes ~root ~compiler ~remotes:(dune_overlays::user_specified_remotes) ()
+  Exec.init_opam_and_remotes ~root ~remotes:(dune_overlays::user_specified_remotes) ()
 
-let init_duniverse repo branch roots excludes pins compiler remotes () =
+let init_duniverse repo branch roots excludes pins remotes () =
   Logs.app (fun l ->
       l "%aCalculating Duniverse on the %a branch." pp_header header
         Fmt.(styled `Cyan string)
@@ -281,7 +281,7 @@ let init_duniverse repo branch roots excludes pins compiler remotes () =
   >>= fun root ->
   Bos.OS.Dir.create Fpath.(repo // duniverse_dir)
   >>= fun _ ->
-  init_opam ~compiler ~root ~remotes ()
+  init_opam ~root ~remotes ()
   >>= fun () ->
   Exec.(iter (add_opam_dev_pin ~root) pins)
   >>= fun () ->
@@ -329,5 +329,5 @@ let init_duniverse repo branch roots excludes pins compiler remotes () =
     List.map split_opam_name_and_version (locals @ excludes) |> sort_uniq
   in
   let roots = List.map split_opam_name_and_version roots |> sort_uniq in
-  save file {pkgs= []; roots; excludes; pins; opam_switch = compiler; branch; remotes}
+  save file {pkgs= []; roots; excludes; pins; branch; remotes}
   >>= fun () -> calculate_duniverse ~root file
