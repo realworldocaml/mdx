@@ -171,18 +171,18 @@ let parse_opam_depends ~package v =
 
 let get_opam_info ~root ~pins packages =
   let fields = ["dev-repo"; "url.src"; "depends"] in
-  Exec.get_opam_fields ~root fields packages
+  Exec.Opam_show_result.make ~root fields packages
    >>= fun data ->
   let packages = List.map
     (fun pkg ->
       let name = pkg.name in
-      let archive_url_line = Types.StrMap.find_opt (name^".url.src") data in
+      let archive_url_line = Exec.Opam_show_result.get ~package:name ~field:"url.src" data in
       let archive = parse_archive_url ~package:name archive_url_line
       in
-      let dev_repo_line = Types.StrMap.find_opt (name^".dev-repo") data in
+      let dev_repo_line = Exec.Opam_show_result.get ~package:name ~field:"dev-repo" data in
       let dev_repo = parse_dev_repo ~package:name dev_repo_line
       in
-      let depends_line = Types.StrMap.find_opt (name^".depends") data in
+      let depends_line = Exec.Opam_show_result.get ~package:name ~field:"depends" data in
       let depends = parse_opam_depends ~package:name depends_line
       in
       dev_repo >>= fun dev_repo ->
