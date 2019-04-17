@@ -97,18 +97,6 @@ let pins_t =
   let t = Arg.conv ~docv:"PIN" (fin, fout) in
   Arg.(value & opt_all t [] & info ["pin"; "p"] ~docv:"PIN" ~doc)
 
-let ocaml_switch_t =
-  let doc =
-    "Name of the OCaml compiler to use to resolve opam packages.  A local \
-     switch is created in $(i,.duniverse) where pins and packages can be \
-     tracked independently of your main opam switch.  This defaults to \
-     $(i,ocaml-system), but you can use this flag to supply a more specific \
-     version such as $(b,ocaml.4.06.1)."
-  in
-  let open Arg in
-  value & opt string "ocaml-system"
-  & info ["opam-switch"; "s"] ~docv:"OPAM_SWITCH" ~doc
-
 let pkg_t =
   let open Arg in
   value & pos_all string []
@@ -137,7 +125,7 @@ let opam_cmd =
   ( (let open Term in
     term_result
       ( const Opam_cmd.init_duniverse
-      $ target_repo_t $ branch_t $ pkg_t $ exclude_t $ pins_t $ ocaml_switch_t
+      $ target_repo_t $ branch_t $ pkg_t $ exclude_t $ pins_t
       $ remotes_t $ setup_logs () ))
   , Term.info "opam" ~doc ~exits ~man )
 

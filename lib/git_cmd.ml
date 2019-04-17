@@ -21,11 +21,11 @@ let pp_header = Fmt.(styled `Blue string)
 
 let header = ">>> "
 
-let update repo branch roots excludes pins opam_switch remotes () =
+let update repo branch roots excludes pins remotes () =
   Exec.git_checkout ~repo branch
   >>= fun () ->
   Logs.info (fun l -> l "Running `duniverse opam`") ;
-  Opam_cmd.init_duniverse repo branch roots excludes pins opam_switch remotes
+  Opam_cmd.init_duniverse repo branch roots excludes pins remotes
     ()
   >>= fun () ->
   Logs.info (fun l -> l "Running `duniverse lock`") ;
