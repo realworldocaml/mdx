@@ -722,14 +722,12 @@ let _patch_env () =
 
 let init ~verbose:v ~silent:s ~verbose_findlib () =
   Clflags.real_paths := false;
-  Clflags.unsafe_string := Toplevel_backend.unsafe_string ();
   Toploop.set_paths ();
   Compmisc.init_path true;
   Toploop.toplevel_env := Compmisc.initial_env ();
   Sys.interactive := false;
   (* CR hheuzard: fixme *)
   (* patch_env (); *)
-  Toplevel_backend.init ~native:false (module Topdirs);
   (* Topfind.don't_load_deeply [
    *   "unix"; "findlib.top"; "findlib.internal"; "compiler-libs.toplevel"
    * ];
