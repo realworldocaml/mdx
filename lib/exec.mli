@@ -56,12 +56,12 @@ val run_opam_package_deps : root:Fpath.t -> string list -> (string list, [> Rres
 (** [run_opam_packages_deps ~root packages] returns a list of versioned constrained packages that
     resolves the transitive dependencies of [packages]. *)
 
-module Opam_show_result : sig
-  type t
-
-  val make : root: Fpath.t -> string list -> Types.Opam.package list -> (t, [> Rresult.R.msg ]) result
-  val get  : package: string -> field: string -> t -> OpamParserTypes.value option
-end
+(** [run_opam_show ~root ~fields ~packages] runs opam show to get [fields] for each package in [packages].*)
+val run_opam_show :
+  root:Fpath.t ->
+  fields:string list ->
+  packages:Types.Opam.package list ->
+  (string list, [> Rresult.R.msg ]) result
 
 (** [init_local_opam_switch ~opam_switch ~root ~remotes ()] creates a fresh opam state and switch
     with compiler [compiler] using [root] as OPAMROOT and adds the [remotes] opam repositories

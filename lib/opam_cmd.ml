@@ -125,12 +125,23 @@ let classify_package ~package ~dev_repo ~archive ~pins () =
             | false -> (`Unknown host, tag) )
           | None -> err "dev-repo without host" ) )
 
+let extract_opam_value = function
+  | None -> None
+  | Some str ->
+    let res =
+      try
+        Ok (OpamParser.value_from_string str "")
+      with | OpamLexer.Error _ ->
+        let error_message = Printf.sprintf "Failed to parse %S" str in
+        Error (`Msg error_message)
+    in
+    Some res
 
 let parse_string ~field ~package v =
   let open OpamParserTypes in
-  match v with
-  | Some (String (_, v)) -> Ok v
-  | Some (List (_, [])) -> Ok ""
+  match extract_opam_value v with
+  | Some (Ok (String (_, v))) -> Ok v
+  | Some (Ok (List (_, []))) -> Ok ""
   | None -> Ok ""
   | _ ->
       R.error_msg
@@ -149,8 +160,8 @@ let parse_archive_url ~package v =
 
 let parse_opam_depends ~package v =
   let open OpamParserTypes in
-  match v with
-  | Some (List (_, vs)) ->
+  match extract_opam_value v with
+  | Some (Ok (List (_, vs))) ->
       let ss =
         List.fold_left
           (fun acc -> function String (_, v) -> v :: acc
@@ -171,18 +182,20 @@ let parse_opam_depends ~package v =
 
 let get_opam_info ~root ~pins packages =
   let fields = ["dev-repo"; "url.src"; "depends"] in
-  Exec.Opam_show_result.make ~root fields packages
+  Exec.run_opam_show ~root ~packages ~fields
+  >>= fun lines ->
+  Opam_show_result.make lines
    >>= fun data ->
   let packages = List.map
     (fun pkg ->
       let name = pkg.name in
-      let archive_url_line = Exec.Opam_show_result.get ~package:name ~field:"url.src" data in
+      let archive_url_line = Opam_show_result.get ~package:name ~field:"url.src" data in
       let archive = parse_archive_url ~package:name archive_url_line
       in
-      let dev_repo_line = Exec.Opam_show_result.get ~package:name ~field:"dev-repo" data in
+      let dev_repo_line = Opam_show_result.get ~package:name ~field:"dev-repo" data in
       let dev_repo = parse_dev_repo ~package:name dev_repo_line
       in
-      let depends_line = Exec.Opam_show_result.get ~package:name ~field:"depends" data in
+      let depends_line = Opam_show_result.get ~package:name ~field:"depends" data in
       let depends = parse_opam_depends ~package:name depends_line
       in
       dev_repo >>= fun dev_repo ->

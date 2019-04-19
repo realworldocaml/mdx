@@ -18,8 +18,6 @@ open Sexplib.Conv
 
 let pp_sexp fn ppf v = Fmt.pf ppf "%s" (Sexplib.Sexp.to_string_hum (fn v))
 
-module StrMap = Map.Make(String)
-
 module Opam = struct
   module Remote = struct
     type t = { name : string; url : string } [@@deriving sexp]

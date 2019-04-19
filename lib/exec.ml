@@ -136,7 +136,7 @@ let opam_switch_create_empty ~root () =
   let cmd = opam_cmd ~root "switch" % "create" % "empty" % "--empty" % "--no-install" in
   run_and_log cmd
 
-let get_opam_fields_lines ~root fields packages =
+let run_opam_show ~root ~fields ~packages =
   let fields = List.map (fun s -> s^":") fields in
   let fields = "name"::fields in
   let fields_str = String.concat ~sep:"," fields
@@ -149,39 +149,6 @@ let get_opam_fields_lines ~root fields packages =
     % "-f" % fields_str %% (of_list packages_str)
   in
   run_and_log_l cmd
-
-let parse_opam_show_line line = match String.cut ~sep:" " line with
-  | None -> "",""
-  | Some (field, value) -> (String.trim field, String.trim value)
-
-module Opam_show_result = struct
-  type t = OpamParserTypes.value Types.StrMap.t
-
-  let make ~root fields packages =
-    get_opam_fields_lines ~root fields packages
-    >>= fun lines ->
-    let rec parse cur_name map = function
-    | [] -> Ok map
-    | line::next -> (
-      match parse_opam_show_line line with
-      | ("name", pkg_name) -> parse pkg_name map next
-      | (field, value_str) ->
-        (match value_str with
-        | "" -> Ok OpamParserTypes.(List (("", 0, 0), []))
-        | r -> (
-          try Ok (OpamParser.value_from_string r "") with OpamLexer.Error _ ->
-            Error (`Msg (Fmt.strf "parsing error for: '%s'" r)) ))
-        >>= fun value ->
-        let field = String.trim ~drop:(fun x -> x == ':') field in
-        let map = StrMap.add (cur_name^"."^field) value map in
-        parse cur_name map next
-    )
-    in
-    parse "" Types.StrMap.empty lines
-
-  let get ~package ~field t = Types.StrMap.find_opt (package^"."^field) t
-end
-
 
 let opam_add_remote ~root { Types.Opam.Remote.name; url } =
   let open Cmd in
