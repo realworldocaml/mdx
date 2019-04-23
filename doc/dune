@@ -1,10 +1,16 @@
 (rule
  (targets duniverse.1)
- (action (with-stdout-to %{targets} (run ../bin/duniverse.exe --help=plain))))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ../bin/duniverse.exe --help=plain))))
 
 (rule
  (targets duniverse-status.1)
- (action (with-stdout-to %{targets} (run ../bin/duniverse.exe status --help=plain))))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ../bin/duniverse.exe status --help=plain))))
 
 (executable
  (name gen_readme)
@@ -13,4 +19,7 @@
 (rule
  (targets usage.md)
  (deps header.md duniverse.1 duniverse-status.1)
- (action (with-stdout-to %{targets} (run ./gen_readme.exe duniverse duniverse-status))))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ./gen_readme.exe duniverse duniverse-status))))

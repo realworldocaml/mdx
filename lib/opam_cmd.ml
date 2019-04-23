@@ -25,8 +25,8 @@ let header = "==> "
 
 let split_opam_name_and_version name =
   match String.cut ~sep:"." name with
-  | None -> {name; version= None}
-  | Some (name, version) -> {name; version= Some version}
+  | None -> { name; version = None }
+  | Some (name, version) -> { name; version = Some version }
 
 let strip_ext fname =
   let open Fpath in
@@ -43,14 +43,14 @@ let find_local_opam_packages dir =
     Logs.app (fun l ->
         l "%aFiltering out local opam packages: %a." pp_header header
           Fmt.(list ~sep:(unit ",@ ") string)
-          pkgs ) ;
+          pkgs );
   pkgs
 
 let tag_from_archive archive =
   let uri = Uri.of_string archive in
   let path = String.cuts ~empty:false ~sep:"/" (Uri.path uri) in
   let parse_err () =
-    Logs.err (fun l -> l "Unable to classify archive %s" archive) ;
+    Logs.err (fun l -> l "Unable to classify archive %s" archive);
     None
   in
   let tag_of_file ?(prefix = "") f =
@@ -58,38 +58,32 @@ let tag_from_archive archive =
     | None -> parse_err ()
     | Some (_n, v) -> Some (prefix ^ v)
   in
-  let tag_of_last_path ?prefix () =
-    List.rev path |> List.hd |> tag_of_file ?prefix
-  in
+  let tag_of_last_path ?prefix () = List.rev path |> List.hd |> tag_of_file ?prefix in
   match Uri.scheme uri with
-  | Some "git+http" | Some "git+https"
-  | Some "git+ssh" | Some "git" -> (
+  | Some "git+http" | Some "git+https" | Some "git+ssh" | Some "git" -> (
     match String.cuts ~empty:false ~sep:"#" archive with
-    | [_repo; tag] -> Some tag
-    | _ -> Some "master")
+    | [ _repo; tag ] -> Some tag
+    | _ -> Some "master" )
   | Some "git+file" -> None
   | _ -> (
     match Uri.host uri with
     | Some "github.com" -> (
       match path with
-      | [_u; _r; "releases"; "download"; v; _archive] -> Some v
-      | [_u; _r; "archive"; archive] -> Some (strip_ext archive)
-      | [_u; _r; "archive"; tag; _] -> Some tag
+      | [ _u; _r; "releases"; "download"; v; _archive ] -> Some v
+      | [ _u; _r; "archive"; archive ] -> Some (strip_ext archive)
+      | [ _u; _r; "archive"; tag; _ ] -> Some tag
       | _ -> if Uri.scheme uri = Some "git+https" then None else parse_err () )
     | Some "ocaml.janestreet.com" -> (
       match path with
-      | ["ocaml-core"; _ver; "files"; f] -> tag_of_file f
-      | ["janestreet"; _r; "releases"; "download"; v; _f] -> Some v
-      | ["janestreet"; _r; "archive"; f] -> Some (strip_ext f)
+      | [ "ocaml-core"; _ver; "files"; f ] -> tag_of_file f
+      | [ "janestreet"; _r; "releases"; "download"; v; _f ] -> Some v
+      | [ "janestreet"; _r; "archive"; f ] -> Some (strip_ext f)
       | _ -> parse_err () )
-    | Some "gitlab.camlcity.org" | Some "download.camlcity.org" ->
-        tag_of_last_path ()
-    | Some "ocamlgraph.lri.fr" | Some "erratique.ch" ->
-        tag_of_last_path ~prefix:"v" ()
+    | Some "gitlab.camlcity.org" | Some "download.camlcity.org" -> tag_of_last_path ()
+    | Some "ocamlgraph.lri.fr" | Some "erratique.ch" -> tag_of_last_path ~prefix:"v" ()
     | _ ->
         Logs.info (fun l ->
-            l "Attempting to guess tag for %s from the final part of the URL"
-              archive ) ;
+            l "Attempting to guess tag for %s from the final part of the URL" archive );
         tag_of_last_path () )
 
 let classify_package ~package ~dev_repo ~archive ~pins () =
@@ -97,41 +91,37 @@ let classify_package ~package ~dev_repo ~archive ~pins () =
   if List.mem package.name base_packages then (`Virtual, None)
   else
     let dev_repo =
-      match List.find_opt (fun {pin; _} -> package.name = pin) pins with
-      | Some {url= Some url; _} -> url
+      match List.find_opt (fun { pin; _ } -> package.name = pin) pins with
+      | Some { url = Some url; _ } -> url
       | _ -> dev_repo
     in
     match dev_repo with
     | "" ->
         Logs.debug (fun l ->
-            l "Mapped %s to a virtual package as it has a blank dev repo"
-              package.name ) ;
+            l "Mapped %s to a virtual package as it has a blank dev repo" package.name );
         (`Virtual, None)
     | dev_repo -> (
       match archive with
       | None ->
-          Logs.debug (fun l ->
-              l "Mapped %s to a virtual package as it has no archive"
-                package.name ) ;
+          Logs.debug (fun l -> l "Mapped %s to a virtual package as it has no archive" package.name);
           (`Virtual, None)
       | Some archive -> (
           let uri = Uri.of_string dev_repo in
           let tag = tag_from_archive archive in
           Logs.debug (fun l ->
-              l "Mapped %s -> %s" archive
-                (match tag with None -> "??" | Some v -> v) ) ;
+              l "Mapped %s -> %s" archive (match tag with None -> "??" | Some v -> v) );
           match Uri.host uri with
           | Some "github.com" -> (
             match String.cuts ~empty:false ~sep:"/" (Uri.path uri) with
-            | [user; repo] ->
+            | [ user; repo ] ->
                 let repo = strip_ext repo in
                 (`Github (user, repo), tag)
             | _ -> err "weird github url" )
           | Some host -> (
             match String.is_prefix ~affix:"git" archive with
-            | true -> (
+            | true ->
                 let base_repo = String.cuts ~empty:false ~sep:"#" archive |> List.hd in
-                (`Git base_repo, tag) )
+                (`Git base_repo, tag)
             | false -> (`Unknown host, tag) )
           | None -> err "dev-repo without host" ) )
 
@@ -140,50 +130,40 @@ let check_if_dune ~root package =
   >>| List.exists (fun l -> l = "jbuilder" || l = "dune")
 
 let get_opam_info ~root ~pins package =
-  Exec.get_opam_dev_repo ~root (string_of_package package)
-  >>= fun dev_repo ->
-  Exec.get_opam_archive_url ~root (string_of_package package)
-  >>= fun archive ->
+  Exec.get_opam_dev_repo ~root (string_of_package package) >>= fun dev_repo ->
+  Exec.get_opam_archive_url ~root (string_of_package package) >>= fun archive ->
   let dev_repo, tag = classify_package ~package ~dev_repo ~archive ~pins () in
-  check_if_dune ~root package
-  >>= fun is_dune ->
+  check_if_dune ~root package >>= fun is_dune ->
   Logs.info (fun l ->
       l "Classified %a as %a with tag %a"
         Fmt.(styled `Yellow pp_package)
         package pp_repo dev_repo
         Fmt.(option string)
-        tag ) ;
+        tag );
   let tag =
-    match List.find_opt (fun {pin; _} -> package.name = pin) pins with
-    | Some {tag; _} -> tag
+    match List.find_opt (fun { pin; _ } -> package.name = pin) pins with
+    | Some { tag; _ } -> tag
     | None -> tag
   in
-  Ok {package; dev_repo; tag; is_dune}
+  Ok { package; dev_repo; tag; is_dune }
 
-let package_is_valid {package; dev_repo; _} =
+let package_is_valid { package; dev_repo; _ } =
   match dev_repo with
   | `Error msg ->
-      R.error_msg
-        (Fmt.strf "Do not know how to deal with %a: %s" pp_package package msg)
+      R.error_msg (Fmt.strf "Do not know how to deal with %a: %s" pp_package package msg)
   | `Unknown msg ->
-      R.error_msg
-        (Fmt.strf "Need a Duniverse fork for %a: %s" pp_package package msg)
+      R.error_msg (Fmt.strf "Need a Duniverse fork for %a: %s" pp_package package msg)
   | _ -> R.ok ()
 
 let check_packages_are_valid pkgs =
   Logs.app (fun l ->
-      l "%aChecking that all dependencies are understood by the Duniverse."
-        pp_header header ) ;
-  let rec fn = function
-    | hd :: tl -> package_is_valid hd >>= fun () -> fn tl
-    | [] -> R.ok ()
-  in
+      l "%aChecking that all dependencies are understood by the Duniverse." pp_header header );
+  let rec fn = function hd :: tl -> package_is_valid hd >>= fun () -> fn tl | [] -> R.ok () in
   fn pkgs
 
 let filter_duniverse_packages ~excludes pkgs =
   Logs.app (fun l ->
-      l "%aFiltering out packages that are irrelevant to the Duniverse."
-        pp_header header ) ;
+      l "%aFiltering out packages that are irrelevant to the Duniverse." pp_header header );
   let rec fn acc = function
     | hd :: tl ->
         let filter =
@@ -197,49 +177,39 @@ let filter_duniverse_packages ~excludes pkgs =
   fn [] pkgs
 
 let calculate_duniverse ~root file =
-  load file
-  >>= fun {roots; excludes; pins; branch; remotes; _} ->
+  load file >>= fun { roots; excludes; pins; branch; remotes; _ } ->
   Exec.run_opam_package_deps ~root (List.map string_of_package roots)
   >>| List.map split_opam_name_and_version
   >>| List.map (fun p ->
-          if List.exists (fun {pin; _} -> p.name = pin) pins then
-            {p with version= Some "dev"}
+          if List.exists (fun { pin; _ } -> p.name = pin) pins then { p with version = Some "dev" }
           else p )
   >>= fun deps ->
   Logs.app (fun l ->
-      l "%aFound %a opam dependencies." pp_header header
-        Fmt.(styled `Green int)
-        (List.length deps) ) ;
+      l "%aFound %a opam dependencies." pp_header header Fmt.(styled `Green int) (List.length deps)
+  );
   Logs.info (fun l ->
       l "The dependencies for %a are: %a"
         Fmt.(list ~sep:(unit ",@ ") pp_package)
         roots
         Fmt.(list ~sep:(unit ",@ ") pp_package)
-        deps ) ;
+        deps );
   Logs.app (fun l ->
-      l
-        "%aQuerying local opam switch for their metadata and Dune \
-         compatibility."
-        pp_header header ) ;
-  Exec.map (fun p -> get_opam_info ~root ~pins p) deps
-  >>= fun pkgs ->
-  check_packages_are_valid pkgs
-  >>= fun () ->
-  filter_duniverse_packages ~excludes pkgs
-  >>= fun pkgs ->
-  let is_dune_pkgs, not_dune_pkgs =
-    List.partition (fun {is_dune; _} -> is_dune) pkgs
-  in
+      l "%aQuerying local opam switch for their metadata and Dune compatibility." pp_header header
+  );
+  Exec.map (fun p -> get_opam_info ~root ~pins p) deps >>= fun pkgs ->
+  check_packages_are_valid pkgs >>= fun () ->
+  filter_duniverse_packages ~excludes pkgs >>= fun pkgs ->
+  let is_dune_pkgs, not_dune_pkgs = List.partition (fun { is_dune; _ } -> is_dune) pkgs in
   let num_dune = List.length is_dune_pkgs in
   let num_not_dune = List.length not_dune_pkgs in
   let num_total = List.length pkgs in
-  let t = {pkgs; roots; excludes; pins; branch; remotes} in
+  let t = { pkgs; roots; excludes; pins; branch; remotes } in
   if num_not_dune > 0 then
     Logs.app (fun l ->
         l
           "%aThe good news is that %a/%a are Dune compatible.\n\
-           The bad news is that you will have to fork these to the Duniverse \
-           or port them upstream: %a."
+           The bad news is that you will have to fork these to the Duniverse or port them \
+           upstream: %a."
           pp_header header
           Fmt.(styled `Green int)
           num_dune
@@ -249,85 +219,73 @@ let calculate_duniverse ~root file =
           not_dune_pkgs )
   else
     Logs.app (fun l ->
-        l "%aAll %a opam packages are Dune compatible! It's a spicy miracle!"
-          pp_header header
+        l "%aAll %a opam packages are Dune compatible! It's a spicy miracle!" pp_header header
           Fmt.(styled `Green int)
-          num_total ) ;
-  save file t
-  >>= fun () ->
+          num_total );
+  save file t >>= fun () ->
   Logs.app (fun l ->
       l "%aWritten %a opam packages to %a." pp_header header
         Fmt.(styled `Green int)
         num_total
         Fmt.(styled `Cyan Fpath.pp)
-        file ) ;
+        file );
   Ok ()
 
 let init_opam ~root ~remotes () =
   let open Types.Opam.Remote in
-  let dune_overlays = {name = "dune-overlays"; url = Config.duniverse_overlays_repo} in
+  let dune_overlays = { name = "dune-overlays"; url = Config.duniverse_overlays_repo } in
   let user_specified_remotes =
-    List.mapi (fun i url -> {name = Fmt.strf "remote%d" i; url}) remotes
+    List.mapi (fun i url -> { name = Fmt.strf "remote%d" i; url }) remotes
   in
-  Exec.init_opam_and_remotes ~root ~remotes:(dune_overlays::user_specified_remotes) ()
+  Exec.init_opam_and_remotes ~root ~remotes:(dune_overlays :: user_specified_remotes) ()
 
 let init_duniverse repo branch roots excludes pins remotes () =
   Logs.app (fun l ->
       l "%aCalculating Duniverse on the %a branch." pp_header header
         Fmt.(styled `Cyan string)
-        branch ) ;
+        branch );
   let file = Fpath.(repo // Config.opam_lockfile) in
-  Bos.OS.Dir.tmp ".duniverse-opam-root-%s"
-  >>= fun root ->
-  Bos.OS.Dir.create Fpath.(repo // duniverse_dir)
-  >>= fun _ ->
-  init_opam ~root ~remotes ()
-  >>= fun () ->
-  Exec.(iter (add_opam_dev_pin ~root) pins)
-  >>= fun () ->
-  find_local_opam_packages repo
-  >>= fun locals ->
-  Exec.(iter (add_opam_local_pin ~root) locals)
-  >>= fun () ->
+  Bos.OS.Dir.tmp ".duniverse-opam-root-%s" >>= fun root ->
+  Bos.OS.Dir.create Fpath.(repo // duniverse_dir) >>= fun _ ->
+  init_opam ~root ~remotes () >>= fun () ->
+  Exec.(iter (add_opam_dev_pin ~root) pins) >>= fun () ->
+  find_local_opam_packages repo >>= fun locals ->
+  Exec.(iter (add_opam_local_pin ~root) locals) >>= fun () ->
   let roots =
     match (roots, locals) with
     | [], [] ->
         Logs.err (fun l ->
             l
               "Cannot find any packages to vendor.\n\
-               Either create some *.opam files in the local repository, or \
-               specify them manually via 'duniverse opam <packages>'." ) ;
+               Either create some *.opam files in the local repository, or specify them manually \
+               via 'duniverse opam <packages>'." );
         exit 1
     | [], locals ->
         Logs.app (fun l ->
-            l "%aUsing locally scanned packages '%a' as the roots." pp_header
-              header
+            l "%aUsing locally scanned packages '%a' as the roots." pp_header header
               Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
-              locals ) ;
+              locals );
         locals
     | roots, [] ->
         Logs.app (fun l ->
-            l "%aUsing command-line specified packages '%a' as the roots."
-              pp_header header
+            l "%aUsing command-line specified packages '%a' as the roots." pp_header header
               Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
-              roots ) ;
+              roots );
         roots
     | roots, locals ->
         Logs.app (fun l ->
             l
               "%aUsing command-line specified packages '%a' as the roots.\n\
-               Ignoring the locally found packages %a unless they are \
-               explicitly specified on the command line."
+               Ignoring the locally found packages %a unless they are explicitly specified on the \
+               command line."
               pp_header header
               Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
               roots
               Fmt.(list ~sep:(unit ",@ ") string)
-              locals ) ;
+              locals );
         roots
   in
-  let excludes =
-    List.map split_opam_name_and_version (locals @ excludes) |> sort_uniq
-  in
+  let excludes = List.map split_opam_name_and_version (locals @ excludes) |> sort_uniq in
   let roots = List.map split_opam_name_and_version roots |> sort_uniq in
-  save file {pkgs= []; roots; excludes; pins; branch; remotes}
-  >>= fun () -> calculate_duniverse ~root file
+  save file { pkgs = []; roots; excludes; pins; branch; remotes } >>= fun () ->
+  calculate_duniverse ~root file

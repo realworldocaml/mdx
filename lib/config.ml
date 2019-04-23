@@ -15,19 +15,20 @@
  *)
 
 let base_packages =
-  [ "menhir"
-  ; "num"
-  ; "ppx_tools"
-  ; "jbuilder"
-  ; "dune"
-  ; "ocamlbuild"
-  ; "ocamlmod"
-  ; "oasis"
-  ; "ocamlify"
-  ; "uchar"
-  ; "ocaml"
-  ; "ocaml-base-compiler"
-  ; "ocaml-variants" ]
+  [ "menhir";
+    "num";
+    "ppx_tools";
+    "jbuilder";
+    "dune";
+    "ocamlbuild";
+    "ocamlmod";
+    "oasis";
+    "ocamlify";
+    "uchar";
+    "ocaml";
+    "ocaml-base-compiler";
+    "ocaml-variants"
+  ]
 
 let duniverse_overlays_repo = "git://github.com/dune-universe/opam-overlays.git"
 
