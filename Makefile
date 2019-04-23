@@ -1,4 +1,4 @@
-.PHONY: build clean test doc install
+.PHONY: build clean test doc install format
 
 build:
 	dune build 
@@ -14,3 +14,7 @@ test:
 
 install:
 	dune install
+
+format:
+	- dune build @fmt 2> /dev/null
+	dune promote
