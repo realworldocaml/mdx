@@ -20,11 +20,7 @@ let pp_sexp fn ppf v = Fmt.pf ppf "%s" (Sexplib.Sexp.to_string_hum (fn v))
 
 module Opam = struct
   module Remote = struct
-    type t =
-      { name : string
-      ; url : string
-      }
-    [@@deriving sexp]
+    type t = { name : string; url : string } [@@deriving sexp]
 
     let pp = pp_sexp sexp_of_t
   end
@@ -37,38 +33,38 @@ module Opam = struct
     | `Error of string ]
   [@@deriving sexp]
 
-  type package =
-    {name: string; version: string option [@default None] [@sexp_drop_default]}
+  type package = { name : string; version : string option [@default None] [@sexp_drop_default] }
   [@@deriving sexp]
 
-  type entry =
-    { package: package
-    ; dev_repo: repo
-    ; tag: string option [@default None] [@sexp_drop_default]
-    ; is_dune: bool [@default true] [@sexp_drop_default] }
+  type entry = {
+    package : package;
+    dev_repo : repo;
+    tag : string option; [@default None] [@sexp_drop_default]
+    is_dune : bool [@default true] [@sexp_drop_default]
+  }
   [@@deriving sexp]
 
-  type pin =
-    { pin: string
-    ; url: string option [@default None] [@sexp_drop_default]
-    ; tag: string option [@default None] [@sexp_drop_default] }
+  type pin = {
+    pin : string;
+    url : string option; [@default None] [@sexp_drop_default]
+    tag : string option [@default None] [@sexp_drop_default]
+  }
   [@@deriving sexp]
 
-  type t =
-    { roots: package list
-    ; excludes: package list
-    ; pins: pin list
-    ; pkgs: entry list
-    ; remotes: string list [@default []]
-    ; branch: string [@default "master"] }
+  type t = {
+    roots : package list;
+    excludes : package list;
+    pins : pin list;
+    pkgs : entry list;
+    remotes : string list; [@default []]
+    branch : string [@default "master"]
+  }
   [@@deriving sexp]
 
   let pp_repo = pp_sexp sexp_of_repo
 
-  let pp_package ppf {name; version} =
-    match version with
-    | None -> Fmt.pf ppf "%s" name
-    | Some v -> Fmt.pf ppf "%s.%s" name v
+  let pp_package ppf { name; version } =
+    match version with None -> Fmt.pf ppf "%s" name | Some v -> Fmt.pf ppf "%s.%s" name v
 
   let string_of_package pkg = Fmt.strf "%a" pp_package pkg
 
@@ -84,13 +80,14 @@ module Opam = struct
 end
 
 module Dune = struct
-  type repo =
-    { dir: string
-    ; upstream: string
-    ; ref: string [@default "master"] [@sexp_drop_default] }
+  type repo = {
+    dir : string;
+    upstream : string;
+    ref : string [@default "master"] [@sexp_drop_default]
+  }
   [@@deriving sexp]
 
-  type t = {repos: repo list} [@@deriving sexp]
+  type t = { repos : repo list } [@@deriving sexp]
 
   let pp_repo = pp_sexp sexp_of_repo
 
