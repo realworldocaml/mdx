@@ -11,11 +11,20 @@ esac
 
 sudo chown -R opam /home/opam/src
 cd /home/opam/src
+echo "Installing dependencies"
 opam pin add --no-action duniverse .
 opam update
 opam install --deps-only -t duniverse
+opam install ocamlformat=0.9
+echo "Building and running tests"
 make
 make test
 make install
-cd examples
-./build-examples.sh
+(cd examples
+ ./build-examples.sh)
+echo "Checking code formatting"
+make format
+if ! git diff --exit-code ; then
+  echo "Incorrect formatting, please run 'make format' before comitting changes"
+  exit 1
+fi
