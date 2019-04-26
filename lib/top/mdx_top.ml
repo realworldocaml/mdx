@@ -728,10 +728,10 @@ let init ~verbose:v ~silent:s ~verbose_findlib () =
   Sys.interactive := false;
   (* CR hheuzard: fixme *)
   (* patch_env (); *)
-  (* Topfind.don't_load_deeply [
-   *   "unix"; "findlib.top"; "findlib.internal"; "compiler-libs.toplevel"
-   * ];
-   * Topfind.add_predicates ["byte"; "toploop"]; *)
+  Topfind.don't_load_deeply [
+    "unix"; "findlib.top"; "findlib.internal"; "compiler-libs.toplevel"
+  ];
+  Topfind.add_predicates ["byte"; "toploop"];
   let t = { verbose=v; silent=s; verbose_findlib } in
   show ();
   show_val ();
