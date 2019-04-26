@@ -1,0 +1,11 @@
+FROM ocaml/opam2:debian-stable
+
+USER opam
+WORKDIR /home/opam/src
+ARG OCAMLFORMAT
+RUN opam depext ocamlformat=${OCAMLFORMAT}
+RUN opam install dune ocamlformat=${OCAMLFORMAT}
+COPY . .
+RUN sudo chown -R opam /home/opam/src
+ENV OCAMLFORMAT ""
+RUN opam exec dune build @fmt

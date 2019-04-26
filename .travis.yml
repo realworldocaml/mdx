@@ -3,10 +3,11 @@ services:
   - docker
 language: c
 script:
-  - docker build --build-arg DISTRO=$DISTRO -f .dockerfiles/opam .
+  - ./.docker.sh
 env:
   matrix:
   - DISTRO="debian-stable"
   - DISTRO="alpine"
   - DISTRO="ubuntu-16.04"
   - DISTRO="ubuntu"
+  - OCAMLFORMAT="0.9"

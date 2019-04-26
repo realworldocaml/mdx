@@ -6,8 +6,7 @@ WORKDIR /home/opam/src
 COPY *.opam .
 RUN opam pin add --no-action duniverse .
 RUN opam update
-RUN opam depext duniverse ocamlformat=0.9
-RUN opam install ocamlformat=0.9
+RUN opam depext duniverse
 RUN opam install --deps-only -t duniverse
 COPY . .
 RUN sudo chown -R opam /home/opam/src
@@ -16,9 +15,3 @@ RUN opam exec make test
 RUN opam exec make install
 WORKDIR examples
 RUN opam exec ./build-examples.sh
-WORKDIR /home/opam/src
-RUN opam exec make format
-RUN if ! git diff --exit-code ; then \
-      echo "Incorrect formatting, please run 'make format' before comitting changes" ; \
-      exit 1 ; \
-    fi
