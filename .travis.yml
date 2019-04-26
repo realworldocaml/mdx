@@ -3,7 +3,7 @@ services:
   - docker
 language: c
 script:
-  - docker run -e DISTRO=${DISTRO} -v `pwd`:/home/opam/src ocaml/opam2:${DISTRO} /home/opam/src/.docker.sh
+  - docker build --build-arg DISTRO=$DISTRO -f .dockerfiles/opam .
 env:
   matrix:
   - DISTRO="debian-stable"
