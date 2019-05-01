@@ -749,11 +749,9 @@ module Part = Part
 
 let envs = Hashtbl.create 8
 
-let is_builtin id =
+let is_predef_or_global id =
 #if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-  List.exists
-    (fun (_, builtin) -> Ident.same id builtin)
-    Predef.builtin_idents
+  Ident.is_predef id || Ident.global id
 #else
   Ident.binding_time id < 1000
 #endif
@@ -777,7 +775,7 @@ let rec save_summary acc s =
                 Pident id)
     | Env_extension (summary, id, _) ->
             let acc =
-        if not (is_builtin id)
+        if not (is_predef_or_global id)
         then Ident.unique_toplevel_name id :: acc
         else acc
       in
