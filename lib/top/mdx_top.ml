@@ -711,7 +711,7 @@ let monkey_patch (type a) (type b) (m: a) (prj: unit -> b) (v : b) =
     with Exit -> ()
   )
 
-let _patch_env () =
+let patch_env () =
   let module M = struct
     module type T = module type of Env
     let field () = Env.without_cmis
@@ -726,8 +726,7 @@ let init ~verbose:v ~silent:s ~verbose_findlib () =
   Compmisc.init_path true;
   Toploop.toplevel_env := Compmisc.initial_env ();
   Sys.interactive := false;
-  (* CR hheuzard: fixme *)
-  (* patch_env (); *)
+  patch_env ();
   Topfind.don't_load_deeply [
     "unix"; "findlib.top"; "findlib.internal"; "compiler-libs.toplevel"
   ];
