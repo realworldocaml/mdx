@@ -63,13 +63,9 @@ val run_opam_show :
   packages:Types.Opam.package list ->
   (string list, [> Rresult.R.msg ]) result
 
-(** [init_local_opam_switch ~opam_switch ~root ~remotes ()] creates a fresh opam state and switch
-    with compiler [compiler] using [root] as OPAMROOT and adds the [remotes] opam repositories
-    to it. *)
-
 val init_opam_and_remotes :
   root:Fpath.t -> remotes:Types.Opam.Remote.t list -> unit -> (unit, [> Rresult.R.msg ]) result
-(** [init_local_opam_switch ~root ~remotes ()] creates a fresh opam state with a single
+(** [init_opam_and_remotes ~root ~remotes ()] creates a fresh opam state with a single
     switch using [root] as OPAMROOT and adds the [remotes] opam repositories to it. *)
 
 val add_opam_dev_pin : root:Fpath.t -> Types.Opam.pin -> (unit, [> Rresult.R.msg ]) result

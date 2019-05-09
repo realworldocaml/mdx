@@ -7,14 +7,9 @@ let empty = StrMap.empty
 type t = string StrMap.t StrMap.t
 
 let parse_opam_show_line line =
-  let drop = function
-  | ':' -> true
-  | x when Char.Ascii.is_white x -> true
-  | _ -> false
-  in
   match String.cut ~sep:" " line with
   | None -> "",""
-  | Some (field, value) -> (String.trim ~drop field, String.trim value)
+  | Some (field, value) -> (String.trim field, String.trim value)
 
 let add ~package ~field ~value t =
 StrMap.update

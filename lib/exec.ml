@@ -137,8 +137,6 @@ let opam_switch_create_empty ~root () =
   run_and_log cmd
 
 let run_opam_show ~root ~fields ~packages =
-  let fields = List.map (fun s -> s^":") fields in
-  let fields = "name"::fields in
   let fields_str = String.concat ~sep:"," fields
   in
   let packages_str = List.map Types.Opam.string_of_package packages

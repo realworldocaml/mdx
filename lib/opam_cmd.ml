@@ -164,8 +164,10 @@ let parse_opam_depends ~package v =
   | Some (Ok (List (_, vs))) ->
       let ss =
         List.fold_left
-          (fun acc -> function String (_, v) -> v :: acc
-            | Option (_, String (_, v), _) -> v :: acc | _ -> acc )
+          (fun acc ->
+            function
+            | Option (_, String (_, v), _) | String (_, v) -> v :: acc
+            | _ -> acc )
           [] vs
       in
       Logs.debug (fun l ->
@@ -181,7 +183,7 @@ let parse_opam_depends ~package v =
 
 
 let get_opam_info ~root ~pins packages =
-  let fields = ["dev-repo"; "url.src"; "depends"] in
+  let fields = ["name"; "dev-repo:"; "url.src:"; "depends:"] in
   Exec.run_opam_show ~root ~packages ~fields
   >>= fun lines ->
   Opam_show_result.make lines
@@ -189,13 +191,13 @@ let get_opam_info ~root ~pins packages =
   let packages = List.map
     (fun pkg ->
       let name = pkg.name in
-      let archive_url_line = Opam_show_result.get ~package:name ~field:"url.src" data in
+      let archive_url_line = Opam_show_result.get ~package:name ~field:"url.src:" data in
       let archive = parse_archive_url ~package:name archive_url_line
       in
-      let dev_repo_line = Opam_show_result.get ~package:name ~field:"dev-repo" data in
+      let dev_repo_line = Opam_show_result.get ~package:name ~field:"dev-repo:" data in
       let dev_repo = parse_dev_repo ~package:name dev_repo_line
       in
-      let depends_line = Opam_show_result.get ~package:name ~field:"depends" data in
+      let depends_line = Opam_show_result.get ~package:name ~field:"depends:" data in
       let depends = parse_opam_depends ~package:name depends_line
       in
       dev_repo >>= fun dev_repo ->

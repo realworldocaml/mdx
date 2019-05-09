@@ -20,36 +20,36 @@ let test_make =
             ~input:["name       test"; "url   bonjour.com"]
             ~expected:[("test","url", "bonjour.com")];
         make_test
-            ~name:"1 field (name with colon)"
-            ~input:["name:       test"; "url   bonjour.com"]
-            ~expected:[("test","url", "bonjour.com")];
+            ~name:"1 field (field key with colon)"
+            ~input:["name       test"; "url:   bonjour.com"]
+            ~expected:[("test","url:", "bonjour.com")];
         make_test
             ~name:"2 fields"
             ~input:
-                ["name:       test"
-                ;"url   bonjour.com"
+                ["name       test"
+                ;"url:   bonjour.com"
                 ;{|field2   ["salut"]|}]
             ~expected:
                 [("test","field2", {|["salut"]|})
-                ;("test","url", "bonjour.com")];
+                ;("test","url:", "bonjour.com")];
         make_test
             ~name:"with name field"
             ~input:
-                ["name:       test"
-                ;"url   bonjour.com"
-                ;"name:   test"
-                ;{|field2   ["salut"]|}]
-            ~expected:
-                [("test","field2", {|["salut"]|})
-                ;("test","url", "bonjour.com")];
-        make_test
-            ~name:"multiple packages"
-            ~input:
-                ["name:       test2"
-                ;"url   bonjour.com"
+                ["name       test"
+                ;"url:   bonjour.com"
                 ;"name   test"
                 ;{|field2   ["salut"]|}]
             ~expected:
                 [("test","field2", {|["salut"]|})
-                ;("test2","url", "bonjour.com")];
+                ;("test","url:", "bonjour.com")];
+        make_test
+            ~name:"multiple packages"
+            ~input:
+                ["name       test2"
+                ;"url:   bonjour.com"
+                ;"name   test"
+                ;{|field2   ["salut"]|}]
+            ~expected:
+                [("test","field2", {|["salut"]|})
+                ;("test2","url:", "bonjour.com")];
 ]
