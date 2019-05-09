@@ -56,12 +56,12 @@ val run_opam_package_deps : root:Fpath.t -> string list -> (string list, [> Rres
 (** [run_opam_packages_deps ~root packages] returns a list of versioned constrained packages that
     resolves the transitive dependencies of [packages]. *)
 
-(** [run_opam_show ~root ~fields ~packages] runs opam show to get [fields] for each package in [packages].*)
 val run_opam_show :
   root:Fpath.t ->
   fields:string list ->
   packages:Types.Opam.package list ->
   (string list, [> Rresult.R.msg ]) result
+(** [run_opam_show ~root ~fields ~packages] runs opam show to get [fields] for each package in [packages].*)
 
 val init_opam_and_remotes :
   root:Fpath.t -> remotes:Types.Opam.Remote.t list -> unit -> (unit, [> Rresult.R.msg ]) result

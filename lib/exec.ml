@@ -137,14 +137,12 @@ let opam_switch_create_empty ~root () =
   run_and_log cmd
 
 let run_opam_show ~root ~fields ~packages =
-  let fields_str = String.concat ~sep:"," fields
-  in
-  let packages_str = List.map Types.Opam.string_of_package packages
-  in
+  let fields_str = String.concat ~sep:"," fields in
+  let packages_str = List.map Types.Opam.string_of_package packages in
   let cmd =
     let open Cmd in
-    opam_cmd ~root "show" %"--color=never" % "--normalise"
-    % "-f" % fields_str %% (of_list packages_str)
+    opam_cmd ~root "show" % "--color=never" % "--normalise" % "-f" % fields_str
+    %% of_list packages_str
   in
   run_and_log_l cmd
 
