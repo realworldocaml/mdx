@@ -238,9 +238,8 @@ let filter_duniverse_packages ~excludes pkgs =
   in
   fn [] pkgs
 
-let calculate_duniverse ~root file =
-  load file >>= fun { roots; excludes; pins; branch; remotes; _ } ->
-  Exec.run_opam_package_deps ~root (List.map string_of_package roots)
+let calculate_opam ~root ~root_packages ~excludes ~pins ~branch ~remotes =
+  Exec.run_opam_package_deps ~root (List.map string_of_package root_packages)
   >>| List.map split_opam_name_and_version
   >>| List.map (fun p ->
           if List.exists (fun { pin; _ } -> p.name = pin) pins then { p with version = Some "dev" }
@@ -252,7 +251,7 @@ let calculate_duniverse ~root file =
   Logs.info (fun l ->
       l "The dependencies for %a are: %a"
         Fmt.(list ~sep:(unit ",@ ") pp_package)
-        roots
+        root_packages
         Fmt.(list ~sep:(unit ",@ ") pp_package)
         deps );
   Logs.app (fun l ->
@@ -261,12 +260,18 @@ let calculate_duniverse ~root file =
   get_opam_info ~root ~pins deps >>= fun pkgs ->
   check_packages_are_valid pkgs >>= fun () ->
   filter_duniverse_packages ~excludes pkgs >>= fun pkgs ->
-  let is_dune_pkgs, not_dune_pkgs = List.partition (fun { is_dune; _ } -> is_dune) pkgs in
-  let num_dune = List.length is_dune_pkgs in
-  let num_not_dune = List.length not_dune_pkgs in
-  let num_total = List.length pkgs in
-  let t = { pkgs; roots; excludes; pins; branch; remotes } in
-  if num_not_dune > 0 then
+  Ok { pkgs; roots = root_packages; excludes; pins; branch; remotes }
+
+type packages_stats = { total : int; dune : int; not_dune : entry list }
+
+let packages_stats packages =
+  let dune, not_dune = List.partition (fun { is_dune; _ } -> is_dune) packages in
+  let dune = List.length dune in
+  let total = List.length packages in
+  { total; dune; not_dune }
+
+let report_packages_stats packages_stats =
+  if packages_stats.dune < packages_stats.total then
     Logs.app (fun l ->
         l
           "%aThe good news is that %a/%a are Dune compatible.\n\
@@ -274,21 +279,23 @@ let calculate_duniverse ~root file =
            upstream: %a."
           pp_header header
           Fmt.(styled `Green int)
-          num_dune
+          packages_stats.dune
           Fmt.(styled `Cyan int)
-          num_total
+          packages_stats.total
           Fmt.(list ~sep:(unit ",@ ") Fmt.(styled `Red pp_entry))
-          not_dune_pkgs )
+          packages_stats.not_dune )
   else
     Logs.app (fun l ->
         l "%aAll %a opam packages are Dune compatible! It's a spicy miracle!" pp_header header
           Fmt.(styled `Green int)
-          num_total );
-  save file t >>= fun () ->
+          packages_stats.total )
+
+let save_opam ~file ~packages_stats opam =
+  save file opam >>= fun () ->
   Logs.app (fun l ->
       l "%aWritten %a opam packages to %a." pp_header header
         Fmt.(styled `Green int)
-        num_total
+        packages_stats.total
         Fmt.(styled `Cyan Fpath.pp)
         file );
   Ok ()
@@ -301,7 +308,39 @@ let init_opam ~root ~remotes () =
   in
   Exec.init_opam_and_remotes ~root ~remotes:(dune_overlays :: user_specified_remotes) ()
 
-let init_duniverse repo branch roots excludes pins remotes () =
+let choose_root_packages ~explicit_root_packages ~local_packages =
+  match (explicit_root_packages, local_packages) with
+  | [], [] ->
+      R.error_msg
+        "Cannot find any packages to vendor.\n\
+         Either create some *.opam files in the local repository, or specify them manually via \
+         'duniverse opam <packages>'."
+  | [], local_packages ->
+      Logs.app (fun l ->
+          l "%aUsing locally scanned packages '%a' as the roots." pp_header header
+            Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
+            local_packages );
+      Ok local_packages
+  | explicit_root_packages, [] ->
+      Logs.app (fun l ->
+          l "%aUsing command-line specified packages '%a' as the roots." pp_header header
+            Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
+            explicit_root_packages );
+      Ok explicit_root_packages
+  | explicit_root_packages, local_packages ->
+      Logs.app (fun l ->
+          l
+            "%aUsing command-line specified packages '%a' as the roots.\n\
+             Ignoring the locally found packages %a unless they are explicitly specified on the \
+             command line."
+            pp_header header
+            Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
+            explicit_root_packages
+            Fmt.(list ~sep:(unit ",@ ") string)
+            local_packages );
+      Ok explicit_root_packages
+
+let init_duniverse repo branch explicit_root_packages excludes pins remotes () =
   Logs.app (fun l ->
       l "%aCalculating Duniverse on the %a branch." pp_header header
         Fmt.(styled `Cyan string)
@@ -311,43 +350,12 @@ let init_duniverse repo branch roots excludes pins remotes () =
   Bos.OS.Dir.create Fpath.(repo // duniverse_dir) >>= fun _ ->
   init_opam ~root ~remotes () >>= fun () ->
   Exec.(iter (add_opam_dev_pin ~root) pins) >>= fun () ->
-  find_local_opam_packages repo >>= fun locals ->
-  Exec.(iter (add_opam_local_pin ~root) locals) >>= fun () ->
-  let roots =
-    match (roots, locals) with
-    | [], [] ->
-        Logs.err (fun l ->
-            l
-              "Cannot find any packages to vendor.\n\
-               Either create some *.opam files in the local repository, or specify them manually \
-               via 'duniverse opam <packages>'." );
-        exit 1
-    | [], locals ->
-        Logs.app (fun l ->
-            l "%aUsing locally scanned packages '%a' as the roots." pp_header header
-              Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
-              locals );
-        locals
-    | roots, [] ->
-        Logs.app (fun l ->
-            l "%aUsing command-line specified packages '%a' as the roots." pp_header header
-              Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
-              roots );
-        roots
-    | roots, locals ->
-        Logs.app (fun l ->
-            l
-              "%aUsing command-line specified packages '%a' as the roots.\n\
-               Ignoring the locally found packages %a unless they are explicitly specified on the \
-               command line."
-              pp_header header
-              Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
-              roots
-              Fmt.(list ~sep:(unit ",@ ") string)
-              locals );
-        roots
-  in
-  let excludes = List.map split_opam_name_and_version (locals @ excludes) |> sort_uniq in
-  let roots = List.map split_opam_name_and_version roots |> sort_uniq in
-  save file { pkgs = []; roots; excludes; pins; branch; remotes } >>= fun () ->
-  calculate_duniverse ~root file
+  find_local_opam_packages repo >>= fun local_packages ->
+  choose_root_packages ~explicit_root_packages ~local_packages >>= fun root_packages ->
+  Exec.(iter (add_opam_local_pin ~root) local_packages) >>= fun () ->
+  let excludes = List.map split_opam_name_and_version (local_packages @ excludes) |> sort_uniq in
+  let root_packages = List.map split_opam_name_and_version root_packages |> sort_uniq in
+  calculate_opam ~root ~root_packages ~pins ~excludes ~remotes ~branch >>= fun opam ->
+  let packages_stats = packages_stats opam.pkgs in
+  report_packages_stats packages_stats;
+  save_opam ~packages_stats ~file opam
