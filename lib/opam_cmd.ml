@@ -345,16 +345,16 @@ let init_duniverse repo branch explicit_root_packages excludes pins remotes () =
       l "%aCalculating Duniverse on the %a branch." pp_header header
         Fmt.(styled `Cyan string)
         branch );
-  let file = Fpath.(repo // Config.opam_lockfile) in
-  Bos.OS.Dir.tmp ".duniverse-opam-root-%s" >>= fun root ->
-  Bos.OS.Dir.create Fpath.(repo // duniverse_dir) >>= fun _ ->
-  init_opam ~root ~remotes () >>= fun () ->
-  Exec.(iter (add_opam_dev_pin ~root) pins) >>= fun () ->
   find_local_opam_packages repo >>= fun local_packages ->
   choose_root_packages ~explicit_root_packages ~local_packages >>= fun root_packages ->
-  Exec.(iter (add_opam_local_pin ~root) local_packages) >>= fun () ->
-  let excludes = List.map split_opam_name_and_version (local_packages @ excludes) |> sort_uniq in
   let root_packages = List.map split_opam_name_and_version root_packages |> sort_uniq in
+  let excludes = List.map split_opam_name_and_version (local_packages @ excludes) |> sort_uniq in
+  let file = Fpath.(repo // Config.opam_lockfile) in
+  Bos.OS.Dir.create Fpath.(repo // duniverse_dir) >>= fun _ ->
+  Bos.OS.Dir.tmp ".duniverse-opam-root-%s" >>= fun root ->
+  init_opam ~root ~remotes () >>= fun () ->
+  Exec.(iter (add_opam_dev_pin ~root) pins) >>= fun () ->
+  Exec.(iter (add_opam_local_pin ~root) local_packages) >>= fun () ->
   calculate_opam ~root ~root_packages ~pins ~excludes ~remotes ~branch >>= fun opam ->
   let packages_stats = packages_stats opam.pkgs in
   report_packages_stats packages_stats;
