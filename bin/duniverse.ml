@@ -66,6 +66,10 @@ let remotes_t =
   in
   Arg.(value & opt_all string [] & info [ "opam-remote" ] ~docv:"OPAM_REMOTE" ~doc)
 
+let yes_t =
+  let doc = "Answer yes to all yes/no questions without prompting." in
+  Arg.(value & flag & info [ "yes"; "y" ] ~doc)
+
 let pins_t =
   let open Types.Opam in
   let doc =
@@ -122,6 +126,21 @@ let opam_cmd =
       ( const Opam_cmd.init_duniverse $ target_repo_t $ branch_t $ pkg_t $ exclude_t $ pins_t
       $ remotes_t $ setup_logs () )),
     Term.info "opam" ~doc ~exits ~man )
+
+let opam_install_cmd =
+  let doc = "install packages that are not dune-compatible via opam" in
+  let exits = Term.default_exits in
+  let man =
+    [ `S Manpage.s_description;
+      `P
+        "This command generates and execute an opam command that will install dune-incompatible \
+         packages in the global opam switch. By default it prompts for confirmation."
+    ]
+  in
+  ( (let open Term in
+    term_result
+      (const Opam_cmd.install_incompatible_packages $ yes_t $ target_repo_t $ setup_logs ())),
+    Term.info "opam-install" ~doc ~exits ~man )
 
 let dune_lock_cmd =
   let doc = "generate git tags suitable for vendoring from opam metadata" in
@@ -209,6 +228,6 @@ let default_cmd =
   ( Term.(ret (const (fun _ -> `Help (`Pager, None)) $ pure ())),
     Term.info "duniverse" ~version:"%%VERSION%%" ~doc ~man_xrefs ~sdocs ~man )
 
-let cmds = [ opam_cmd; dune_lock_cmd; dune_fetch_cmd; status_cmd ]
+let cmds = [ opam_cmd; dune_lock_cmd; dune_fetch_cmd; status_cmd; opam_install_cmd ]
 
 let () = Term.(exit @@ eval_choice default_cmd cmds)

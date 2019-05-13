@@ -168,3 +168,12 @@ let add_opam_dev_pin ~root { Opam.pin; url; tag } =
 
 let add_opam_local_pin ~root package =
   run_and_log Cmd.(opam_cmd ~root "pin" % "add" % "-yn" % (package ^ ".dev") % ".")
+
+let run_opam_install ~yes packages =
+  let packages =
+    List.map
+      (fun (pkg : Types.Opam.package) ->
+        match pkg.version with Some v -> pkg.name ^ "." ^ v | None -> pkg.name )
+      packages
+  in
+  OS.Cmd.run Cmd.(v "opam" % "install" %% on yes (v "-y") %% of_list packages)

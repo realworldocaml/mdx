@@ -260,7 +260,8 @@ let report_packages_stats packages_stats =
         l
           "%aThe good news is that %a/%a are Dune compatible.\n\
            The bad news is that you will have to fork these to the Duniverse or port them \
-           upstream: %a."
+           upstream: %a.\n\
+           In the meantime you can install them using `duniverse opam-install`."
           pp_header header
           Fmt.(styled `Green int)
           packages_stats.dune
@@ -343,3 +344,24 @@ let init_duniverse repo branch explicit_root_packages excludes pins remotes () =
   let packages_stats = packages_stats opam.packages in
   report_packages_stats packages_stats;
   save_opam ~packages_stats ~file opam
+
+let install_incompatible_packages yes repo () =
+  let is_valid = function
+    | `Github _ | `Git _ -> true
+    | `Unknown _ | `Virtual | `Error _ -> false
+  in
+  Logs.app (fun l ->
+      l "%aGathering dune-incompatible packages from %a." pp_header header
+        Fmt.(styled `Cyan Fpath.pp)
+        Config.opam_lockfile );
+  let ifile = Fpath.(repo // Config.opam_lockfile) in
+  load ifile >>= fun t ->
+  let packages_to_install =
+    List.filter (fun { is_dune; dev_repo; _ } -> not (is_dune && is_valid dev_repo)) t.packages
+    |> List.map (fun { package; _ } -> package)
+  in
+  match packages_to_install with
+  | [] ->
+      Logs.app (fun l -> l "%aGood news! There is no package to install!" pp_header header);
+      Ok ()
+  | packages_to_install -> Exec.run_opam_install ~yes packages_to_install
