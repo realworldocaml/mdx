@@ -107,7 +107,7 @@ let gen_dune_lock repo () =
   let ifile = Fpath.(repo // Config.opam_lockfile) in
   let ofile = Fpath.(repo // Config.duniverse_lockfile) in
   Opam.load ifile >>= fun opam ->
-  let dune_packages = List.filter (fun o -> o.Opam.is_dune) opam.Opam.pkgs in
+  let dune_packages = List.filter (fun o -> o.Opam.is_dune) opam.Opam.packages in
   Exec.map dune_repo_of_opam dune_packages >>= fun repos ->
   dedup_git_remotes repos >>= fun repos ->
   let open Dune in
