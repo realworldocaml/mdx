@@ -17,39 +17,13 @@
 open Cmdliner
 open Astring
 open Duniverse_lib
+open Duniverse_cli
 
 let copts = ()
-
-let setup_logs () =
-  Printexc.record_backtrace true;
-  let setup_log style_renderer level =
-    Fmt_tty.setup_std_outputs ?style_renderer ();
-    Logs.set_level level;
-    Logs.set_reporter (Logs_fmt.reporter ())
-  in
-  let global_option_section = "COMMON OPTIONS" in
-  let open Term in
-  const setup_log
-  $ Fmt_cli.style_renderer ~docs:global_option_section ()
-  $ Logs_cli.level ~docs:global_option_section ()
 
 let copts_t =
   let _docs = Manpage.s_common_options in
   Term.(const copts)
-
-let fpath_t = Arg.conv ~docv:"PATH" (Fpath.of_string, Fpath.pp)
-
-let target_repo_t =
-  let doc = "Path to Git repository to store vendored code in." in
-  let open Arg in
-  value & opt fpath_t (Fpath.v ".") & info [ "r"; "--repo" ] ~docv:"TARGET_REPO" ~doc
-
-let branch_t =
-  let doc =
-    "Branch that represents the working tree of the source code.\n\
-    \     If not supplied, the $(i,master) branch is used."
-  in
-  Arg.(value & opt string "master" & info [ "b" ] ~docv:"BRANCH" ~doc)
 
 let exclude_t =
   let doc =
@@ -123,8 +97,8 @@ let opam_cmd =
   in
   ( (let open Term in
     term_result
-      ( const Opam_cmd.init_duniverse $ target_repo_t $ branch_t $ pkg_t $ exclude_t $ pins_t
-      $ remotes_t $ setup_logs () )),
+      ( const Opam_cmd.init_duniverse $ Common.Arg.repo $ Common.Arg.branch $ pkg_t $ exclude_t
+      $ pins_t $ remotes_t $ Common.Arg.setup_logs () )),
     Term.info "opam" ~doc ~exits ~man )
 
 let opam_install_cmd =
@@ -140,7 +114,8 @@ let opam_install_cmd =
   in
   ( (let open Term in
     term_result
-      (const Opam_cmd.install_incompatible_packages $ yes_t $ target_repo_t $ setup_logs ())),
+      ( const Opam_cmd.install_incompatible_packages
+      $ yes_t $ Common.Arg.repo $ Common.Arg.setup_logs () )),
     Term.info "opam-install" ~doc ~exits ~man )
 
 let dune_lock_cmd =
@@ -164,13 +139,13 @@ let dune_lock_cmd =
     ]
   in
   ( (let open Term in
-    term_result (const Dune_cmd.gen_dune_lock $ target_repo_t $ setup_logs ())),
+    term_result (const Dune_cmd.gen_dune_lock $ Common.Arg.repo $ Common.Arg.setup_logs ())),
     Term.info "lock" ~doc ~exits ~man )
 
 let dune_lockfile_t =
   let doc = "Input path of Dune lockfile" in
   let open Arg in
-  value & opt fpath_t Config.duniverse_lockfile & info [ "f" ] ~docv:"DUNE_LOCKFILE" ~doc
+  value & opt Common.Arg.fpath Config.duniverse_lockfile & info [ "f" ] ~docv:"DUNE_LOCKFILE" ~doc
 
 let dune_fetch_cmd =
   let doc = "fetch the latest archives of the vendored libraries" in
@@ -184,7 +159,8 @@ let dune_fetch_cmd =
     ]
   in
   ( (let open Term in
-    term_result (const Dune_cmd.gen_dune_upstream_branches $ target_repo_t $ setup_logs ())),
+    term_result
+      (const Dune_cmd.gen_dune_upstream_branches $ Common.Arg.repo $ Common.Arg.setup_logs ())),
     Term.info "pull" ~doc ~exits ~man )
 
 let status_cmd =
@@ -198,7 +174,8 @@ let status_cmd =
     ]
   in
   ( (let open Term in
-    term_result (const Dune_cmd.status $ target_repo_t $ branch_t $ setup_logs ())),
+    term_result
+      (const Dune_cmd.status $ Common.Arg.repo $ Common.Arg.branch $ Common.Arg.setup_logs ())),
     Term.info "status" ~doc ~exits ~man )
 
 let default_cmd =

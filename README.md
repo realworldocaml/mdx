@@ -90,8 +90,8 @@ DESCRIPTION
 
 OPTIONS
        -b BRANCH (absent=master)
-           Branch that represents the working tree of the source code. If not
-           supplied, the master branch is used.
+           Branch that represents the working tree of the source code.
+           Defaults to master
 
        --help[=FMT] (default=auto)
            Show this help in format FMT. The value FMT must be one of `auto',
