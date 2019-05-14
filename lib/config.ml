@@ -32,11 +32,7 @@ let base_packages =
 
 let duniverse_overlays_repo = "git://github.com/dune-universe/opam-overlays.git"
 
-let duniverse_dir = Fpath.v ".duniverse"
-
-let opam_lockfile = Fpath.(duniverse_dir / "opam.sxp")
-
-let duniverse_lockfile = Fpath.(duniverse_dir / "dune.sxp")
+let duniverse_file = Fpath.v "duniverse.sxp"
 
 let vendor_dir = Fpath.v "duniverse"
 

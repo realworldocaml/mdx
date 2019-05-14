@@ -3,8 +3,7 @@ set -e
 
 (
   cd basic
-  duniverse opam
-  duniverse lock
+  duniverse init
   duniverse pull
   dune build --profile release --root=.
   [[ -e _build/default/basic.exe ]]

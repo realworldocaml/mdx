@@ -38,13 +38,6 @@ let find_local_opam_packages dir =
   Bos.OS.Dir.contents ~rel:true dir
   >>| List.filter (Fpath.has_ext ".opam")
   >>| List.map Fpath.rem_ext >>| List.map Fpath.to_string
-  >>| fun pkgs ->
-  if List.length pkgs > 0 then
-    Logs.app (fun l ->
-        l "%aFiltering out local opam packages: %a." pp_header header
-          Fmt.(list ~sep:(unit ",@ ") string)
-          pkgs );
-  pkgs
 
 let tag_from_archive archive =
   let uri = Uri.of_string archive in
@@ -325,26 +318,6 @@ let choose_root_packages ~explicit_root_packages ~local_packages =
             local_packages );
       Ok explicit_root_packages
 
-let init_duniverse repo branch explicit_root_packages excludes pins remotes =
-  Logs.app (fun l ->
-      l "%aCalculating Duniverse on the %a branch." pp_header header
-        Fmt.(styled `Cyan string)
-        branch );
-  find_local_opam_packages repo >>= fun local_packages ->
-  choose_root_packages ~explicit_root_packages ~local_packages >>= fun root_packages ->
-  let root_packages = List.map split_opam_name_and_version root_packages |> sort_uniq in
-  let excludes = List.map split_opam_name_and_version (local_packages @ excludes) |> sort_uniq in
-  let file = Fpath.(repo // Config.opam_lockfile) in
-  Bos.OS.Dir.create Fpath.(repo // duniverse_dir) >>= fun _ ->
-  Bos.OS.Dir.tmp ".duniverse-opam-root-%s" >>= fun root ->
-  init_opam ~root ~remotes () >>= fun () ->
-  Exec.(iter (add_opam_dev_pin ~root) pins) >>= fun () ->
-  Exec.(iter (add_opam_local_pin ~root) local_packages) >>= fun () ->
-  calculate_opam ~root ~root_packages ~pins ~excludes ~remotes ~branch >>= fun opam ->
-  let packages_stats = packages_stats opam.packages in
-  report_packages_stats packages_stats;
-  save_opam ~packages_stats ~file opam
-
 let install_incompatible_packages yes repo =
   let is_valid = function
     | `Virtual | `Github _ | `Git _ -> true
@@ -353,9 +326,9 @@ let install_incompatible_packages yes repo =
   Logs.app (fun l ->
       l "%aGathering dune-incompatible packages from %a." pp_header header
         Fmt.(styled `Cyan Fpath.pp)
-        Config.opam_lockfile );
-  let ifile = Fpath.(repo // Config.opam_lockfile) in
-  load ifile >>= fun t ->
+        Config.duniverse_file );
+  let file = Fpath.(repo // Config.duniverse_file) in
+  Duniverse.load ~file >>= fun t ->
   let packages_to_install =
     List.filter (fun { is_dune; dev_repo; _ } -> not (is_dune && is_valid dev_repo)) t.packages
     |> List.map (fun { package; _ } -> package)

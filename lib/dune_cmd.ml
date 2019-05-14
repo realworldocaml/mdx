@@ -118,37 +118,14 @@ let filter_invalid_packages pkgs =
   log_invalid_packages pkgs;
   List.filter package_is_valid pkgs
 
-let gen_dune_lock repo =
-  Logs.app (fun l ->
-      l "%aCalculating Git repositories to vendor from %a." pp_header header
-        Fmt.(styled `Cyan Fpath.pp)
-        Config.opam_lockfile );
-  Bos.OS.Dir.create Fpath.(repo // Config.duniverse_dir) >>= fun _ ->
-  let ifile = Fpath.(repo // Config.opam_lockfile) in
-  let ofile = Fpath.(repo // Config.duniverse_lockfile) in
-  Opam.load ifile >>= fun opam ->
-  let packages = filter_invalid_packages opam.Opam.packages in
-  let dune_packages = List.filter (fun o -> o.Opam.is_dune) packages in
-  Exec.map dune_repo_of_opam dune_packages >>= fun repos ->
-  dedup_git_remotes repos >>= fun repos ->
-  let open Dune in
-  Dune.save ofile { repos } >>= fun () ->
-  Logs.app (fun l ->
-      l "%aWrote Dune lockfile with %a entries to %a." pp_header header
-        Fmt.(styled `Green int)
-        (List.length repos)
-        Fmt.(styled `Cyan Fpath.pp)
-        ofile );
-  Ok ()
-
 let gen_dune_upstream_branches repo =
-  Bos.OS.Dir.create Fpath.(repo // Config.duniverse_dir) >>= fun _ ->
-  let ifile = Fpath.(repo // Config.duniverse_lockfile) in
-  let open Dune in
-  load ifile >>= fun dune ->
+  let ifile = Fpath.(repo // Config.duniverse_file) in
+  let open Duniverse in
+  load ~file:ifile >>= fun dune ->
   let repos = dune.repos in
   Exec.iter
     (fun r ->
+      let open Dune in
       let output_dir = Fpath.(Config.vendor_dir / r.dir) in
       Logs.app (fun l ->
           l "%aPulling sources for %a." pp_header header Fmt.(styled `Cyan Fpath.pp) output_dir );

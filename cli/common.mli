@@ -1,3 +1,9 @@
+module Logs : sig
+  val app : ?src:Logs.src -> 'a Logs.log
+  (** Formats the arguments and logs the resulting message with app level, preceded by a sexy looking
+      ["==> "] blue header. *)
+end
+
 module Arg : sig
   val fpath : Fpath.t Cmdliner.Arg.converter
 

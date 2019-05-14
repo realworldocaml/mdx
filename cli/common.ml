@@ -19,3 +19,9 @@ module Arg = struct
     $ Fmt_cli.style_renderer ~docs:global_option_section ()
     $ Logs_cli.level ~docs:global_option_section ()
 end
+
+module Logs = struct
+  let app ?src f =
+    Logs.app ?src (fun l ->
+        f (fun ?header ?tags fmt -> l ?header ?tags ("%a" ^^ fmt) Styled_pp.header ()) )
+end

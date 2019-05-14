@@ -45,11 +45,8 @@ DESCRIPTION
        bootstrapping use of this tool.
 
 COMMANDS
-       lock
-           generate git tags suitable for vendoring from opam metadata
-
-       opam
-           analyse opam metadata to generate a standalone package list
+       init
+           analyse opam files to generate an initial duniverse.sxp
 
        opam-install
            install packages that are not duniverse-compatible via opam
