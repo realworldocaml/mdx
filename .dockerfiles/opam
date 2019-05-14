@@ -1,0 +1,17 @@
+ARG DISTRO
+FROM ocaml/opam2:${DISTRO}
+
+USER opam
+WORKDIR /home/opam/src
+COPY *.opam .
+RUN opam pin add --no-action duniverse .
+RUN opam update
+RUN opam depext duniverse
+RUN opam install --deps-only -t duniverse
+COPY . .
+RUN sudo chown -R opam /home/opam/src
+RUN opam exec make
+RUN opam exec make test
+RUN opam exec make install
+WORKDIR examples
+RUN opam exec ./build-examples.sh

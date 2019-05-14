@@ -1,0 +1,7 @@
+ARG OCAMLFORMAT
+FROM nathanreb/ocamlformat:${OCAMLFORMAT}
+
+COPY . .
+RUN sudo chown -R opam /home/opam/src
+ENV OCAMLFORMAT ""
+RUN opam exec dune build @fmt
