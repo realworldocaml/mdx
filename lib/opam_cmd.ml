@@ -257,10 +257,10 @@ let calculate_opam ~root ~root_packages ~excludes ~pins ~branch ~remotes =
   Logs.app (fun l ->
       l "%aQuerying local opam switch for their metadata and Dune compatibility." pp_header header
   );
-  get_opam_info ~root ~pins deps >>= fun pkgs ->
-  check_packages_are_valid pkgs >>= fun () ->
-  filter_duniverse_packages ~excludes pkgs >>= fun pkgs ->
-  Ok { pkgs; roots = root_packages; excludes; pins; branch; remotes }
+  get_opam_info ~root ~pins deps >>= fun packages ->
+  check_packages_are_valid packages >>= fun () ->
+  filter_duniverse_packages ~excludes packages >>= fun packages ->
+  Ok { packages; root_packages; excludes; pins; branch; remotes }
 
 type packages_stats = { total : int; dune : int; not_dune : entry list }
 
@@ -356,6 +356,6 @@ let init_duniverse repo branch explicit_root_packages excludes pins remotes () =
   Exec.(iter (add_opam_dev_pin ~root) pins) >>= fun () ->
   Exec.(iter (add_opam_local_pin ~root) local_packages) >>= fun () ->
   calculate_opam ~root ~root_packages ~pins ~excludes ~remotes ~branch >>= fun opam ->
-  let packages_stats = packages_stats opam.pkgs in
+  let packages_stats = packages_stats opam.packages in
   report_packages_stats packages_stats;
   save_opam ~packages_stats ~file opam

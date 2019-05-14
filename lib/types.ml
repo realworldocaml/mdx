@@ -52,10 +52,10 @@ module Opam = struct
   [@@deriving sexp]
 
   type t = {
-    roots : package list;
+    root_packages : package list;
     excludes : package list;
     pins : pin list;
-    pkgs : entry list;
+    packages : entry list;
     remotes : string list; [@default []]
     branch : string [@default "master"]
   }
