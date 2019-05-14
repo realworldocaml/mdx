@@ -52,25 +52,20 @@ val git_merge :
 (** [git_merge ~args ~repo branch] merges [from] into [repo]'s current active branch with the extra
     arguments [args]. *)
 
-val get_opam_depends : root:Fpath.t -> string -> (string list, [> Rresult.R.msg ]) result
-(** [get_opam_depends ~root package] returns the list of version constrained packages [package]
-    depends on using [root] as OPAMROOT. *)
-
-val get_opam_dev_repo : root:Fpath.t -> string -> (string, [> Rresult.R.msg ]) result
-(** [get_opam_dev_repo ~root package] returns the dev-repo for [package], using [root] as
-    OPAMROOT. *)
-
-val get_opam_archive_url : root:Fpath.t -> string -> (string option, [> Rresult.R.msg ]) result
-(** [get_opam_archive_url ~root package] returns the url.src for [package] or [None] if it isn't
-    specified, using [root] as OPAMROOT. *)
-
 val run_opam_package_deps : root:Fpath.t -> string list -> (string list, [> Rresult.R.msg ]) result
 (** [run_opam_packages_deps ~root packages] returns a list of versioned constrained packages that
     resolves the transitive dependencies of [packages]. *)
 
+val run_opam_show :
+  root:Fpath.t ->
+  fields:string list ->
+  packages:Types.Opam.package list ->
+  (string list, [> Rresult.R.msg ]) result
+(** [run_opam_show ~root ~fields ~packages] runs opam show to get [fields] for each package in [packages].*)
+
 val init_opam_and_remotes :
   root:Fpath.t -> remotes:Types.Opam.Remote.t list -> unit -> (unit, [> Rresult.R.msg ]) result
-(** [init_local_opam_switch ~root ~remotes ()] creates a fresh opam state with a single
+(** [init_opam_and_remotes ~root ~remotes ()] creates a fresh opam state with a single
     switch using [root] as OPAMROOT and adds the [remotes] opam repositories to it. *)
 
 val add_opam_dev_pin : root:Fpath.t -> Types.Opam.pin -> (unit, [> Rresult.R.msg ]) result
