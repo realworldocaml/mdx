@@ -52,7 +52,7 @@ COMMANDS
            analyse opam metadata to generate a standalone package list
 
        opam-install
-           install packages that are not dune-compatible via opam
+           install packages that are not duniverse-compatible via opam
 
        pull
            fetch the latest archives of the vendored libraries

@@ -347,8 +347,8 @@ let init_duniverse repo branch explicit_root_packages excludes pins remotes () =
 
 let install_incompatible_packages yes repo () =
   let is_valid = function
-    | `Github _ | `Git _ -> true
-    | `Unknown _ | `Virtual | `Error _ -> false
+    | `Virtual | `Github _ | `Git _ -> true
+    | `Unknown _ | `Error _ -> false
   in
   Logs.app (fun l ->
       l "%aGathering dune-incompatible packages from %a." pp_header header
@@ -364,4 +364,9 @@ let install_incompatible_packages yes repo () =
   | [] ->
       Logs.app (fun l -> l "%aGood news! There is no package to install!" pp_header header);
       Ok ()
-  | packages_to_install -> Exec.run_opam_install ~yes packages_to_install
+  | packages_to_install ->
+      Logs.app (fun l ->
+          l "%aInstalling these packages with opam:\n%a" pp_header header
+            (Format.pp_print_list (fun fmt -> Format.fprintf fmt " - %a" pp_package))
+            packages_to_install );
+      Exec.run_opam_install ~yes packages_to_install

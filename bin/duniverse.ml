@@ -128,13 +128,14 @@ let opam_cmd =
     Term.info "opam" ~doc ~exits ~man )
 
 let opam_install_cmd =
-  let doc = "install packages that are not dune-compatible via opam" in
+  let doc = "install packages that are not duniverse-compatible via opam" in
   let exits = Term.default_exits in
   let man =
     [ `S Manpage.s_description;
       `P
-        "This command generates and execute an opam command that will install dune-incompatible \
-         packages in the global opam switch. By default it prompts for confirmation."
+        "This command generates and execute an opam command that will install \
+         duniverse-incompatible packages in the global opam switch. By default it prompts for \
+         confirmation."
     ]
   in
   ( (let open Term in
