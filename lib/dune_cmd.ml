@@ -98,6 +98,26 @@ let dedup_git_remotes dunes =
          :: acc )
        by_repo [])
 
+let log_invalid_packages packages =
+  let open Opam in
+  List.iter
+    (function
+      | { dev_repo = `Error msg; package; _ } ->
+          Logs.warn (fun l -> l "Do not know how to deal with %a: %s" pp_package package msg)
+      | { dev_repo = `Unknown host; package; _ } ->
+          Logs.warn (fun l -> l "Need a Duniverse fork for %a: %s" pp_package package host)
+      | _ -> () )
+    packages
+
+let package_is_valid { Opam.dev_repo; _ } =
+  match dev_repo with `Error _ -> false | `Unknown _ -> false | _ -> true
+
+let filter_invalid_packages pkgs =
+  Logs.app (fun l ->
+      l "%aEliminating dependencies that are not understood by the Duniverse." pp_header header );
+  log_invalid_packages pkgs;
+  List.filter package_is_valid pkgs
+
 let gen_dune_lock repo () =
   Logs.app (fun l ->
       l "%aCalculating Git repositories to vendor from %a." pp_header header
@@ -107,7 +127,8 @@ let gen_dune_lock repo () =
   let ifile = Fpath.(repo // Config.opam_lockfile) in
   let ofile = Fpath.(repo // Config.duniverse_lockfile) in
   Opam.load ifile >>= fun opam ->
-  let dune_packages = List.filter (fun o -> o.Opam.is_dune) opam.Opam.packages in
+  let packages = filter_invalid_packages opam.Opam.packages in
+  let dune_packages = List.filter (fun o -> o.Opam.is_dune) packages in
   Exec.map dune_repo_of_opam dune_packages >>= fun repos ->
   dedup_git_remotes repos >>= fun repos ->
   let open Dune in
