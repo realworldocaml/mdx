@@ -74,3 +74,7 @@ val add_opam_dev_pin : root:Fpath.t -> Types.Opam.pin -> (unit, [> Rresult.R.msg
 val add_opam_local_pin : root:Fpath.t -> string -> (unit, [> Rresult.R.msg ]) result
 (** [add_opam_local_pin ~root package] pins the package in the current working dir under
     [package ^ ".dev"] in the active switch using [root] as OPAMROOT. *)
+
+val run_opam_install : yes:bool -> Types.Opam.package list -> (unit, [> Rresult.R.msg ]) result
+(** [run_opam_install ~yes packages] launch an opam command to install the given packages. If yes is
+    set to true, it doesn't prompt the user for confirmation. *)
