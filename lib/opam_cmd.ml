@@ -367,6 +367,6 @@ let install_incompatible_packages yes repo () =
   | packages_to_install ->
       Logs.app (fun l ->
           l "%aInstalling these packages with opam:\n%a" pp_header header
-            (Format.pp_print_list (fun fmt -> Format.fprintf fmt " - %a" pp_package))
+            Fmt.(list ~sep:sp pp_package)
             packages_to_install );
       Exec.run_opam_install ~yes packages_to_install
