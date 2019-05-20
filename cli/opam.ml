@@ -1,6 +1,12 @@
 let run repo branch explicit_root_packages excludes pins remotes () =
   Duniverse_lib.Opam_cmd.init_duniverse repo branch explicit_root_packages excludes pins remotes
 
+let branch =
+  let doc =
+    "Branch that represents the working tree of the source code. Defaults to $(i,master)"
+  in
+  Cmdliner.Arg.(value & opt string "master" & info [ "b" ] ~docv:"BRANCH" ~doc)
+
 let excludes =
   let doc =
     "Packages to exclude from the output list. You can use this to remove the root packages so \
@@ -73,7 +79,7 @@ let info =
 let term =
   let open Cmdliner.Term in
   term_result
-    ( const run $ Common.Arg.repo $ Common.Arg.branch $ explicit_root_packages $ excludes $ pins
-    $ remotes $ Common.Arg.setup_logs () )
+    ( const run $ Common.Arg.repo $ branch $ explicit_root_packages $ excludes $ pins $ remotes
+    $ Common.Arg.setup_logs () )
 
 let cmd = (term, info)

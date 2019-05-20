@@ -6,12 +6,6 @@ module Arg = struct
     Cmdliner.Arg.(
       value & opt fpath (Fpath.v ".") & info [ "r"; "--repo" ] ~docv:"TARGET_REPO" ~doc)
 
-  let branch =
-    let doc =
-      "Branch that represents the working tree of the source code. Defaults to $(i,master)"
-    in
-    Cmdliner.Arg.(value & opt string "master" & info [ "b" ] ~docv:"BRANCH" ~doc)
-
   let setup_logs () =
     Printexc.record_backtrace true;
     let setup_log style_renderer level =
