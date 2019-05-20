@@ -141,8 +141,6 @@ let gen_dune_lock repo =
         ofile );
   Ok ()
 
-let status _repo _target_branch = Ok ()
-
 let gen_dune_upstream_branches repo =
   Bos.OS.Dir.create Fpath.(repo // Config.duniverse_dir) >>= fun _ ->
   let ifile = Fpath.(repo // Config.duniverse_lockfile) in

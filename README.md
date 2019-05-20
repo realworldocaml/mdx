@@ -57,9 +57,6 @@ COMMANDS
        pull
            fetch the latest archives of the vendored libraries
 
-       status
-           summarise the libraries tracked by the duniverse
-
 COMMON OPTIONS
        --help[=FMT] (default=auto)
            Show this help in format FMT. The value FMT must be one of `auto',
@@ -71,63 +68,6 @@ COMMON OPTIONS
 
 SEE ALSO
        dune(1), git(1), opam(1)
-
-
-```
-
-## duniverse-status
-
-```
-NAME
-       duniverse-status - summarise the libraries tracked by the duniverse
-
-SYNOPSIS
-       duniverse status [OPTION]... 
-
-DESCRIPTION
-       This command looks at the various metadata files in the .duniverse
-       directory and prints them out in a human-readable format.
-
-OPTIONS
-       -b BRANCH (absent=master)
-           Branch that represents the working tree of the source code.
-           Defaults to master
-
-       --help[=FMT] (default=auto)
-           Show this help in format FMT. The value FMT must be one of `auto',
-           `pager', `groff' or `plain'. With `auto', the format is `pager` or
-           `plain' whenever the TERM env var is `dumb' or undefined.
-
-       -r TARGET_REPO, ----repo=TARGET_REPO (absent=.)
-           Path to Git repository to store vendored code in.
-
-       --version
-           Show version information.
-
-COMMON OPTIONS
-       --color=WHEN (absent=auto)
-           Colorize the output. WHEN must be one of `auto', `always' or
-           `never'.
-
-       -q, --quiet
-           Be quiet. Takes over -v and --verbosity.
-
-       -v, --verbose
-           Increase verbosity. Repeatable, but more than twice does not bring
-           more.
-
-       --verbosity=LEVEL (absent=warning)
-           Be more or less verbose. LEVEL must be one of `quiet', `error',
-           `warning', `info' or `debug'. Takes over -v.
-
-EXIT STATUS
-       status exits with the following status:
-
-       0   on success.
-
-       124 on command line parsing errors.
-
-       125 on unexpected internal errors (bugs).
 
 
 ```
