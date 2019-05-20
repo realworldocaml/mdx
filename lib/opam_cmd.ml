@@ -325,7 +325,7 @@ let choose_root_packages ~explicit_root_packages ~local_packages =
             local_packages );
       Ok explicit_root_packages
 
-let init_duniverse repo branch explicit_root_packages excludes pins remotes () =
+let init_duniverse repo branch explicit_root_packages excludes pins remotes =
   Logs.app (fun l ->
       l "%aCalculating Duniverse on the %a branch." pp_header header
         Fmt.(styled `Cyan string)
@@ -345,7 +345,7 @@ let init_duniverse repo branch explicit_root_packages excludes pins remotes () =
   report_packages_stats packages_stats;
   save_opam ~packages_stats ~file opam
 
-let install_incompatible_packages yes repo () =
+let install_incompatible_packages yes repo =
   let is_valid = function
     | `Virtual | `Github _ | `Git _ -> true
     | `Unknown _ | `Error _ -> false

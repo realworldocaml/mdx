@@ -118,7 +118,7 @@ let filter_invalid_packages pkgs =
   log_invalid_packages pkgs;
   List.filter package_is_valid pkgs
 
-let gen_dune_lock repo () =
+let gen_dune_lock repo =
   Logs.app (fun l ->
       l "%aCalculating Git repositories to vendor from %a." pp_header header
         Fmt.(styled `Cyan Fpath.pp)
@@ -141,9 +141,9 @@ let gen_dune_lock repo () =
         ofile );
   Ok ()
 
-let status _repo _target_branch () = Ok ()
+let status _repo _target_branch = Ok ()
 
-let gen_dune_upstream_branches repo () =
+let gen_dune_upstream_branches repo =
   Bos.OS.Dir.create Fpath.(repo // Config.duniverse_dir) >>= fun _ ->
   let ifile = Fpath.(repo // Config.duniverse_lockfile) in
   let open Dune in
