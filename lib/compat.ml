@@ -96,11 +96,11 @@ module Warnings = struct
 #endif
 end
 
+#if OCAML_MAJOR = 4 && OCAML_MINOR < 4
 module Env = struct
   include Env
 
-#if OCAML_MAJOR = 4 && OCAML_MINOR < 4
   (* Can't be overriden *)
   let without_cmis f x = f x
-#endif
 end
+#endif

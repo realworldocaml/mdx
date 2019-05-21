@@ -196,19 +196,29 @@ module Phrase = struct
     in
     aux [] "" [] phrases
 
+  let handle_syntax_error e =
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+      (* The function is now Parse.prepare_error, but it is not
+         exposed; luckily enough, it is register to print the
+         exception. *)
+      Fmt.failwith "Cannot parse: %s" (Printexc.to_string (Syntaxerr.Error e))
+#else
+      Fmt.failwith "Cannot parse: %a" Syntaxerr.report_error e
+#endif
+
   let read_impl doc =
     try
       let strs = Parse.implementation doc.Lexbuf.lexbuf in
       List.map (fun x -> x, kind_impl x) strs
     with Syntaxerr.Error e ->
-      Fmt.failwith "Cannot parse: %a" Syntaxerr.report_error e
+      handle_syntax_error e
 
   let read_intf doc =
     try
       let strs = Parse.interface doc.Lexbuf.lexbuf in
       List.map (fun x -> x, kind_intf x) strs
     with Syntaxerr.Error e ->
-      Fmt.failwith "Cannot parse: %a" Syntaxerr.report_error e
+      handle_syntax_error e
 
 end
 

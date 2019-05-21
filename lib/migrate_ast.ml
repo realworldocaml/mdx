@@ -75,6 +75,25 @@ end
 module Printast = struct
   open Printast
 
+#if OCAML_MAJOR = 4 && OCAML_MINOR >= 8
+  let copy_directive_argument (x : Parsetree.directive_argument) =
+    let open Migrate_parsetree.Versions.OCaml_current.Ast.Parsetree in
+    match x with
+    | Pdir_none -> None
+    | Pdir_string s -> Some ({ pdira_desc = Pdir_string s; pdira_loc = Location.none })
+    | Pdir_int (s, c) -> Some ({ pdira_desc = Pdir_int (s, c); pdira_loc = Location.none })
+    | Pdir_ident i -> Some ({ pdira_desc = Pdir_ident i; pdira_loc = Location.none })
+    | Pdir_bool b -> Some ({ pdira_desc = Pdir_bool b; pdira_loc = Location.none })
+
+  let top_phrase f (x : Parsetree.toplevel_phrase) =
+    match x with
+    | Ptop_def s ->
+       top_phrase f (Ptop_def (to_current.copy_structure s))
+    | Ptop_dir (d, a) ->
+      top_phrase f (Ptop_dir { pdir_name = Location.mknoloc d
+                             ; pdir_arg = copy_directive_argument a
+                             ; pdir_loc = Location.none})
+#else
   let copy_directive_argument (x : Parsetree.directive_argument) =
     let open Migrate_parsetree.Versions.OCaml_current.Ast.Parsetree in
     match x with
@@ -94,6 +113,8 @@ module Printast = struct
        top_phrase f (Ptop_def (to_current.copy_structure s))
     | Ptop_dir (d, a) ->
        top_phrase f (Ptop_dir (d, copy_directive_argument a))
+#endif
+
 end
 
 module Pprintast = struct
