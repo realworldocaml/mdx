@@ -13,6 +13,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *)
+open Astring
 
 val map : ('a -> ('b, 'c) result) -> 'a list -> ('b list, 'c) result
 
@@ -84,3 +85,28 @@ val add_opam_local_pin : root:Fpath.t -> kind:string -> string -> (unit, [> Rres
 val run_opam_install : yes:bool -> Duniverse.Deps.Opam.t list -> (unit, [> Rresult.R.msg ]) result
 (** [run_opam_install ~yes packages] launch an opam command to install the given packages. If yes is
     set to true, it doesn't prompt the user for confirmation. *)
+
+val copy_dir : from:Fpath.t -> into:Fpath.t -> (unit, [> Rresult.R.msg ]) result
+
+val git_remote_add : remote_url:string -> remote_name:string -> (unit, [> Rresult.R.msg ]) result
+(** Uses git remote add in the current working directory **)
+
+val git_remote_remove : remote_name:string -> (unit, [> Rresult.R.msg ]) result
+(** Uses git remote remove in the current working directory **)
+
+val git_fetch_to :
+  remote_name:string -> tag:string -> branch:string -> (unit, [> Rresult.R.msg ]) result
+(** [git_fetch_to ~remote_name ~tag ~branch] Fetches tag from remote_name into a given branch **)
+
+val git_init : Fpath.t -> (unit, [> Rresult.R.msg ]) result
+(** [git_init path] Initialize Git in given path **)
+
+val git_clone :
+  branch:string -> remote:string -> output_dir:Fpath.t -> (unit, [> Rresult.R.msg ]) result
+(** [git_clone ~branch ~remote ~output_dir] Git clone branch from remote in output_dir **)
+
+val git_rename_current_branch_to : branch:string -> (unit, [> Rresult.R.msg ]) result
+(** [git_rename_current_branch_to ~branch] Sets current working directory's branch name to branch. **)
+
+val git_remotes : Fpath.t -> (String.Set.t, [> Rresult.R.msg ]) result
+(** [git_remotes path] List remotes of the git project located in path. **)
