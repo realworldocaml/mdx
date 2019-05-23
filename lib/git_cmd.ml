@@ -24,9 +24,9 @@ let header = ">>> "
 let update repo branch roots excludes pins remotes () =
   Exec.git_checkout ~repo branch >>= fun () ->
   Logs.info (fun l -> l "Running `duniverse opam`");
-  Opam_cmd.init_duniverse repo branch roots excludes pins remotes () >>= fun () ->
+  Opam_cmd.init_duniverse repo branch roots excludes pins remotes >>= fun () ->
   Logs.info (fun l -> l "Running `duniverse lock`");
-  Dune_cmd.gen_dune_lock repo () >>= fun () ->
+  Dune_cmd.gen_dune_lock repo >>= fun () ->
   Logs.app (fun l -> l "%aGit committing the lockfiles." pp_header header);
   Exec.git_add_and_commit ~repo ~message:"update duniverse lockfiles"
     Cmd.(v (p Config.opam_lockfile) % p Config.duniverse_lockfile)
@@ -49,7 +49,7 @@ let pull repo branch () =
       Exec.git_checkout_or_branch ~repo vendor_branch >>= fun () ->
       let msg = Fmt.strf "merge from %s branch" branch in
       Exec.git_merge ~from:branch ~args:Cmd.(v "--commit" % "-m" % msg) ~repo () >>= fun () ->
-      Dune_cmd.gen_dune_upstream_branches repo ()
+      Dune_cmd.gen_dune_upstream_branches repo
       (* TODO make this push a cli option with --push
   >>= fun () ->
   Exec.git_push ~args:(Cmd.v "-u") ~repo "origin" vendor_branch *)
