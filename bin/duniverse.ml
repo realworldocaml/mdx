@@ -16,6 +16,6 @@
 
 open Duniverse_cli
 
-let cmds = [ Opam.cmd; Lock.cmd; Pull.cmd; Opam_install.cmd ]
+let cmds = [ Init.cmd; Pull.cmd; Opam_install.cmd ]
 
 let () = Cmdliner.Term.(exit @@ eval_choice Default.cmd cmds)
