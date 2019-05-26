@@ -122,7 +122,7 @@ let run_opam_package_deps ~root packages =
   let packages = String.concat ~sep:"," packages in
   let cmd =
     let open Cmd in
-    opam_cmd ~root "list" % "--color=never" % "-s" % "--no-switch" % ("--resolve=" ^ packages) % "-V" % "-S"
+    opam_cmd ~root "list" % "--color=never" % "-s" % ("--resolve=" ^ packages) % "-V" % "-S"
   in
   run_and_log_l cmd
 
