@@ -17,7 +17,6 @@
 open Types
 open Rresult
 open Astring
-open Bos
 
 let pp_header = Fmt.(styled `Blue string)
 
@@ -129,8 +128,6 @@ let gen_dune_upstream_branches repo =
       let output_dir = Fpath.(Config.vendor_dir / r.dir) in
       Logs.app (fun l ->
           l "%aPulling sources for %a." pp_header header Fmt.(styled `Cyan Fpath.pp) output_dir );
-      let message = Fmt.strf "Update vendor for %a" pp_repo r in
       let output_dir = Fpath.(Config.vendor_dir / r.dir) in
-      Exec.git_archive ~output_dir ~remote:r.upstream ~tag:r.ref () >>= fun () ->
-      Exec.git_add_and_commit ~repo ~message Cmd.(v (p output_dir)) )
+      Exec.git_archive ~output_dir ~remote:r.upstream ~tag:r.ref () )
     repos
