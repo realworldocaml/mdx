@@ -280,11 +280,8 @@ let save_opam ~file ~packages_stats opam =
 
 let init_opam ~root ~remotes () =
   let open Types.Opam.Remote in
-  let dune_overlays = { name = "dune-overlays"; url = Config.duniverse_overlays_repo } in
-  let user_specified_remotes =
-    List.mapi (fun i url -> { name = Fmt.strf "remote%d" i; url }) remotes
-  in
-  Exec.init_opam_and_remotes ~root ~remotes:(dune_overlays :: user_specified_remotes) ()
+  let remotes = List.mapi (fun i url -> { name = Fmt.strf "remote%d" i; url }) remotes in
+  Exec.init_opam_and_remotes ~root ~remotes ()
 
 let choose_root_packages ~explicit_root_packages ~local_packages =
   match (explicit_root_packages, local_packages) with
