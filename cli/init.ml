@@ -72,8 +72,8 @@ let excludes =
 
 let overlay =
   let doc =
-    "URL or path to the Duniverse opam overlays that has custom overrides for packages that\n\
-    \     have not yet been ported to Dune upstream."
+    "URL or path to the Duniverse opam overlays remote that has overrides for packages that have \
+     not yet been ported to Dune upstream."
   in
   Arg.(
     value
