@@ -17,7 +17,6 @@
 let base_packages =
   [ "menhir";
     "num";
-    "ppx_tools";
     "jbuilder";
     "dune";
     "ocamlbuild";
