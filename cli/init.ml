@@ -1,7 +1,7 @@
 open Duniverse_lib
 open Duniverse_lib.Types
 
-let compute_opam ~repo ~branch ~explicit_root_packages ~excludes ~pins ~remotes =
+let compute_opam ~repo ~branch ~explicit_root_packages ~excludes ~pins ~overlay ~remotes =
   let open Rresult.R.Infix in
   Opam_cmd.find_local_opam_packages repo >>= fun local_packages ->
   Opam_cmd.choose_root_packages ~explicit_root_packages ~local_packages >>= fun root_packages ->
@@ -12,6 +12,7 @@ let compute_opam ~repo ~branch ~explicit_root_packages ~excludes ~pins ~remotes 
     List.map Opam_cmd.split_opam_name_and_version (local_packages @ excludes) |> Opam.sort_uniq
   in
   Bos.OS.Dir.tmp ".duniverse-opam-root-%s" >>= fun root ->
+  let remotes = overlay :: remotes in
   Opam_cmd.init_opam ~root ~remotes () >>= fun () ->
   Exec.(iter (add_opam_dev_pin ~root) pins) >>= fun () ->
   Exec.(iter (add_opam_local_pin ~root) local_packages) >>= fun () ->
@@ -27,10 +28,11 @@ let compute_repos ~packages =
   Exec.map Dune_cmd.dune_repo_of_opam dune_packages >>= fun repos ->
   Dune_cmd.dedup_git_remotes repos
 
-let run repo branch explicit_root_packages excludes pins remotes () =
+let run repo branch explicit_root_packages excludes pins overlay remotes () =
   let open Rresult.R.Infix in
   Common.Logs.app (fun l -> l "Calculating Duniverse on the %a branch" Styled_pp.branch branch);
-  compute_opam ~repo ~branch ~explicit_root_packages ~excludes ~pins ~remotes >>= fun opam ->
+  compute_opam ~repo ~branch ~explicit_root_packages ~excludes ~pins ~overlay ~remotes
+  >>= fun opam ->
   let { Opam.root_packages; excludes; pins; remotes; branch; packages } = opam in
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor");
   compute_repos ~packages >>= fun repos ->
@@ -67,6 +69,16 @@ let excludes =
      than one exclusion."
   in
   Arg.(value & opt_all string [] & info [ "exclude"; "x" ] ~docv:"EXCLUDE" ~doc)
+
+let overlay =
+  let doc =
+    "URL or path to the Duniverse opam overlays remote that has overrides for packages that have \
+     not yet been ported to Dune upstream."
+  in
+  Arg.(
+    value
+    & opt string Config.duniverse_overlays_repo
+    & info [ "overlay-remote" ] ~docv:"OPAM_REMOTE" ~doc)
 
 let pins =
   let open Types.Opam in
@@ -110,7 +122,7 @@ let info =
 let term =
   let open Term in
   term_result
-    ( const run $ Common.Arg.repo $ branch $ explicit_root_packages $ excludes $ pins $ remotes
-    $ Common.Arg.setup_logs () )
+    ( const run $ Common.Arg.repo $ branch $ explicit_root_packages $ excludes $ pins $ overlay
+    $ remotes $ Common.Arg.setup_logs () )
 
 let cmd = (term, info)

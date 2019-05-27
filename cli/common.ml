@@ -3,8 +3,7 @@ module Arg = struct
 
   let repo =
     let doc = "Path to Git repository to store vendored code in." in
-    Cmdliner.Arg.(
-      value & opt fpath (Fpath.v ".") & info [ "r"; "--repo" ] ~docv:"TARGET_REPO" ~doc)
+    Cmdliner.Arg.(value & opt fpath (Fpath.v ".") & info [ "r"; "repo" ] ~docv:"TARGET_REPO" ~doc)
 
   let setup_logs () =
     Printexc.record_backtrace true;
