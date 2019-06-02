@@ -19,8 +19,8 @@ let info =
          required. This is a particularly convenient way of publishing CLI tools to users who do \
          not need the full power of opam.";
       `P
-        "You can access the functionality directly via the $(i,duniverse-opam), \
-         $(i,duniverse-lock) and $(i,duniverse-pull) commands,";
+        "You can access the functionality directly via the $(i,duniverse-init), \
+         $(i,duniverse-opam-install) and $(i,duniverse-pull) commands,";
       `P
         "Also see $(i,https://github.com/avsm/platform) for an example of a fully bootstrapping \
          use of this tool."
