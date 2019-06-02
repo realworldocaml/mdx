@@ -115,7 +115,9 @@ let remotes =
 
 let info =
   let exits = Term.default_exits in
-  let doc = Fmt.strf "analyse opam files to generate an initial $(b,%a)" Fpath.pp Config.duniverse_file in
+  let doc =
+    Fmt.strf "analyse opam files to generate an initial $(b,%a)" Fpath.pp Config.duniverse_file
+  in
   let man = [] in
   Term.info "init" ~doc ~exits ~man
 
