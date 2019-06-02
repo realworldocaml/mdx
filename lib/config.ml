@@ -16,14 +16,12 @@
 
 let base_packages =
   [ "menhir";
-    "num";
     "jbuilder";
     "dune";
     "ocamlbuild";
     "ocamlmod";
     "oasis";
     "ocamlify";
-    "uchar";
     "ocaml";
     "ocaml-base-compiler";
     "ocaml-variants"
