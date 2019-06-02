@@ -29,10 +29,8 @@ let base_packages =
 
 let duniverse_overlays_repo = "git://github.com/dune-universe/opam-overlays.git"
 
-let duniverse_file = Fpath.v "duniverse.sxp"
+let duniverse_file = Fpath.v "dune-get"
 
 let vendor_dir = Fpath.v "duniverse"
 
 let duniverse_log = Fpath.v ".duniverse-log"
-
-let vendor_branch branch = Fmt.strf "duniverse-of-%s" branch

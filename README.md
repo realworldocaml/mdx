@@ -44,7 +44,7 @@ DESCRIPTION
 
 COMMANDS
        init
-           analyse opam files to generate an initial duniverse.sxp
+           analyse opam files to generate an initial dune-get
 
        opam-install
            install packages that are not duniverse-compatible via opam
