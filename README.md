@@ -36,15 +36,15 @@ DESCRIPTION
        This is a particularly convenient way of publishing CLI tools to users
        who do not need the full power of opam.
 
-       You can access the functionality directly via the duniverse-opam,
-       duniverse-lock and duniverse-pull commands,
+       You can access the functionality directly via the duniverse-init,
+       duniverse-opam-install and duniverse-pull commands,
 
        Also see https://github.com/avsm/platform for an example of a fully
        bootstrapping use of this tool.
 
 COMMANDS
        init
-           analyse opam files to generate an initial duniverse.sxp
+           analyse opam files to generate an initial dune-get
 
        opam-install
            install packages that are not duniverse-compatible via opam
