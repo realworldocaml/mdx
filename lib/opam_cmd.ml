@@ -51,7 +51,9 @@ let tag_from_archive archive =
     | None -> parse_err ()
     | Some (_n, v) -> Some (prefix ^ v)
   in
-  let tag_of_last_path ?prefix () = List.rev path |> List.hd |> tag_of_file ?prefix in
+  let tag_of_last_path ?prefix () =
+    match List.rev path with file :: _ -> tag_of_file ?prefix file | [] -> None
+  in
   match Uri.scheme uri with
   | Some "git+http" | Some "git+https" | Some "git+ssh" | Some "git" -> (
     match String.cuts ~empty:false ~sep:"#" archive with
