@@ -1,222 +1,174 @@
-This document the `duniverse` tool aims and next steps.
+# Duniverse
 
-Overview
---------
+## High level spec
 
-The role of the duniverse tool is to setup a development environment for
-the dune build system, or more precisely a "workspace". Its
-distinguishing characteristic is that it can setup workspaces composed
-of multiple projects, bringing hassle free multi-project development
-to everyone.
+The goal of `duniverse` is to help you setup a workspace in which you only rely on dune to build
+your entire project, including its transitive dependencies.
 
-To operate, the duniverse tool relies on an external package
-manager. In version 1.0, the only supported package manager is
-opam.  The user only needs to have opam installed but not setup,
-since this tool takes care of initialising it.
+It should also make it easy for you to work on your dependencies, modify them, open PRs upstream
+or push your changes to forks to be able to reuse them while making sure none of this breaks your
+project or any of your other dependencies.
 
-Finally, the duniverse tool is tightly integrated with git. In
-particular, the workspaces it creates and manages will always be
-versioned controled by git. This ensures that users can access the
-history of the workspace as well as of individual projects inside it.
+`duniverse` relies on a `duniverse.sxp` file, at the root of the project to operate. It contains
+all the information needed to gather and inspect all of your transitive dependencies.
+For each package it know its name, the upstream git repository URL, the specific git reference
+for the version you're using as well as the eventual fork repository URL you're using instead of
+the upstream one.
+The `duniverse.sxp` file should be part of your project repository as it specifies how to locally
+pull your dependencies to be able to build your project.
+It is in a human readable sexp format and you should be able to edit it by hand in some cases where
+the `duniverse` tool doesn't cover your specific use case.
 
-Specification
--------------
+`duniverse` will pull your dependencies in a `duniverse/` directory at the root of your project.
+It will clone the sources using `git` and check them out to the right tag, branch or commit. 
+The `duniverse/` directory contains a subdir for each of your transitive dependencies, named after
+the opam package they correspond to or using the name you provided when adding a non-opam
+dependency.
+This directory will be setup so that running `dune build` or `dune runtest` from the root of your
+project will only build your public targets and run your tests but not the ones in `duniverse/`
+unless you explictly depend on them.
+Each subdir in `duniverse/` is a regular git project, meaning that you can easily `cd` into one
+and start working on it with your regular git workflow. The `duniverse` tool provides helpers to
+manage those changes and keep track of them in the `duniverse.sxp` file.
 
-The duniverse tool should provide various commands for initializing,
-updating and inspecting the status a dune workspace. In the version
-1.0 of the tool, it is only required to support initializing a
-workspace and inspecting its status.
+Because `duniverse` only supports packages that are built with `dune`, it will complain if a
+dependency cannot be resolved to a version that is built with `dune`. Hopefully, to work around
+that it will also look into the [`dune-universe/opam-overlays`]() opam repository for dunified
+forks of package which haven't been ported upstream yet. When a dependency from the `opam-overlays`
+repo is picked, it will consider it's git URL as the upstream one and not the actual upstream
+package repo URL.
 
-We are now describing these two commands.
+### System constraints
 
-### duniverse init
+`duniverse` requires that your system has OCaml and `dune` installed, in the right versions.
 
-This command initialises a dune workspace. When doing so, the user
-provides a set of "main" packages that they want to work on. The
-duniverse will then provides a working dune workspace where the user
-can work on all these packages at once.
+It uses a vendored `opam` for dependencies resolution so you don't need a local `opam`.
 
-To understand better what it means, let's consider the following
-examples:
+### Duniverse commands
 
-#### Example 1: working on lwt only
+#### `duniverse init`
 
-If the user wants to work on lwt, they need the following:
+`duniverse init` will generate an initial `duniverse.sxp` file.
+It will look for `.opam` files recursively and try to resolves the joint dependencies of all such
+packages it finds. If the dependencies can't be resolved because of conflicts, it will fail.
+It will warn you about the dependencies for which it couldn't find a dunified version and write the
+other ones to the `duniverse.sxp`.
+It should be run from the root of your project as it will write the `duniverse.sxp` in the current
+working dir and start looking for `.opam` files from there as well.
 
-- the source code of the lwt project
-- all the dependencies of lwt pre-compiled
-- a few development tools such as merlin, ocamlformat, ...
+#### `duniverse pull`
 
-When initialising a workspace to work on lwt, the duniverse tool will
-do the following:
+`duniverse pull` will pull your dependencies in the `duniverse/` directory at the root of your
+project where the `duniverse.sxp` file is located. It will install them according to what's declared
+in the `duniverse.sxp` file.
 
-1. make sure all the dependencies of lwt are installed via opam
-2. make sure all the necessary development tools are installed via opam
-3. clone the source code repository of lwt
+If the `duniverse/` directory is dirty ie if it contains some local changes and isn't aligned with
+the `duniverse.sxp` file, `duniverse pull` will warn you about it and abort unless explicitly told
+to overwrite those changes via a command line flag.
 
-At this point, the developer will have everything they need to start
-working on lwt, making patches and submitting them.
+#### `duniverse status`
 
-#### Example 2: working on both zed and utop
+`duniverse status` tells you which of your dependencies are in a "dirty" state ie which of the
+sub directories in `duniverse/` contain uncommitted changes or are checked out to a different ref
+than the one declared in the `duniverse.sxp`
 
-A user wants to add a new feature to the utop toplevel. However doing
-so requires adding new functions to the zed library. To initialize the
-workspace, the duniverse tool will have to do the same as before and
-close both the zed and utop repositories in step 3.
+`duniverse status <package_or_sub_dir>` gives you detailed information about how the given package
+differs from the sources of the declared dependency.
 
-However, there is one additional point to consider: utop depends on
-the lambda-term library and the lambda-term library depends on zed. If
-we rely on the lambda-term library installed via opam, then we will
-have two conflicting version of zed when linking the utop binary: the
-one that is a dependency of lambda-term in opam and the one that is in
-the workspace. This is not allowed.
+#### `duniverse fork`
 
-To solve this problem, the duniverse tool will additionally need to
-clone the source code repository of lambda-term and add it to the
-workspace. Because lambda-term is not a package the user wants to work
-on, the duniverse tool should put it in a separate directory so that
-the developer's attention stays focus on the packages they want to
-work on. In the rest of this document, we will call such packages
-"intermediate".
+`duniverse fork` assists you in committing local changes to a dependency, pushing them to a fork and
+updating your `duniverse.sxp` in one go.
 
-#### Specifying the main packages
+#### `duniverse install`
 
-When calling `duniverse init`, the user has two way of specifying the
-main packages:
+`duniverse install` allows you to try and install a new dependency. Assuming it can be resolved
+without conflicting with your currently installed ones, the `duniverse.sxp` file is updated and its
+sources are cloned into `duniverse/`.
 
-1. via the file system
-2. via the command line
+`duniverse install` will use the opam files from the `duniverse/` folder and the one from the
+package you're trying to install to ensure there is no conflicts.
 
-To specify the package via the file system, the user should simply
-have already cloned the source code repository of the main
-packages. The duniverse tool will assume that any for `<package>.opam`
-files it finds, `<package>` is a main package the user wants to work
-on. duniverse will look for these files in the current directory and
-in sub-directories in the same way dune crawls the file system. To
-help with this task, dune will provide a `dune list-opam-files`
-command to report the list of `<package>.opam` files to consider.
+You can use `duniverse install` to add a new opam package to your dependencies without going through
+the entire pipeline again but it can also be used to install custom dependencies such as the ones
+that `duniverse init` couldn't resolve but you know where to find.
 
-To specify the package via the file system, the user should simply
-list them as argument of `duniverse init`. `duniverse init` accepts
-several ways of specifying a package:
+Ultimately you can provide `duniverse install` every detail about what you're installing such as the
+name you want for this package, its upstream URL, the git reference and eventually the fork url so
+it updates the `duniverse.sxp` and the `duniverse/` dir in one go for you.
 
-- as an opam package name, for instance `lwt`. In this case, the
-  source code repository declared in the `dev-repo` field of the
-  corresponding opam package will be used
-- as a repository url, for instance `https://github.com/ocsigen/lwt`
+## User stories
 
-For convenience, arguments such as `ocsigen/lwt` will be interpreted
-as `https://github.com/ocsigen/lwt`.
+### André, builds a CLI tool
 
-So for instance, all the following scenarios are equivalent:
+André works on a CLI tool. He wants to keep track of what it is exactly he needs to vendor and will
+in the end be compiled into its native binary. Because he doesn't care about making it work with a
+range of OCaml or libraries versions he's happy to pin each of its dependencies to a specific version
+to keep the builds reproducible and make it easier to work with his team. He has had issues with
+opam in the past trying to reproduce old builds because the opam repository had changed in the
+meantime.
 
+To achieve all of this while keeping things simple he decides to use `duniverse`.
+
+He installs `duniverse` on his system. He then runs `duniverse init` from the root of his project.
+Unfortunately for André, one of its transitive dependencies, `some-important-library`, isn't build
+with `dune`. He is willing to use `duniverse` so he decides to port version `0.8.0`, the one he
+needs, to dune.
+
+To do so he creates a fork of the upstream repo on Github, checks out to the `v0.8.0` tag and starts
+working on porting it to dune. He manages to get the whole thing to build, run the tests and
+install. He commits his changes to a `dune-universe-v0.8.0` branch and tags it `v0.8.0+dune`.
+He then opens a PR to the `dune-universe/opam-overlays` repo adding the
+`packages/some-important-library/some-important-library.0.8.0+dune/opam` file with the `url.src`
+field properly set to `"git+https://github.com/andre/some-important-library#v0.8.0+dune"`.
+Because the `dune-universe` team is so committed, the PR is reviewed and merged within the hour.
+
+He runs `duniverse init` once again and gets a message telling him everything went smoothly, all the
+dependencies could be resolved and the `duniverse.sxp` file was correctly written. Because André
+doesn't blindly trust any CLI tool, he runs `duniverse install` to fetch all the dependencies and
+install them in the `duniverse/` folder, move to a fresh and empty opam switch and runs
+`dune build @default @runtest` to make sure his tool builds correctly and the test suite is properly
+executed. Because the `duniverse` team did an amzing job, everything works as intended.
+He then removes the `.opam` file and commits the new `duniverse.sxp`. André really cares about build
+reproducibility and he wants a fast deterministic CI with no race conditions and as few downloads as
+possible, he decides to also commit the content of the `duniverse/` folder. That ensures from that
+point forward, he will always be able to reproduce any build, even if the upstream branches, tags or
+even repos get removed. That also means that his CI doesn't rely on internet access to install
+dependencies which will prevent the occasional timeout. Because he doesn't want to encourage local
+changes to dependencies, he makes sure the CI runs `duniverse status --exit-code`, which fails if
+the `duniverse.sxp` and `duniverse/` aren't in sync.
+
+### Bérénice, works on Mirage libraries
+
+### Charlotte, wants to build unikernels
+
+## Implementation consideration
+
+### The `duniverse.sxp` file
+
+They should be human readable, at least as human readable as `dune` files.
+
+They should be part of the git history of your project.
+
+They should contain information allowing to easily implement all of the above, a package stanza should
+look like this:
 ```
-$ git clone https://github.com/ocsigen/lwt
-$ duniverse init
-
------
-
-$ duniverse init https://github.com/ocsigen/lwt
-
------
-
-$ duniverse init ocsigen/lwt
+(duniverse_package
+ (name <duniverse_sub_dir_name>)
+ (opam_packages
+    <package_1>
+    <package_2>)
+ (upstream
+  (remote_name origin)
+  (url "https://github.com/their_org/name")
+  (git_ref v0.5.2))
+ (fork
+  (remote_name my-fork)
+  (url "https://github.com/my_org/name")
+  (git_ref <some_commit_ref>))
 ```
 
-#### Versions consideration
+The `opam_packages` field should be present to help with handling multi-opam repos.
 
-In the previous section, we assumed that the user wanted to work with
-the master branch of all the repository involved. However, the
-duniverse tool also allows to work with alternative "release"
-branches. Duniverse will support the following scheme:
-
-- the `master` branch is for released opam packages
-- the `dev` branch is for bleeding edge development
-
-When invoking `duniverse init`, the user may specify what branch of
-the package they want to work on by adding a `--version <version>`
-argument after each package name. When no such argument are specified,
-the duniverse tool will assume that the user wants to work on the
-latest stable version of opam packages.
-
-#### Pinning the dev version of a dependency
-
-TODO how to pin just one package? Mark it in `dune-get` file perhaps.
-
-### Checking the status of a workspace
-
-The `duniverse status` will report the state of a workspace. In
-particular, it will report the list of main and intermediate packages
-in the workspace as well as their version, as reported by `git
-describe --dirty --always`.
-
-Implementation
---------------
-
-Duniverse will use the opam libraries in order to determine the list
-of intermediate package it should import in the workspace and external
-packages it must install.
-
-Duniverse requires that all main and intermediate packages are using
-dune. Since not all OCaml packages are currently using dune, it will
-consider overlays hosted on https://github.com/dune-universe. Such overlays
-are forks of the upstream projects where the `dune` files have been
-added in order to build the project with dune.
-
-## Phase 1
-
-The current duniverse repository has a lot of metadata that it stores.
-Specifically, it has a `.duniverse` directory in which it has:
-
-- `opam.sxp`: stores the conversion from the root packages specified
-  and invokes the opam solver to get a complete list of packages.
-
-- `dune.sxp`: converts the list of opam packages into a concrete set
-  of git references. It uses heuristics for this since we only have
-  the archive file in a release, not the git tag.
-
-- `_opam`: is an opam2 local switch.
-
-We can get rid of all this temporary metadata by:
-
-- Adding a `dune list-opam-files` command to dune which tells us what the
-  active local packages are.
-
-- Reinitialise the opam state on every invocation of `init` so we dont
-  have to bother with `opam update` of a local switch.  We could also
-  then just store the `OPAMROOT` in a tmp dir so that it is not in the
-  same directory as the source code repository. (Lucas had a problem
-  with `opam pin` of a duniverse repository since opam then rsynched
-  the entire opam2 local switch).
-
-- Store the list of git remotes in a `dune-get` file in the local
-  repository.  This can eventually be merged into dune-project in a
-  future revision of dune.
-
-The `config.ml` in duniverse also currently hardcodes the list of
-packages that have overrides.  Instead, we should turn the
-dune-universe/ github organisation into a proper opam remote, where
-the dune variants of packages are stored in a versioned fashion.
-
-For example, a dune-universe remote for zarith would be:
-
-- `zarith.1.7+dune`: have this package in dune-universe/opam-repository
-- `dune-universe/zarith`: has a branch for the zarith-1.7 port (currently
-  this is the `duniverse-1.7` branch for example).
-
-With an opam remote, there is no more need for the duniverse tool to know about
-dune overrides.  Instead, it just adds `dune-universe/opam-repository` to its
-remote list before calculating the packages, and that is sufficient to pull in
-the overridden packages.
-
-The automatic git invocations have also been problematic.  For phase 1,
-we could remove all automatic `git commit` and simply fetch the archives
-for the user to manually git add/remove/commit.
-
-## Phase 2
-
-- Integrate the `dune-get` file directly into `dune-project`.
-- Support making changes directly into the vendored packages and opening PRs.
-
---
-- contacts: @dim @avsm @samoht
+The two separate `upstream` and `fork` fields allows `duniverse` to help you keep track
+of the changes you made to one of your dependency.
