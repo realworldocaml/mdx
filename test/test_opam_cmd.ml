@@ -93,7 +93,7 @@ let test_classify_package =
       ();
     make_test ~name:"git" ~package:{ name = "x"; version = None }
       ~dev_repo:"git+https://host.com/some-repo.git" ~archive:"gitpaf#pouf"
-      ~expected:(`Git "gitpaf", None)
+      ~expected:(`Git "https://host.com/some-repo.git", None)
       ()
   ]
 
