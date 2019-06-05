@@ -4,7 +4,7 @@ let test_tag_from_archive =
     let test_name = "tag_from_archive: " ^ name in
     let test_fun () =
       let actual = Duniverse_lib.Opam_cmd.tag_from_archive archive in
-      Alcotest.(check (option string)) archive expected actual
+      Alcotest.(check (option string)) test_name expected actual
     in
     (test_name, `Quick, test_fun)
   in
