@@ -25,16 +25,13 @@ module Opam = struct
     let pp = pp_sexp sexp_of_t
   end
 
-  type repo = [ `Github of string * string | `Git of string | `Virtual | `Error of string ]
-  [@@deriving sexp]
+  type repo = [ `Git of string | `Virtual | `Error of string ] [@@deriving sexp]
 
   let equal_repo repo repo' =
     match (repo, repo') with
-    | `Github (user, repo), `Github (user', repo') ->
-        String.equal user user' && String.equal repo repo'
     | `Git s, `Git s' | `Error s, `Error s' -> String.equal s s'
     | `Virtual, `Virtual -> true
-    | (`Github _ | `Git _ | `Virtual | `Error _), _ -> false
+    | (`Git _ | `Virtual | `Error _), _ -> false
 
   let pp_repo = pp_sexp sexp_of_repo
 
