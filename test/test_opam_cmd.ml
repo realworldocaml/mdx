@@ -83,17 +83,17 @@ let test_classify_package =
       ~dev_repo:"git+https://github.com/user/repo/oh/my/what/is/this" ~archive:""
       ~expected:(`Error "weird github url", None)
       ();
-    make_test ~name:"unknown" ~package:{ name = "x"; version = None }
-      ~dev_repo:"git+https://host.com/some-repo.git" ~archive:""
-      ~expected:(`Unknown "host.com", None)
-      ();
-    make_test ~name:"no host" ~package:{ name = "x"; version = None } ~dev_repo:"nohost"
+    make_test ~name:"no host" ~package:{ name = "x"; version = None } ~dev_repo:"nohost.git"
       ~archive:""
       ~expected:(`Error "dev-repo without host", None)
       ();
     make_test ~name:"git" ~package:{ name = "x"; version = None }
       ~dev_repo:"git+https://host.com/some-repo.git" ~archive:"gitpaf#pouf"
       ~expected:(`Git "https://host.com/some-repo.git", None)
+      ();
+    make_test ~name:"wrong vcs" ~package:{ name = "x"; version = None }
+      ~dev_repo:"hg+https://host.com/some-repo" ~archive:""
+      ~expected:(`Error "dev-repo doesn't use git as a VCS", None)
       ()
   ]
 
