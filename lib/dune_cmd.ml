@@ -103,13 +103,10 @@ let log_invalid_packages packages =
     (function
       | { dev_repo = `Error msg; package; _ } ->
           Logs.warn (fun l -> l "Do not know how to deal with %a: %s" pp_package package msg)
-      | { dev_repo = `Unknown host; package; _ } ->
-          Logs.warn (fun l -> l "Need a Duniverse fork for %a: %s" pp_package package host)
       | _ -> () )
     packages
 
-let package_is_valid { Opam.dev_repo; _ } =
-  match dev_repo with `Error _ -> false | `Unknown _ -> false | _ -> true
+let package_is_valid { Opam.dev_repo; _ } = match dev_repo with `Error _ -> false | _ -> true
 
 let filter_invalid_packages pkgs =
   Logs.app (fun l ->
