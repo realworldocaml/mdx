@@ -2,11 +2,11 @@ open Duniverse_lib
 
 let test_make =
   let make_test ~name ~input ~expected =
-    let test_name = "make (" ^ name ^ ")" in
+    let test_name = Printf.sprintf "make: %s" name in
     let test_fun () =
       let expected_t = Opam_show_result.from_list expected in
       let actual = Rresult.R.get_ok (Opam_show_result.make input) in
-      Alcotest.(check (module Opam_show_result) name expected_t actual)
+      Alcotest.(check (module Opam_show_result) test_name expected_t actual)
     in
     (test_name, `Quick, test_fun)
   in
