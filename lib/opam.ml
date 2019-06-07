@@ -33,7 +33,7 @@ module Dev_repo = struct
     match Astring.String.cut ~sep:"+" dev_repo with
     | None ->
         let uri = Uri.of_string dev_repo in
-        let vcs = if Git.uri_has_git_extension uri then Some Git else None in
+        let vcs = if Uri_utils.has_git_extension uri then Some Git else None in
         { vcs; uri }
     | Some (vcs, no_vcs_scheme_dev_repo) ->
         let uri = Uri.of_string no_vcs_scheme_dev_repo in
