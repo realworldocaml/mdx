@@ -25,13 +25,18 @@ module Opam = struct
     let pp = pp_sexp sexp_of_t
   end
 
-  type repo =
-    [ `Github of string * string
-    | `Git of string
-    | `Unknown of string
-    | `Virtual
-    | `Error of string ]
+  type repo = [ `Github of string * string | `Git of string | `Virtual | `Error of string ]
   [@@deriving sexp]
+
+  let equal_repo repo repo' =
+    match (repo, repo') with
+    | `Github (user, repo), `Github (user', repo') ->
+        String.equal user user' && String.equal repo repo'
+    | `Git s, `Git s' | `Error s, `Error s' -> String.equal s s'
+    | `Virtual, `Virtual -> true
+    | (`Github _ | `Git _ | `Virtual | `Error _), _ -> false
+
+  let pp_repo = pp_sexp sexp_of_repo
 
   type package = { name : string; version : string option [@default None] [@sexp_drop_default] }
   [@@deriving sexp]
@@ -60,8 +65,6 @@ module Opam = struct
     branch : string [@default "master"]
   }
   [@@deriving sexp]
-
-  let pp_repo = pp_sexp sexp_of_repo
 
   let pp_package ppf { name; version } =
     match version with None -> Fmt.pf ppf "%s" name | Some v -> Fmt.pf ppf "%s.%s" name v

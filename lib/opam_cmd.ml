@@ -101,24 +101,22 @@ let classify_package ~package ~dev_repo ~archive ~pins () =
           Logs.debug (fun l -> l "Mapped %s to a virtual package as it has no archive" package.name);
           (`Virtual, None)
       | Some archive -> (
-          let uri = Uri.of_string dev_repo in
           let tag = tag_from_archive archive in
           Logs.debug (fun l ->
               l "Mapped %s -> %s" archive (match tag with None -> "??" | Some v -> v) );
-          match Uri.host uri with
-          | Some "github.com" -> (
-            match String.cuts ~empty:false ~sep:"/" (Uri.path uri) with
-            | [ user; repo ] ->
-                let repo = strip_ext repo in
-                (`Github (user, repo), tag)
-            | _ -> err "weird github url" )
-          | Some host -> (
-            match String.is_prefix ~affix:"git" archive with
-            | true ->
-                let base_repo = String.cuts ~empty:false ~sep:"#" archive |> List.hd in
-                (`Git base_repo, tag)
-            | false -> (`Unknown host, tag) )
-          | None -> err "dev-repo without host" ) )
+          match Opam.Dev_repo.from_string dev_repo with
+          | { vcs = Some Git; uri = dev_repo_uri } -> (
+            match Uri.host dev_repo_uri with
+            | Some "github.com" -> (
+              match String.cuts ~empty:false ~sep:"/" (Uri.path dev_repo_uri) with
+              | [ user; repo ] ->
+                  let repo = strip_ext repo in
+                  (`Github (user, repo), tag)
+              | _ -> err "weird github url" )
+            | Some _host -> (`Git (Uri.to_string dev_repo_uri), tag)
+            | None -> err "dev-repo without host" )
+          | { vcs = None | Some (Other _); _ } -> (`Error "dev-repo doesn't use git as a VCS", None)
+          ) )
 
 (* Fetch and parse an opam field from an Opam_show_result.t*)
 let extract_opam_value ~field ~package data =
