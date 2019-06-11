@@ -27,3 +27,5 @@ let test_make =
       ~input:[ "name       test2"; "url:   bonjour.com"; "name   test"; {|field2   ["salut"]|} ]
       ~expected:[ ("test", "field2", {|["salut"]|}); ("test2", "url:", "bonjour.com") ]
   ]
+
+let suite = ("Opam_show_result", test_make)
