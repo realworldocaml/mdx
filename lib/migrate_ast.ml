@@ -31,20 +31,20 @@ module Asttypes_ = Asttypes
 module Parsetree_ = Parsetree
 
 include (
-  Ast_406 :
-    module type of struct
-      include Ast_406
+  Migrate_parsetree.Ast_406 :
+  module type of struct
+      include Migrate_parsetree.Ast_406
     end
-    with module Location := Ast_406.Location
-     and module Outcometree := Ast_406.Outcometree
-     and module Asttypes := Ast_406.Asttypes
-     and module Ast_helper := Ast_406.Ast_helper
-     and module Parsetree := Ast_406.Parsetree
+    with module Location := Migrate_parsetree.Ast_406.Location
+     and module Outcometree := Migrate_parsetree.Ast_406.Outcometree
+     and module Asttypes := Migrate_parsetree.Ast_406.Asttypes
+     and module Ast_helper := Migrate_parsetree.Ast_406.Ast_helper
+     and module Parsetree := Migrate_parsetree.Ast_406.Parsetree
  )
 
-module Asttypes = Ast_406.Asttypes
-module Ast_helper = Ast_406.Ast_helper
-module Parsetree = Ast_406.Parsetree
+module Asttypes = Migrate_parsetree.Ast_406.Asttypes
+module Ast_helper = Migrate_parsetree.Ast_406.Ast_helper
+module Parsetree = Migrate_parsetree.Ast_406.Parsetree
 
 module Parse = struct
   open Migrate_parsetree
@@ -166,7 +166,7 @@ module Position = struct
 end
 
 module Location = struct
-  include Ast_406.Location
+  include Migrate_parsetree.Ast_406.Location
 
   let fmt fs {loc_start; loc_end; loc_ghost} =
     Format.fprintf fs "(%a..%a)%s" Position.fmt loc_start Position.fmt
