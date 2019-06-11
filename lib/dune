@@ -1,6 +1,6 @@
 (library
  (name duniverse_lib)
- (libraries bos ezjsonm fmt logs opam-core opam-file-format rresult sexplib
-   uri)
+ (libraries stdune bos ezjsonm fmt logs opam-core opam-file-format rresult
+   sexplib uri)
  (preprocess
   (pps ppx_sexp_conv)))
