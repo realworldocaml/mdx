@@ -310,17 +310,19 @@ let choose_root_packages ~explicit_root_packages ~local_packages =
       Ok explicit_root_packages
 
 let install_incompatible_packages yes repo =
-  let is_valid = function `Virtual | `Git _ -> true | `Unknown _ | `Error _ -> false in
   Logs.app (fun l ->
       l "%aGathering dune-incompatible packages from %a." pp_header header
         Fmt.(styled `Cyan Fpath.pp)
         Config.duniverse_file );
   let file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.load ~file >>= fun t ->
-  let packages_to_install =
-    List.filter (fun { is_dune; dev_repo; _ } -> not (is_dune && is_valid dev_repo)) t.packages
-    |> List.map (fun { package; _ } -> package)
+  let opam_package duniverse_elm =
+    let open Duniverse.Element in
+    match duniverse_elm with
+    | Opam { name; version } -> Some { Types.Opam.name; version }
+    | Repo _ -> None
   in
+  let packages_to_install = Stdune.List.filter_map ~f:opam_package t.content in
   match packages_to_install with
   | [] ->
       Logs.app (fun l -> l "%aGood news! There is no package to install!" pp_header header);

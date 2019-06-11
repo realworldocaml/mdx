@@ -1,11 +1,33 @@
+module Element : sig
+  type t =
+    | Opam of { name : string; version : string option [@default None] [@sexp_drop_default] }
+    | Repo of
+        { dir : string;
+          upstream : string;
+          ref : string [@default "master"] [@sexp_drop_default]
+        }
+  [@@deriving sexp]
+
+  val equal : t -> t -> bool
+
+  val pp : t Fmt.t
+
+  val from_opam_entry :
+    get_default_branch:(string -> (string, Rresult.R.msg) result) ->
+    Types.Opam.entry ->
+    (t option, Rresult.R.msg) result
+
+  val dedup_upstream : t list -> t list
+  (** [dedup_upstream l] returns [l] with a single repo for any given upstream URL. *)
+end
+
 type t = {
   root_packages : Types.Opam.package list;
   excludes : Types.Opam.package list;
   pins : Types.Opam.pin list;
-  packages : Types.Opam.entry list;
-  repos : Types.Dune.repo list;
   remotes : string list; [@default []]
-  branch : string [@default "master"]
+  branch : string; [@default "master"]
+  content : Element.t list
 }
 [@@deriving sexp]
 

@@ -21,12 +21,17 @@ let compute_opam ~repo ~branch ~explicit_root_packages ~excludes ~pins ~overlay 
   Opam_cmd.report_packages_stats packages_stats;
   Ok opam
 
-let compute_repos ~packages =
-  let open Rresult.R.Infix in
-  let packages = Dune_cmd.filter_invalid_packages packages in
-  let dune_packages = List.filter (fun o -> o.Opam.is_dune) packages in
-  Exec.map Dune_cmd.dune_repo_of_opam dune_packages >>= fun repos ->
-  Dune_cmd.dedup_git_remotes repos
+let compute_repos ~opam_entries =
+  let open Stdune in
+  let open Result.O in
+  Dune_cmd.log_invalid_packages opam_entries;
+  let get_default_branch remote = Exec.git_default_branch ~remote () in
+  let elm_results =
+    List.map ~f:(Duniverse.Element.from_opam_entry ~get_default_branch) opam_entries
+  in
+  Result.List.all elm_results >>= fun element_opt_list ->
+  let upstream_dup_elements = List.filter_opt element_opt_list in
+  Ok (Duniverse.Element.dedup_upstream upstream_dup_elements)
 
 let run repo branch explicit_root_packages excludes pins overlay remotes () =
   let open Rresult.R.Infix in
@@ -35,14 +40,14 @@ let run repo branch explicit_root_packages excludes pins overlay remotes () =
   >>= fun opam ->
   let { Opam.root_packages; excludes; pins; remotes; branch; packages } = opam in
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor");
-  compute_repos ~packages >>= fun repos ->
-  let duniverse = { Duniverse.root_packages; excludes; pins; remotes; branch; packages; repos } in
+  compute_repos ~opam_entries:packages >>= fun content ->
+  let duniverse = { Duniverse.root_packages; excludes; pins; remotes; branch; content } in
   let file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.save ~file duniverse >>= fun () ->
   Common.Logs.app (fun l ->
       l "Wrote duniverse file with %a entries to %a."
         Fmt.(styled `Green int)
-        (List.length repos)
+        (List.length content)
         Fmt.(styled `Cyan Fpath.pp)
         (Fpath.normalize file) );
   Ok ()
