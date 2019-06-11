@@ -1,3 +1,8 @@
+### 1.4.0 (2019-06-11)
+- Add `--force-output` option to force generation of diff file (#118 @clecat)
+- Support OCaml 4.08.0 (#121 @xclerc)
+- README and documentation fixes (#122 #118 @andreypopp @clecat @samoht)
+
 ### 1.3.0 (2019-03-01)
 - Updated readme file with the new features: dune rules, named environment and
   ocaml versions, Some grammar correction too (@gpetiot, #101, aantron, #102)
