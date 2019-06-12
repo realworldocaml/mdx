@@ -107,12 +107,6 @@ let classify_package ~package ~dev_repo ~archive ~pins () =
           match Opam.Dev_repo.from_string dev_repo with
           | { vcs = Some Git; uri = dev_repo_uri } -> (
             match Uri.host dev_repo_uri with
-            | Some "github.com" -> (
-              match String.cuts ~empty:false ~sep:"/" (Uri.path dev_repo_uri) with
-              | [ user; repo ] ->
-                  let repo = strip_ext repo in
-                  (`Github (user, repo), tag)
-              | _ -> err "weird github url" )
             | Some _host -> (`Git (Uri.to_string dev_repo_uri), tag)
             | None -> err "dev-repo without host" )
           | { vcs = None | Some (Other _); _ } -> (`Error "dev-repo doesn't use git as a VCS", None)
@@ -316,10 +310,7 @@ let choose_root_packages ~explicit_root_packages ~local_packages =
       Ok explicit_root_packages
 
 let install_incompatible_packages yes repo =
-  let is_valid = function
-    | `Virtual | `Github _ | `Git _ -> true
-    | `Unknown _ | `Error _ -> false
-  in
+  let is_valid = function `Virtual | `Git _ -> true | `Unknown _ | `Error _ -> false in
   Logs.app (fun l ->
       l "%aGathering dune-incompatible packages from %a." pp_header header
         Fmt.(styled `Cyan Fpath.pp)

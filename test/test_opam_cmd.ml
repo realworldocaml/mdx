@@ -73,15 +73,11 @@ let test_classify_package =
       ();
     make_test ~name:"github dev-repo" ~package:{ name = "x"; version = None }
       ~dev_repo:"git+https://github.com/user/repo.git" ~archive:""
-      ~expected:(`Github ("user", "repo"), None)
+      ~expected:(`Git "https://github.com/user/repo.git", None)
       ();
     make_test ~name:"guess tag from archive" ~package:{ name = "x"; version = None }
       ~dev_repo:"git+https://github.com/user/repo.git" ~archive:"file-v1.tbz"
-      ~expected:(`Github ("user", "repo"), Some "v1")
-      ();
-    make_test ~name:"unexpected github url" ~package:{ name = "x"; version = None }
-      ~dev_repo:"git+https://github.com/user/repo/oh/my/what/is/this" ~archive:""
-      ~expected:(`Error "weird github url", None)
+      ~expected:(`Git "https://github.com/user/repo.git", Some "v1")
       ();
     make_test ~name:"no host" ~package:{ name = "x"; version = None } ~dev_repo:"nohost.git"
       ~archive:""

@@ -25,12 +25,6 @@ let header = "==> "
 let dune_repo_of_opam opam =
   let dir = Opam.(opam.package.name) in
   match opam.Opam.dev_repo with
-  | `Github (user, repo) -> (
-      let upstream = Fmt.strf "https://github.com/%s/%s.git" user repo in
-      match opam.Opam.tag with
-      | None ->
-          Exec.git_default_branch ~remote:upstream () >>= fun ref -> Ok { Dune.dir; upstream; ref }
-      | Some ref -> Ok { Dune.dir; upstream; ref } )
   | `Git upstream -> (
     match opam.Opam.tag with
     | None ->
