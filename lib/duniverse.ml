@@ -8,6 +8,10 @@ module Deps = struct
 
     let equal t t' = String.equal t.name t'.name && Option.equal String.equal t.version t'.version
 
+    let pp fmt = function
+      | { name; version = None } -> Format.fprintf fmt "%s" name
+      | { name; version = Some v } -> Format.fprintf fmt "%s.%s" name v
+
     let raw_pp fmt { name; version } =
       let pp_version fmt = function
         | None -> Format.fprintf fmt "None"

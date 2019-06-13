@@ -4,6 +4,8 @@ module Deps : sig
     type t = { name : string; version : string option }
 
     val equal : t -> t -> bool
+
+    val pp : t Fmt.t
   end
 
   module Source : sig

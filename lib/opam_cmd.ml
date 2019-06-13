@@ -306,16 +306,13 @@ let install_incompatible_packages yes repo =
         Config.duniverse_file );
   let file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.load ~file >>= fun { deps = { opamverse; _ }; _ } ->
-  let packages =
-    List.map (fun { Duniverse.Deps.Opam.name; version } -> { Types.Opam.name; version }) opamverse
-  in
-  match packages with
+  match opamverse with
   | [] ->
       Logs.app (fun l -> l "%aGood news! There is no package to install!" pp_header header);
       Ok ()
-  | packages_to_install ->
+  | opamverse ->
       Logs.app (fun l ->
           l "%aInstalling these packages with opam:\n%a" pp_header header
-            Fmt.(list ~sep:sp pp_package)
-            packages_to_install );
-      Exec.run_opam_install ~yes packages_to_install
+            Fmt.(list ~sep:sp Duniverse.Deps.Opam.pp)
+            opamverse );
+      Exec.run_opam_install ~yes opamverse
