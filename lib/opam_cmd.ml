@@ -262,16 +262,6 @@ let report_packages_stats packages_stats =
           Fmt.(styled `Green int)
           packages_stats.total )
 
-let save_opam ~file ~packages_stats opam =
-  save file opam >>= fun () ->
-  Logs.app (fun l ->
-      l "%aWritten %a opam packages to %a." pp_header header
-        Fmt.(styled `Green int)
-        packages_stats.total
-        Fmt.(styled `Cyan Fpath.pp)
-        file );
-  Ok ()
-
 let init_opam ~root ~remotes () =
   let open Types.Opam.Remote in
   let remotes = List.mapi (fun i url -> { name = Fmt.strf "remote%d" i; url }) remotes in
