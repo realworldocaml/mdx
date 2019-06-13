@@ -1,90 +1,122 @@
 open Stdune
 open Sexplib.Conv
 
-module Element = struct
-  type t =
-    | Opam of { name : string; version : string option [@default None] [@sexp_drop_default] }
-    | Repo of
-        { dir : string;
-          upstream : string;
-          ref : string [@default "master"] [@sexp_drop_default]
-        }
-  [@@deriving sexp]
+module Deps = struct
+  module Opam = struct
+    type t = { name : string; version : string option [@default None] [@sexp_drop_default] }
+    [@@deriving sexp]
+
+    let equal t t' = String.equal t.name t'.name && Option.equal String.equal t.version t'.version
+
+    let raw_pp fmt { name; version } =
+      let pp_version fmt = function
+        | None -> Format.fprintf fmt "None"
+        | Some v -> Format.fprintf fmt "Some %S" v
+      in
+      Format.fprintf fmt "@[<hov 2>{ name = %S;@ version = %a }@]" name pp_version version
+  end
+
+  module Source = struct
+    type t = {
+      dir : string;
+      upstream : string;
+      ref : string [@default "master"] [@sexp_drop_default]
+    }
+    [@@deriving sexp]
+
+    let equal t t' =
+      String.equal t.dir t'.dir && String.equal t.upstream t'.upstream && String.equal t.ref t'.ref
+
+    let raw_pp fmt { dir; upstream; ref } =
+      Format.fprintf fmt "@[<hov 2>{ dir = %S;@ upstream = %S;@ ref = %S }@]" dir upstream ref
+
+    let aggregate t t' =
+      let min_dir = match String.compare t.dir t'.dir with Lt | Eq -> t.dir | Gt -> t'.dir in
+      let max_ref =
+        match Ordering.of_int (OpamVersionCompare.compare t.ref t'.ref) with
+        | Gt | Eq -> t.ref
+        | Lt -> t'.ref
+      in
+      { dir = min_dir; ref = max_ref; upstream = t.upstream }
+
+    let aggregate_list l =
+      let update map ({ upstream; _ } as t) =
+        String.Map.update map upstream ~f:(function
+          | None -> Some t
+          | Some t' -> Some (aggregate t t') )
+      in
+      let aggregated_map = List.fold_left ~init:String.Map.empty ~f:update l in
+      String.Map.values aggregated_map
+  end
+
+  module One = struct
+    type t = Opam of Opam.t | Source of Source.t
+
+    let equal t t' =
+      match (t, t') with
+      | Opam opam, Opam opam' -> Opam.equal opam opam'
+      | Source source, Source source' -> Source.equal source source'
+      | (Opam _ | Source _), _ -> false
+
+    let raw_pp fmt t =
+      match t with
+      | Opam opam -> Format.fprintf fmt "@[<hov 2>Opam@ %a@]" Opam.raw_pp opam
+      | Source source -> Format.fprintf fmt "@[<hov 2>Source@ %a@]" Source.raw_pp source
+
+    let from_opam_entry ~get_default_branch entry =
+      let open Types.Opam in
+      let open Result.O in
+      match entry with
+      | { dev_repo = `Virtual; _ } | { dev_repo = `Error _; _ } -> Ok None
+      | { is_dune = false; package = { name; version }; _ } -> Ok (Some (Opam { name; version }))
+      | { is_dune = true; dev_repo = `Git upstream; tag = Some ref; package = { name; _ } } ->
+          Ok (Some (Source { dir = name; upstream; ref }))
+      | { is_dune = true; dev_repo = `Git upstream; tag = None; package = { name; _ } } ->
+          get_default_branch upstream >>= fun ref ->
+          Ok (Some (Source { dir = name; upstream; ref }))
+
+    let partition_list l =
+      List.partition_map ~f:(function Opam o -> Left o | Source s -> Right s) l
+  end
+
+  type t = { opamverse : Opam.t list; duniverse : Source.t list } [@@deriving sexp]
 
   let equal t t' =
-    match (t, t') with
-    | Opam { name; version }, Opam { name = name'; version = version' } ->
-        String.equal name name' && Option.equal String.equal version version'
-    | Repo { dir; upstream; ref }, Repo { dir = dir'; upstream = upstream'; ref = ref' } ->
-        String.equal dir dir' && String.equal upstream upstream' && String.equal ref ref'
-    | (Opam _ | Repo _), _ -> false
+    List.equal Opam.equal t.opamverse t'.opamverse
+    && List.equal Source.equal t.duniverse t'.duniverse
 
-  let pp fmt t =
-    let pp_version fmt = function
-      | None -> Format.fprintf fmt "None"
-      | Some v -> Format.fprintf fmt "Some %S" v
+  let raw_pp fmt t =
+    let pp_list pp_a fmt l =
+      let pp_sep fmt () = Format.fprintf fmt ";@ " in
+      Format.fprintf fmt "@[<hov 2>[@ %a]@]" (Format.pp_print_list ~pp_sep pp_a) l
     in
-    match t with
-    | Opam { name; version } ->
-        Format.fprintf fmt "@[<hov 2>{ name = %S;@ version = %a }@]" name pp_version version
-    | Repo { dir; upstream; ref } ->
-        Format.fprintf fmt "@[<hov 2>{ dir = %S;@ upstream = %S;@ ref = %S }@]" dir upstream ref
+    Format.fprintf fmt "@[<hov 2>{ opamverse = %a;@ duniverse = %a}@]" (pp_list Opam.raw_pp)
+      t.opamverse (pp_list Source.raw_pp) t.duniverse
 
-  let from_opam_entry ~get_default_branch entry =
-    let open Types.Opam in
-    let open Rresult.R.Infix in
-    match entry with
-    | { dev_repo = `Virtual; _ } | { dev_repo = `Error _; _ } -> Ok None
-    | { is_dune = false; package = { name; version }; _ } -> Ok (Some (Opam { name; version }))
-    | { is_dune = true; dev_repo = `Git upstream; tag = Some ref; package = { name; _ } } ->
-        Ok (Some (Repo { dir = name; upstream; ref }))
-    | { is_dune = true; dev_repo = `Git upstream; tag = None; package = { name; _ } } ->
-        get_default_branch upstream >>= fun ref -> Ok (Some (Repo { dir = name; upstream; ref }))
+  let from_opam_entries ~get_default_branch entries =
+    let open Result.O in
+    let results = List.map ~f:(One.from_opam_entry ~get_default_branch) entries in
+    Result.List.all results >>= fun dep_options ->
+    let deps = List.filter_opt dep_options in
+    let opamverse, source_deps = One.partition_list deps in
+    let duniverse = Source.aggregate_list source_deps in
+    Ok { opamverse; duniverse }
 
-  let dedup_upstream l =
-    let merge_repo t t' =
-      match[@warning "-4"] (t, t') with
-      | Repo { dir; ref; upstream }, Repo { dir = dir'; ref = ref'; _ } ->
-          let min_dir = match String.compare dir dir' with Lt | Eq -> dir | Gt -> dir' in
-          let max_ref =
-            match Ordering.of_int (OpamVersionCompare.compare ref ref') with
-            | Gt | Eq -> ref
-            | Lt -> ref'
-          in
-          Repo { dir = min_dir; ref = max_ref; upstream }
-      | _ -> assert false
-    in
-    let update map upstream t =
-      String.Map.update map upstream ~f:(function
-        | None -> Some t
-        | Some t' -> Some (merge_repo t t') )
-    in
-    let go (opams, upstream_repo_map) t =
-      match t with
-      | Opam _ -> (t :: opams, upstream_repo_map)
-      | Repo { upstream; _ } -> (opams, update upstream_repo_map upstream t)
-    in
-    let opams, upstream_repo_map = List.fold_left l ~init:([], String.Map.empty) ~f:go in
-    let repos = String.Map.values upstream_repo_map in
-    List.rev_append opams repos
+  let count { opamverse; duniverse } = List.length opamverse + List.length duniverse
 end
 
 module Config = struct
-  type t =
-    { root_packages : Types.Opam.package list;
-      excludes : Types.Opam.package list;
-      pins : Types.Opam.pin list;
-      remotes : string list; [@default []]
-      branch : string [@default "master"]
-    }
+  type t = {
+    root_packages : Types.Opam.package list;
+    excludes : Types.Opam.package list;
+    pins : Types.Opam.pin list;
+    remotes : string list; [@default []]
+    branch : string [@default "master"]
+  }
   [@@deriving sexp]
 end
 
-type t = {
-  config : Config.t;
-  content : Element.t list
-}
-[@@deriving sexp]
+type t = { config : Config.t; deps : Deps.t } [@@deriving sexp]
 
 let load ~file = Persist.load_sexp "duniverse" t_of_sexp file
 

@@ -31,17 +31,13 @@ let log_invalid_packages packages =
     packages
 
 let gen_dune_upstream_branches repo =
-  let open Duniverse.Element in
   let ifile = Fpath.(repo // Config.duniverse_file) in
-  Duniverse.load ~file:ifile >>= fun duniverse ->
+  Duniverse.load ~file:ifile >>= fun { deps = { duniverse; _ }; _ } ->
   Exec.iter
-    (function
-      | Opam _ -> Ok ()
-      | Repo { dir; upstream; ref } ->
-          let output_dir = Fpath.(Config.vendor_dir / dir) in
-          Logs.app (fun l ->
-              l "%aPulling sources for %a." pp_header header Fmt.(styled `Cyan Fpath.pp) output_dir
-          );
-          let output_dir = Fpath.(Config.vendor_dir / dir) in
-          Exec.git_archive ~output_dir ~remote:upstream ~tag:ref () )
-    duniverse.content
+    (fun { Duniverse.Deps.Source.dir; upstream; ref } ->
+      let output_dir = Fpath.(Config.vendor_dir / dir) in
+      Logs.app (fun l ->
+          l "%aPulling sources for %a." pp_header header Fmt.(styled `Cyan Fpath.pp) output_dir );
+      let output_dir = Fpath.(Config.vendor_dir / dir) in
+      Exec.git_archive ~output_dir ~remote:upstream ~tag:ref () )
+    duniverse

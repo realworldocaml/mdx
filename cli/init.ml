@@ -1,7 +1,8 @@
 open Duniverse_lib
 open Duniverse_lib.Types
 
-let build_config ~local_packages ~branch ~explicit_root_packages ~excludes ~pins ~remotes ~overlay =
+let build_config ~local_packages ~branch ~explicit_root_packages ~excludes ~pins ~remotes ~overlay
+    =
   let open Rresult.R.Infix in
   Opam_cmd.choose_root_packages ~explicit_root_packages ~local_packages >>= fun root_packages ->
   let root_packages =
@@ -11,31 +12,23 @@ let build_config ~local_packages ~branch ~explicit_root_packages ~excludes ~pins
     List.map Opam_cmd.split_opam_name_and_version (local_packages @ excludes) |> Opam.sort_uniq
   in
   let remotes = overlay :: remotes in
-  Ok {Duniverse.Config.root_packages; excludes; pins; remotes; branch}
+  Ok { Duniverse.Config.root_packages; excludes; pins; remotes; branch }
 
-let init_tmp_opam ~local_packages ~config:{Duniverse.Config.remotes; pins; _} =
+let init_tmp_opam ~local_packages ~config:{ Duniverse.Config.remotes; pins; _ } =
   let open Rresult.R.Infix in
   Bos.OS.Dir.tmp ".duniverse-opam-root-%s" >>= fun root ->
   Opam_cmd.init_opam ~root ~remotes () >>= fun () ->
   Exec.(iter (add_opam_dev_pin ~root) pins) >>= fun () ->
-  Exec.(iter (add_opam_local_pin ~root) local_packages) >>= fun () ->
-  Ok root
+  Exec.(iter (add_opam_local_pin ~root) local_packages) >>= fun () -> Ok root
 
 let report_stats ~packages =
   let packages_stats = Opam_cmd.packages_stats packages in
   Opam_cmd.report_packages_stats packages_stats
 
-let compute_repos ~opam_entries =
-  let open Stdune in
-  let open Result.O in
+let compute_deps ~opam_entries =
   Dune_cmd.log_invalid_packages opam_entries;
   let get_default_branch remote = Exec.git_default_branch ~remote () in
-  let elm_results =
-    List.map ~f:(Duniverse.Element.from_opam_entry ~get_default_branch) opam_entries
-  in
-  Result.List.all elm_results >>= fun element_opt_list ->
-  let upstream_dup_elements = List.filter_opt element_opt_list in
-  Ok (Duniverse.Element.dedup_upstream upstream_dup_elements)
+  Duniverse.Deps.from_opam_entries ~get_default_branch opam_entries
 
 let run repo branch explicit_root_packages excludes pins overlay remotes () =
   let open Rresult.R.Infix in
@@ -45,18 +38,21 @@ let run repo branch explicit_root_packages excludes pins overlay remotes () =
   >>= fun config ->
   Common.Logs.app (fun l -> l "Initializing temporary opam switch");
   init_tmp_opam ~local_packages ~config >>= fun root ->
-  Common.Logs.app (fun l -> l "Resolving dependencies for %a" Fmt.(list ~sep:(unit " ") Styled_pp.package) config.root_packages);
+  Common.Logs.app (fun l ->
+      l "Resolving opam dependencies for %a"
+        Fmt.(list ~sep:(unit " ") Styled_pp.package)
+        config.root_packages );
   Opam_cmd.calculate_opam ~root ~config >>= fun packages ->
   report_stats ~packages;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor");
-  compute_repos ~opam_entries:packages >>= fun content ->
-  let duniverse = { Duniverse.config; content } in
+  compute_deps ~opam_entries:packages >>= fun deps ->
+  let duniverse = { Duniverse.config; deps } in
   let file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.save ~file duniverse >>= fun () ->
   Common.Logs.app (fun l ->
       l "Wrote duniverse file with %a entries to %a."
         Fmt.(styled `Green int)
-        (List.length content)
+        (Duniverse.Deps.count duniverse.deps)
         Fmt.(styled `Cyan Fpath.pp)
         (Fpath.normalize file) );
   Ok ()

@@ -212,7 +212,7 @@ let filter_duniverse_packages ~excludes pkgs =
   fn [] pkgs
 
 let calculate_opam ~root ~config =
-  let {Duniverse.Config.root_packages; pins; excludes; _ } = config in
+  let { Duniverse.Config.root_packages; pins; excludes; _ } = config in
   Exec.run_opam_package_deps ~root (List.map string_of_package root_packages)
   >>| List.map split_opam_name_and_version
   >>| List.map (fun p ->
@@ -305,15 +305,11 @@ let install_incompatible_packages yes repo =
         Fmt.(styled `Cyan Fpath.pp)
         Config.duniverse_file );
   let file = Fpath.(repo // Config.duniverse_file) in
-  Duniverse.load ~file >>= fun t ->
-  let opam_package duniverse_elm =
-    let open Duniverse.Element in
-    match duniverse_elm with
-    | Opam { name; version } -> Some { Types.Opam.name; version }
-    | Repo _ -> None
+  Duniverse.load ~file >>= fun { deps = { opamverse; _ }; _ } ->
+  let packages =
+    List.map (fun { Duniverse.Deps.Opam.name; version } -> { Types.Opam.name; version }) opamverse
   in
-  let packages_to_install = Stdune.List.filter_map ~f:opam_package t.content in
-  match packages_to_install with
+  match packages with
   | [] ->
       Logs.app (fun l -> l "%aGood news! There is no package to install!" pp_header header);
       Ok ()
