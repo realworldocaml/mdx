@@ -69,12 +69,19 @@ module Element = struct
     List.rev_append opams repos
 end
 
+module Config = struct
+  type t =
+    { root_packages : Types.Opam.package list;
+      excludes : Types.Opam.package list;
+      pins : Types.Opam.pin list;
+      remotes : string list; [@default []]
+      branch : string [@default "master"]
+    }
+  [@@deriving sexp]
+end
+
 type t = {
-  root_packages : Types.Opam.package list;
-  excludes : Types.Opam.package list;
-  pins : Types.Opam.pin list;
-  remotes : string list; [@default []]
-  branch : string; [@default "master"]
+  config : Config.t;
   content : Element.t list
 }
 [@@deriving sexp]

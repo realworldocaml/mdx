@@ -211,7 +211,8 @@ let filter_duniverse_packages ~excludes pkgs =
   in
   fn [] pkgs
 
-let calculate_opam ~root ~root_packages ~excludes ~pins ~branch ~remotes =
+let calculate_opam ~root ~config =
+  let {Duniverse.Config.root_packages; pins; excludes; _ } = config in
   Exec.run_opam_package_deps ~root (List.map string_of_package root_packages)
   >>| List.map split_opam_name_and_version
   >>| List.map (fun p ->
@@ -230,8 +231,7 @@ let calculate_opam ~root ~root_packages ~excludes ~pins ~branch ~remotes =
   Logs.app (fun l ->
       l "%aQuerying local opam switch for their metadata and Dune compatibility." pp_header header
   );
-  get_opam_info ~root ~pins deps >>= filter_duniverse_packages ~excludes >>= fun packages ->
-  Ok { packages; root_packages; excludes; pins; branch; remotes }
+  get_opam_info ~root ~pins deps >>= filter_duniverse_packages ~excludes
 
 type packages_stats = { total : int; dune : int; not_dune : entry list }
 

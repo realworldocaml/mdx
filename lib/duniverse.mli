@@ -21,12 +21,19 @@ module Element : sig
   (** [dedup_upstream l] returns [l] with a single repo for any given upstream URL. *)
 end
 
+module Config : sig
+  type t =
+    { root_packages : Types.Opam.package list;
+      excludes : Types.Opam.package list;
+      pins : Types.Opam.pin list;
+      remotes : string list; [@default []]
+      branch : string [@default "master"]
+    }
+  [@@deriving sexp]
+end
+
 type t = {
-  root_packages : Types.Opam.package list;
-  excludes : Types.Opam.package list;
-  pins : Types.Opam.pin list;
-  remotes : string list; [@default []]
-  branch : string; [@default "master"]
+  config : Config.t;
   content : Element.t list
 }
 [@@deriving sexp]

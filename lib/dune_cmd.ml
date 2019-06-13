@@ -31,10 +31,9 @@ let log_invalid_packages packages =
     packages
 
 let gen_dune_upstream_branches repo =
-  let open Duniverse in
   let open Duniverse.Element in
   let ifile = Fpath.(repo // Config.duniverse_file) in
-  load ~file:ifile >>= fun dune ->
+  Duniverse.load ~file:ifile >>= fun duniverse ->
   Exec.iter
     (function
       | Opam _ -> Ok ()
@@ -45,4 +44,4 @@ let gen_dune_upstream_branches repo =
           );
           let output_dir = Fpath.(Config.vendor_dir / dir) in
           Exec.git_archive ~output_dir ~remote:upstream ~tag:ref () )
-    dune.content
+    duniverse.content
