@@ -151,6 +151,15 @@ module Deps = struct
           ~expected:
             (Ok
                (Some (Source { opam = { name = "y"; version = None }; upstream = "x"; ref = "z" })))
+          ();
+        make_test ~name:"Uses default branch when no tag"
+          ~get_default_branch:(function "x" -> Ok "z" | _ -> assert false)
+          ~entry:
+            (entry_factory ~dev_repo:(`Git "x") ~is_dune:true
+               ~package:{ name = "y"; version = None } ?tag:None ())
+          ~expected:
+            (Ok
+               (Some (Source { opam = { name = "y"; version = None }; upstream = "x"; ref = "z" })))
           ()
       ]
   end
