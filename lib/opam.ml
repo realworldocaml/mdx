@@ -22,11 +22,9 @@ module Dev_repo = struct
     Option.equal equal_vcs vcs vcs' && Uri.equal uri uri'
 
   let pp fmt { vcs; uri } =
-    let pp_opt pp_a fmt = function
-      | None -> Format.fprintf fmt "None"
-      | Some a -> Format.fprintf fmt "Some (%a)" pp_a a
-    in
-    Format.fprintf fmt "@[<hov 2>{ vcs = %a;@ uri = %a }@]" (pp_opt pp_vcs) vcs Uri.pp uri
+    let open Pp_combinators.Ocaml in
+    Format.fprintf fmt "@[<hov 2>{ vcs = %a;@ uri = %a }@]" (option ~brackets:true pp_vcs) vcs
+      Uri.pp uri
 
   let from_string dev_repo =
     match Astring.String.cut ~sep:"+" dev_repo with

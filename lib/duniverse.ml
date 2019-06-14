@@ -13,11 +13,8 @@ module Deps = struct
       | { name; version = Some v } -> Format.fprintf fmt "%s.%s" name v
 
     let raw_pp fmt { name; version } =
-      let pp_version fmt = function
-        | None -> Format.fprintf fmt "None"
-        | Some v -> Format.fprintf fmt "Some %S" v
-      in
-      Format.fprintf fmt "@[<hov 2>{ name = %S;@ version = %a }@]" name pp_version version
+      let open Pp_combinators.Ocaml in
+      Format.fprintf fmt "@[<hov 2>{ name = %S;@ version = %a }@]" name (option string) version
   end
 
   module Source = struct
@@ -90,12 +87,9 @@ module Deps = struct
     && List.equal Source.equal t.duniverse t'.duniverse
 
   let raw_pp fmt t =
-    let pp_list pp_a fmt l =
-      let pp_sep fmt () = Format.fprintf fmt ";@ " in
-      Format.fprintf fmt "@[<hov 2>[@ %a]@]" (Format.pp_print_list ~pp_sep pp_a) l
-    in
-    Format.fprintf fmt "@[<hov 2>{ opamverse = %a;@ duniverse = %a}@]" (pp_list Opam.raw_pp)
-      t.opamverse (pp_list Source.raw_pp) t.duniverse
+    let open Pp_combinators.Ocaml in
+    Format.fprintf fmt "@[<hov 2>{ opamverse = %a;@ duniverse = %a}@]" (list Opam.raw_pp)
+      t.opamverse (list Source.raw_pp) t.duniverse
 
   let from_opam_entries ~get_default_branch entries =
     let open Result.O in
