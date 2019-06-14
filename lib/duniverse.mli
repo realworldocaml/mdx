@@ -10,7 +10,7 @@ module Deps : sig
 
   module Source : sig
     (** Type of dependencies to clone in the duniverse *)
-    type t = { dir : string; upstream : string; ref : string }
+    type t = { dir : string; upstream : string; ref : string; provided_packages : Opam.t list }
 
     val equal : t -> t -> bool
 
@@ -20,9 +20,13 @@ module Deps : sig
 
     val raw_pp : t Fmt.t
 
-    val aggregate : t -> t -> t
+    module Package : sig
+      type t = { opam : Opam.t; upstream : string; ref : string }
+    end
 
-    val aggregate_list : t list -> t list
+    val aggregate : t -> Package.t -> t
+
+    val aggregate_packages : Package.t list -> t list
 
     (**/**)
   end
@@ -51,7 +55,7 @@ module Deps : sig
   val raw_pp : t Fmt.t
 
   module One : sig
-    type t = Opam of Opam.t | Source of Source.t
+    type t = Opam of Opam.t | Source of Source.Package.t
 
     val equal : t -> t -> bool
 

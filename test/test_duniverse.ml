@@ -29,23 +29,50 @@ let entry_factory ?(package = { Duniverse_lib.Types.Opam.name = ""; version = No
 module Deps = struct
   module Source = struct
     let test_aggregate =
-      let make_test ~name ~t1 ~t2 ~expected () =
+      let make_test ~name ~t ~package ~expected () =
         let test_name = Printf.sprintf "Deps.Source.aggregate: %s" name in
         let test_fun () =
-          let actual = Duniverse_lib.Duniverse.Deps.Source.aggregate t1 t2 in
+          let actual = Duniverse_lib.Duniverse.Deps.Source.aggregate t package in
           Alcotest.(check Testable.Deps.Source.t) test_name expected actual
         in
         (test_name, `Quick, test_fun)
       in
       [ make_test ~name:"Picks shortest name"
-          ~t1:{ dir = "a"; upstream = "u"; ref = "v1" }
-          ~t2:{ dir = "a-lwt"; upstream = "u"; ref = "v1" }
-          ~expected:{ dir = "a"; upstream = "u"; ref = "v1" }
+          ~t:{ dir = "a"; upstream = "u"; ref = "v1"; provided_packages = [] }
+          ~package:{ opam = { name = "a-lwt"; version = None }; upstream = "u"; ref = "v1" }
+          ~expected:
+            { dir = "a";
+              upstream = "u";
+              ref = "v1";
+              provided_packages = [ { name = "a-lwt"; version = None } ]
+            }
           ();
         make_test ~name:"Picks latest version according to opam"
-          ~t1:{ dir = "a"; upstream = "u"; ref = "v1.9.0" }
-          ~t2:{ dir = "a-lwt"; upstream = "u"; ref = "v1.10.0" }
-          ~expected:{ dir = "a"; upstream = "u"; ref = "v1.10.0" }
+          ~t:{ dir = "a"; upstream = "u"; ref = "v1.9.0"; provided_packages = [] }
+          ~package:{ opam = { name = "a-lwt"; version = None }; upstream = "u"; ref = "v1.10.0" }
+          ~expected:
+            { dir = "a";
+              upstream = "u";
+              ref = "v1.10.0";
+              provided_packages = [ { name = "a-lwt"; version = None } ]
+            }
+          ();
+        make_test ~name:"Adds to provided_packages no matter what"
+          ~t:
+            { dir = "a";
+              upstream = "u";
+              ref = "v1.9.0";
+              provided_packages = [ { name = "a"; version = Some "1.9.0" } ]
+            }
+          ~package:
+            { opam = { name = "a"; version = Some "1.10.0" }; upstream = "u"; ref = "v1.10.0" }
+          ~expected:
+            { dir = "a";
+              upstream = "u";
+              ref = "v1.10.0";
+              provided_packages =
+                [ { name = "a"; version = Some "1.10.0" }; { name = "a"; version = Some "1.9.0" } ]
+            }
           ()
       ]
 
@@ -53,24 +80,41 @@ module Deps = struct
       let make_test ~name ~l ~expected () =
         let test_name = Printf.sprintf "Deps.Source.aggregate_list: %s" name in
         let test_fun () =
-          let actual = Duniverse_lib.Duniverse.Deps.Source.aggregate_list l in
+          let actual = Duniverse_lib.Duniverse.Deps.Source.aggregate_packages l in
           Alcotest.(check (list Testable.Deps.Source.t)) test_name expected actual
         in
         (test_name, `Quick, test_fun)
       in
       [ make_test ~name:"Empty" ~l:[] ~expected:[] ();
         make_test ~name:"One"
-          ~l:[ { dir = "d"; upstream = "u"; ref = "r" } ]
-          ~expected:[ { dir = "d"; upstream = "u"; ref = "r" } ]
+          ~l:[ { opam = { name = "d"; version = None }; upstream = "u"; ref = "r" } ]
+          ~expected:
+            [ { dir = "d";
+                upstream = "u";
+                ref = "r";
+                provided_packages = [ { name = "d"; version = None } ]
+              }
+            ]
           ();
         make_test ~name:"Aggregates per upstream"
           ~l:
-            [ { dir = "a"; upstream = "u"; ref = "v1" };
-              { dir = "a-lwt"; upstream = "u"; ref = "v1" };
-              { dir = "b"; upstream = "v"; ref = "v1" }
+            [ { opam = { name = "a"; version = None }; upstream = "u"; ref = "v1" };
+              { opam = { name = "a-lwt"; version = None }; upstream = "u"; ref = "v1" };
+              { opam = { name = "b"; version = None }; upstream = "v"; ref = "v1" }
             ]
           ~expected:
-            [ { dir = "a"; upstream = "u"; ref = "v1" }; { dir = "b"; upstream = "v"; ref = "v1" } ]
+            [ { dir = "a";
+                upstream = "u";
+                ref = "v1";
+                provided_packages =
+                  [ { name = "a"; version = None }; { name = "a-lwt"; version = None } ]
+              };
+              { dir = "b";
+                upstream = "v";
+                ref = "v1";
+                provided_packages = [ { name = "b"; version = None } ]
+              }
+            ]
           ()
       ]
   end
@@ -104,7 +148,9 @@ module Deps = struct
           ~entry:
             (entry_factory ~dev_repo:(`Git "x") ~is_dune:true
                ~package:{ name = "y"; version = None } ~tag:"z" ())
-          ~expected:(Ok (Some (Source { dir = "y"; upstream = "x"; ref = "z" })))
+          ~expected:
+            (Ok
+               (Some (Source { opam = { name = "y"; version = None }; upstream = "x"; ref = "z" })))
           ()
       ]
   end
@@ -137,7 +183,13 @@ module Deps = struct
           ]
         ~expected:
           (Ok
-             { duniverse = [ { dir = "y"; upstream = "h"; ref = "w" } ];
+             { duniverse =
+                 [ { dir = "y";
+                     upstream = "h";
+                     ref = "w";
+                     provided_packages = [ { name = "y"; version = None } ]
+                   }
+                 ];
                opamverse = [ { name = "x"; version = Some "v" } ]
              })
         ();
@@ -149,7 +201,18 @@ module Deps = struct
               ~package:{ name = "y-lwt"; version = None }
               ~tag:"w" ~dev_repo:(`Git "h") ~is_dune:true ()
           ]
-        ~expected:(Ok { duniverse = [ { dir = "y"; upstream = "h"; ref = "w" } ]; opamverse = [] })
+        ~expected:
+          (Ok
+             { duniverse =
+                 [ { dir = "y";
+                     upstream = "h";
+                     ref = "w";
+                     provided_packages =
+                       [ { name = "y"; version = None }; { name = "y-lwt"; version = None } ]
+                   }
+                 ];
+               opamverse = []
+             })
         ()
     ]
 end

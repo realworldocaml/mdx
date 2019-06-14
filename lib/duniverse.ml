@@ -18,51 +18,78 @@ module Deps = struct
   end
 
   module Source = struct
+    module Package = struct
+      type t = { opam : Opam.t; upstream : string; ref : string }
+
+      let equal t t' =
+        Opam.equal t.opam t'.opam
+        && String.equal t.upstream t'.upstream
+        && String.equal t.ref t'.ref
+
+      let raw_pp fmt { opam; upstream; ref } =
+        Format.fprintf fmt "@[<hov 2>{ opam = %a;@ upstream = %S;@ ref = %S }@]" Opam.raw_pp opam
+          upstream ref
+    end
+
     type t = {
       dir : string;
       upstream : string;
-      ref : string [@default "master"] [@sexp_drop_default]
+      ref : string; [@default "master"] [@sexp_drop_default]
+      provided_packages : Opam.t list [@default []] [@sexp_drop_default]
     }
     [@@deriving sexp]
 
     let equal t t' =
       String.equal t.dir t'.dir && String.equal t.upstream t'.upstream && String.equal t.ref t'.ref
 
-    let raw_pp fmt { dir; upstream; ref } =
-      Format.fprintf fmt "@[<hov 2>{ dir = %S;@ upstream = %S;@ ref = %S }@]" dir upstream ref
+    let raw_pp fmt { dir; upstream; ref; provided_packages } =
+      let open Pp_combinators.Ocaml in
+      Format.fprintf fmt
+        "@[<hov 2>{ dir = %S;@ upstream = %S;@ ref = %S;@ provided_packages = %a }@]" dir upstream
+        ref (list Opam.raw_pp) provided_packages
 
-    let aggregate t t' =
-      let min_dir = match String.compare t.dir t'.dir with Lt | Eq -> t.dir | Gt -> t'.dir in
-      let max_ref =
-        match Ordering.of_int (OpamVersionCompare.compare t.ref t'.ref) with
-        | Gt | Eq -> t.ref
-        | Lt -> t'.ref
+    let from_package { Package.opam; upstream; ref } =
+      { dir = opam.name; upstream; ref; provided_packages = [ opam ] }
+
+    let aggregate t package =
+      let package_name = package.Package.opam.name in
+      let new_dir =
+        match String.compare t.dir package_name with Lt | Eq -> t.dir | Gt -> package_name
       in
-      { dir = min_dir; ref = max_ref; upstream = t.upstream }
+      let new_ref =
+        match Ordering.of_int (OpamVersionCompare.compare t.ref package.ref) with
+        | Gt | Eq -> t.ref
+        | Lt -> package.ref
+      in
+      { t with
+        dir = new_dir;
+        ref = new_ref;
+        provided_packages = package.opam :: t.provided_packages
+      }
 
-    let aggregate_list l =
-      let update map ({ upstream; _ } as t) =
+    let aggregate_packages l =
+      let update map ({ Package.upstream; _ } as package) =
         String.Map.update map upstream ~f:(function
-          | None -> Some t
-          | Some t' -> Some (aggregate t t') )
+          | None -> Some (from_package package)
+          | Some t -> Some (aggregate t package) )
       in
       let aggregated_map = List.fold_left ~init:String.Map.empty ~f:update l in
       String.Map.values aggregated_map
   end
 
   module One = struct
-    type t = Opam of Opam.t | Source of Source.t
+    type t = Opam of Opam.t | Source of Source.Package.t
 
     let equal t t' =
       match (t, t') with
       | Opam opam, Opam opam' -> Opam.equal opam opam'
-      | Source source, Source source' -> Source.equal source source'
+      | Source source, Source source' -> Source.Package.equal source source'
       | (Opam _ | Source _), _ -> false
 
     let raw_pp fmt t =
       match t with
       | Opam opam -> Format.fprintf fmt "@[<hov 2>Opam@ %a@]" Opam.raw_pp opam
-      | Source source -> Format.fprintf fmt "@[<hov 2>Source@ %a@]" Source.raw_pp source
+      | Source source -> Format.fprintf fmt "@[<hov 2>Source@ %a@]" Source.Package.raw_pp source
 
     let from_opam_entry ~get_default_branch entry =
       let open Types.Opam in
@@ -70,11 +97,12 @@ module Deps = struct
       match entry with
       | { dev_repo = `Virtual; _ } | { dev_repo = `Error _; _ } -> Ok None
       | { is_dune = false; package = { name; version }; _ } -> Ok (Some (Opam { name; version }))
-      | { is_dune = true; dev_repo = `Git upstream; tag = Some ref; package = { name; _ } } ->
-          Ok (Some (Source { dir = name; upstream; ref }))
-      | { is_dune = true; dev_repo = `Git upstream; tag = None; package = { name; _ } } ->
+      | { is_dune = true; dev_repo = `Git upstream; tag = Some ref; package = { name; version } }
+        ->
+          Ok (Some (Source { opam = { name; version }; upstream; ref }))
+      | { is_dune = true; dev_repo = `Git upstream; tag = None; package = { name; version } } ->
           get_default_branch upstream >>= fun ref ->
-          Ok (Some (Source { dir = name; upstream; ref }))
+          Ok (Some (Source { opam = { name; version }; upstream; ref }))
 
     let partition_list l =
       List.partition_map ~f:(function Opam o -> Left o | Source s -> Right s) l
@@ -97,7 +125,7 @@ module Deps = struct
     Result.List.all results >>= fun dep_options ->
     let deps = List.filter_opt dep_options in
     let opamverse, source_deps = One.partition_list deps in
-    let duniverse = Source.aggregate_list source_deps in
+    let duniverse = Source.aggregate_packages source_deps in
     Ok { opamverse; duniverse }
 
   let count { opamverse; duniverse } = List.length opamverse + List.length duniverse

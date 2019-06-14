@@ -34,7 +34,7 @@ let gen_dune_upstream_branches repo =
   let ifile = Fpath.(repo // Config.duniverse_file) in
   Duniverse.load ~file:ifile >>= fun { deps = { duniverse; _ }; _ } ->
   Exec.iter
-    (fun { Duniverse.Deps.Source.dir; upstream; ref } ->
+    (fun { Duniverse.Deps.Source.dir; upstream; ref; _ } ->
       let output_dir = Fpath.(Config.vendor_dir / dir) in
       Logs.app (fun l ->
           l "%aPulling sources for %a." pp_header header Fmt.(styled `Cyan Fpath.pp) output_dir );
