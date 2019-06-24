@@ -21,7 +21,7 @@ let (/) x y = match x with
   | "." -> y
   | _   -> Filename.concat x y
 
-let run () _ _ _ _ _ _ _ _ _ _ =
+let run () _ _ _ _ _ _ _ _ _ _ _ =
   let base = Filename.basename Sys.argv.(0) in
   let dir = Filename.dirname Sys.argv.(0) in
   let cmd = match base with
@@ -41,5 +41,6 @@ let cmd: int Term.t * Term.info =
   Term.(pure run
         $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose $ Cli.syntax
         $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
-        $ Cli.file $ Cli.section $ Cli.root $ Cli.direction $ Cli.force_output),
+        $ Cli.file $ Cli.section $ Cli.root $ Cli.direction $ Cli.force_output
+        $ Cli.required_packages),
   Term.info "test" ~doc
