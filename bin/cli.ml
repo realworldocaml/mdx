@@ -88,6 +88,10 @@ let force_output =
   let doc = "Force generation of corrected file (even if there was no diff)" in
   Arg.(value & flag & info ["force-output"] ~doc)
 
+let required_packages =
+  let doc = "Packages to load before executing tests, separated by a comma ($(b,,))." in
+  Arg.(value & opt (list string) [] & info ["require"] ~doc ~docv:"PACKAGES")
+
 let setup_log style_renderer level =
   Fmt_tty.setup_std_outputs ?style_renderer ();
   Logs.set_level level;

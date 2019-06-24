@@ -720,7 +720,7 @@ let patch_env () =
   end
   in ()
 
-let init ~verbose:v ~silent:s ~verbose_findlib () =
+let init ~verbose:v ~silent:s ~verbose_findlib ~required_packages () =
   Clflags.real_paths := false;
   Toploop.set_paths ();
   Compmisc.init_path true;
@@ -731,6 +731,7 @@ let init ~verbose:v ~silent:s ~verbose_findlib () =
     "unix"; "findlib.top"; "findlib.internal"; "compiler-libs.toplevel"
   ];
   Topfind.add_predicates ["byte"; "toploop"];
+  Topfind.load_deeply required_packages;
   let t = { verbose=v; silent=s; verbose_findlib } in
   show ();
   show_val ();
