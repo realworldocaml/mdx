@@ -53,16 +53,6 @@ module Opam = struct
   }
   [@@deriving sexp]
 
-  type t = {
-    root_packages : package list;
-    excludes : package list;
-    pins : pin list;
-    packages : entry list;
-    remotes : string list; [@default []]
-    branch : string [@default "master"]
-  }
-  [@@deriving sexp]
-
   let pp_package ppf { name; version } =
     match version with None -> Fmt.pf ppf "%s" name | Some v -> Fmt.pf ppf "%s.%s" name v
 
@@ -70,30 +60,5 @@ module Opam = struct
 
   let pp_entry = pp_sexp sexp_of_entry
 
-  let pp = pp_sexp sexp_of_t
-
-  let load file = Persist.load_sexp "opam duniverse" t_of_sexp file
-
-  let save file v = Persist.save_sexp "opam duniverse" sexp_of_t file v
-
   let sort_uniq l = List.sort_uniq (fun a b -> String.compare a.name b.name) l
-end
-
-module Dune = struct
-  type repo = {
-    dir : string;
-    upstream : string;
-    ref : string [@default "master"] [@sexp_drop_default]
-  }
-  [@@deriving sexp]
-
-  type t = { repos : repo list } [@@deriving sexp]
-
-  let pp_repo = pp_sexp sexp_of_repo
-
-  let pp = pp_sexp sexp_of_t
-
-  let load file = Persist.load_sexp "git duniverse" t_of_sexp file
-
-  let save file v = Persist.save_sexp "git duniverse" sexp_of_t file v
 end

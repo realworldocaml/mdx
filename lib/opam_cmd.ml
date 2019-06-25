@@ -211,7 +211,8 @@ let filter_duniverse_packages ~excludes pkgs =
   in
   fn [] pkgs
 
-let calculate_opam ~root ~root_packages ~excludes ~pins ~branch ~remotes =
+let calculate_opam ~root ~config =
+  let { Duniverse.Config.root_packages; pins; excludes; _ } = config in
   Exec.run_opam_package_deps ~root (List.map string_of_package root_packages)
   >>| List.map split_opam_name_and_version
   >>| List.map (fun p ->
@@ -230,8 +231,7 @@ let calculate_opam ~root ~root_packages ~excludes ~pins ~branch ~remotes =
   Logs.app (fun l ->
       l "%aQuerying local opam switch for their metadata and Dune compatibility." pp_header header
   );
-  get_opam_info ~root ~pins deps >>= filter_duniverse_packages ~excludes >>= fun packages ->
-  Ok { packages; root_packages; excludes; pins; branch; remotes }
+  get_opam_info ~root ~pins deps >>= filter_duniverse_packages ~excludes
 
 type packages_stats = { total : int; dune : int; not_dune : entry list }
 
@@ -261,16 +261,6 @@ let report_packages_stats packages_stats =
         l "%aAll %a opam packages are Dune compatible! It's a spicy miracle!" pp_header header
           Fmt.(styled `Green int)
           packages_stats.total )
-
-let save_opam ~file ~packages_stats opam =
-  save file opam >>= fun () ->
-  Logs.app (fun l ->
-      l "%aWritten %a opam packages to %a." pp_header header
-        Fmt.(styled `Green int)
-        packages_stats.total
-        Fmt.(styled `Cyan Fpath.pp)
-        file );
-  Ok ()
 
 let init_opam ~root ~remotes () =
   let open Types.Opam.Remote in
@@ -310,24 +300,19 @@ let choose_root_packages ~explicit_root_packages ~local_packages =
       Ok explicit_root_packages
 
 let install_incompatible_packages yes repo =
-  let is_valid = function `Virtual | `Git _ -> true | `Unknown _ | `Error _ -> false in
   Logs.app (fun l ->
       l "%aGathering dune-incompatible packages from %a." pp_header header
         Fmt.(styled `Cyan Fpath.pp)
         Config.duniverse_file );
   let file = Fpath.(repo // Config.duniverse_file) in
-  Duniverse.load ~file >>= fun t ->
-  let packages_to_install =
-    List.filter (fun { is_dune; dev_repo; _ } -> not (is_dune && is_valid dev_repo)) t.packages
-    |> List.map (fun { package; _ } -> package)
-  in
-  match packages_to_install with
+  Duniverse.load ~file >>= fun { deps = { opamverse; _ }; _ } ->
+  match opamverse with
   | [] ->
       Logs.app (fun l -> l "%aGood news! There is no package to install!" pp_header header);
       Ok ()
-  | packages_to_install ->
+  | opamverse ->
       Logs.app (fun l ->
           l "%aInstalling these packages with opam:\n%a" pp_header header
-            Fmt.(list ~sep:sp pp_package)
-            packages_to_install );
-      Exec.run_opam_install ~yes packages_to_install
+            Fmt.(list ~sep:sp Duniverse.Deps.Opam.pp)
+            opamverse );
+      Exec.run_opam_install ~yes opamverse

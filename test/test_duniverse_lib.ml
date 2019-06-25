@@ -3,5 +3,6 @@ let () =
     [ Test_opam_cmd.suite;
       Test_uri_utils.suite;
       Test_opam.suite;
-      ("Opam_show_result", Test_opam_show_result.test_make)
+      Test_duniverse.suite;
+      Test_opam_show_result.suite
     ]
