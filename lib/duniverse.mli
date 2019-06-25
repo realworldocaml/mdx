@@ -54,7 +54,7 @@ module Deps : sig
 
   val raw_pp : t Fmt.t
 
-  module One : sig
+  module Classified : sig
     type t = Opam of Opam.t | Source of Source.Package.t
 
     val equal : t -> t -> bool

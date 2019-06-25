@@ -77,7 +77,7 @@ module Deps = struct
       String.Map.values aggregated_map
   end
 
-  module One = struct
+  module Classified = struct
     type t = Opam of Opam.t | Source of Source.Package.t
 
     let equal t t' =
@@ -121,10 +121,10 @@ module Deps = struct
 
   let from_opam_entries ~get_default_branch entries =
     let open Result.O in
-    let results = List.map ~f:(One.from_opam_entry ~get_default_branch) entries in
+    let results = List.map ~f:(Classified.from_opam_entry ~get_default_branch) entries in
     Result.List.all results >>= fun dep_options ->
     let deps = List.filter_opt dep_options in
-    let opamverse, source_deps = One.partition_list deps in
+    let opamverse, source_deps = Classified.partition_list deps in
     let duniverse = Source.aggregate_packages source_deps in
     Ok { opamverse; duniverse }
 

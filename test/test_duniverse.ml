@@ -10,8 +10,8 @@ module Testable = struct
       let t = Alcotest.testable raw_pp equal
     end
 
-    module One = struct
-      open One
+    module Classified = struct
+      open Classified
 
       let t = Alcotest.testable raw_pp equal
     end
@@ -119,14 +119,14 @@ module Deps = struct
       ]
   end
 
-  module One = struct
+  module Classified = struct
     let test_from_opam_entry =
-      let open Duniverse_lib.Duniverse.Deps.One in
+      let open Duniverse_lib.Duniverse.Deps.Classified in
       let make_test ?(get_default_branch = fun _ -> assert false) ~name ~entry ~expected () =
-        let test_name = Printf.sprintf "Deps.One.from_opam_entry: %s" name in
+        let test_name = Printf.sprintf "Deps.Classified.from_opam_entry: %s" name in
         let test_fun () =
           let actual = from_opam_entry ~get_default_branch entry in
-          Alcotest.(check (result (option Testable.Deps.One.t) Testable.R_msg.t))
+          Alcotest.(check (result (option Testable.Deps.Classified.t) Testable.R_msg.t))
             test_name expected actual
         in
         (test_name, `Quick, test_fun)
@@ -228,5 +228,5 @@ end
 
 let suite =
   ( "Duniverse",
-    Deps.One.test_from_opam_entry @ Deps.Source.test_aggregate @ Deps.Source.test_aggregate_list
-    @ Deps.test_from_opam_entries )
+    Deps.Classified.test_from_opam_entry @ Deps.Source.test_aggregate
+    @ Deps.Source.test_aggregate_list @ Deps.test_from_opam_entries )
