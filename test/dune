@@ -268,3 +268,12 @@
 (alias
  (name runtest)
  (action (diff dune_rules.inc dune_rules.inc.gen)))
+
+(alias
+ (name   runtest)
+ (deps   (:x require/require.md)
+         (package example_lib))
+ (action (progn
+           (run ocaml-mdx test --direction=infer-timestamp %{x})
+           (diff? %{x} %{x}.corrected)
+)))
