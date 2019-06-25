@@ -29,7 +29,7 @@ let prepend_root r b = match r with
   | None   -> b
   | Some r -> Filename.concat r b
 
-let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root options =
+let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
   let ml_files = String.Set.elements ml_files in
   let ml_files = List.map (prepend_root root) ml_files in
   let dirs = match root with
@@ -44,6 +44,10 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root options =
     let f (cpt, acc) _ = cpt + 1, ("y" ^ string_of_int cpt) :: acc in
     List.fold_left f (0, []) ml_files |> snd
   in
+  let requires = String.Set.elements requires in
+  let pp_package_deps fmt name =
+    Fmt.pf fmt "\         (package %s)" name
+  in
   let pp_ml_deps fmt (var_name, ml_file) =
     Fmt.pf fmt "\         (:%s %s)" var_name ml_file
   in
@@ -57,22 +61,18 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root options =
     let files = String.Set.of_list (List.map prelude_file prelude) in
     String.Set.elements files
     |> List.map (fun f -> Fmt.strf "         %s" f)
-    |> String.concat ~sep:"\n"
   in
   let root = match root with None -> "" | Some r -> Fmt.strf "--root=%s " r in
   let deps =
-    let sep1 = if var_names <> [] then "\n" else "" in
-    let sep2 = if dirs <> [] && prelude <> "" then "\n" else "" in
-    let x = Fmt.strf "%a%s%a%s%s"
-        Fmt.(list ~sep:(unit "\n") pp_ml_deps) (List.combine var_names ml_files)
-        sep1
-        Fmt.(list ~sep:(unit "\n") pp_dir_deps) dirs
-        sep2
-        prelude
+    let x =
+      List.map (Fmt.to_to_string pp_package_deps) requires @
+      List.map (Fmt.to_to_string pp_ml_deps) (List.combine var_names ml_files) @
+      List.map (Fmt.to_to_string pp_dir_deps) dirs @
+      prelude
     in
     match x with
-    | "" -> ""
-    | s  -> "\n" ^ s
+    | [] -> ""
+    | s  -> String.concat ~sep:"\n" ("" :: s)
   in
   let pp name arg =
     Fmt.pr
@@ -117,7 +117,17 @@ let run () md_file section direction prelude prelude_str root =
   let on_item acc = function
     | Mdx.Section _ | Text _ -> acc
     | Block b when active b ->
-      let files, dirs, nd = acc in
+      let files, dirs, nd, requires = acc in
+      let requires =
+        (* Only depend on the base package, eg. 'a.b' become 'a' *)
+        let base_pkg pkg =
+          match String.cut ~sep:"." pkg with
+          | Some (base, _) -> base
+          | None -> pkg
+        in
+        Mdx.Block.required_packages b
+        |> List.fold_left (fun s e -> String.Set.add (base_pkg e) s) requires
+      in
       let nd = nd || match Mdx.Block.mode b with
         | `Non_det _ -> true
         | _          -> false
@@ -129,19 +139,20 @@ let run () md_file section direction prelude prelude_str root =
         |> String.Set.union source_trees
       in
       let files = add_opt (Mdx.Block.file b) files in
-      files, dirs, nd
+      files, dirs, nd, requires
     | Block _ -> acc
   in
   let on_file file_contents items =
-    let ml_files, dirs, nd =
-      List.fold_left on_item (String.Set.empty, String.Set.empty, false) items
+    let ml_files, dirs, nd, requires =
+      let empty = String.Set.empty in
+      List.fold_left on_item (empty, empty, false, empty) items
     in
     let options =
       List.map (Fmt.to_to_string pp_prelude) prelude @
       List.map (Fmt.to_to_string pp_prelude_str) prelude_str @
       [Fmt.to_to_string pp_direction direction]
     in
-    print_rule ~md_file ~prelude ~nd ~ml_files ~dirs ~root options;
+    print_rule ~md_file ~prelude ~nd ~ml_files ~dirs ~root ~requires options;
     file_contents
   in
   Mdx.run md_file ~f:on_file;
