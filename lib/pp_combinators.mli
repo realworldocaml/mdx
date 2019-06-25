@@ -1,5 +1,5 @@
 module Ocaml : sig
-  (** Combinators to pretty print OCaml values *)
+  (** Combinators to pretty print values as their OCaml representation *)
 
   val string : string Fmt.t
   (** [string fmt s] pretty prints [s], with quotes *)
