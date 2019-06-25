@@ -103,9 +103,6 @@ module Deps = struct
       | { is_dune = true; dev_repo = `Git upstream; tag = None; package = { name; version } } ->
           get_default_branch upstream >>= fun ref ->
           Ok (Some (Source { opam = { name; version }; upstream; ref }))
-
-    let partition_list l =
-      List.partition_map ~f:(function Opam o -> Left o | Source s -> Right s) l
   end
 
   type t = { opamverse : Opam.t list; duniverse : Source.t list } [@@deriving sexp]
@@ -119,14 +116,21 @@ module Deps = struct
     Format.fprintf fmt "@[<hov 2>{ opamverse = %a;@ duniverse = %a}@]" (list Opam.raw_pp)
       t.opamverse (list Source.raw_pp) t.duniverse
 
-  let from_opam_entries ~get_default_branch entries =
+  let from_classified (l : Classified.t list) =
+    let opamverse, source_deps =
+      List.partition_map ~f:(function Opam o -> Left o | Source s -> Right s) l
+    in
+    let duniverse = Source.aggregate_packages source_deps in
+    { opamverse; duniverse }
+
+  let classify ~get_default_branch entries =
     let open Result.O in
     let results = List.map ~f:(Classified.from_opam_entry ~get_default_branch) entries in
-    Result.List.all results >>= fun dep_options ->
-    let deps = List.filter_opt dep_options in
-    let opamverse, source_deps = Classified.partition_list deps in
-    let duniverse = Source.aggregate_packages source_deps in
-    Ok { opamverse; duniverse }
+    Result.List.all results >>= fun dep_options -> Ok (List.filter_opt dep_options)
+
+  let from_opam_entries ~get_default_branch entries =
+    let open Result.O in
+    classify ~get_default_branch entries >>= fun classified -> Ok (from_classified classified)
 
   let count { opamverse; duniverse } = List.length opamverse + List.length duniverse
 end
