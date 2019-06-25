@@ -1,3 +1,5 @@
+open Stdune
+
 module Dev_repo = struct
   type vcs = Git | Other of string
 
@@ -17,10 +19,7 @@ module Dev_repo = struct
 
   let equal t t' =
     let { vcs; uri }, { vcs = vcs'; uri = uri' } = (t, t') in
-    let equal_opt equal_a opt opt' =
-      match (opt, opt') with Some a, Some a' -> equal_a a a' | None, None -> true | _, _ -> false
-    in
-    equal_opt equal_vcs vcs vcs' && Uri.equal uri uri'
+    Option.equal equal_vcs vcs vcs' && Uri.equal uri uri'
 
   let pp fmt { vcs; uri } =
     let pp_opt pp_a fmt = function
