@@ -3,6 +3,7 @@ FROM ocaml/opam2:${DISTRO}
 
 USER opam
 WORKDIR /home/opam/src
+RUN opam switch 4.07
 COPY *.opam .
 RUN opam pin add --no-action duniverse .
 RUN opam update
