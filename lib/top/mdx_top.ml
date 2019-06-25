@@ -744,6 +744,11 @@ let init ~verbose:v ~silent:s ~verbose_findlib () =
   silent t;
   t
 
+let load_packages _ pkgs =
+  try Result.Ok (Topfind.load_deeply pkgs)
+  with Fl_package_base.No_such_package (name, _) ->
+    Result.Error name
+
 module Part = Part
 
 let envs = Hashtbl.create 8

@@ -25,6 +25,12 @@ type t
 val init: verbose:bool -> silent:bool -> verbose_findlib:bool -> unit -> t
 (** [init ()] is a new configuration value. *)
 
+val load_packages: t -> string list -> (unit, string) result
+(** [load_packages t pkgs] Load the findlib packages [pkgs] by their name
+    into the toplevel.
+    Returns [Error pkg_name] if a package named [pkg_name] could not be found.
+    Otherwise, returns [Ok ()] *)
+
 val eval: t -> string list -> (string list, string list) result
 (** [eval t p] evaluates the toplevel phrase [p] (possibly spawning on
     mulitple lines) with the configuration value [t]. *)
