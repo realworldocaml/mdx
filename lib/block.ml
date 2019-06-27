@@ -150,6 +150,7 @@ let labels = [
   `Label "non-deterministic", [`None; `Some "command"; `Some "output"];
   `Label "version"          , [`Any];
   `Prefix "set-"            , [`Any];
+  `Prefix "unset-"          , [`None];
 ]
 
 let pp_value ppf = function
@@ -217,8 +218,8 @@ let get_labels t label =
 let get_prefixed_labels t prefix =
   List.fold_left (fun acc (k, v) ->
       if String.equal (String.with_range ~len:(String.length prefix) k) prefix then match v with
-        | None   -> assert false
-        | Some (e, s) -> (e, (String.with_range ~first:(String.length prefix) k, s)) ::acc
+        | None   -> (String.with_range ~first:(String.length prefix) k, None)::acc
+        | Some (e, s) -> (String.with_range ~first:(String.length prefix) k, Some (e, s))::acc
       else acc
     ) [] t.labels
 
@@ -272,12 +273,20 @@ let environment t = match get_label t "env" with
   | Some (Some (`Eq, s)) -> s
   | Some (Some _) -> Fmt.failwith "invalid `env` label value"
 
-let variables t =
+let set_variables t =
   let f = function
-    | `Eq, x -> x
+    | _, None -> Fmt.failwith "invalid env variable value (use '=' followed by the value)"
+    | variable, Some (`Eq, value) -> variable, value
     | _ -> Fmt.failwith "invalid env variable operator (use '=' only)"
   in
   List.map f (get_prefixed_labels t "set-")
+
+let unset_variables t =
+  let f = function
+    | variable, None -> variable
+    | _ -> Fmt.failwith "invalid env variable operator (no operator allowed)"
+  in
+  List.map f (get_prefixed_labels t "unset-")
 
 let value t = t.value
 let section t = t.section
