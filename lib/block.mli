@@ -88,8 +88,11 @@ val environment: t -> string
 (** [environment t] is the name given to the environment where [t] tests
     are run. *)
 
-val variables: t -> (string * string) list
-(** [variable t] is the list of environment variable to set and their values *)
+val set_variables: t -> (string * string) list
+(** [set_variable t] is the list of environment variable to set and their values *)
+
+val unset_variables: t -> string list
+(** [unset_variable t] is the list of environment variable to unset *)
 
 val skip: t -> bool
 (** [skip t] is true iff [skip] is in the labels of [t]. *)

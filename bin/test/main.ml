@@ -74,12 +74,24 @@ let with_dir root f =
       Sys.chdir old_d;
       raise e
 
-let run_test ?root temp_file t =
+let get_env blacklist =
+  let blacklist = "INSIDE_DUNE"::blacklist in
+  let env = Array.to_list (Unix.environment ()) in
+  let env = List.map (String.split_on_char '=') env in
+  let f env var =
+    let g l = String.compare (List.nth l 0) var <> 0 in
+    List.filter g env
+  in
+  let env = List.fold_left f env blacklist in
+  Array.of_list (List.map (String.concat "=") env)
+
+let run_test ?root blacklist temp_file t =
   let cmd = Cram.command_line t in
+  let env = get_env blacklist in
   Log.info (fun l -> l "exec: %S" cmd);
   let fd = Unix.openfile temp_file [O_WRONLY; O_TRUNC] 0 in
   let pid = with_dir root (fun () ->
-      Unix.create_process "sh" [| "sh"; "-c"; cmd |] Unix.stdin fd fd
+      Unix.create_process_env "sh" [| "sh"; "-c"; cmd |] env Unix.stdin fd fd
     ) in
   Unix.close fd;
   match snd (Unix.waitpid [] pid) with
@@ -102,7 +114,8 @@ let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
   in
   List.iter (fun test ->
       let root = root_dir ?root t in
-      let n = run_test ?root temp_file test in
+      let blacklist = Block.unset_variables t in
+      let n = run_test ?root blacklist temp_file test in
       let lines = read_lines temp_file in
       let output =
         let output = List.map (fun x -> `Output x) lines in
@@ -306,7 +319,7 @@ let run_exn ()
           | Section _
           | Text _ as t -> Mdx.pp_line ?syntax ppf t
           | Block t ->
-            List.iter (fun (k, v) -> Unix.putenv k v) (Block.variables t);
+            List.iter (fun (k, v) -> Unix.putenv k v) (Block.set_variables t);
               Mdx_top.in_env (Block.environment t)
               (fun () ->
                  let active = active t && (not (Block.skip t)) in
@@ -323,8 +336,9 @@ let run_exn ()
                     non-deterministic; run it but keep the old output. *)
                  | true, false, `Non_det `Output, Cram { tests; _ } ->
                    Block.pp ?syntax ppf t;
+                   let blacklist = Block.unset_variables t in
                    List.iter (fun t ->
-                       let _: int = run_test ?root temp_file t in ()
+                       let _: int = run_test ?root blacklist temp_file t in ()
                      ) tests
                  | true, false, `Non_det `Output, Toplevel tests ->
                    assert (syntax <> Some Cram);
