@@ -104,3 +104,9 @@ module Env = struct
   let without_cmis f x = f x
 end
 #endif
+
+#if OCAML_MAJOR = 4 && OCAML_MINOR < 9
+let init_path () = Compmisc.init_path true
+#else
+let init_path () = Compmisc.init_path ()
+#endif
