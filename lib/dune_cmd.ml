@@ -15,7 +15,6 @@
  *)
 
 open Types
-open Rresult
 
 let pp_header = Fmt.(styled `Blue string)
 
@@ -30,9 +29,7 @@ let log_invalid_packages packages =
       | _ -> () )
     packages
 
-let gen_dune_upstream_branches repo =
-  let ifile = Fpath.(repo // Config.duniverse_file) in
-  Duniverse.load ~file:ifile >>= fun { deps = { duniverse; _ }; _ } ->
+let gen_dune_upstream_branches duniverse =
   Exec.iter
     (fun { Duniverse.Deps.Source.dir; upstream; ref; _ } ->
       let output_dir = Fpath.(Config.vendor_dir / dir) in

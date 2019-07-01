@@ -1,4 +1,11 @@
-let run repo () = Duniverse_lib.Dune_cmd.gen_dune_upstream_branches repo
+open Stdune
+open Duniverse_lib
+
+let run repo () =
+  let open Result.O in
+  let duniverse_file = Fpath.(repo // Config.duniverse_file) in
+  Duniverse.load ~file:duniverse_file >>= fun duniverse ->
+  Dune_cmd.gen_dune_upstream_branches duniverse.deps.duniverse
 
 let info =
   let open Cmdliner in
