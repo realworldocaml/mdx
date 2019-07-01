@@ -8,7 +8,9 @@ let run repo () =
   | { deps = { duniverse = []; _ }; _ } ->
       Common.Logs.app (fun l -> l "No dependencies to pull, there's nothing to be done here!");
       Ok ()
-  | { deps = { duniverse; _ }; _ } -> Dune_cmd.gen_dune_upstream_branches duniverse
+  | { deps = { duniverse; _ }; _ } ->
+      let duniverse_dir = Config.vendor_dir in
+      Dune_cmd.gen_dune_upstream_branches ~duniverse_dir duniverse
 
 let info =
   let open Cmdliner in
