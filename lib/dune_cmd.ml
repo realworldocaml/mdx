@@ -38,6 +38,5 @@ let gen_dune_upstream_branches repo =
       let output_dir = Fpath.(Config.vendor_dir / dir) in
       Logs.app (fun l ->
           l "%aPulling sources for %a." pp_header header Fmt.(styled `Cyan Fpath.pp) output_dir );
-      let output_dir = Fpath.(Config.vendor_dir / dir) in
       Exec.git_archive ~output_dir ~remote:upstream ~tag:ref () )
     duniverse
