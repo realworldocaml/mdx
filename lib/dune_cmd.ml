@@ -16,10 +16,6 @@
 
 open Types
 
-let pp_header = Fmt.(styled `Blue string)
-
-let header = "==> "
-
 let log_invalid_packages packages =
   let open Opam in
   List.iter
@@ -28,12 +24,3 @@ let log_invalid_packages packages =
           Logs.warn (fun l -> l "Do not know how to deal with %a: %s" pp_package package msg)
       | _ -> () )
     packages
-
-let gen_dune_upstream_branches ~duniverse_dir duniverse =
-  Exec.iter
-    (fun { Duniverse.Deps.Source.dir; upstream; ref; _ } ->
-      let output_dir = Fpath.(duniverse_dir / dir) in
-      Logs.app (fun l ->
-          l "%aPulling sources for %a." pp_header header Fmt.(styled `Cyan Fpath.pp) output_dir );
-      Exec.git_archive ~output_dir ~remote:upstream ~tag:ref () )
-    duniverse

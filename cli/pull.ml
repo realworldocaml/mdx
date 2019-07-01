@@ -1,6 +1,14 @@
 open Stdune
 open Duniverse_lib
 
+let pull_source_dependencies ~duniverse_dir src_deps =
+  Exec.iter
+    (fun { Duniverse.Deps.Source.dir; upstream; ref; _ } ->
+      let output_dir = Fpath.(duniverse_dir / dir) in
+      Common.Logs.app (fun l -> l "Pulling sources for %a." Styled_pp.path output_dir);
+      Exec.git_archive ~output_dir ~remote:upstream ~tag:ref () )
+    src_deps
+
 let run repo () =
   let open Result.O in
   let duniverse_file = Fpath.(repo // Config.duniverse_file) in
@@ -10,7 +18,7 @@ let run repo () =
       Ok ()
   | { deps = { duniverse; _ }; _ } ->
       let duniverse_dir = Fpath.(repo // Config.vendor_dir) in
-      Dune_cmd.gen_dune_upstream_branches ~duniverse_dir duniverse
+      pull_source_dependencies ~duniverse_dir duniverse
 
 let info =
   let open Cmdliner in
