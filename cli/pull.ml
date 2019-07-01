@@ -4,8 +4,11 @@ open Duniverse_lib
 let run repo () =
   let open Result.O in
   let duniverse_file = Fpath.(repo // Config.duniverse_file) in
-  Duniverse.load ~file:duniverse_file >>= fun duniverse ->
-  Dune_cmd.gen_dune_upstream_branches duniverse.deps.duniverse
+  Duniverse.load ~file:duniverse_file >>= function
+  | { deps = { duniverse = []; _ }; _ } ->
+      Common.Logs.app (fun l -> l "No dependencies to pull, there's nothing to be done here!");
+      Ok ()
+  | { deps = { duniverse; _ }; _ } -> Dune_cmd.gen_dune_upstream_branches duniverse
 
 let info =
   let open Cmdliner in
