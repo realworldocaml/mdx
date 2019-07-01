@@ -1,6 +1,11 @@
 open Stdune
 open Duniverse_lib
 
+let mark_duniverse_content_as_vendored ~duniverse_dir =
+  let dune_file = Fpath.(duniverse_dir / "dune") in
+  let content = "(vendored_dirs *)" in
+  Bos.OS.File.write dune_file content
+
 let pull_source_dependencies ~duniverse_dir src_deps =
   Exec.iter
     (fun { Duniverse.Deps.Source.dir; upstream; ref; _ } ->
@@ -18,6 +23,8 @@ let run repo () =
       Ok ()
   | { deps = { duniverse; _ }; _ } ->
       let duniverse_dir = Fpath.(repo // Config.vendor_dir) in
+      Bos.OS.Dir.create duniverse_dir >>= fun _created ->
+      mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
       pull_source_dependencies ~duniverse_dir duniverse
 
 let info =
