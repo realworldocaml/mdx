@@ -53,8 +53,7 @@ let run repo branch explicit_root_packages excludes pins overlay remotes () =
       l "Wrote duniverse file with %a entries to %a."
         Fmt.(styled `Green int)
         (Duniverse.Deps.count duniverse.deps)
-        Fmt.(styled `Cyan Fpath.pp)
-        (Fpath.normalize file) );
+        Styled_pp.path (Fpath.normalize file) );
   Ok ()
 
 open Cmdliner
