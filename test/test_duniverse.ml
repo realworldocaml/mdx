@@ -1,4 +1,6 @@
 module Testable = struct
+  include Testable
+
   module Deps = struct
     open Duniverse_lib.Duniverse.Deps
 
@@ -15,10 +17,6 @@ module Testable = struct
 
       let t = Alcotest.testable raw_pp equal
     end
-  end
-
-  module R_msg = struct
-    let t = Alcotest.testable Rresult.R.pp_msg (fun (`Msg s) (`Msg s') -> String.equal s s')
   end
 end
 
@@ -126,7 +124,7 @@ module Deps = struct
         let test_name = Printf.sprintf "Deps.Classified.from_opam_entry: %s" name in
         let test_fun () =
           let actual = from_opam_entry ~get_default_branch entry in
-          Alcotest.(check (result (option Testable.Deps.Classified.t) Testable.R_msg.t))
+          Alcotest.(check (result (option Testable.Deps.Classified.t) Testable.r_msg))
             test_name expected actual
         in
         (test_name, `Quick, test_fun)
@@ -169,7 +167,7 @@ module Deps = struct
       let test_name = Printf.sprintf "Deps.from_opam_entries: %s" name in
       let test_fun () =
         let actual = Duniverse_lib.Duniverse.Deps.from_opam_entries ~get_default_branch entries in
-        Alcotest.(check (result Testable.Deps.t Testable.R_msg.t)) test_name expected actual
+        Alcotest.(check (result Testable.Deps.t Testable.r_msg)) test_name expected actual
       in
       (test_name, `Quick, test_fun)
     in
