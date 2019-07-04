@@ -4,9 +4,10 @@ open Duniverse_lib
 let mark_duniverse_content_as_vendored ~duniverse_dir =
   let open Result.O in
   let dune_file = Fpath.(duniverse_dir / "dune") in
-  let content = "(vendored_dirs *)" in
-  Logs.debug (fun l -> l "Writing %s to %a" content Styled_pp.path dune_file);
-  Bos.OS.File.write dune_file content >>= fun () ->
+  let content = Dune_file.Raw.duniverse_dune_content in
+  Logs.debug (fun l ->
+      l "Writing %a:\n %s" Styled_pp.path dune_file (String.concat ~sep:"\n" content) );
+  Bos.OS.File.write_lines dune_file content >>= fun () ->
   Logs.debug (fun l -> l "Successfully wrote %a" Styled_pp.path dune_file);
   Ok ()
 
