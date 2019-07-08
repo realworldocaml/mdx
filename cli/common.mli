@@ -11,6 +11,10 @@ module Arg : sig
   (** CLI option to specify the root directory of the project. Used to find root packages,
       duniverse files and directories. Defaults to the current directory. *)
 
+  val yes : bool Cmdliner.Term.t
+  (** CLI flag to skip any prompt and perform actions straight away. The value of this flag
+      must be passed to [Prompt.confirm]. *)
+
   val setup_logs : unit -> unit Cmdliner.Term.t
   (** Adds the common options -v and --version and sets up the logs before being passed as [()] to a
       command. *)

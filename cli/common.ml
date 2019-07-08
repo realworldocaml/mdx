@@ -5,6 +5,10 @@ module Arg = struct
     let doc = "Path to Git repository to store vendored code in." in
     Cmdliner.Arg.(value & opt fpath (Fpath.v ".") & info [ "r"; "repo" ] ~docv:"TARGET_REPO" ~doc)
 
+  let yes =
+    let doc = "Do not prompt for confirmation and always assume yes" in
+    Cmdliner.Arg.(value & flag & info [ "y"; "yes" ] ~doc)
+
   let setup_logs () =
     Printexc.record_backtrace true;
     let setup_log style_renderer level =

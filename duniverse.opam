@@ -9,7 +9,7 @@ bug-reports: "https://github.com/avsm/duniverse/issues"
 synopsis: "Prototype tool to build vendored Dune repositories"
 depends: [
   "ocaml" {>= "4.05.0"} 
-  "dune" {build >= "1.2.0"}
+  "dune"
   "ppx_sexp_conv"
   "bos"
   "cmdliner"
@@ -21,6 +21,9 @@ depends: [
   "ezjsonm"
   "opam-core"
   "alcotest" {with-test}
+]
+pin-depends: [
+  ["dune.dev" "git+https://github.com/NathanReb/dune.git#vendor-stanza"]
 ]
 build: [
   ["dune" "subst"] {pinned}
