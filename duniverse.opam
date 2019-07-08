@@ -23,7 +23,7 @@ depends: [
   "alcotest" {with-test}
 ]
 pin-depends: [
-  ["dune.dev" "git+https://github.com/NathanReb/dune.git#vendor-stanza"]
+  ["dune.dev" "git+https://github.com/ocaml/dune.git"]
 ]
 build: [
   ["dune" "subst"] {pinned}
