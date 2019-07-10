@@ -195,9 +195,9 @@ type file = { first: Mdx_top.Part.file; current: Mdx_top.Part.file }
 
 let files: (string, file) Hashtbl.t = Hashtbl.create 8
 
-let has_changed { first; current } =
+let has_changed ~force_output { first; current } =
   let contents = Mdx_top.Part.contents current in
-  if contents = Mdx_top.Part.contents first
+  if contents = Mdx_top.Part.contents first && force_output = false
   then None
   else Some contents
 
@@ -209,9 +209,9 @@ let read_parts file =
     Hashtbl.add files file f;
     f
 
-let write_parts file parts =
+let write_parts ~force_output file parts =
   let output_file = file ^ ".corrected" in
-  match has_changed parts with
+  match has_changed ~force_output parts with
   | None   -> if Sys.file_exists output_file then Sys.remove output_file
   | Some c ->
     let oc = open_out output_file in
@@ -379,7 +379,7 @@ let run_exn ()
         ) items;
       Format.pp_print_flush ppf ();
       Buffer.contents buf);
-  Hashtbl.iter write_parts files;
+  Hashtbl.iter (write_parts ~force_output) files;
   0
 
 let run ()
