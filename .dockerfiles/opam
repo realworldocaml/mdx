@@ -11,6 +11,13 @@ RUN opam depext duniverse
 RUN opam install --deps-only -t duniverse
 COPY . .
 RUN sudo chown -R opam /home/opam/src
+
+# Checking that dune-project and the generated opam are in sync
+RUN opam exec dune build duniverse.opam
+RUN git diff --exit-code duniverse.opam \
+    || (printf "\nERROR: The generated opam file isn't in sync with the dune-project\n" \
+        && false)
+
 RUN opam exec make
 RUN opam exec make test
 RUN opam exec make install
