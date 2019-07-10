@@ -24,6 +24,7 @@ code required to build a project using the dune build tool.")
   rresult
   opam-file-format
   uri
+  sexplib
   opam-core
   (alcotest :with-test)
 ))
