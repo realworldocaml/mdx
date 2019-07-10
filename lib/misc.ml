@@ -57,8 +57,7 @@ let run_expect_test ~force_output file ~f =
     output_string oc expected;
     close_out oc;
   end else begin
-    if Sys.file_exists corrected_file then Sys.remove corrected_file;
-    exit 0
+    if Sys.file_exists corrected_file then Sys.remove corrected_file
   end
 
 let pp_position ppf lexbuf =
