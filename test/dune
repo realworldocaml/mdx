@@ -226,6 +226,15 @@
 
 (alias
  (name   runtest)
+ (deps   (:x sync_to_empty_ml.md)
+         (:a sync_to_empty_ml.ml) (:b sync_to_empty_ml.ml.expected)
+         (package mdx))
+ (action (progn
+           (run ocaml-mdx test --force-output --direction=to-ml %{x})
+           (diff? %{b} %{a}.corrected))))
+
+(alias
+ (name   runtest)
  (deps   (:x sync_to_ml_with_correct_md.md)
          (:a sync_to_ml_with_correct_md.ml) (:b sync_to_ml_with_correct_md.ml.expected)
          (package mdx))
