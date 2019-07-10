@@ -27,6 +27,9 @@ module Dev_repo = struct
         ();
       make_test ~dev_repo:"hg+https://host.com/repo"
         ~expected:{ vcs = Some (Other "hg"); uri = Uri.of_string "https://host.com/repo" }
+        ();
+      make_test ~dev_repo:"git://github.com/lpw25/async_graphics"
+        ~expected:{ vcs = Some Git; uri = Uri.of_string "git://github.com/lpw25/async_graphics" }
         ()
     ]
 end
