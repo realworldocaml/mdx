@@ -723,7 +723,7 @@ let patch_env () =
 let init ~verbose:v ~silent:s ~verbose_findlib () =
   Clflags.real_paths := false;
   Toploop.set_paths ();
-  Compmisc.init_path true;
+  Mdx.Compat.init_path ();
   Toploop.toplevel_env := Compmisc.initial_env ();
   Sys.interactive := false;
   patch_env ();
