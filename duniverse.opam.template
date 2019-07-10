@@ -1,0 +1,4 @@
+pin-depends: [
+  ["dune.dev" "git+https://github.com/ocaml/dune.git"]
+]
+
