@@ -60,7 +60,7 @@ type t2 = t1
 type t2 = t1
 ```
 
-```ocaml env=e2
+```ocaml version<4.08 env=e2
 # let x = 2;;
 val x : int = 2
 # type t2 = int;;
@@ -70,9 +70,18 @@ Characters 10-12:
 Error: Unbound type constructor t1
 ```
 
+```ocaml version>=4.08 env=e2
+# let x = 2;;
+val x : t2 = 2
+# type t2 = int;;
+type t2 = t1
+# type t3 = t1;;
+type t3 = t2
+```
+
 ```ocaml
 # type t2 = t1;;
-type t2 = t1
+type t2 = t3
 # let (y : t1) = 4;;
 val y : t2 = 4
 ```
@@ -95,7 +104,7 @@ val y : t3 = 2
 - : unit = ()
 ```
 
-```ocaml env=e2
+```ocaml version<4.08 env=e2
 # let (z : t2) = 32;;
 val z : t2 = 32
 # print_int z;;
@@ -106,5 +115,19 @@ Characters 9-11:
 Error: Unbound type constructor t3
 # print_int d;;
 Characters 10-11:
+Error: Unbound value d
+```
+
+```ocaml version>=4.08 env=e2
+# let (z : t3) = 32;;
+val z : t3 = 32
+# print_int z;;
+32
+- : unit = ()
+# let (d : t4) = 32;;
+Line 1, characters 10-12:
+Error: Unbound type constructor t4
+# print_int d;;
+Line 1, characters 11-12:
 Error: Unbound value d
 ```
