@@ -190,7 +190,10 @@ module Phrase = struct
             let body = body doc (List.rev strs) in
             Part.v ~name:part ~body :: parts
           else
-            parts
+            if List.length parts = 0 then
+              [Part.v ~name:"" ~body:""]
+            else
+              parts
         in
         List.rev parts
     in
