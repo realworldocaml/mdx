@@ -68,9 +68,19 @@ Error: This expression has type string but an expression was expected of type
 
 Let's go recursive:
 
-```sh
+```sh version<4.08
 $ ocamlc -pp "ocaml-mdx pp" -impl lines.md
 File "lines.md", line 33, characters 6-11:
+Error: This expression has type string but an expression was expected of type
+         int
+[2]
+```
+
+```sh version>=4.08
+$ ocamlc -pp "ocaml-mdx pp" -impl lines.md
+File "lines.md", line 33, characters 6-11:
+33 |   n + "foo"
+           ^^^^^
 Error: This expression has type string but an expression was expected of type
          int
 [2]
