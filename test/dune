@@ -224,6 +224,15 @@
            (diff? %{c} %{c}.corrected)
            (diff? %{d} %{d}.corrected))))
 
+(alias
+ (name   runtest)
+ (deps   (:x sync_to_ml_with_correct_md.md)
+         (:a sync_to_ml_with_correct_md.ml) (:b sync_to_ml_with_correct_md.ml.expected)
+         (package mdx))
+ (action (progn
+           (run ocaml-mdx test --direction=to-ml %{x})
+           (diff? %{b} %{a}.corrected))))
+
 (rule
  (targets section.ml)
  (deps    (:x section.md) (package mdx))
