@@ -85,25 +85,28 @@ val run_opam_install : yes:bool -> Duniverse.Deps.Opam.t list -> (unit, [> Rresu
 (** [run_opam_install ~yes packages] launch an opam command to install the given packages. If yes is
     set to true, it doesn't prompt the user for confirmation. *)
 
-val git_remote_add : remote_url:string -> remote_name:string -> (unit, [> Rresult.R.msg ]) result
-(** Uses git remote add in the current working directory **)
+val git_remote_add : repo:Fpath.t -> remote_url:string -> remote_name:string -> (unit, [> Rresult.R.msg ]) result
+(** Uses git remote add in repo **)
 
-val git_remote_remove : remote_name:string -> (unit, [> Rresult.R.msg ]) result
-(** Uses git remote remove in the current working directory **)
+val git_remote_remove : repo:Fpath.t -> remote_name:string -> (unit, [> Rresult.R.msg ]) result
+(** Uses git remote remove in repo **)
 
 val git_fetch_to :
-  remote_name:string -> tag:string -> branch:string -> (unit, [> Rresult.R.msg ]) result
+  repo:Fpath.t -> remote_name:string -> tag:string -> branch:string -> unit -> (unit, [> Rresult.R.msg ]) result
 (** [git_fetch_to ~remote_name ~tag ~branch] Fetches tag from remote_name into a given branch **)
 
-val git_init : Fpath.t -> (unit, [> Rresult.R.msg ]) result
+val git_init : repo:Fpath.t -> (unit, [> Rresult.R.msg ]) result
 (** [git_init path] Initialize Git in given path **)
 
 val git_clone :
   branch:string -> remote:string -> output_dir:Fpath.t -> (unit, [> Rresult.R.msg ]) result
 (** [git_clone ~branch ~remote ~output_dir] Git clone branch from remote in output_dir **)
 
-val git_rename_current_branch_to : branch:string -> (unit, [> Rresult.R.msg ]) result
-(** [git_rename_current_branch_to ~branch] Sets current working directory's branch name to branch. **)
+val git_rename_branch_to : repo:Fpath.t -> branch:string -> (unit, [> Rresult.R.msg ]) result
+(** [git_rename_branch_to ~branch] Sets repo's branch name to branch. **)
 
-val git_remotes : Fpath.t -> (string list, [> Rresult.R.msg ]) result
-(** [git_remotes path] List remotes of the git project located in path. **)
+val git_remotes : repo:Fpath.t -> (string list, [> Rresult.R.msg ]) result
+(** [git_remotes repo] List remotes of the git project located in repo. **)
+
+val git_branch_exists : repo:Fpath.t -> branch:string -> bool
+(** [git_branch_exists repo branch] Returns true if branch exists in repo. **)
