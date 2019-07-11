@@ -51,9 +51,11 @@ let get_cache_directory () =
 
 (* Check if the cache repository is initialized and if not, initialize it *)
 let check_duniverse_cache_directory cache_location =
-  (OS.Dir.exists cache_location >>= function
-   | true -> Ok ()
-   | false -> Exec.git_init ~repo:cache_location)
+  OS.Dir.exists cache_location >>= function
+  | true -> Ok ()
+  | false ->
+      OS.Dir.create cache_location >>= fun _ ->
+      Exec.git_init ~repo:cache_location
 
 (* Check if a remote with a given tag exists in the cache as a branch, and clone to cache if it doesn't exist *)
 let check_package_cache_branch ~cache_location ~remote ~tag () =
