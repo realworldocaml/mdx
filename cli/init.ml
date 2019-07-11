@@ -30,6 +30,10 @@ let compute_deps ~opam_entries =
   let get_default_branch remote = Exec.git_default_branch ~remote () in
   Duniverse.Deps.from_opam_entries ~get_default_branch opam_entries
 
+let resolve_ref deps =
+  let resolve_ref ~upstream ~ref = Exec.git_resolve ~remote:upstream ~ref in
+  Duniverse.Deps.resolve ~resolve_ref deps
+
 let run repo branch explicit_root_packages excludes pins overlay remotes () =
   let open Rresult.R.Infix in
   Common.Logs.app (fun l -> l "Calculating Duniverse on the %a branch" Styled_pp.branch branch);
@@ -45,7 +49,8 @@ let run repo branch explicit_root_packages excludes pins overlay remotes () =
   Opam_cmd.calculate_opam ~root ~config >>= fun packages ->
   report_stats ~packages;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor");
-  compute_deps ~opam_entries:packages >>= fun deps ->
+  compute_deps ~opam_entries:packages >>= fun unresolved_deps ->
+  resolve_ref unresolved_deps >>= fun deps ->
   let duniverse = { Duniverse.config; deps } in
   let file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.save ~file duniverse >>= fun () ->

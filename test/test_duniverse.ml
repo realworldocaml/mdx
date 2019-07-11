@@ -2,14 +2,15 @@ module Testable = struct
   include Testable
 
   module Deps = struct
+    open Duniverse_lib
     open Duniverse_lib.Duniverse.Deps
 
-    let t = Alcotest.testable raw_pp equal
+    let unresolved = Alcotest.testable (raw_pp Git.Ref.pp) (equal Git.Ref.equal)
 
     module Source = struct
       open Source
 
-      let t = Alcotest.testable raw_pp equal
+      let unresolved = Alcotest.testable (raw_pp Git.Ref.pp) (equal Git.Ref.equal)
     end
 
     module Classified = struct
@@ -31,7 +32,7 @@ module Deps = struct
         let test_name = Printf.sprintf "Deps.Source.aggregate: %s" name in
         let test_fun () =
           let actual = Duniverse_lib.Duniverse.Deps.Source.aggregate t package in
-          Alcotest.(check Testable.Deps.Source.t) test_name expected actual
+          Alcotest.(check Testable.Deps.Source.unresolved) test_name expected actual
         in
         (test_name, `Quick, test_fun)
       in
@@ -79,7 +80,7 @@ module Deps = struct
         let test_name = Printf.sprintf "Deps.Source.aggregate_list: %s" name in
         let test_fun () =
           let actual = Duniverse_lib.Duniverse.Deps.Source.aggregate_packages l in
-          Alcotest.(check (list Testable.Deps.Source.t)) test_name expected actual
+          Alcotest.(check (list Testable.Deps.Source.unresolved)) test_name expected actual
         in
         (test_name, `Quick, test_fun)
       in
@@ -167,7 +168,7 @@ module Deps = struct
       let test_name = Printf.sprintf "Deps.from_opam_entries: %s" name in
       let test_fun () =
         let actual = Duniverse_lib.Duniverse.Deps.from_opam_entries ~get_default_branch entries in
-        Alcotest.(check (result Testable.Deps.t Testable.r_msg)) test_name expected actual
+        Alcotest.(check (result Testable.Deps.unresolved Testable.r_msg)) test_name expected actual
       in
       (test_name, `Quick, test_fun)
     in

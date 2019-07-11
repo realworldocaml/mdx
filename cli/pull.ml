@@ -68,7 +68,7 @@ let pull_source_dependencies ~duniverse_dir src_deps =
     (fun { Duniverse.Deps.Source.dir; upstream; ref; _ } ->
       let output_dir = Fpath.(duniverse_dir / dir) in
       Common.Logs.app (fun l -> l "Pulling sources for %a." Styled_pp.path output_dir);
-      Exec.git_archive ~output_dir ~remote:upstream ~tag:ref () )
+      Exec.git_archive ~output_dir ~remote:upstream ~tag:ref.Git.Ref.t () )
     src_deps
 
 let run yes repo () =

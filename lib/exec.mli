@@ -52,6 +52,9 @@ val git_merge :
 (** [git_merge ~args ~repo branch] merges [from] into [repo]'s current active branch with the extra
     arguments [args]. *)
 
+val git_resolve : remote:string -> ref:Git.Ref.t -> (Git.Ref.resolved, Rresult.R.msg) result
+(** [git_resolve ~remote ~ref] runs git ls-remote to resolve the given ref to a commit hash *)
+
 val run_opam_package_deps : root:Fpath.t -> string list -> (string list, [> Rresult.R.msg ]) result
 (** [run_opam_packages_deps ~root packages] returns a list of versioned constrained packages that
     resolves the transitive dependencies of [packages]. *)
