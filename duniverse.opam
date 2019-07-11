@@ -23,7 +23,7 @@ depends: [
   "rresult"
   "opam-file-format"
   "uri"
-  "ezjsonm"
+  "sexplib"
   "opam-core"
   "alcotest" {with-test}
 ]
