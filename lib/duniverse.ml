@@ -40,7 +40,10 @@ module Deps = struct
     [@@deriving sexp]
 
     let equal t t' =
-      String.equal t.dir t'.dir && String.equal t.upstream t'.upstream && String.equal t.ref t'.ref
+      String.equal t.dir t'.dir
+      && String.equal t.upstream t'.upstream
+      && String.equal t.ref t'.ref
+      && List.equal Opam.equal t.provided_packages t'.provided_packages
 
     let raw_pp fmt { dir; upstream; ref; provided_packages } =
       let open Pp_combinators.Ocaml in

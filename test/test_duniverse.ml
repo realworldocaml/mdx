@@ -96,8 +96,8 @@ module Deps = struct
           ();
         make_test ~name:"Aggregates per upstream"
           ~l:
-            [ { opam = { name = "a"; version = None }; upstream = "u"; ref = "v1" };
-              { opam = { name = "a-lwt"; version = None }; upstream = "u"; ref = "v1" };
+            [ { opam = { name = "a-lwt"; version = None }; upstream = "u"; ref = "v1" };
+              { opam = { name = "a"; version = None }; upstream = "u"; ref = "v1" };
               { opam = { name = "b"; version = None }; upstream = "v"; ref = "v1" }
             ]
           ~expected:
@@ -215,7 +215,7 @@ module Deps = struct
                      upstream = "h";
                      ref = "w";
                      provided_packages =
-                       [ { name = "y"; version = None }; { name = "y-lwt"; version = None } ]
+                       [ { name = "y-lwt"; version = None }; { name = "y"; version = None } ]
                    }
                  ];
                opamverse = []
