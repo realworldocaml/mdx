@@ -13,7 +13,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *)
-open Astring
 
 val map : ('a -> ('b, 'c) result) -> 'a list -> ('b list, 'c) result
 
@@ -86,8 +85,6 @@ val run_opam_install : yes:bool -> Duniverse.Deps.Opam.t list -> (unit, [> Rresu
 (** [run_opam_install ~yes packages] launch an opam command to install the given packages. If yes is
     set to true, it doesn't prompt the user for confirmation. *)
 
-val copy_dir : from:Fpath.t -> into:Fpath.t -> (unit, [> Rresult.R.msg ]) result
-
 val git_remote_add : remote_url:string -> remote_name:string -> (unit, [> Rresult.R.msg ]) result
 (** Uses git remote add in the current working directory **)
 
@@ -108,5 +105,5 @@ val git_clone :
 val git_rename_current_branch_to : branch:string -> (unit, [> Rresult.R.msg ]) result
 (** [git_rename_current_branch_to ~branch] Sets current working directory's branch name to branch. **)
 
-val git_remotes : Fpath.t -> (String.Set.t, [> Rresult.R.msg ]) result
+val git_remotes : Fpath.t -> (string list, [> Rresult.R.msg ]) result
 (** [git_remotes path] List remotes of the git project located in path. **)

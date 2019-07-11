@@ -191,8 +191,6 @@ let run_opam_install ~yes opam_deps =
   in
   OS.Cmd.run Cmd.(v "opam" % "install" %% on yes (v "-y") %% of_list packages)
 
-let copy_dir ~from ~into = run_and_log Cmd.(v "cp" % "-r" % p from % p into)
-
 let git_remote_add ~remote_url ~remote_name =
   run_and_log Cmd.(v "git" % "remote" % "add" % remote_name % remote_url)
 
@@ -213,4 +211,4 @@ let git_rename_current_branch_to ~branch = run_and_log Cmd.(v "git" % "branch" %
 
 let git_remotes dir =
   let cmd = Cmd.(v "git" % "-C" % p dir % "remote") in
-  run_and_log_l cmd >>| fun remotes -> String.Set.of_list remotes
+  run_and_log_l cmd
