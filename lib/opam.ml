@@ -15,6 +15,8 @@ module Dev_repo = struct
 
   let vcs_from_string = function "git" -> Git | s -> Other s
 
+  let known_vcs_from_string = function "git" -> Some Git | _ -> None
+
   type t = { vcs : vcs option; uri : Uri.t }
 
   let equal t t' =
@@ -26,11 +28,18 @@ module Dev_repo = struct
     Format.fprintf fmt "@[<hov 2>{ vcs = %a;@ uri = %a }@]" (option ~brackets:true pp_vcs) vcs
       Uri.pp uri
 
+  let fallback_vcs_from_uri uri =
+    let open Option.O in
+    let vcs_from_scheme = Uri.scheme uri >>= known_vcs_from_string in
+    match vcs_from_scheme with
+    | Some vcs -> Some vcs
+    | None -> if Uri_utils.has_git_extension uri then Some Git else None
+
   let from_string dev_repo =
     match Astring.String.cut ~sep:"+" dev_repo with
     | None ->
         let uri = Uri.of_string dev_repo in
-        let vcs = if Uri_utils.has_git_extension uri then Some Git else None in
+        let vcs = fallback_vcs_from_uri uri in
         { vcs; uri }
     | Some (vcs, no_vcs_scheme_dev_repo) ->
         let uri = Uri.of_string no_vcs_scheme_dev_repo in
