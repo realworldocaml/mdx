@@ -81,8 +81,8 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root options =
 \ (name   %s)\n\
 \ (deps   (:x %s)%s)\n\
 \ (action (progn\n\
-\           (run ocaml-mdx test %a %s%s%%{x})\n\
-\           (diff? %%{x} %%{x}.corrected)\n%a)))\n"
+\           (run ocaml-mdx test %a %s%s%%{x})\n%a\n\
+\           (diff? %%{x} %%{x}.corrected))))\n"
       name
       md_file
       deps
