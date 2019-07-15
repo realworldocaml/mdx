@@ -1,6 +1,7 @@
 (alias
  (name   runtest)
  (deps   (:x dune_rules.md)
+         (package mdx)
          (:y1 dune_rules_1.ml)
          (:y0 dune_rules_2.ml)
          (source_tree foo))
