@@ -48,10 +48,10 @@ let test_tag_from_archive =
   ]
 
 let test_classify_package =
-  let make_test ~name ~package ?(dev_repo = "dummy-dev-repo") ?archive ?(pins = []) ~expected () =
+  let make_test ~name ~package ?(dev_repo = "dummy-dev-repo") ?archive ~expected () =
     let test_name = Printf.sprintf "classify_package: %s" name in
     let test_fun () =
-      let actual = Duniverse_lib.Opam_cmd.classify_package ~package ~dev_repo ~archive ~pins () in
+      let actual = Duniverse_lib.Opam_cmd.classify_package ~package ~dev_repo ~archive () in
       Alcotest.(check (pair Testable.opam_repo (option string))) test_name expected actual
     in
     (test_name, `Quick, test_fun)

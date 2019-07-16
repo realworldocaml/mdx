@@ -81,36 +81,52 @@ let tag_from_archive archive =
             l "Attempting to guess tag for %s from the final part of the URL" archive );
         tag_of_last_path () )
 
-let classify_package ~package ~dev_repo ~archive ~pins () =
-  let err msg = (`Error msg, None) in
+let classify_from_url src =
+  let src = match String.cut ~sep:"#" src with
+  | None -> src
+  | Some (src, _) -> src
+  in
+  match src with
+  | "" -> None
+  | src -> (
+      match Opam.Dev_repo.from_string src with
+      | { vcs = Some Git; uri = dev_repo_uri } -> (
+        match Uri.host dev_repo_uri with
+        | Some _host -> Some (`Git (Uri.to_string dev_repo_uri))
+        | None -> Some (`Error ("url.src without host") ))
+      | { vcs = None | Some (Other _); _ } -> None
+    )
+
+
+let classify_from_dev  ~name src = match src with
+  | "" -> Logs.debug (fun l ->
+    l "Mapped %s to a virtual package as it has a blank dev repo" name);
+    `Virtual
+  | src -> (
+      match Opam.Dev_repo.from_string src with
+      | { vcs = Some Git; uri = dev_repo_uri } -> (
+        match Uri.host dev_repo_uri with
+        | Some _host -> `Git (Uri.to_string dev_repo_uri)
+        | None -> `Error ("dev-repo without host") )
+      | { vcs = None | Some (Other _); _ } -> `Error "dev-repo doesn't use git as a VCS"
+    )
+
+
+let classify_package ~package ~dev_repo ~archive () =
   if List.mem package.name base_packages then (`Virtual, None)
   else
-    let dev_repo =
-      match List.find_opt (fun { pin; _ } -> package.name = pin) pins with
-      | Some { url = Some url; _ } -> url
-      | _ -> dev_repo
-    in
-    match dev_repo with
-    | "" ->
+    match archive with
+    | None -> Logs.debug (fun l -> l "Mapped %s to a virtual package as it has no archive" package.name);
+      `Virtual, None
+    | Some archive ->
+      match (Stdune.Option.value (classify_from_url archive)
+        ~default:(classify_from_dev ~name:package.name dev_repo)) with
+      | `Git _ as kind ->
+        let tag = tag_from_archive archive in
         Logs.debug (fun l ->
-            l "Mapped %s to a virtual package as it has a blank dev repo" package.name );
-        (`Virtual, None)
-    | dev_repo -> (
-      match archive with
-      | None ->
-          Logs.debug (fun l -> l "Mapped %s to a virtual package as it has no archive" package.name);
-          (`Virtual, None)
-      | Some archive -> (
-          let tag = tag_from_archive archive in
-          Logs.debug (fun l ->
-              l "Mapped %s -> %s" archive (match tag with None -> "??" | Some v -> v) );
-          match Opam.Dev_repo.from_string dev_repo with
-          | { vcs = Some Git; uri = dev_repo_uri } -> (
-            match Uri.host dev_repo_uri with
-            | Some _host -> (`Git (Uri.to_string dev_repo_uri), tag)
-            | None -> err "dev-repo without host" )
-          | { vcs = None | Some (Other _); _ } -> (`Error "dev-repo doesn't use git as a VCS", None)
-          ) )
+            l "Mapped %s -> %s" archive (match tag with None -> "??" | Some v -> v) );
+        kind, tag
+      | x -> x, None
 
 (* Fetch and parse an opam field from an Opam_show_result.t*)
 let extract_opam_value ~field ~package data =
@@ -176,7 +192,7 @@ let get_opam_info ~root ~pins packages =
         dev_repo >>= fun dev_repo ->
         archive >>= fun archive ->
         depends >>| fun depends ->
-        let dev_repo, tag = classify_package ~package:pkg ~dev_repo ~archive ~pins () in
+        let dev_repo, tag = classify_package ~package:pkg ~dev_repo ~archive () in
         let is_dune = List.exists (fun l -> l = "jbuilder" || l = "dune") depends in
         Logs.info (fun l ->
             l "Classified %a as %a with tag %a"
