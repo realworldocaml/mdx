@@ -6,7 +6,7 @@ let branch = Fmt.(styled `Cyan string)
 
 let package = Fmt.(styled `Yellow Duniverse_lib.Types.Opam.pp_package)
 
-let path = Fmt.(styled `Cyan Fpath.pp)
+let path fmt path = Fmt.(styled `Cyan Fpath.pp) fmt (Fpath.normalize path)
 
 let good pp = Fmt.(styled `Green pp)
 
