@@ -1,3 +1,4 @@
+module Fmt_ext = Fmt
 open Stdune
 open Duniverse_lib
 
@@ -63,13 +64,68 @@ let mark_duniverse_content_as_vendored ~duniverse_dir =
   Logs.debug (fun l -> l "Successfully wrote %a" Styled_pp.path dune_file);
   Ok ()
 
+let warn_about_head_commit ~ref ~commit () =
+  Common.Logs.app (fun l ->
+      l "%a is not the HEAD commit for %a anymore" Styled_pp.commit commit Styled_pp.branch ref );
+  Common.Logs.app (fun l -> l "You might want to consider running 'duniverse update'");
+  ()
+
+let checkout_if_needed ~head_commit ~output_dir ~ref ~commit () =
+  let open Result.O in
+  if String.equal commit head_commit then Ok ()
+  else (
+    warn_about_head_commit ~ref ~commit ();
+    Exec.git_unshallow ~repo:output_dir () >>= fun () ->
+    match Exec.git_checkout ~repo:output_dir commit with
+    | Ok () -> Ok ()
+    | Error (`Msg _) -> Error `Commit_is_gone )
+
+let pull ~duniverse_dir src_dep =
+  let open Result.O in
+  let open Duniverse.Deps.Source in
+  let { dir; upstream; ref = { Git.Ref.t = ref; commit }; _ } = src_dep in
+  let output_dir = Fpath.(duniverse_dir / dir) in
+  Common.Logs.app (fun l -> l "Pulling sources for %a." Styled_pp.path output_dir);
+  Bos.OS.Dir.delete ~recurse:true output_dir >>= fun () ->
+  Exec.git_shallow_clone ~output_dir ~remote:upstream ~ref () >>= fun () ->
+  Exec.git_rev_parse ~repo:output_dir ~ref:"HEAD" () >>= fun head_commit ->
+  checkout_if_needed ~head_commit ~output_dir ~ref ~commit () >>= fun () ->
+  Bos.OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
+  Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
+
+let report_commit_is_gone_repos repos =
+  let sep fmt () =
+    Format.pp_print_newline fmt ();
+    Styled_pp.header_indent fmt ();
+    Fmt_ext.(const string "  - ") fmt ()
+  in
+  let fmt_repos = Fmt_ext.(list ~sep Styled_pp.package_name) in
+  Common.Logs.app (fun l ->
+      l "The following repos could not be pulled as the commit we want is gone:%a%a" sep ()
+        fmt_repos repos );
+  Common.Logs.app (fun l ->
+      l "You should run 'duniverse update' to fix the commits associated with the tracked refs" )
+
 let pull_source_dependencies ~duniverse_dir src_deps =
-  Exec.iter
-    (fun { Duniverse.Deps.Source.dir; upstream; ref; _ } ->
-      let output_dir = Fpath.(duniverse_dir / dir) in
-      Common.Logs.app (fun l -> l "Pulling sources for %a." Styled_pp.path output_dir);
-      Exec.git_archive ~output_dir ~remote:upstream ~tag:ref.Git.Ref.t () )
+  let open Result.O in
+  let open Duniverse.Deps.Source in
+  Result.List.fold_left ~init:[]
+    ~f:(fun acc src_dep ->
+      match pull ~duniverse_dir src_dep with
+      | Ok () -> Ok acc
+      | Error `Commit_is_gone -> Ok (src_dep.dir :: acc)
+      | Error (`Msg _ as err) -> Error (err :> [> `Msg of string ]) )
     src_deps
+  >>= function
+  | [] ->
+      let total = List.length src_deps in
+      let pp_count = Styled_pp.good Fmt_ext.int in
+      Common.Logs.app (fun l ->
+          l "Successfully pulled %a/%a repositories" pp_count total pp_count total );
+      Ok ()
+  | commit_is_gone_repos ->
+      report_commit_is_gone_repos commit_is_gone_repos;
+      Error (`Msg "Could not pull all the source dependencies")
 
 let run yes repo () =
   let open Result.O in

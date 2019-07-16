@@ -22,10 +22,12 @@ val git_default_branch : remote:string -> unit -> (string, [> Rresult.R.msg ]) r
 (** Return the default branch for the given remote name by running git remote show [remote] and
     parsing the output looking for HEAD branch: <branch_name> *)
 
-val git_archive :
-  output_dir:Fpath.t -> remote:string -> tag:string -> unit -> (unit, [> Rresult.R.msg ]) result
-(** [git_archive ~output_dir ~remote ~tag] clones the repo from [remote] into [output_dir],
-    checks it out to [tag] and removes its .git and duniverse directories. *)
+val git_shallow_clone :
+  output_dir:Fpath.t -> remote:string -> ref:string -> unit -> (unit, [> Rresult.R.msg ]) result
+
+val git_rev_parse : repo:Fpath.t -> ref:string -> unit -> (string, [> Rresult.R.msg ]) result
+
+val git_unshallow : repo:Fpath.t -> unit -> (unit, [> Rresult.R.msg ]) result
 
 val git_add_and_commit :
   repo:Fpath.t -> message:string -> Bos.Cmd.t -> (unit, [> Rresult.R.msg ]) result

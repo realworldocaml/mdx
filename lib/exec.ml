@@ -72,12 +72,15 @@ let is_git_repo_clean ~repo () =
   let cmd = Cmd.(v "git" % "-C" % p repo % "diff" % "--quiet") in
   match OS.Cmd.(run_out ~err:err_log cmd |> to_string) with Ok _ -> Ok true | Error _ -> Ok false
 
-let git_archive ~output_dir ~remote ~tag () =
-  OS.Dir.delete ~recurse:true output_dir >>= fun () ->
-  let cmd = Cmd.(v "git" % "clone" % "--depth=1" % "-b" % tag % remote % p output_dir) in
-  run_and_log cmd >>= fun () ->
-  OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
-  OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
+let git_shallow_clone ~output_dir ~remote ~ref () =
+  let cmd = Cmd.(v "git" % "clone" % "--depth=1" % "-b" % ref % remote % p output_dir) in
+  run_and_log cmd
+
+let git_rev_parse ~repo ~ref () =
+  let cmd = Cmd.(v "git" % "-C" % p repo % "rev-parse" % ref) in
+  run_and_log_s cmd
+
+let git_unshallow ~repo () = run_git ~repo Cmd.(v "fetch" % "--unshallow")
 
 let git_default_branch ~remote () =
   let cmd = Cmd.(v "git" % "remote" % "show" % remote) in

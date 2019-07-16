@@ -2,6 +2,8 @@ let header = Fmt.(styled `Blue (const string "==> "))
 
 let question_header = Fmt.(styled `Magenta (const string "??? "))
 
+let header_indent = Fmt.(const string "    ")
+
 let branch = Fmt.(styled `Cyan string)
 
 let commit = branch

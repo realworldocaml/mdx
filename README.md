@@ -53,7 +53,7 @@ COMMANDS
            fetch the latest archives of the vendored libraries
 
        update
-           update the git hash corresponding to the tracked branch/tag for
+           update the commit hash corresponding to the tracked branch/tag for
            each source dependency
 
 COMMON OPTIONS
