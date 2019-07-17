@@ -27,4 +27,6 @@ let load_sexp label conv file =
 let save_sexp label conv file v =
   Logs.debug (fun l -> l "Writing file %a for %s" Fpath.pp file label);
   let b = Sexplib.Sexp.to_string_hum (conv v) in
-  OS.File.write file b
+  OS.File.write file (b ^ "\n")
+
+let write_lines_hum path content = OS.File.write_lines path (content @ [ "" ])

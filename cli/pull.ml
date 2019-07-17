@@ -29,9 +29,9 @@ let suggest_updating_version ~yes ~version ~dune_project_path ~content =
 let suggest_setting_version ~yes ~dune_project_path ~content =
   Common.Logs.app (fun l -> l "Your dune-project file doesn't specify a dune language version");
   if should_update_lang ~yes () then (
-    let updated = (Dune_file.Raw.duniverse_minimum_lang :: content) @ [ "" ] in
+    let updated = Dune_file.Raw.duniverse_minimum_lang :: content in
     log_version_update ~dune_project_path;
-    Bos.OS.File.write_lines dune_project_path updated )
+    Persist.write_lines_hum dune_project_path updated )
   else Ok ()
 
 let check_dune_lang_version ~yes ~repo =
@@ -59,7 +59,7 @@ let mark_duniverse_content_as_vendored ~duniverse_dir =
   let content = Dune_file.Raw.duniverse_dune_content in
   Logs.debug (fun l ->
       l "Writing %a:\n %s" Styled_pp.path dune_file (String.concat ~sep:"\n" content) );
-  Bos.OS.File.write_lines dune_file content >>= fun () ->
+  Persist.write_lines_hum dune_file content >>= fun () ->
   Logs.debug (fun l -> l "Successfully wrote %a" Styled_pp.path dune_file);
   Ok ()
 
