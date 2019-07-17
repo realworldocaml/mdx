@@ -85,14 +85,20 @@ val run_opam_install : yes:bool -> Duniverse.Deps.Opam.t list -> (unit, [> Rresu
 (** [run_opam_install ~yes packages] launch an opam command to install the given packages. If yes is
     set to true, it doesn't prompt the user for confirmation. *)
 
-val git_remote_add : repo:Fpath.t -> remote_url:string -> remote_name:string -> (unit, [> Rresult.R.msg ]) result
+val git_remote_add :
+  repo:Fpath.t -> remote_url:string -> remote_name:string -> (unit, [> Rresult.R.msg ]) result
 (** Uses git remote add in repo **)
 
 val git_remote_remove : repo:Fpath.t -> remote_name:string -> (unit, [> Rresult.R.msg ]) result
 (** Uses git remote remove in repo **)
 
 val git_fetch_to :
-  repo:Fpath.t -> remote_name:string -> tag:string -> branch:string -> unit -> (unit, [> Rresult.R.msg ]) result
+  repo:Fpath.t ->
+  remote_name:string ->
+  tag:string ->
+  branch:string ->
+  unit ->
+  (unit, [> Rresult.R.msg ]) result
 (** [git_fetch_to ~remote_name ~tag ~branch] Fetches tag from remote_name into a given branch **)
 
 val git_init : repo:Fpath.t -> (unit, [> Rresult.R.msg ]) result

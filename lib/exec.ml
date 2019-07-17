@@ -150,7 +150,9 @@ let git_remotes ~repo =
   run_and_log_l cmd
 
 let git_branch_exists ~repo ~branch =
-  match OS.Cmd.run_status ~quiet:true Cmd.(v "git" % "-C" % p repo % "rev-parse" % "--verify" % branch) with
+  match
+    OS.Cmd.run_status ~quiet:true Cmd.(v "git" % "-C" % p repo % "rev-parse" % "--verify" % branch)
+  with
   | Ok (`Exited 0) -> true
   | _ -> false
 
