@@ -17,3 +17,5 @@ let path fmt path = Fmt.(styled `Cyan Fpath.pp) fmt (Fpath.normalize path)
 let good pp = Fmt.(styled `Green pp)
 
 let bad pp = Fmt.(styled `Red pp)
+
+let cached = Fmt.(styled `Green (const string "[CACHED]"))

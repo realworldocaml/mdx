@@ -4,21 +4,21 @@ open Astring
 
 let valid_remote_name = String.map (function '/' | '@' | ':' -> '-' | x -> x)
 
-let git_remote_exists_or_create ~repo ~remotes ~remote =
+let git_remote_exists_or_create ~repo ~remote =
   let remote_name = valid_remote_name remote in
-  match String.Set.mem remote_name remotes with
+  Exec.git_remotes ~repo >>= fun remotes ->
+  match List.exists (String.equal remote_name) remotes with
   | true -> Ok ()
   | false -> Exec.git_remote_add ~repo ~remote_url:remote ~remote_name
 
-let git_branch_exists_or_create ~remotes ~branch ~remote ~tag cache_dir =
-  let repo = cache_dir in
+let git_branch_exists_or_create ~branch ~remote ~tag cache_location =
+  let repo = cache_location in
   let remote_name = valid_remote_name remote in
-  if Exec.git_branch_exists ~repo ~branch
-  then Ok ()
-  else begin
-  git_remote_exists_or_create ~repo ~remotes ~remote >>=
-  Exec.git_fetch_to ~repo ~remote_name ~tag ~branch
-  end
+  if Exec.git_branch_exists ~repo ~branch then Ok true
+  else
+    git_remote_exists_or_create ~repo ~remote
+    >>= Exec.git_fetch_to ~repo ~remote_name ~tag ~branch
+    >>| fun () -> false
 
 let home () =
   try
@@ -60,21 +60,21 @@ let check_duniverse_cache_directory cache_location =
 (* Check if a remote with a given tag exists in the cache as a branch, and clone to cache if it doesn't exist *)
 let check_package_cache_branch ~cache_location ~remote ~tag () =
   let cache_branch_name = valid_remote_name remote ^ "-" ^ tag in
-  Exec.git_remotes ~repo:cache_location >>= fun remotes ->
-  git_branch_exists_or_create ~remotes:(String.Set.of_list remotes) ~branch:cache_branch_name ~remote ~tag
-    cache_location
-  >>| fun () -> cache_branch_name
+  git_branch_exists_or_create ~branch:cache_branch_name ~remote ~tag cache_location
+  >>| fun cached -> (cache_branch_name, cached)
 
 (* Clone to output_dir using the cache *)
-let clone_from_cache ~output_dir ~cache_location cache_branch_name =
+let clone_from_cache ~output_dir ~cache_location (cache_branch_name, cached) =
   OS.Dir.delete ~recurse:true output_dir >>= fun () ->
   Exec.git_clone ~branch:cache_branch_name ~remote:(Fpath.to_string cache_location) ~output_dir
+  >>| fun () -> cached
 
 (* Setup usable remotes in the cloned directory *)
-let setup_remote ~output_dir ~remote ~tag () =
+let setup_remote ~output_dir ~remote ~tag cached =
   Exec.git_rename_branch_to ~repo:output_dir ~branch:tag >>= fun () ->
   Exec.git_remote_add ~repo:output_dir ~remote_name:"upstream" ~remote_url:remote >>= fun () ->
-  Exec.git_remote_remove ~repo:output_dir ~remote_name:"origin"
+  Exec.git_remote_remove ~repo:output_dir ~remote_name:"origin" >>| fun () ->
+  cached
 
 let git_get ~output_dir ~remote ~tag () =
       get_cache_directory ()

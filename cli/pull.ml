@@ -1,6 +1,7 @@
 module Fmt_ext = Fmt
 open Stdune
 open Duniverse_lib
+open Rresult
 
 let min_dune_ver = Dune_file.Lang.duniverse_minimum_version
 
