@@ -1,6 +1,6 @@
 val parse_ls_remote_line : string -> (string * string, Rresult.R.msg) result
 (** Parse the given git ls-remote output line and return the pair
-    [(commit_hash, full_qualified_ref)]. *)
+    [(commit_hash, fully_qualified_ref)]. *)
 
 module Ref : sig
   type t = string
