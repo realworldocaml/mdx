@@ -1,6 +1,10 @@
 open Stdune
 open Sexplib.Conv
 
+type unresolved = Git.Ref.t
+
+type resolved = Git.Ref.resolved [@@deriving sexp]
+
 module Deps = struct
   module Opam = struct
     type t = { name : string; version : string option [@default None] [@sexp_drop_default] }
@@ -19,37 +23,40 @@ module Deps = struct
 
   module Source = struct
     module Package = struct
-      type t = { opam : Opam.t; upstream : string; ref : string }
+      type t = { opam : Opam.t; upstream : string; ref : Git.Ref.t }
 
       let equal t t' =
         Opam.equal t.opam t'.opam
         && String.equal t.upstream t'.upstream
-        && String.equal t.ref t'.ref
+        && Git.Ref.equal t.ref t'.ref
 
       let raw_pp fmt { opam; upstream; ref } =
         Format.fprintf fmt "@[<hov 2>{ opam = %a;@ upstream = %S;@ ref = %S }@]" Opam.raw_pp opam
           upstream ref
     end
 
-    type t = {
+    type 'ref t = {
       dir : string;
       upstream : string;
-      ref : string; [@default "master"] [@sexp_drop_default]
+      ref : 'ref;
       provided_packages : Opam.t list [@default []] [@sexp_drop_default]
     }
     [@@deriving sexp]
 
-    let equal t t' =
-      String.equal t.dir t'.dir
-      && String.equal t.upstream t'.upstream
-      && String.equal t.ref t'.ref
-      && List.equal Opam.equal t.provided_packages t'.provided_packages
+    let equal equal_ref t t' =
+      let { dir; upstream; ref; provided_packages } = t in
+      let { dir = dir'; upstream = upstream'; ref = ref'; provided_packages = provided_packages' }
+          =
+        t'
+      in
+      String.equal dir dir' && String.equal upstream upstream' && equal_ref ref ref'
+      && List.equal Opam.equal provided_packages provided_packages'
 
-    let raw_pp fmt { dir; upstream; ref; provided_packages } =
+    let raw_pp pp_ref fmt { dir; upstream; ref; provided_packages } =
       let open Pp_combinators.Ocaml in
       Format.fprintf fmt
-        "@[<hov 2>{ dir = %S;@ upstream = %S;@ ref = %S;@ provided_packages = %a }@]" dir upstream
-        ref (list Opam.raw_pp) provided_packages
+        "@[<hov 2>{ dir = %S;@ upstream = %S;@ ref = %a;@ provided_packages = %a }@]" dir upstream
+        pp_ref ref (list Opam.raw_pp) provided_packages
 
     let from_package { Package.opam; upstream; ref } =
       { dir = opam.name; upstream; ref; provided_packages = [ opam ] }
@@ -78,6 +85,10 @@ module Deps = struct
       in
       let aggregated_map = List.fold_left ~init:String.Map.empty ~f:update l in
       String.Map.values aggregated_map
+
+    let resolve ~resolve_ref ({ upstream; ref; _ } as t) =
+      let open Result.O in
+      resolve_ref ~upstream ~ref >>= fun resolved_ref -> Ok { t with ref = resolved_ref }
   end
 
   module Classified = struct
@@ -108,16 +119,18 @@ module Deps = struct
           Ok (Some (Source { opam = { name; version }; upstream; ref }))
   end
 
-  type t = { opamverse : Opam.t list; duniverse : Source.t list } [@@deriving sexp]
+  type 'ref t = { opamverse : Opam.t list; duniverse : 'ref Source.t list } [@@deriving sexp]
 
-  let equal t t' =
+  let equal equal_ref t t' =
     List.equal Opam.equal t.opamverse t'.opamverse
-    && List.equal Source.equal t.duniverse t'.duniverse
+    && List.equal (Source.equal equal_ref) t.duniverse t'.duniverse
 
-  let raw_pp fmt t =
+  let raw_pp pp_ref fmt t =
     let open Pp_combinators.Ocaml in
     Format.fprintf fmt "@[<hov 2>{ opamverse = %a;@ duniverse = %a}@]" (list Opam.raw_pp)
-      t.opamverse (list Source.raw_pp) t.duniverse
+      t.opamverse
+      (list (Source.raw_pp pp_ref))
+      t.duniverse
 
   let from_classified (l : Classified.t list) =
     let opamverse, source_deps =
@@ -136,6 +149,11 @@ module Deps = struct
     classify ~get_default_branch entries >>= fun classified -> Ok (from_classified classified)
 
   let count { opamverse; duniverse } = List.length opamverse + List.length duniverse
+
+  let resolve ~resolve_ref t =
+    let open Result.O in
+    Result.List.map ~f:(Source.resolve ~resolve_ref) t.duniverse >>= fun duniverse ->
+    Ok { t with duniverse }
 end
 
 module Config = struct
@@ -149,7 +167,7 @@ module Config = struct
   [@@deriving sexp]
 end
 
-type t = { config : Config.t; deps : Deps.t } [@@deriving sexp]
+type t = { config : Config.t; deps : resolved Deps.t } [@@deriving sexp]
 
 let load ~file = Persist.load_sexp "duniverse" t_of_sexp file
 

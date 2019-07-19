@@ -72,12 +72,15 @@ let is_git_repo_clean ~repo () =
   let cmd = Cmd.(v "git" % "-C" % p repo % "diff" % "--quiet") in
   match OS.Cmd.(run_out ~err:err_log cmd |> to_string) with Ok _ -> Ok true | Error _ -> Ok false
 
-let git_archive ~output_dir ~remote ~tag () =
-  OS.Dir.delete ~recurse:true output_dir >>= fun () ->
-  let cmd = Cmd.(v "git" % "clone" % "--depth=1" % "-b" % tag % remote % p output_dir) in
-  run_and_log cmd >>= fun () ->
-  OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
-  OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
+let git_shallow_clone ~output_dir ~remote ~ref () =
+  let cmd = Cmd.(v "git" % "clone" % "--depth=1" % "-b" % ref % remote % p output_dir) in
+  run_and_log cmd
+
+let git_rev_parse ~repo ~ref () =
+  let cmd = Cmd.(v "git" % "-C" % p repo % "rev-parse" % ref) in
+  run_and_log_s cmd
+
+let git_unshallow ~repo () = run_git ~repo Cmd.(v "fetch" % "--unshallow")
 
 let git_default_branch ~remote () =
   let cmd = Cmd.(v "git" % "remote" % "show" % remote) in
@@ -113,6 +116,14 @@ let git_add_all_and_commit ~repo ~message () =
   run_git ~ignore_error:true ~repo Cmd.(v "commit" % "-a" % "-m" % message)
 
 let git_merge ?(args = Cmd.empty) ~from ~repo () = run_git ~repo Cmd.(v "merge" %% args % from)
+
+let git_resolve ~remote ~ref =
+  run_and_log_l Cmd.(v "git" % "ls-remote" % remote % ref) >>= function
+  | [ line ] -> Git.parse_ls_remote_line line >>= fun (commit, _) -> Ok { Git.Ref.t = ref; commit }
+  | [] -> Rresult.R.error_msgf "No %a ref for %s" Git.Ref.pp ref remote
+  | _ ->
+      Rresult.R.error_msgf "Ref %a is pointing to more than one commit for %s" Git.Ref.pp ref
+        remote
 
 let opam_cmd ~root sub_cmd =
   let open Cmd in

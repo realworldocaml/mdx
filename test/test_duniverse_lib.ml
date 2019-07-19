@@ -5,5 +5,6 @@ let () =
       Test_opam.suite;
       Test_duniverse.suite;
       Test_opam_show_result.suite;
-      Test_dune_file.suite
+      Test_dune_file.suite;
+      Test_git.suite
     ]

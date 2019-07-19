@@ -22,10 +22,12 @@ val git_default_branch : remote:string -> unit -> (string, [> Rresult.R.msg ]) r
 (** Return the default branch for the given remote name by running git remote show [remote] and
     parsing the output looking for HEAD branch: <branch_name> *)
 
-val git_archive :
-  output_dir:Fpath.t -> remote:string -> tag:string -> unit -> (unit, [> Rresult.R.msg ]) result
-(** [git_archive ~output_dir ~remote ~tag] clones the repo from [remote] into [output_dir],
-    checks it out to [tag] and removes its .git and duniverse directories. *)
+val git_shallow_clone :
+  output_dir:Fpath.t -> remote:string -> ref:string -> unit -> (unit, [> Rresult.R.msg ]) result
+
+val git_rev_parse : repo:Fpath.t -> ref:string -> unit -> (string, [> Rresult.R.msg ]) result
+
+val git_unshallow : repo:Fpath.t -> unit -> (unit, [> Rresult.R.msg ]) result
 
 val git_add_and_commit :
   repo:Fpath.t -> message:string -> Bos.Cmd.t -> (unit, [> Rresult.R.msg ]) result
@@ -51,6 +53,9 @@ val git_merge :
   ?args:Bos.Cmd.t -> from:string -> repo:Fpath.t -> unit -> (unit, [> Rresult.R.msg ]) result
 (** [git_merge ~args ~repo branch] merges [from] into [repo]'s current active branch with the extra
     arguments [args]. *)
+
+val git_resolve : remote:string -> ref:Git.Ref.t -> (Git.Ref.resolved, Rresult.R.msg) result
+(** [git_resolve ~remote ~ref] runs git ls-remote to resolve the given ref to a commit hash *)
 
 val run_opam_package_deps : root:Fpath.t -> string list -> (string list, [> Rresult.R.msg ]) result
 (** [run_opam_packages_deps ~root packages] returns a list of versioned constrained packages that
