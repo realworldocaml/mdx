@@ -90,7 +90,16 @@ let test_classify_package =
     make_test ~name:"wrong vcs" ~package:{ name = "x"; version = None }
       ~dev_repo:"hg+https://host.com/some-repo" ~archive:""
       ~expected:(`Error "dev-repo doesn't use git as a VCS", None)
+      ();
+    make_test ~name:"use url.src when possible" ~package:{ name = "x"; version = None }
+      ~dev_repo:"git+https://host.com/some-repo.git" ~archive:"git+https://host.com/some-fork.git#dev"
+      ~expected:(`Git "https://host.com/some-fork.git", Some "dev")
+      ();
+    make_test ~name:"fallback to dev_repo" ~package:{ name = "x"; version = None }
+      ~dev_repo:"git+https://host.com/some-repo.git" ~archive:"https://github.com/user/repo/releases/download/v1.2.3/archive.tbz"
+      ~expected:(`Git "https://host.com/some-repo.git", Some "v1.2.3")
       ()
   ]
+
 
 let suite = ("Opam_cmd", test_tag_from_archive @ test_classify_package)

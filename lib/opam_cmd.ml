@@ -81,7 +81,7 @@ let tag_from_archive archive =
             l "Attempting to guess tag for %s from the final part of the URL" archive );
         tag_of_last_path () )
 
-let classify_from_url src =
+let classify_from_url_src src =
   let src = match String.cut ~sep:"#" src with
   | None -> src
   | Some (src, _) -> src
@@ -98,7 +98,7 @@ let classify_from_url src =
     )
 
 
-let classify_from_dev  ~name src = match src with
+let classify_from_dev_repo  ~name src = match src with
   | "" -> Logs.debug (fun l ->
     l "Mapped %s to a virtual package as it has a blank dev repo" name);
     `Virtual
@@ -111,6 +111,15 @@ let classify_from_dev  ~name src = match src with
       | { vcs = None | Some (Other _); _ } -> `Error "dev-repo doesn't use git as a VCS"
     )
 
+let get_git_url ~src ~dev_repo ~name =
+  Logs.debug (fun l -> l "Parsing git url from url.src (%s)" name);
+  match classify_from_url_src src with
+  | Some x -> x
+  | None ->
+    begin
+      Logs.debug (fun l -> l "Falling back to parsing git url from dev-repo (%s)" name);
+      classify_from_dev_repo ~name dev_repo
+    end
 
 let classify_package ~package ~dev_repo ~archive () =
   if List.mem package.name base_packages then (`Virtual, None)
@@ -119,8 +128,7 @@ let classify_package ~package ~dev_repo ~archive () =
     | None -> Logs.debug (fun l -> l "Mapped %s to a virtual package as it has no archive" package.name);
       `Virtual, None
     | Some archive ->
-      match (Stdune.Option.value (classify_from_url archive)
-        ~default:(classify_from_dev ~name:package.name dev_repo)) with
+      match get_git_url ~src:archive ~dev_repo ~name:package.name with
       | `Git _ as kind ->
         let tag = tag_from_archive archive in
         Logs.debug (fun l ->
