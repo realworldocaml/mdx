@@ -82,59 +82,53 @@ let tag_from_archive archive =
         tag_of_last_path () )
 
 let classify_from_url_src src =
-  let src = match String.cut ~sep:"#" src with
-  | None -> src
-  | Some (src, _) -> src
-  in
+  let src = match String.cut ~sep:"#" src with None -> src | Some (src, _) -> src in
   match src with
   | "" -> None
   | src -> (
-      match Opam.Dev_repo.from_string src with
-      | { vcs = Some Git; uri = dev_repo_uri } -> (
-        match Uri.host dev_repo_uri with
-        | Some _host -> Some (`Git (Uri.to_string dev_repo_uri))
-        | None -> Some (`Error ("url.src without host") ))
-      | { vcs = None | Some (Other _); _ } -> None
-    )
+    match Opam.Dev_repo.from_string src with
+    | { vcs = Some Git; uri = dev_repo_uri } -> (
+      match Uri.host dev_repo_uri with
+      | Some _host -> Some (`Git (Uri.to_string dev_repo_uri))
+      | None -> Some (`Error "url.src without host") )
+    | { vcs = None | Some (Other _); _ } -> None )
 
-
-let classify_from_dev_repo  ~name src = match src with
-  | "" -> Logs.debug (fun l ->
-    l "Mapped %s to a virtual package as it has a blank dev repo" name);
-    `Virtual
+let classify_from_dev_repo ~name src =
+  match src with
+  | "" ->
+      Logs.debug (fun l -> l "Mapped %s to a virtual package as it has a blank dev repo" name);
+      `Virtual
   | src -> (
-      match Opam.Dev_repo.from_string src with
-      | { vcs = Some Git; uri = dev_repo_uri } -> (
-        match Uri.host dev_repo_uri with
-        | Some _host -> `Git (Uri.to_string dev_repo_uri)
-        | None -> `Error ("dev-repo without host") )
-      | { vcs = None | Some (Other _); _ } -> `Error "dev-repo doesn't use git as a VCS"
-    )
+    match Opam.Dev_repo.from_string src with
+    | { vcs = Some Git; uri = dev_repo_uri } -> (
+      match Uri.host dev_repo_uri with
+      | Some _host -> `Git (Uri.to_string dev_repo_uri)
+      | None -> `Error "dev-repo without host" )
+    | { vcs = None | Some (Other _); _ } -> `Error "dev-repo doesn't use git as a VCS" )
 
 let get_git_url ~src ~dev_repo ~name =
   Logs.debug (fun l -> l "Parsing git url from url.src (%s)" name);
   match classify_from_url_src src with
   | Some x -> x
   | None ->
-    begin
       Logs.debug (fun l -> l "Falling back to parsing git url from dev-repo (%s)" name);
       classify_from_dev_repo ~name dev_repo
-    end
 
 let classify_package ~package ~dev_repo ~archive () =
   if List.mem package.name base_packages then (`Virtual, None)
   else
     match archive with
-    | None -> Logs.debug (fun l -> l "Mapped %s to a virtual package as it has no archive" package.name);
-      `Virtual, None
-    | Some archive ->
+    | None ->
+        Logs.debug (fun l -> l "Mapped %s to a virtual package as it has no archive" package.name);
+        (`Virtual, None)
+    | Some archive -> (
       match get_git_url ~src:archive ~dev_repo ~name:package.name with
       | `Git _ as kind ->
-        let tag = tag_from_archive archive in
-        Logs.debug (fun l ->
-            l "Mapped %s -> %s" archive (match tag with None -> "??" | Some v -> v) );
-        kind, tag
-      | x -> x, None
+          let tag = tag_from_archive archive in
+          Logs.debug (fun l ->
+              l "Mapped %s -> %s" archive (match tag with None -> "??" | Some v -> v) );
+          (kind, tag)
+      | x -> (x, None) )
 
 (* Fetch and parse an opam field from an Opam_show_result.t*)
 let extract_opam_value ~field ~package data =
