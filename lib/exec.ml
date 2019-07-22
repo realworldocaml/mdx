@@ -134,8 +134,7 @@ let git_remote_remove ~repo ~remote_name = run_git ~repo Cmd.(v "remote" % "remo
 
 let git_fetch_to ~repo ~remote_name ~tag ~branch () =
   run_git ~repo Cmd.(v "fetch" % "--depth" % "1" % remote_name % tag) >>= fun () ->
-  run_git ~repo Cmd.(v "checkout" % "FETCH_HEAD") >>= fun () ->
-  run_git ~repo Cmd.(v "checkout" % "-b" % branch)
+  run_git ~repo Cmd.(v "branch" % branch % "FETCH_HEAD")
 
 let git_init ~repo = run_git ~repo Cmd.(v "init" % p repo)
 
