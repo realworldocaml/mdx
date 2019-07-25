@@ -57,6 +57,12 @@ val git_merge :
 val git_resolve : remote:string -> ref:Git.Ref.t -> (Git.Ref.resolved, Rresult.R.msg) result
 (** [git_resolve ~remote ~ref] runs git ls-remote to resolve the given ref to a commit hash *)
 
+val git_resolve_local : repo:Fpath.t -> ref:Git.Ref.t -> (Git.Ref.resolved, Rresult.R.msg) result
+(** [git_resolve ~remote ~ref] runs git ls-remote to resolve the given ref to a commit hash *)
+
+val git_branch :
+  repo:Fpath.t -> ref:Git.Ref.t -> branch_name:string -> (unit, [> Rresult.R.msg ]) result
+
 val run_opam_package_deps : root:Fpath.t -> string list -> (string list, [> Rresult.R.msg ]) result
 (** [run_opam_packages_deps ~root packages] returns a list of versioned constrained packages that
     resolves the transitive dependencies of [packages]. *)
@@ -95,14 +101,15 @@ val git_remote_remove : repo:Fpath.t -> remote_name:string -> (unit, [> Rresult.
 val git_fetch_to :
   repo:Fpath.t ->
   remote_name:string ->
-  tag:string ->
+  ref:string ->
   branch:string ->
+  ?force:bool ->
   unit ->
   (unit, [> Rresult.R.msg ]) result
 (** [git_fetch_to ~remote_name ~tag ~branch] Fetches tag from remote_name into a given branch **)
 
-val git_init : repo:Fpath.t -> (unit, [> Rresult.R.msg ]) result
-(** [git_init path] Initialize Git in given path **)
+val git_init_bare : repo:Fpath.t -> (unit, [> Rresult.R.msg ]) result
+(** [git_init path] Initialize Git as a bare repo in given path **)
 
 val git_clone :
   branch:string -> remote:string -> output_dir:Fpath.t -> (unit, [> Rresult.R.msg ]) result

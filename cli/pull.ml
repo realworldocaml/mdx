@@ -65,31 +65,19 @@ let mark_duniverse_content_as_vendored ~duniverse_dir =
   Logs.debug (fun l -> l "Successfully wrote %a" Styled_pp.path dune_file);
   Ok ()
 
-let warn_about_head_commit ~ref ~commit () =
-  Logs.info (fun l ->
-      l "%a is not the HEAD commit for %a anymore" Styled_pp.commit commit Styled_pp.branch ref );
-  Logs.info (fun l -> l "You might want to consider running 'duniverse update'");
-  ()
-
-let checkout_if_needed ~head_commit ~output_dir ~ref ~commit () =
-  let open Result.O in
-  if String.equal commit head_commit then Ok ()
-  else (
-    warn_about_head_commit ~ref ~commit ();
-    Exec.git_unshallow ~repo:output_dir () >>= fun () -> Exec.git_checkout ~repo:output_dir commit )
-
 let pull ~duniverse_dir src_dep =
   let open Result.O in
   let open Duniverse.Deps.Source in
   let { dir; upstream; ref = { Git.Ref.t = ref; commit }; _ } = src_dep in
   let output_dir = Fpath.(duniverse_dir / dir) in
-  Common.Logs.app (fun l -> l "Pulling sources for %a." Styled_pp.path output_dir);
   Bos.OS.Dir.delete ~recurse:true output_dir >>= fun () ->
-  Exec.git_shallow_clone ~output_dir ~remote:upstream ~ref () >>= fun () ->
-  Exec.git_rev_parse ~repo:output_dir ~ref:"HEAD" () >>= fun head_commit ->
-  checkout_if_needed ~head_commit ~output_dir ~ref ~commit ()
+  Cache.clone_to ~output_dir ~remote:upstream ~ref ~commit ()
   |> Rresult.R.reword_error (fun (`Msg _) -> `Commit_is_gone dir)
-  >>= fun () ->
+  >>= fun cached ->
+  if cached then
+    Common.Logs.app (fun l ->
+        l "Pulled sources for %a. %a" Styled_pp.path output_dir Styled_pp.cached () )
+  else Common.Logs.app (fun l -> l "Pulled sources for %a." Styled_pp.path output_dir);
   Bos.OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
   Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
 

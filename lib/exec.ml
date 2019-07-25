@@ -127,16 +127,28 @@ let git_resolve ~remote ~ref =
         remote
   | Error (`Msg _) as err -> err
 
+let git_resolve_local ~repo ~ref =
+  run_and_log_l Cmd.(v "git" % "-C" % p repo % "show-ref" % ref) >>= fun output ->
+  match Git.Ls_remote.commit_pointed_by ~ref output with
+  | Ok commit -> Ok { Git.Ref.t = ref; commit }
+  | Error `No_such_ref -> Rresult.R.error_msgf "No %a ref for in the cache." Git.Ref.pp ref
+  | Error `Multiple_such_refs ->
+      Rresult.R.error_msgf "Multiple refs share the name %a in the cache." Git.Ref.pp ref
+  | Error (`Msg _) as err -> err
+
+let git_branch ~repo ~ref ~branch_name =
+  run_git ~ignore_error:false ~repo Cmd.(v "branch" % branch_name % ref)
+
 let git_remote_add ~repo ~remote_url ~remote_name =
   run_git ~repo Cmd.(v "remote" % "add" % remote_name % remote_url)
 
 let git_remote_remove ~repo ~remote_name = run_git ~repo Cmd.(v "remote" % "remove" % remote_name)
 
-let git_fetch_to ~repo ~remote_name ~tag ~branch () =
-  run_git ~repo Cmd.(v "fetch" % "--depth" % "1" % remote_name % tag) >>= fun () ->
-  run_git ~repo Cmd.(v "branch" % branch % "FETCH_HEAD")
+let git_fetch_to ~repo ~remote_name ~ref ~branch ?(force = false) () =
+  run_git ~repo Cmd.(v "fetch" % remote_name % ref) >>= fun () ->
+  run_git ~repo Cmd.(v "branch" %% on force (v "-f") % branch % "FETCH_HEAD")
 
-let git_init ~repo = run_git ~repo Cmd.(v "init" % p repo)
+let git_init_bare ~repo = run_git ~repo Cmd.(v "init" % "--bare" % p repo)
 
 let git_clone ~branch ~remote ~output_dir =
   run_and_log

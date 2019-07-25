@@ -4,19 +4,9 @@ open Astring
 
 let valid_remote_name = String.map (function '/' | '@' | ':' -> '-' | x -> x)
 
-let git_remote_exists_or_create ~repo ~remote =
-  let remote_name = valid_remote_name remote in
-  Exec.git_remotes ~repo >>= fun remotes ->
-  if List.exists (String.equal remote_name) remotes then Ok ()
-  else Exec.git_remote_add ~repo ~remote_url:remote ~remote_name
+let commit_branch_name ~commit = "commit-" ^ commit
 
-let git_branch_exists_or_create ~branch ~remote ~tag cache_location =
-  let repo = cache_location in
-  let remote_name = valid_remote_name remote in
-  if Exec.git_branch_exists ~repo ~branch then Ok true
-  else
-    git_remote_exists_or_create ~repo ~remote >>= Exec.git_fetch_to ~repo ~remote_name ~tag ~branch
-    >>| fun () -> false
+let cache_branch_name ~ref = "branch-" ^ ref
 
 let home () =
   try Sys.getenv "HOME"
@@ -25,8 +15,21 @@ let home () =
     with Unix.Unix_error _ | Not_found ->
       if Sys.win32 then try Sys.getenv "AppData" with Not_found -> "" else "" )
 
-(** Get the location of the duniverse cache repository *)
-let get_cache_directory () =
+(** Check if the cache repository is initialized and if not, initialize it *)
+let check_duniverse_cache_directory ~repo ~remote =
+  let ok_file = Fpath.(repo / "duniverse_OK") in
+  OS.Path.exists ok_file >>= function
+  | true -> Ok ()
+  | false ->
+      OS.Dir.delete ~recurse:true repo >>= fun () ->
+      OS.Dir.create repo >>= fun _ ->
+      Exec.git_init_bare ~repo >>= fun () ->
+      Exec.git_remote_add ~repo ~remote_url:remote ~remote_name:"origin" >>= fun () ->
+      OS.File.write ok_file ""
+
+(** Get the location of the duniverse cache repository + create directory if it doesn't exist. *)
+let get_cache_directory ~remote () =
+  let remote_dir = valid_remote_name remote in
   let ( / ) = Filename.concat in
   let default_cache_dir () =
     let os_cache_dir = if Sys.win32 then "Local Settings" / "Cache" else ".cache" in
@@ -38,35 +41,48 @@ let get_cache_directory () =
   let cache_dir () =
     match Bos.OS.Env.var "DUNIVERSE_CACHE" with Some x -> x | None -> xdg_cache_dir ()
   in
-  Fpath.of_string (cache_dir () / "duniverse")
+  Fpath.of_string (cache_dir () / "duniverse" / remote_dir)
+  |> Rresult.R.reword_error (function `Msg oui -> `Msg oui)
+  >>= fun repo -> check_duniverse_cache_directory ~repo ~remote >>| fun () -> repo
 
-(** Check if the cache repository is initialized and if not, initialize it *)
-let check_duniverse_cache_directory cache_location =
-  OS.Dir.exists cache_location >>= function
-  | true -> Ok ()
-  | false -> OS.Dir.create cache_location >>= fun _ -> Exec.git_init ~repo:cache_location
+let git_branch_exists_or_create ~repo ~ref ~branch =
+  if Exec.git_branch_exists ~repo ~branch then Ok true
+  else Exec.git_fetch_to ~repo ~remote_name:"origin" ~ref ~branch () >>| fun () -> false
+
+let git_commit_branch_exists_or_create ~repo ~ref ~branch ~commit ~commit_branch () =
+  if Exec.git_branch_exists ~repo ~branch:commit_branch then Ok true
+  else
+    git_branch_exists_or_create ~repo ~ref ~branch >>= fun cached ->
+    Exec.git_branch ~repo ~ref:commit ~branch_name:commit_branch >>| fun () -> cached
 
 (** Check if a remote with a given tag exists in the cache as a branch, and clone to cache if it doesn't exist *)
-let check_package_cache_branch ~cache_location ~remote ~tag () =
-  let cache_branch_name = valid_remote_name remote ^ "-" ^ tag in
-  git_branch_exists_or_create ~branch:cache_branch_name ~remote ~tag cache_location
-  >>| fun cached -> (cache_branch_name, cached)
+let check_package_cache_branch ~repo ~ref ~commit () =
+  let commit_branch = commit_branch_name ~commit in
+  let branch = cache_branch_name ~ref in
+  git_commit_branch_exists_or_create ~repo ~ref ~branch ~commit ~commit_branch () >>| fun cached ->
+  (commit_branch, cached)
 
 (** Clone to output_dir using the cache *)
-let clone_from_cache ~output_dir ~cache_location (cache_branch_name, cached) =
+let clone_from_cache ~output_dir ~repo (cache_branch_name, cached) =
   OS.Dir.delete ~recurse:true output_dir >>= fun () ->
-  Exec.git_clone ~branch:cache_branch_name ~remote:(Fpath.to_string cache_location) ~output_dir
-  >>| fun () -> cached
+  Exec.git_clone ~branch:cache_branch_name ~remote:(Fpath.to_string repo) ~output_dir >>| fun () ->
+  cached
 
-(** Setup usable remotes in the cloned directory *)
-let setup_remote ~output_dir ~remote ~tag cached =
-  Exec.git_rename_branch_to ~repo:output_dir ~branch:tag >>= fun () ->
-  Exec.git_remote_add ~repo:output_dir ~remote_name:"upstream" ~remote_url:remote >>= fun () ->
-  Exec.git_remote_remove ~repo:output_dir ~remote_name:"origin" >>| fun () -> cached
+let clone_to ~output_dir ~remote ~ref ~commit () =
+  get_cache_directory ~remote () >>= fun repo ->
+  check_package_cache_branch ~repo ~ref ~commit () >>= clone_from_cache ~output_dir ~repo
 
-let git_get ~output_dir ~remote ~tag () =
-  get_cache_directory () >>= fun cache_location ->
-  check_duniverse_cache_directory cache_location
-  >>= check_package_cache_branch ~cache_location ~remote ~tag
-  >>= clone_from_cache ~output_dir ~cache_location
-  >>= setup_remote ~output_dir ~remote ~tag
+let update ~remote ~ref () =
+  get_cache_directory ~remote () >>= fun repo ->
+  let branch = cache_branch_name ~ref in
+  Exec.git_fetch_to ~repo ~remote_name:"origin" ~ref ~branch ~force:true ()
+
+let resolve ~remote ~ref () =
+  get_cache_directory ~remote () >>= fun repo ->
+  let branch = cache_branch_name ~ref in
+  (* Try to resolve locally *)
+  match Exec.git_resolve_local ~repo ~ref:branch with
+  | Ok { commit; _ } -> Ok { Git.Ref.t = ref; commit } (* Translate back the ref. *)
+  | Error _ -> Exec.git_resolve ~remote ~ref
+
+(* Resolve from upstream. *)
