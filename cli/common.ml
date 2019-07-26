@@ -9,12 +9,23 @@ module Arg = struct
     let doc = "Do not prompt for confirmation and always assume yes" in
     Cmdliner.Arg.(value & flag & info [ "y"; "yes" ] ~doc)
 
+  let thread_safe_reporter reporter =
+    let lock = Mutex.create () in
+    let { Logs.report } = reporter in
+    let oui src level ~over k msgf =
+      Mutex.lock lock;
+      let x = report src level ~over k msgf in
+      Mutex.unlock lock;
+      x
+    in
+    Logs.{ report = oui }
+
   let setup_logs () =
     Printexc.record_backtrace true;
     let setup_log style_renderer level =
       Fmt_tty.setup_std_outputs ?style_renderer ();
       Logs.set_level level;
-      Logs.set_reporter (Logs_fmt.reporter ())
+      Logs.set_reporter (thread_safe_reporter (Logs_fmt.reporter ()))
     in
     let global_option_section = "COMMON OPTIONS" in
     let open Cmdliner.Term in
