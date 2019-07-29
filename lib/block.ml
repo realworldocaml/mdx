@@ -15,6 +15,7 @@
  *)
 
 open Astring
+open Result
 
 type section = int * string
 
@@ -291,7 +292,7 @@ let unset_variables t =
   in
   List.map f (get_prefixed_labels t "unset-")
 
-let required_packages t =
+let explicit_required_packages t =
   let f = function
     | `Eq, "" ->
       Fmt.failwith "invalid `require-package` label value: requires a value"
@@ -299,6 +300,41 @@ let required_packages t =
     | _ -> Fmt.failwith "invalid `require-package` label value"
   in
   List.map f (get_labels t "require-package")
+
+let require_re =
+  let open Re in
+  seq [str "#require \""; group (rep1 any); str "\""]
+
+let require_from_line line =
+  let open Rresult.R.Infix in
+  let re = Re.compile require_re in
+  match Re.exec_opt re line with
+  | None -> Ok Library.Set.empty
+  | Some group ->
+    let matched = Re.Group.get group 1 in
+    let libs_str = String.cuts ~sep:"," matched in
+    Util.Result.List.map ~f:Library.from_string libs_str >>| fun libs ->
+    List.fold_left (fun acc l -> Library.Set.add l acc) Library.Set.empty libs
+
+let require_from_lines lines =
+  let open Rresult.R.Infix in
+  Util.Result.List.map ~f:require_from_line lines >>| fun libs ->
+  List.fold_left Library.Set.union Library.Set.empty libs
+
+let required_libraries = function
+  | { value = Toplevel _; contents; _} -> require_from_lines contents
+  | { value = (Raw | OCaml | Error _ | Cram _); _ } -> Ok Library.Set.empty
+
+let required_packages t =
+  let open Rresult.R.Infix in
+  let explicit = String.Set.of_list (explicit_required_packages t) in
+  let toplevel_requires =
+    required_libraries t >>| fun lib_set ->
+    Library.Set.elements lib_set
+    |> List.map (fun lib -> lib.Library.base_name)
+    |> String.Set.of_list
+  in
+  toplevel_requires >>| String.Set.union explicit
 
 let value t = t.value
 let section t = t.section

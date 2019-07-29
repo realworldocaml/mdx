@@ -15,6 +15,7 @@
  *)
 
 open Astring
+open Result
 
 let src = Logs.Src.create "cram.rule"
 
@@ -137,7 +138,9 @@ let pp_prelude_str fmt s = Fmt.pf fmt "--prelude-str %S" s
 let add_opt e s = match e with None -> s | Some e -> String.Set.add e s
 
 let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direction direction)
-    (`Prelude prelude) (`Prelude_str prelude_str) (`Root root) (`Duniverse_mode _) =
+  (`Prelude prelude) (`Prelude_str prelude_str) (`Root root)
+  (`Duniverse_mode duniverse_mode) =
+  let open Rresult.R.Infix in
   let active =
     let section = match section with
       | None   -> None
@@ -150,13 +153,9 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direct
       | Some re, Some s -> Re.execp re (snd s)
   in
   let on_item acc = function
-    | Mdx.Section _ | Text _ -> acc
+    | Mdx.Section _ | Text _ -> Ok acc
     | Block b when active b ->
       let files, dirs, nd, packages = acc in
-      let packages =
-        Mdx.Block.required_packages b
-        |> List.fold_left (fun s e -> String.Set.add e s) packages
-      in
       let nd = nd || match Mdx.Block.mode b with
         | `Non_det _ -> true
         | _          -> false
@@ -168,26 +167,41 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direct
         |> String.Set.union source_trees
       in
       let files = add_opt (Mdx.Block.file b) files in
+      let explicit_requires = String.Set.of_list (Mdx.Block.explicit_required_packages b) in
+      let requires_from_statement =
+        if duniverse_mode then
+          Mdx.Block.required_libraries b >>| Mdx.Library.Set.to_package_set
+        else
+          Ok String.Set.empty
+      in
+      requires_from_statement >>| fun requires_from_statement ->
+      let (++) = String.Set.union in
+      let packages = packages ++ explicit_requires ++ requires_from_statement in
       files, dirs, nd, packages
-    | Block _ -> acc
+    | Block _ -> Ok acc
   in
   let on_file file_contents items =
-    let ml_files, dirs, nd, packages =
-      let empty = String.Set.empty in
-      List.fold_left on_item (empty, empty, false, empty) items
+    let empty = String.Set.empty in
+    let req_res =
+      Mdx.Util.Result.List.fold ~f:on_item ~init:(empty, empty, false, String.Set.empty) items
     in
-    let options =
-      List.map (Fmt.to_to_string pp_prelude) prelude @
-      List.map (Fmt.to_to_string pp_prelude_str) prelude_str @
-      [Fmt.to_to_string pp_direction direction] @
-      options_of_syntax syntax @
-      options_of_section section
-    in
-    let pp_rules fmt () =
-      pp_rules ~md_file ~prelude ~nd ~ml_files ~dirs ~root ~packages fmt options
-    in
-    print_format_dune_rules pp_rules;
-    file_contents
+    match req_res with
+    | Error s ->
+      Printf.eprintf "Fatal error while parsing block: %s" s;
+      exit 1
+    | Ok (ml_files, dirs, nd, packages) ->
+      let options =
+        List.map (Fmt.to_to_string pp_prelude) prelude @
+        List.map (Fmt.to_to_string pp_prelude_str) prelude_str @
+        [Fmt.to_to_string pp_direction direction] @
+        options_of_syntax syntax @
+        options_of_section section
+      in
+      let pp_rules fmt () =
+        pp_rules ~md_file ~prelude ~nd ~ml_files ~dirs ~root ~packages fmt options
+      in
+      print_format_dune_rules pp_rules;
+      file_contents
   in
   Mdx.run md_file ~f:on_file;
   0

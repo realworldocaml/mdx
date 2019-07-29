@@ -26,9 +26,11 @@
 module Output = Output
 module Cram = Cram
 module Toplevel = Toplevel
+module Library = Library
 module Block = Block
 module Migrate_ast = Migrate_ast
 module Compat = Compat
+module Util = Util
 
 (** {2 Lines} *)
 
