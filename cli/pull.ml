@@ -65,9 +65,9 @@ let mark_duniverse_content_as_vendored ~duniverse_dir =
   Ok ()
 
 let warn_about_head_commit ~ref ~commit () =
-  Common.Logs.app (fun l ->
+  Logs.info (fun l ->
       l "%a is not the HEAD commit for %a anymore" Styled_pp.commit commit Styled_pp.branch ref );
-  Common.Logs.app (fun l -> l "You might want to consider running 'duniverse update'");
+  Logs.info (fun l -> l "You might want to consider running 'duniverse update'");
   ()
 
 let checkout_if_needed ~head_commit ~output_dir ~ref ~commit () =

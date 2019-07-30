@@ -118,12 +118,13 @@ let git_add_all_and_commit ~repo ~message () =
 let git_merge ?(args = Cmd.empty) ~from ~repo () = run_git ~repo Cmd.(v "merge" %% args % from)
 
 let git_resolve ~remote ~ref =
-  run_and_log_l Cmd.(v "git" % "ls-remote" % remote % ref) >>= function
-  | [ line ] -> Git.parse_ls_remote_line line >>= fun (commit, _) -> Ok { Git.Ref.t = ref; commit }
-  | [] -> Rresult.R.error_msgf "No %a ref for %s" Git.Ref.pp ref remote
-  | _ ->
-      Rresult.R.error_msgf "Ref %a is pointing to more than one commit for %s" Git.Ref.pp ref
-        remote
+  run_and_log_l Cmd.(v "git" % "ls-remote" % remote %% Git.Ls_remote.ref_arg ref) >>= fun output ->
+  match Git.Ls_remote.commit_pointed_by ~ref output with
+  | Ok commit -> Ok { Git.Ref.t = ref; commit }
+  | Error `No_such_ref -> Rresult.R.error_msgf "No %a ref for %s" Git.Ref.pp ref remote
+  | Error `Multiple_such_refs ->
+      Rresult.R.error_msgf "Multiple refs share the name %a on the remote %s" Git.Ref.pp ref remote
+  | Error (`Msg _) as err -> err
 
 let opam_cmd ~root sub_cmd =
   let open Cmd in
