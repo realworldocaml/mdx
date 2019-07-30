@@ -2,30 +2,36 @@ open Stdune
 
 let n_threads = 24
 
-let map ~f l =
-  let queue = ref l in
-  let queue_lock = Mutex.create () in
-  let rec worker result =
-    Mutex.lock queue_lock;
+(** Creates a thread-safe list with a pop function. *)
+let protected_list lst =
+  let list = ref lst in
+  let list_lock = Mutex.create () in
+  fun () ->
+    Mutex.lock list_lock;
     let hd =
-      match !queue with
+      match !list with
       | [] -> None
       | hd :: tl ->
-          queue := tl;
+          list := tl;
           Some hd
     in
-    Mutex.unlock queue_lock;
-    match hd with
+    Mutex.unlock list_lock;
+    hd
+
+let map ~f l =
+  let pop = protected_list l in
+  let rec worker result =
+    match pop () with
     | None -> ()
     | Some hd ->
         result := f hd :: !result;
         worker result
   in
-  let threads, results =
-    List.init n_threads ~f:(fun _ ->
-        let result = ref [] in
-        (Thread.create worker result, result) )
-    |> List.split
-  in
-  List.iter ~f:Thread.join threads;
-  List.map ~f:( ! ) results |> List.flatten
+  List.init n_threads ~f:(fun _ ->
+      let result = ref [] in
+      (Thread.create worker result, result) )
+  |> List.fold_left
+       ~f:(fun acc (thread, result_ref) ->
+         Thread.join thread;
+         !result_ref @ acc )
+       ~init:[]

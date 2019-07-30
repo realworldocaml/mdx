@@ -70,15 +70,12 @@ let warn_about_head_commit ~ref ~commit () =
   Common.Logs.app (fun l -> l "You might want to consider running 'duniverse update'");
   ()
 
-let checkout_if_needed ~head_commit ~output_dir ~ref ~commit ~dir () =
+let checkout_if_needed ~head_commit ~output_dir ~ref ~commit () =
   let open Result.O in
   if String.equal commit head_commit then Ok ()
   else (
     warn_about_head_commit ~ref ~commit ();
-    Exec.git_unshallow ~repo:output_dir () >>= fun () ->
-    match Exec.git_checkout ~repo:output_dir commit with
-    | Ok () -> Ok ()
-    | Error (`Msg _) -> Error (`Commit_is_gone dir) )
+    Exec.git_unshallow ~repo:output_dir () >>= fun () -> Exec.git_checkout ~repo:output_dir commit )
 
 let pull ~duniverse_dir src_dep =
   let open Result.O in
@@ -89,7 +86,9 @@ let pull ~duniverse_dir src_dep =
   Bos.OS.Dir.delete ~recurse:true output_dir >>= fun () ->
   Exec.git_shallow_clone ~output_dir ~remote:upstream ~ref () >>= fun () ->
   Exec.git_rev_parse ~repo:output_dir ~ref:"HEAD" () >>= fun head_commit ->
-  checkout_if_needed ~head_commit ~output_dir ~ref ~commit ~dir () >>= fun () ->
+  checkout_if_needed ~head_commit ~output_dir ~ref ~commit ()
+  |> Rresult.R.reword_error (fun (`Msg _) -> `Commit_is_gone dir)
+  >>= fun () ->
   Bos.OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
   Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
 
