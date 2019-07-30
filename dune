@@ -8,3 +8,5 @@
  (mode promote)
  (action
   (copy doc/usage.md %{targets})))
+
+(vendored_dirs stdune)
