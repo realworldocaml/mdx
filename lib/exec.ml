@@ -122,6 +122,9 @@ let git_resolve ~remote ~ref =
   match Git.Ls_remote.commit_pointed_by ~ref output with
   | Ok commit -> Ok { Git.Ref.t = ref; commit }
   | Error `No_such_ref -> Rresult.R.error_msgf "No %a ref for %s" Git.Ref.pp ref remote
+  | Error `Points_to_several_commits ->
+      Rresult.R.error_msgf "Ref %a is pointing to more than one commit for %s" Git.Ref.pp ref
+        remote
   | Error (`Msg _) as err -> err
 
 let opam_cmd ~root sub_cmd =
