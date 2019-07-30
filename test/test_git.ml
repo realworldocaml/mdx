@@ -5,14 +5,14 @@ module Testable = struct
     let equal err err' =
       match (err, err') with
       | `No_such_ref, `No_such_ref -> true
-      | `Points_to_several_commits, `Points_to_several_commits -> true
+      | `Multiple_such_refs, `Multiple_such_refs -> true
       | `Msg s, `Msg s' -> String.equal s s'
       | _ -> false
     in
     let pp fmt = function
       | `Msg _ as m -> Rresult.R.pp_msg fmt m
       | `No_such_ref -> Format.pp_print_string fmt "`No_such_ref"
-      | `Points_to_several_commits -> Format.pp_print_string fmt "Points_to_several_commits"
+      | `Multiple_such_refs -> Format.pp_print_string fmt "Multiple_such_refs"
     in
     Alcotest.testable pp equal
 end
@@ -64,7 +64,7 @@ module Ls_remote = struct
         ~expected:(Ok "0002") ();
       make_test ~name:"Points to several commits" ~ref:"abc"
         ~lines:[ "001   refs/heads/abc"; "002   refs/tags/abc" ]
-        ~expected:(Error `Points_to_several_commits)
+        ~expected:(Error `Multiple_such_refs)
         ();
       make_test ~name:"Points to several commits (with packed-refs)" ~ref:"abc"
         ~lines:
@@ -73,7 +73,7 @@ module Ls_remote = struct
             "003   refs/tags/abc";
             "004   refs/tags/abc^{}"
           ]
-        ~expected:(Error `Points_to_several_commits)
+        ~expected:(Error `Multiple_such_refs)
         ()
     ]
 end

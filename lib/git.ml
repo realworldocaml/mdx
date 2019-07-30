@@ -33,7 +33,7 @@ module Ls_remote = struct
       | { maybe_packed = None; _ }, (commit, full_ref) :: tl when is_ref full_ref ->
           go { acc with maybe_packed = Some commit } tl
       | _, (_, full_ref) :: _ when is_non_packed_ref full_ref || is_ref full_ref ->
-          Error `Points_to_several_commits
+          Error `Multiple_such_refs
       | _, _ :: tl -> go acc tl
     in
     Result.List.map ~f:parse_output_line output_lines >>= fun parsed_lines ->
