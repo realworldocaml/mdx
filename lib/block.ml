@@ -328,13 +328,9 @@ let required_libraries = function
 let required_packages t =
   let open Rresult.R.Infix in
   let explicit = String.Set.of_list (explicit_required_packages t) in
-  let toplevel_requires =
-    required_libraries t >>| fun lib_set ->
-    Library.Set.elements lib_set
-    |> List.map (fun lib -> lib.Library.base_name)
-    |> String.Set.of_list
-  in
-  toplevel_requires >>| String.Set.union explicit
+  required_libraries t >>| fun toplevel_required_libs ->
+  let toplevel_requires = Library.Set.to_package_set toplevel_required_libs in
+  String.Set.union explicit toplevel_requires
 
 let value t = t.value
 let section t = t.section

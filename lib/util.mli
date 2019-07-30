@@ -12,3 +12,7 @@ module Result : sig
       ('b list, 'err) Result.result
   end
 end
+
+module File : sig
+  val read_lines : string -> string list
+end
