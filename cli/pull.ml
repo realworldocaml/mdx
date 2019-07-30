@@ -75,10 +75,7 @@ let checkout_if_needed ~head_commit ~output_dir ~ref ~commit () =
   if String.equal commit head_commit then Ok ()
   else (
     warn_about_head_commit ~ref ~commit ();
-    Exec.git_unshallow ~repo:output_dir () >>= fun () ->
-    match Exec.git_checkout ~repo:output_dir commit with
-    | Ok () -> Ok ()
-    | Error (`Msg _) -> Error `Commit_is_gone )
+    Exec.git_unshallow ~repo:output_dir () >>= fun () -> Exec.git_checkout ~repo:output_dir commit )
 
 let pull ~duniverse_dir src_dep =
   let open Result.O in
@@ -89,7 +86,9 @@ let pull ~duniverse_dir src_dep =
   Bos.OS.Dir.delete ~recurse:true output_dir >>= fun () ->
   Exec.git_shallow_clone ~output_dir ~remote:upstream ~ref () >>= fun () ->
   Exec.git_rev_parse ~repo:output_dir ~ref:"HEAD" () >>= fun head_commit ->
-  checkout_if_needed ~head_commit ~output_dir ~ref ~commit () >>= fun () ->
+  checkout_if_needed ~head_commit ~output_dir ~ref ~commit ()
+  |> Rresult.R.reword_error (fun (`Msg _) -> `Commit_is_gone dir)
+  >>= fun () ->
   Bos.OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
   Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
 
@@ -108,14 +107,12 @@ let report_commit_is_gone_repos repos =
 
 let pull_source_dependencies ~duniverse_dir src_deps =
   let open Result.O in
-  let open Duniverse.Deps.Source in
-  Result.List.fold_left ~init:[]
-    ~f:(fun acc src_dep ->
-      match pull ~duniverse_dir src_dep with
-      | Ok () -> Ok acc
-      | Error `Commit_is_gone -> Ok (src_dep.dir :: acc)
-      | Error (`Msg _ as err) -> Error (err :> [> `Msg of string ]) )
-    src_deps
+  Parallel.map ~f:(pull ~duniverse_dir) src_deps
+  |> Result.List.fold_left ~init:[] ~f:(fun acc res ->
+         match res with
+         | Ok () -> Ok acc
+         | Error (`Commit_is_gone dir) -> Ok (dir :: acc)
+         | Error (`Msg _ as err) -> Error (err :> [> `Msg of string ]) )
   >>= function
   | [] ->
       let total = List.length src_deps in

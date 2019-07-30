@@ -152,8 +152,8 @@ module Deps = struct
 
   let resolve ~resolve_ref t =
     let open Result.O in
-    Result.List.map ~f:(Source.resolve ~resolve_ref) t.duniverse >>= fun duniverse ->
-    Ok { t with duniverse }
+    Parallel.map ~f:(Source.resolve ~resolve_ref) t.duniverse |> Result.List.all
+    >>= fun duniverse -> Ok { t with duniverse }
 end
 
 module Config = struct
