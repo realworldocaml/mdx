@@ -15,3 +15,10 @@ Hello world!
 Hello world!
 - : unit = ()
 ```
+
+# Executables
+
+```sh require=example_lib.exe
+$ example_lib.exe Hello
+Hello world!
+```
