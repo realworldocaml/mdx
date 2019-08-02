@@ -137,12 +137,7 @@ let eval_test t ?root c test =
   Log.debug (fun l ->
       l "eval_test %a" Fmt.(Dump.list (Fmt.fmt "%S")) (Toplevel.command test));
   let root = root_dir ?root t in
-  let required_packages = Block.required_packages t in
-  with_dir root (fun () ->
-      match Mdx_top.load_packages c required_packages with
-      | Ok () -> Mdx_top.eval c (Toplevel.command test)
-      | Error name -> Error [Fmt.strf "Package could not be found: %s" name]
-    )
+  with_dir root (fun () -> Mdx_top.eval c (Toplevel.command test))
 
 let err_eval ~cmd lines =
     Fmt.epr "Got an error while evaluating:\n---\n%a\n---\n%a\n%!"

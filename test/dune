@@ -272,8 +272,8 @@
 (alias
  (name   runtest)
  (deps   (:x require/require.md)
+         (package mdx)
          (package example_lib))
  (action (progn
            (run ocaml-mdx test --direction=infer-timestamp %{x})
-           (diff? %{x} %{x}.corrected)
-)))
+           (diff? %{x} %{x}.corrected))))

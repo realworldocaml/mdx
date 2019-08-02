@@ -1,6 +1,7 @@
 # Using local library
 
 ```ocaml require=example_lib
+# #require "example_lib"
 # Example_lib.hello ()
 Hello world!
 - : unit = ()
@@ -9,6 +10,7 @@ Hello world!
 # Sub library
 
 ```ocaml require=example_lib.b
+# #require "example_lib.b"
 # Lib_b.hello ()
 Hello world!
 - : unit = ()
