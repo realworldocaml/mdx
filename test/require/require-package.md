@@ -9,7 +9,7 @@ Hello world!
 
 # Sub library
 
-```ocaml require-package=example_lib.b
+```ocaml require-package=example_lib
 # #require "example_lib.b"
 # Lib_b.hello ()
 Hello world!
@@ -18,7 +18,7 @@ Hello world!
 
 # Executables
 
-```sh require-package=example_lib.exe
+```sh require-package=example_lib
 $ example_lib.exe Hello
 Hello world!
 ```

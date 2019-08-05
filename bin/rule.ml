@@ -119,14 +119,8 @@ let run () md_file section direction prelude prelude_str root =
     | Block b when active b ->
       let files, dirs, nd, requires = acc in
       let requires =
-        (* Only depend on the base package, eg. 'a.b' become 'a' *)
-        let base_pkg pkg =
-          match String.cut ~sep:"." pkg with
-          | Some (base, _) -> base
-          | None -> pkg
-        in
         Mdx.Block.required_packages b
-        |> List.fold_left (fun s e -> String.Set.add (base_pkg e) s) requires
+        |> List.fold_left (fun s e -> String.Set.add e s) requires
       in
       let nd = nd || match Mdx.Block.mode b with
         | `Non_det _ -> true
