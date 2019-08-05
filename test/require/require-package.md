@@ -1,6 +1,6 @@
 # Using local library
 
-```ocaml require=example_lib
+```ocaml require-package=example_lib
 # #require "example_lib"
 # Example_lib.hello ()
 Hello world!
@@ -9,7 +9,7 @@ Hello world!
 
 # Sub library
 
-```ocaml require=example_lib.b
+```ocaml require-package=example_lib.b
 # #require "example_lib.b"
 # Lib_b.hello ()
 Hello world!
@@ -18,7 +18,7 @@ Hello world!
 
 # Executables
 
-```sh require=example_lib.exe
+```sh require-package=example_lib.exe
 $ example_lib.exe Hello
 Hello world!
 ```

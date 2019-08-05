@@ -271,7 +271,7 @@
 
 (alias
  (name   runtest)
- (deps   (:x require/require.md)
+ (deps   (:x require/require-package.md)
          (package mdx)
          (package example_lib))
  (action (progn

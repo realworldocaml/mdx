@@ -149,7 +149,7 @@ let labels = [
   `Label "skip"             , [`None];
   `Label "non-deterministic", [`None; `Some "command"; `Some "output"];
   `Label "version"          , [`Any];
-  `Label "require"          , [`Any];
+  `Label "require-package"  , [`Any];
   `Prefix "set-"            , [`Any];
   `Prefix "unset-"          , [`None];
 ]
@@ -292,11 +292,11 @@ let unset_variables t =
 let required_packages t =
   let f = function
     | `Eq, "" ->
-      Fmt.failwith "invalid `require` label value: requires a value"
+      Fmt.failwith "invalid `require-package` label value: requires a value"
     | `Eq, pkg -> pkg
     | _ -> Fmt.failwith "invalid `env` label value"
   in
-  List.map f (get_labels t "require")
+  List.map f (get_labels t "require-package")
 
 let value t = t.value
 let section t = t.section
