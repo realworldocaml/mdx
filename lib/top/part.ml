@@ -28,6 +28,11 @@ module Part = struct
 
 end
 
+(** Remove empty strings at the beginning of a list *)
+let rec remove_empty_heads = function
+  | "" :: tl -> remove_empty_heads tl
+  | l -> l
+
 module Parse_parts =
 struct
 
@@ -41,12 +46,7 @@ struct
     ]
 
   let make_part ~name ~lines =
-    (* Remove empty lines at the end of the part *)
-    let rec remove_empty = function
-      | "" :: tl -> remove_empty tl
-      | ls -> ls
-    in
-    let body = String.concat "\n" (List.rev (remove_empty lines)) in
+    let body = String.concat "\n" (List.rev (remove_empty_heads lines)) in
     Part.v ~name ~body
 
   let rec parse_parts input name lines =
@@ -66,25 +66,17 @@ struct
 
 end
 
-type file =
-  | Parts of Part.t list
-  | Body of (exn * string)
+type file = Part.t list
 
-let read file =
-  Parts (Parse_parts.of_file file)
+let read file = Parse_parts.of_file file
 
-let err_parse_error (e, _) =
-  Fmt.failwith "Parse error: %a" Fmt.exn e
-
-let find file ~part = match file, part with
-  | Body (_, s), None      -> Some [s]
-  | Body b, _ -> err_parse_error b
-  | Parts parts, Some part ->
-    (match List.find_opt (fun p -> String.equal (Part.name p) part) parts with
+let find file ~part = match part with
+  | Some part ->
+    (match List.find_opt (fun p -> String.equal (Part.name p) part) file with
      | Some p -> Some [Part.body p]
      | None   -> None )
-  | Parts parts, None      ->
-    List.fold_left (fun acc p -> Part.body p :: [""] @ acc) [] parts
+  | None      ->
+    List.fold_left (fun acc p -> Part.body p :: [""] @ acc) [] file
     |> List.rev
     |> fun x -> Some x
 
@@ -96,25 +88,19 @@ let rec replace_or_append part_name body = function
   | [] ->
     [{ name = part_name; body }]
 
-let replace file ~part ~lines = match file, part with
-  | Body (e, _), None -> Body (e, String.concat "\n" lines)
-  | Body b     , _    -> err_parse_error b
-  | Parts parts, _    ->
-    let part = match part with None -> "" | Some p -> p in
-    let parts = replace_or_append part (String.concat "\n" lines) parts in
-    Parts parts
+let replace file ~part ~lines =
+  let part = match part with None -> "" | Some p -> p in
+  replace_or_append part (String.concat "\n" lines) file
 
-let contents = function
-  | Body (_, s) -> String.trim s ^ "\n"
-  | Parts parts ->
-    let lines =
-      List.fold_left (fun acc p ->
-          let body =  Part.body p in
-          match Part.name p with
-          | "" -> body :: acc
-          | n  -> body :: ("\n[@@@part \"" ^ n ^ "\"] ;;\n") :: acc
-        ) [] parts
-    in
-    let lines = List.rev lines in
-    let lines = String.concat "\n" lines in
-    String.trim lines ^ "\n"
+let contents file =
+  let lines =
+    List.fold_left (fun acc p ->
+        let body =  Part.body p in
+        match Part.name p with
+        | "" -> body :: acc
+        | n  -> body :: ("\n[@@@part \"" ^ n ^ "\"] ;;\n") :: acc
+      ) [] file
+  in
+  let lines = List.rev lines in
+  let lines = String.concat "\n" lines in
+  String.trim lines ^ "\n"
