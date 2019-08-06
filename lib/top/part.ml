@@ -264,19 +264,21 @@ let find file ~part = match file, part with
     |> List.rev
     |> fun x -> Some x
 
+let rec replace_or_append part_name body = function
+  | p :: tl when String.equal (Part.name p) part_name ->
+    { p with body } :: tl
+  | p :: tl ->
+    p :: replace_or_append part_name body tl
+  | [] ->
+    [{ name = part_name; body }]
+
 let replace file ~part ~lines = match file, part with
   | Body (e, _), None -> Body (e, String.concat "\n" lines)
   | Body b     , _    -> err_parse_error b
   | Parts parts, _    ->
     let part = match part with None -> "" | Some p -> p in
-    List.map (fun p ->
-        let name = Part.name p in
-        if String.equal name part then
-          { p with body = String.concat "\n" lines }
-        else
-          p
-      ) parts
-    |> fun x -> Parts x
+    let parts = replace_or_append part (String.concat "\n" lines) parts in
+    Parts parts
 
 let contents = function
   | Body (_, s) -> String.trim s ^ "\n"
