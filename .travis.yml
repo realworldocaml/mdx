@@ -2,7 +2,7 @@ language: c
 env:
   # Check build and unit tests
   # NOTE: testing needs OPAMBUILDTEST=true so that test deps are installed
-  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.02.3
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.02.3 OPAM_OPTS=--unlock-base
   - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.03.0
   - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.04.2
   - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.05.0
@@ -25,7 +25,7 @@ install:
   - wget https://github.com/jgm/pandoc/releases/download/2.4/pandoc-2.4-linux.tar.gz
   - sudo tar xvzf pandoc-2.4-linux.tar.gz --strip-components 1 -C /usr/local
   - ${HOME}/opam pin add --no-action mdx .
-  - ${HOME}/opam install --deps-only mdx
+  - ${HOME}/opam install --deps-only mdx ${OPAM_OPTS}
 script:
   # Build and launch the tests
   - if [ "$TO_TEST" = "tests" ]; then make && make test; fi
