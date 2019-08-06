@@ -242,10 +242,12 @@ let part t = match get_label t "part" with
   | Some (Some _) -> Fmt.failwith "invalid `part` label value"
 
 let version t = match get_label t "version" with
+  | None -> None
+  | Some None -> None
   | Some (Some (op, v)) ->
-    let x, y, z = Misc.parse_version v in
-    op, x, y, z
-  | _ -> `Eq, None, None, None
+    match Ocaml_version.of_string v with
+    | Ok v -> Some (op, v)
+    | Error (`Msg e) -> Fmt.failwith "invalid `version` label value: %s" e
 
 let source_trees t =
   let f = function
@@ -379,24 +381,6 @@ let labels_of_string s =
       split "="  s `Eq
     ) labels
 
-let compare_versions v1 v2 =
-  match (v1, v2) with
-  | (Some _, Some _, _), (None, _, _) -> 0
-  | (Some x, Some _, _), (Some x', None, _) -> x - x'
-  | (Some x, Some y, _), (Some x', Some y', None) ->
-    if x = x' then y - y' else x - x'
-  | (Some x, Some y, Some z), (Some x', Some y', Some z') ->
-    if x = x' then
-      if y = y' then z - z'
-      else y - y'
-    else x - x'
-  | (Some x, Some y, None), (Some x', Some y', Some z') ->
-    if x = x' then
-      if y = y' then - z'
-      else y - y'
-    else x - x'
-  | _ -> Fmt.failwith "incomplete OCaml version"
-
 let compare = function
   | `Eq -> ( = )
   | `Neq -> ( <> )
@@ -406,6 +390,9 @@ let compare = function
   | `Ge -> ( >= )
 
 let version_enabled t =
-  let curr_version = Misc.parse_version Sys.ocaml_version in
-  let op, x, y, z = version t in
-  (compare op) (compare_versions curr_version (x, y, z)) 0
+  match Ocaml_version.of_string Sys.ocaml_version with
+  | Ok curr_version -> (
+      match version t with
+      | Some (op, v) -> (compare op) (Ocaml_version.compare curr_version v) 0
+      | None -> true )
+  | Error (`Msg e) -> Fmt.failwith "invalid OCaml version: %s" e

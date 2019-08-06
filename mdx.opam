@@ -25,6 +25,7 @@ depends: [
   "re" {>= "1.7.2"}
   "result"
   "ocaml-migrate-parsetree" {>= "1.0.6"}
+  "ocaml-version"
   "lwt" {with-test}
   "conf-pandoc" {with-test}
 ]
