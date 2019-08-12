@@ -36,9 +36,12 @@ module Ls_remote = struct
           Error `Multiple_such_refs
       | _, _ :: tl -> go acc tl
     in
-    Result.List.map ~f:parse_output_line output_lines >>= fun parsed_lines ->
-    go { maybe_packed = None; not_packed = None } parsed_lines >>= fun search_result ->
-    interpret_search_result search_result
+    match output_lines with
+    | [ "" ] -> Error `No_such_ref
+    | _ ->
+        Result.List.map ~f:parse_output_line output_lines >>= fun parsed_lines ->
+        go { maybe_packed = None; not_packed = None } parsed_lines >>= fun search_result ->
+        interpret_search_result search_result
 end
 
 module Ref = struct

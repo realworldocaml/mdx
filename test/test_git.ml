@@ -74,7 +74,8 @@ module Ls_remote = struct
             "004   refs/tags/abc^{}"
           ]
         ~expected:(Error `Multiple_such_refs)
-        ()
+        ();
+      make_test ~name:"Empty output" ~ref:"abc" ~lines:[ "" ] ~expected:(Error `No_such_ref) ()
     ]
 end
 
