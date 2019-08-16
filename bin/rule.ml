@@ -40,7 +40,17 @@ let pp_action fmt = function
   | `Diff_corrected var -> Fmt.pf fmt "(diff? %%{%s} %%{%s}.corrected)" var var
   | `Run args -> Fmt.pf fmt "(run @[<hov 2>%a@])" Fmt.(list ~sep:sp string) args
 
-let pp_rules ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~packages
+let pp_locks_field fmt dirs_and_files =
+  match dirs_and_files with
+  | [] -> ()
+  | [lock] ->
+    Fmt.pf fmt " (locks %s)\n" lock
+  | l ->
+    let sep = Fmt.(const string "\n   ") in
+    Fmt.(list ~sep string) fmt (" (locks"::l);
+    Fmt.pf fmt ")\n"
+
+let pp_rules ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~packages ~locks
     fmt options =
   let ml_files = List.map (prepend_root root) (String.Set.elements ml_files) in
   let dirs = match root with
@@ -84,10 +94,11 @@ let pp_rules ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~packages
       "\
 (alias@\n\
 \ (name   %s)@\n\
-\ (deps   @[<v>%a@])@\n\
+\ (deps   @[<v>%a@])@\n%a\
 \ (action @[<hv 2>(progn@ %a)@]))@\n"
       name
       Fmt.(list ~sep:sp pp_dep) deps
+      pp_locks_field locks
       Fmt.(list ~sep:cut pp_action) (actions arg)
   in
   pp fmt "runtest" [];
@@ -162,8 +173,8 @@ let requires_from_prelude prelude_list =
   aggregate_requires ~require_from prelude_list
 
 let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direction direction)
-  (`Prelude prelude) (`Prelude_str prelude_str) (`Root root)
-  (`Duniverse_mode duniverse_mode) =
+    (`Prelude prelude) (`Prelude_str prelude_str) (`Root root)
+    (`Duniverse_mode duniverse_mode) (`Locks locks) =
   let open Rresult.R.Infix in
   let active =
     let section = match section with
@@ -225,7 +236,7 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direct
         options_of_section section
       in
       let pp_rules fmt () =
-        pp_rules ~md_file ~prelude ~nd ~ml_files ~dirs ~root ~packages fmt options
+        pp_rules ~md_file ~prelude ~nd ~ml_files ~dirs ~root ~packages ~locks fmt options
       in
       print_format_dune_rules pp_rules;
       file_contents
@@ -243,9 +254,15 @@ let duniverse_mode =
   Cli.named (fun x -> `Duniverse_mode x)
     Arg.(value & flag & info ["duniverse-mode"] ~doc)
 
+let locks =
+  let docv = "LOCK[,LOCKS]" in
+  let doc = "Explicitly specify a list of locks to add to the generated dune rule" in
+  Cli.named (fun x -> `Locks x)
+    Arg.(value & opt (list ~sep:',' string) [] & info ["locks"] ~doc ~docv)
+
 let cmd =
   let doc = "Produce dune rules to synchronize markdown and OCaml files." in
   Term.(pure run
         $ Cli.setup $ Cli.file $ Cli.section $ Cli.syntax $ Cli.direction
-        $ Cli.prelude $ Cli.prelude_str $ Cli.root $ duniverse_mode),
+        $ Cli.prelude $ Cli.prelude_str $ Cli.root $ duniverse_mode $ locks),
   Term.info "rule" ~doc
