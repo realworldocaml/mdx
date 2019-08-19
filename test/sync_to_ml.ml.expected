@@ -21,3 +21,7 @@ let f = "hello world!"
 
 let () =
   f x print_int
+
+[@@@part "new-part-not-in-original"] ;;
+
+let g = [ f ]
