@@ -183,13 +183,12 @@ let run_toplevel_tests ?root c ppf tests t =
   Block.pp_footer ppf ()
 
 let trim l =
-  let rec aux = function
-    | []   -> []
-    | h::t -> if String.trim h = "" then aux t else  String.trim h :: t
+  let rec trim_front = function
+    | ""::t -> trim_front t
+    | l -> l
   in
-  let no_head = aux l in
-  let no_tail = List.rev (aux (List.rev no_head)) in
-  no_tail
+  let rev_trim l = trim_front (List.rev (trim_front l)) in
+  rev_trim (List.rev_map String.trim l)
 
 type file = { first: Mdx_top.Part.file; current: Mdx_top.Part.file }
 
