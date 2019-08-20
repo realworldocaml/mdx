@@ -35,6 +35,9 @@ let rec remove_empty_heads = function
   | "" :: tl -> remove_empty_heads tl
   | l -> l
 
+let trim_empty_rev l =
+  remove_empty_heads (List.rev (remove_empty_heads l))
+
 module Parse_parts =
 struct
 
@@ -47,8 +50,8 @@ struct
       ws; str "]"; ws; opt (str ";;"); ws;
     ]
 
-  let next_part ~name ~sep_indent = fun lines ->
-    let body = String.concat "\n" (List.rev (remove_empty_heads lines)) in
+  let next_part ~name ~sep_indent = fun lines_rev ->
+    let body = String.concat "\n" (trim_empty_rev lines_rev) in
     Part.v ~name ~sep_indent ~body
 
   let next_part_of_groups groups =
