@@ -15,33 +15,38 @@ module Ls_remote = struct
 
   let interpret_search_result sr =
     match sr with
-    | { maybe_packed = None; not_packed = None } -> Error `No_such_ref
+    | { maybe_packed = None; not_packed = None } -> None
     | { maybe_packed = Some commit; not_packed = None }
     | { maybe_packed = _; not_packed = Some commit } ->
-        Ok commit
+        Some commit
+
+  let search_ref target lines =
+    let target_not_packed = target ^ non_packed_suffix in
+    let f acc (commit, full_ref) =
+      if String.equal full_ref target
+      then { acc with maybe_packed = Some commit }
+      else if String.equal full_ref target_not_packed
+      then { acc with not_packed = Some commit }
+      else acc
+    in
+    List.fold_left ~f ~init:{ maybe_packed = None; not_packed = None } lines
 
   let commit_pointed_by ~ref output_lines =
     let open Result.O in
-    let non_packed = ref ^ non_packed_suffix in
-    let is_ref full_ref = String.is_suffix ~suffix:ref full_ref in
-    let is_non_packed_ref full_ref = String.is_suffix ~suffix:non_packed full_ref in
-    let rec go acc lines =
-      match (acc, lines) with
-      | _, [] -> Ok acc
-      | { not_packed = None; _ }, (commit, full_ref) :: tl when is_non_packed_ref full_ref ->
-          go { acc with not_packed = Some commit } tl
-      | { maybe_packed = None; _ }, (commit, full_ref) :: tl when is_ref full_ref ->
-          go { acc with maybe_packed = Some commit } tl
-      | _, (_, full_ref) :: _ when is_non_packed_ref full_ref || is_ref full_ref ->
-          Error `Multiple_such_refs
-      | _, _ :: tl -> go acc tl
-    in
     match output_lines with
     | [ "" ] -> Error `No_such_ref
     | _ ->
-        Result.List.map ~f:parse_output_line output_lines >>= fun parsed_lines ->
-        go { maybe_packed = None; not_packed = None } parsed_lines >>= fun search_result ->
-        interpret_search_result search_result
+      Result.List.map ~f:parse_output_line output_lines >>= fun parsed_lines ->
+      let search prefix =
+        let result = search_ref (prefix ^ ref) parsed_lines in
+        interpret_search_result result
+      in
+      match search "refs/tags/" with
+      | Some commit -> Ok commit
+      | None ->
+        match search "refs/heads/" with
+        | Some commit -> Ok commit
+        | None -> Error `No_such_ref
 end
 
 module Ref = struct

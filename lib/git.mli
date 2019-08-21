@@ -6,7 +6,7 @@ module Ls_remote : sig
   val commit_pointed_by :
     ref:string ->
     string list ->
-    (string, [> `No_such_ref | `Multiple_such_refs | `Msg of string ]) result
+    (string, [> `No_such_ref | `Msg of string ]) result
   (** [commit_pointed_by ~ref ls_remote_output] parses the output from git ls-remote
       and returns the commit pointed by [ref] if it can be determined from it.
       It will work even if the repo uses packed-refs. *)
