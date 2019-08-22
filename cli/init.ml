@@ -19,7 +19,7 @@ let init_tmp_opam ~local_packages ~config:{ Duniverse.Config.remotes; pins; _ } 
   Bos.OS.Dir.tmp ".duniverse-opam-root-%s" >>= fun root ->
   Opam_cmd.init_opam ~root ~remotes () >>= fun () ->
   Exec.(iter (add_opam_dev_pin ~root) pins) >>= fun () ->
-  Exec.(iter (add_opam_local_pin ~root) local_packages) >>= fun () -> Ok root
+  Exec.(iter (add_opam_local_pin ~root ~kind:"path") local_packages) >>= fun () -> Ok root
 
 let report_stats ~packages =
   let packages_stats = Opam_cmd.packages_stats packages in

@@ -76,9 +76,10 @@ val init_opam_and_remotes :
 val add_opam_dev_pin : root:Fpath.t -> Types.Opam.pin -> (unit, [> Rresult.R.msg ]) result
 (** [add_opam_dev_pin ~root pin] pins [pin] in the active switch using [root] as OPAMROOT. *)
 
-val add_opam_local_pin : root:Fpath.t -> string -> (unit, [> Rresult.R.msg ]) result
-(** [add_opam_local_pin ~root package] pins the package in the current working dir under
-    [package ^ ".dev"] in the active switch using [root] as OPAMROOT. *)
+val add_opam_local_pin : root:Fpath.t -> kind:string -> string -> (unit, [> Rresult.R.msg ]) result
+(** [add_opam_local_pin ~root ~kind package] pins the package in the current working dir under
+    [package ^ ".dev"] in the active switch using [root] as OPAMROOT and [kind] to determine the
+    kind of pinning ("path", "git", ...). *)
 
 val run_opam_install : yes:bool -> Duniverse.Deps.Opam.t list -> (unit, [> Rresult.R.msg ]) result
 (** [run_opam_install ~yes packages] launch an opam command to install the given packages. If yes is

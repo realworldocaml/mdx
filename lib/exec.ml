@@ -178,8 +178,8 @@ let add_opam_dev_pin ~root { Opam.pin; url; tag } =
   in
   run_and_log Cmd.(opam_cmd ~root "pin" % "add" % "-yn" % (pin ^ ".dev") % targ)
 
-let add_opam_local_pin ~root package =
-  run_and_log Cmd.(opam_cmd ~root "pin" % "add" % "-yn" % (package ^ ".dev") % ".")
+let add_opam_local_pin ~root ~kind package =
+  run_and_log Cmd.(opam_cmd ~root "pin" % "add" % "-yn" % "-k" % kind % (package ^ ".dev") % ".")
 
 let run_opam_install ~yes opam_deps =
   let packages =
