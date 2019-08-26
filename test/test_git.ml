@@ -64,7 +64,7 @@ module Ls_remote = struct
         ~expected:(Ok "0002") ();
       make_test ~name:"Points to several commits" ~ref:"abc"
         ~lines:[ "001   refs/heads/abc"; "002   refs/tags/abc" ]
-        ~expected:(Ok "002")
+        ~expected:(Error `Multiple_such_refs)
         ();
       make_test ~name:"Points to several commits (with packed-refs)" ~ref:"abc"
         ~lines:
@@ -73,7 +73,7 @@ module Ls_remote = struct
             "003   refs/tags/abc";
             "004   refs/tags/abc^{}"
           ]
-        ~expected:(Ok "004")
+        ~expected:(Error `Multiple_such_refs)
         ();
       make_test ~name:"Empty output" ~ref:"abc" ~lines:[ "" ] ~expected:(Error `No_such_ref) ();
       make_test ~name:"Not branch or tag" ~ref:"abc"

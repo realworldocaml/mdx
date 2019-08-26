@@ -36,17 +36,16 @@ module Ls_remote = struct
     match output_lines with
     | [ "" ] -> Error `No_such_ref
     | _ ->
-      Result.List.map ~f:parse_output_line output_lines >>= fun parsed_lines ->
-      let search prefix =
-        let result = search_ref (prefix ^ ref) parsed_lines in
-        interpret_search_result result
-      in
-      match search "refs/tags/" with
-      | Some commit -> Ok commit
-      | None ->
-        match search "refs/heads/" with
-        | Some commit -> Ok commit
-        | None -> Error `No_such_ref
+        Result.List.map ~f:parse_output_line output_lines >>= fun parsed_lines ->
+        let search prefix =
+          let result = search_ref (prefix ^ ref) parsed_lines in
+          interpret_search_result result
+        in
+        match search "refs/tags/", search "refs/heads/" with
+        | Some _, Some _ -> Error `Multiple_such_refs
+        | Some commit, None
+        | None, Some commit -> Ok commit
+        | None, None -> Error `No_such_ref
 end
 
 module Ref = struct
