@@ -23,10 +23,8 @@ module Ls_remote = struct
   let search_ref target lines =
     let target_not_packed = target ^ non_packed_suffix in
     let f acc (commit, full_ref) =
-      if String.equal full_ref target
-      then { acc with maybe_packed = Some commit }
-      else if String.equal full_ref target_not_packed
-      then { acc with not_packed = Some commit }
+      if String.equal full_ref target then { acc with maybe_packed = Some commit }
+      else if String.equal full_ref target_not_packed then { acc with not_packed = Some commit }
       else acc
     in
     List.fold_left ~f ~init:{ maybe_packed = None; not_packed = None } lines
@@ -35,17 +33,16 @@ module Ls_remote = struct
     let open Result.O in
     match output_lines with
     | [ "" ] -> Error `No_such_ref
-    | _ ->
+    | _ -> (
         Result.List.map ~f:parse_output_line output_lines >>= fun parsed_lines ->
         let search prefix =
           let result = search_ref (prefix ^ ref) parsed_lines in
           interpret_search_result result
         in
-        match search "refs/tags/", search "refs/heads/" with
+        match (search "refs/tags/", search "refs/heads/") with
         | Some _, Some _ -> Error `Multiple_such_refs
-        | Some commit, None
-        | None, Some commit -> Ok commit
-        | None, None -> Error `No_such_ref
+        | Some commit, None | None, Some commit -> Ok commit
+        | None, None -> Error `No_such_ref )
 end
 
 module Ref = struct
