@@ -75,7 +75,13 @@ module Ls_remote = struct
           ]
         ~expected:(Error `Multiple_such_refs)
         ();
-      make_test ~name:"Empty output" ~ref:"abc" ~lines:[ "" ] ~expected:(Error `No_such_ref) ()
+      make_test ~name:"Empty output" ~ref:"abc" ~lines:[ "" ] ~expected:(Error `No_such_ref) ();
+      make_test ~name:"Not branch or tag" ~ref:"abc"
+        ~lines:[ "001   refs/heads/master"; "002   refs/import/tags/abc"; "003   refs/tags/abc" ]
+        ~expected:(Ok "003") ();
+      make_test ~name:"Same suffix" ~ref:"abc" ~lines:[ "001   refs/heads/xabc" ]
+        ~expected:(Error `No_such_ref)
+        ()
     ]
 end
 
