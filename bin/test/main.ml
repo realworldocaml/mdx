@@ -237,7 +237,7 @@ let update_file_with_block ppf t file part =
   let parts = read_parts file in
   let lines =
     match Block.value t with
-    | Raw | OCaml | Error _ -> t.Block.contents
+    | Raw | OCaml | Reason | Error _ -> t.Block.contents
     | Cram _ ->
       Fmt.failwith "Promoting Cram tests is unsupported for now."
     | Toplevel tests ->
@@ -354,7 +354,7 @@ let run_exn ()
                          else err_eval ~cmd:test.command e
                      ) tests
                  (* Run raw OCaml code *)
-                 | true, _, _, OCaml ->
+                 | true, _, _, OCaml | true, _, _, Reason ->
                    assert (syntax <> Some Cram);
                    (match Block.file t with
                     | Some ml_file ->

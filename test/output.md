@@ -20,9 +20,15 @@ foo
 
 
 ```ocaml
-type <record-name> =
-    { <field> : <type>;
-      <field> : <type>;
-      ...
+type some_record =
+    { field : int;
+      also_field : string;
     }
+```
+
+```reason
+type some_record = {
+  field: int,
+  also_field: string,
+};
 ```

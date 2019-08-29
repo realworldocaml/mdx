@@ -29,6 +29,7 @@ module Toplevel = Toplevel
 module Block = Block
 module Migrate_ast = Migrate_ast
 module Compat = Compat
+module Reason = Reason
 
 (** {2 Lines} *)
 

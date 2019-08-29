@@ -17,6 +17,7 @@
 let src = Logs.Src.create "ocaml-mdx"
 module Log = (val Logs.src_log src : Logs.LOG)
 
+module Reason = Reason
 module Output = Output
 module Cram = Cram
 module Toplevel = Toplevel

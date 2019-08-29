@@ -1,0 +1,9 @@
+<section id="some-interface" class="level1">
+<h1>Some Interface</h1>
+<div class="highlight">
+<pre><code class="language-reason">open Cmdliner;
+
+let cmd: (Term.t(int), Term.info);
+</code></pre>
+</div>
+</section>

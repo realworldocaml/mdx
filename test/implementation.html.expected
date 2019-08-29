@@ -1,0 +1,72 @@
+<section id="some-implementation" class="level1">
+<h1>Some Implementation</h1>
+<div class="highlight">
+<pre><code class="language-reason">open Base;
+
+module type S = {
+  type t('a);
+  let fold: (t('a), ~init: 'acc, ~f: ('acc, 'a) =&gt; 'acc) =&gt; 'acc;
+};
+
+module type Extension = {
+  type t('a);
+  let iter: (t('a), ~f: 'a =&gt; unit) =&gt; unit;
+  let length: t('a) =&gt; int;
+  let count: (t('a), ~f: 'a =&gt; bool) =&gt; int;
+  let for_all: (t('a), ~f: 'a =&gt; bool) =&gt; bool;
+  let exists: (t('a), ~f: 'a =&gt; bool) =&gt; bool;
+};
+
+/* For extending a Foldable module */
+module Extend = (Arg: S) : (Extension with type t('a) := Arg.t('a)) =&gt; {
+  open Arg;
+
+  let iter = (t, ~f) =&gt; fold(t, ~init=(), ~f=((), a) =&gt; f(a));
+
+  let length = t =&gt; fold(t, ~init=0, ~f=(acc, _) =&gt; acc + 1);
+
+  let count = (t, ~f) =&gt;
+    fold(t, ~init=0, ~f=(count, x) =&gt;
+      count
+      + (
+        if (f(x)) {
+          1;
+        } else {
+          0;
+        }
+      )
+    );
+
+  exception Short_circuit;
+
+  let for_all = (c, ~f) =&gt;
+    try (
+      {
+        iter(c, ~f=x =&gt;
+          if (!f(x)) {
+            raise(Short_circuit);
+          }
+        );
+        true;
+      }
+    ) {
+    | Short_circuit =&gt; false
+    };
+
+  let exists = (c, ~f) =&gt;
+    try (
+      {
+        iter(c, ~f=x =&gt;
+          if (f(x)) {
+            raise(Short_circuit);
+          }
+        );
+        false;
+      }
+    ) {
+    | Short_circuit =&gt; true
+    };
+};
+</code></pre>
+</div>
+</section>

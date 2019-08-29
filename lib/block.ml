@@ -23,6 +23,7 @@ type cram_value = { pad: int; tests: Cram.t list }
 type value =
   | Raw
   | OCaml
+  | Reason
   | Error of string list
   | Cram of cram_value
   | Toplevel of Toplevel.t list
@@ -54,6 +55,7 @@ let dump_section = Fmt.(Dump.pair int string)
 let dump_value ppf = function
   | Raw -> Fmt.string ppf "Raw"
   | OCaml -> Fmt.string ppf "OCaml"
+  | Reason -> Fmt.string ppf "Reason"
   | Error e -> Fmt.pf ppf "Error %a" Fmt.(Dump.list dump_string) e
   | Cram { pad; tests } ->
     Fmt.pf ppf "@[Cram@ {pad=%d;@ tests=%a}@]"
@@ -326,6 +328,7 @@ let eval t =
          let value = toplevel ~file:t.file ~line:t.line t.contents in
          { t with value }
        | `Other -> { t with value = Raw })
+    | Some "reason" -> { t with value = Reason }
     | _ -> t
 
 let ends_by_semi_semi c = match List.rev c with
@@ -343,7 +346,7 @@ let executable_contents b =
     | `OCaml `Code -> b.contents
     | `OCaml `Toplevel | `Other ->
       match b.value with
-      | Error _ | Raw | Cram _ -> []
+      | Error _ | Raw | Cram _ | Reason -> []
       | OCaml -> line_directive (b.file, b.line) :: b.contents
       | Toplevel tests ->
         List.flatten (
