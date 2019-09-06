@@ -182,15 +182,6 @@ let run_toplevel_tests ?root c ppf tests t =
     ) tests;
   Block.pp_footer ppf ()
 
-let trim l =
-  let rec aux = function
-    | []   -> []
-    | h::t -> if String.trim h = "" then aux t else  String.trim h :: t
-  in
-  let no_head = aux l in
-  let no_tail = List.rev (aux (List.rev no_head)) in
-  no_tail
-
 type file = { first: Mdx_top.Part.file; current: Mdx_top.Part.file }
 
 let files: (string, file) Hashtbl.t = Hashtbl.create 8
@@ -228,8 +219,8 @@ let update_block_with_file ppf t file part =
       (match part with None -> "" | Some p -> p)
       file
   | Some lines ->
-    let lines = trim lines in
     let contents = String.concat "\n" lines in
+    let contents = String.trim contents in
     Output.pp ppf (`Output contents);
     Block.pp_footer ppf ()
 

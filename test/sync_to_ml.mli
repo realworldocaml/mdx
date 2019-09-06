@@ -1,5 +1,14 @@
 val f: unit -> unit
 
-[@@@part "3"] ;;
+[@@@part "1"] ;;
 
-type t = Some of int | Many
+module A =
+struct
+
+  [@@@part "2"] ;;
+
+  type t = Some of int | Many
+
+  [@@@part "3"] ;;
+
+end
