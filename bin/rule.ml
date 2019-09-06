@@ -100,6 +100,8 @@ let pp_direction fmt = function
   | `To_md -> Fmt.pf fmt "--direction=to-md"
   | `To_ml -> Fmt.pf fmt "--direction=to-ml"
 
+let pp_section fmt s = Fmt.pf fmt "-s %S" s
+
 let pp_prelude fmt s = Fmt.pf fmt "--prelude=%s" s
 let pp_prelude_str fmt s = Fmt.pf fmt "--prelude-str %S" s
 
@@ -107,14 +109,14 @@ let add_opt e s = match e with None -> s | Some e -> String.Set.add e s
 
 let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direction direction)
     (`Prelude prelude) (`Prelude_str prelude_str) (`Root root) =
-  let section = match section with
-    | None   -> None
-    | Some p -> Some (Re.Perl.compile_pat p)
-  in
-  let active b = match section, Mdx.Block.section b with
-    | None   , _      -> true
-    | Some re, None   -> Re.execp re ""
-    | Some re, Some s -> Re.execp re (snd s)
+  let active =
+    let active re b =
+      let s = match Mdx.Block.section b with Some (_, s) -> s | None -> "" in
+      Re.execp re s
+    in
+    match section with
+    | None -> fun _ -> true
+    | Some p -> active (Re.Perl.compile_pat p)
   in
   let on_item acc = function
     | Mdx.Section _ | Text _ -> acc
@@ -147,7 +149,8 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direct
       List.map (Fmt.to_to_string pp_prelude) prelude @
       List.map (Fmt.to_to_string pp_prelude_str) prelude_str @
       [Fmt.to_to_string pp_direction direction] @
-      options_of_syntax syntax
+      options_of_syntax syntax @
+      (match section with Some s -> [Fmt.(to_to_string pp_section) s] | None -> [])
     in
     print_rule ~md_file ~prelude ~nd ~ml_files ~dirs ~root ~requires options;
     file_contents
