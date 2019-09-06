@@ -80,14 +80,13 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
 \ (name   %s)\n\
 \ (deps   (:x %s)%s)\n\
 \ (action (progn\n\
-\           (run ocaml-mdx test %a %s%s%%{x})\n%a\n\
-\           (diff? %%{x} %%{x}.corrected))))\n"
+\           (run ocaml-mdx test %a %s%s%%{x})\n%a)))\n"
       name
       md_file
       deps
       Fmt.(list ~sep:(unit " ") string) options
       arg root
-      (Fmt.list ~sep:Fmt.cut pp_ml_diff) var_names
+      (Fmt.list ~sep:Fmt.cut pp_ml_diff) ("x" :: var_names)
   in
   pp "runtest" "";
   if nd then pp "runtest-all" "--non-deterministic "
