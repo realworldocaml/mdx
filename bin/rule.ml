@@ -64,13 +64,12 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
   in
   let root = match root with None -> "" | Some r -> Fmt.strf "--root=%s " r in
   let deps =
-    let x =
+    match
       List.map (Fmt.to_to_string pp_package_deps) requires @
       List.map (Fmt.to_to_string pp_ml_deps) (List.combine var_names ml_files) @
       List.map (Fmt.to_to_string pp_dir_deps) dirs @
       prelude
-    in
-    match x with
+    with
     | [] -> ""
     | s  -> String.concat ~sep:"\n" ("" :: s)
   in

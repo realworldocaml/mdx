@@ -294,7 +294,7 @@ let required_packages t =
     | `Eq, "" ->
       Fmt.failwith "invalid `require-package` label value: requires a value"
     | `Eq, pkg -> pkg
-    | _ -> Fmt.failwith "invalid `env` label value"
+    | _ -> Fmt.failwith "invalid `require-package` label value"
   in
   List.map f (get_labels t "require-package")
 
