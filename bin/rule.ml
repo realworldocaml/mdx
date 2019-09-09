@@ -36,8 +36,7 @@ let pp_dep fmt = function
   | `Path path -> Fmt.pf fmt "%s" path
 
 let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
-  let ml_files = String.Set.elements ml_files in
-  let ml_files = List.map (prepend_root root) ml_files in
+  let ml_files = List.map (prepend_root root) (String.Set.elements ml_files) in
   let dirs = match root with
     | None      -> String.Set.elements dirs
     | Some root ->
@@ -46,6 +45,10 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
       let dirs = String.Set.add root dirs in
       String.Set.elements dirs
   in
+  let prelude_files =
+    let files = String.Set.of_list (List.map prelude_file prelude) in
+    String.Set.elements files
+  in
   let var_names =
     let f (cpt, acc) _ = cpt + 1, ("y" ^ string_of_int cpt) :: acc in
     List.fold_left f (0, []) ml_files |> snd
@@ -53,17 +56,14 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
   let pp_ml_diff fmt var =
     Fmt.pf fmt "\           (diff? %%{%s} %%{%s}.corrected)" var var
   in
-  let root = match root with None -> "" | Some r -> Fmt.strf "--root=%s " r in
+  let root = match root with None -> [] | Some r -> ["--root=" ^ r] in
   let deps =
     let packages =
       List.map (fun p -> `Package p) (String.Set.elements requires)
     and ml_files =
       List.map2 (fun name p -> `Named (name, p)) var_names ml_files
-    and dirs =
-      List.map (fun p -> `Source_tree p) dirs
-    and prelude =
-      let files = String.Set.of_list (List.map prelude_file prelude) in
-      List.map (fun p -> `Path p) (String.Set.elements files)
+    and dirs = List.map (fun p -> `Source_tree p) dirs
+    and prelude = List.map (fun p -> `Path p) prelude_files
     in
     `Named ("x", md_file) ::
     packages @
@@ -78,15 +78,14 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
 \ (name   %s)@\n\
 \ (deps   @[<v>%a@])@\n\
 \ (action (progn@\n\
-\           (run ocaml-mdx test %a %s%s%%{x})@\n%a)))@\n"
+\           (run ocaml-mdx test %a %%{x})@\n%a)))@\n"
       name
       Fmt.(list ~sep:sp pp_dep) deps
-      Fmt.(list ~sep:(unit " ") string) options
-      arg root
-      (Fmt.list ~sep:Fmt.cut pp_ml_diff) ("x" :: var_names)
+      Fmt.(list ~sep:(unit " ") string) (options @ arg @ root)
+      Fmt.(list ~sep:cut pp_ml_diff) ("x" :: var_names)
   in
-  pp "runtest" "";
-  if nd then pp "runtest-all" "--non-deterministic "
+  pp "runtest" [];
+  if nd then pp "runtest-all" ["--non-deterministic"]
 
 let pp_direction fmt = function
   | `To_md -> Fmt.pf fmt "--direction=to-md"
