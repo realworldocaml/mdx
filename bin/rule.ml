@@ -29,6 +29,12 @@ let prepend_root r b = match r with
   | None   -> b
   | Some r -> Filename.concat r b
 
+let pp_dep fmt = function
+  | `Named (name, path) -> Fmt.pf fmt "(:%s %s)" name path
+  | `Source_tree path -> Fmt.pf fmt "(source_tree %s)" path
+  | `Package p -> Fmt.pf fmt "(package %s)" p
+  | `Path path -> Fmt.pf fmt "%s" path
+
 let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
   let ml_files = String.Set.elements ml_files in
   let ml_files = List.map (prepend_root root) ml_files in
@@ -44,46 +50,37 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
     let f (cpt, acc) _ = cpt + 1, ("y" ^ string_of_int cpt) :: acc in
     List.fold_left f (0, []) ml_files |> snd
   in
-  let requires = String.Set.elements requires in
-  let pp_package_deps fmt name =
-    Fmt.pf fmt "\         (package %s)" name
-  in
-  let pp_ml_deps fmt (var_name, ml_file) =
-    Fmt.pf fmt "\         (:%s %s)" var_name ml_file
-  in
-  let pp_dir_deps fmt dir =
-    Fmt.pf fmt "\         (source_tree %s)" dir
-  in
   let pp_ml_diff fmt var =
     Fmt.pf fmt "\           (diff? %%{%s} %%{%s}.corrected)" var var
   in
-  let prelude =
-    let files = String.Set.of_list (List.map prelude_file prelude) in
-    String.Set.elements files
-    |> List.map (fun f -> Fmt.strf "         %s" f)
-  in
   let root = match root with None -> "" | Some r -> Fmt.strf "--root=%s " r in
   let deps =
-    match
-      List.map (Fmt.to_to_string pp_package_deps) requires @
-      List.map (Fmt.to_to_string pp_ml_deps) (List.combine var_names ml_files) @
-      List.map (Fmt.to_to_string pp_dir_deps) dirs @
-      prelude
-    with
-    | [] -> ""
-    | s  -> String.concat ~sep:"\n" ("" :: s)
+    let packages =
+      List.map (fun p -> `Package p) (String.Set.elements requires)
+    and ml_files =
+      List.map2 (fun name p -> `Named (name, p)) var_names ml_files
+    and dirs =
+      List.map (fun p -> `Source_tree p) dirs
+    and prelude =
+      let files = String.Set.of_list (List.map prelude_file prelude) in
+      List.map (fun p -> `Path p) (String.Set.elements files)
+    in
+    `Named ("x", md_file) ::
+    packages @
+    ml_files @
+    dirs @
+    prelude
   in
   let pp name arg =
     Fmt.pr
       "\
-(alias\n\
-\ (name   %s)\n\
-\ (deps   (:x %s)%s)\n\
-\ (action (progn\n\
-\           (run ocaml-mdx test %a %s%s%%{x})\n%a)))\n"
+(alias@\n\
+\ (name   %s)@\n\
+\ (deps   @[<v>%a@])@\n\
+\ (action (progn@\n\
+\           (run ocaml-mdx test %a %s%s%%{x})@\n%a)))@\n"
       name
-      md_file
-      deps
+      Fmt.(list ~sep:sp pp_dep) deps
       Fmt.(list ~sep:(unit " ") string) options
       arg root
       (Fmt.list ~sep:Fmt.cut pp_ml_diff) ("x" :: var_names)
