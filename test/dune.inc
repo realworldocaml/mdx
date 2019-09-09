@@ -122,7 +122,8 @@
  (name   runtest)
  (deps   (:x prelude.md))
  (action (progn
-           (run ocaml-mdx test --prelude-str "#require \"lwt\"" --prelude-str "toto:let x = \"42\"" --direction=to-md %{x})
+           (run ocaml-mdx test --prelude-str "#require \"lwt\""
+                  --prelude-str "toto:let x = \"42\"" --direction=to-md %{x})
            (diff? %{x} %{x}.corrected))))
 (alias
  (name   runtest)

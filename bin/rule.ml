@@ -35,6 +35,10 @@ let pp_dep fmt = function
   | `Package p -> Fmt.pf fmt "(package %s)" p
   | `Path path -> Fmt.pf fmt "%s" path
 
+let pp_action fmt = function
+  | `Diff_corrected var -> Fmt.pf fmt "(diff? %%{%s} %%{%s}.corrected)" var var
+  | `Run args -> Fmt.pf fmt "(run @[<hov 2>%a@])" Fmt.(list ~sep:sp string) args
+
 let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
   let ml_files = List.map (prepend_root root) (String.Set.elements ml_files) in
   let dirs = match root with
@@ -53,9 +57,6 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
     let f (cpt, acc) _ = cpt + 1, ("y" ^ string_of_int cpt) :: acc in
     List.fold_left f (0, []) ml_files |> snd
   in
-  let pp_ml_diff fmt var =
-    Fmt.pf fmt "\           (diff? %%{%s} %%{%s}.corrected)" var var
-  in
   let root = match root with None -> [] | Some r -> ["--root=" ^ r] in
   let deps =
     let packages =
@@ -71,18 +72,21 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
     dirs @
     prelude
   in
+  let actions arg =
+    `Run ("ocaml-mdx" :: "test" :: options @ arg @ root @ ["%{x}"]) ::
+    `Diff_corrected "x" ::
+    List.map (fun v -> `Diff_corrected v) var_names
+  in
   let pp name arg =
     Fmt.pr
       "\
 (alias@\n\
 \ (name   %s)@\n\
 \ (deps   @[<v>%a@])@\n\
-\ (action (progn@\n\
-\           (run ocaml-mdx test %a %%{x})@\n%a)))@\n"
+\ (action @[<hv 2>(progn@ %a)@]))@\n"
       name
       Fmt.(list ~sep:sp pp_dep) deps
-      Fmt.(list ~sep:(unit " ") string) (options @ arg @ root)
-      Fmt.(list ~sep:cut pp_ml_diff) ("x" :: var_names)
+      Fmt.(list ~sep:cut pp_action) (actions arg)
   in
   pp "runtest" [];
   if nd then pp "runtest-all" ["--non-deterministic"]
