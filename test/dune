@@ -13,7 +13,6 @@
     (run ocaml-mdx rule %{dep:envs.md})
     (run ocaml-mdx rule %{dep:empty_line.md})
     (run ocaml-mdx rule %{dep:spaces.md})
-    (run ocaml-mdx rule %{dep:cram.t})
     (run ocaml-mdx rule %{dep:errors.md})
     (run ocaml-mdx rule %{dep:heredoc.md})
     (run ocaml-mdx rule %{dep:mlt.md})
@@ -78,6 +77,13 @@
  (action (progn
            (run ocaml-mdx output %{x} -o output.html)
            (diff? %{y} output.html))))
+
+(alias
+ (name   runtest)
+ (deps   (:x cram.t) (package mdx))
+ (action (progn
+           (run ocaml-mdx test --syntax=cram %{x})
+           (diff? %{x} %{x}.corrected))))
 
 (alias
  (name   runtest)

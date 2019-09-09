@@ -40,14 +40,6 @@
            (diff? %{x} %{x}.corrected))))
 (alias
  (name   runtest)
- (deps   (:x cram.t)
-         (package mdx))
- (action (progn
-           (run ocaml-mdx test --direction=infer-timestamp %{x})
-
-           (diff? %{x} %{x}.corrected))))
-(alias
- (name   runtest)
  (deps   (:x errors.md)
          (package mdx))
  (action (progn
