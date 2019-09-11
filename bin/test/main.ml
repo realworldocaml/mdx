@@ -60,6 +60,19 @@ let ansi_color_strip str =
   in
   loop 0
 
+let trim_end s =
+  let l = String.length s in
+  let rec f i =
+    if i > l
+    then
+      i
+    else
+      match s.[l - i - 1] with
+      | ' ' | '\t' | '\011'..'\013' -> f (succ i)
+      | _ -> i
+  in
+  String.sub s 0 (l - (f 0))
+
 let with_dir root f =
   match root with
   | None   -> f ()
@@ -118,7 +131,7 @@ let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
       let n = run_test ?root blacklist temp_file test in
       let lines = read_lines temp_file in
       let output =
-        let output = List.map (fun x -> `Output x) lines in
+        let output = List.map (fun x -> `Output (trim_end x)) lines in
         if Output.equal output test.output then test.output
         else Output.merge output test.output
       in
@@ -167,7 +180,7 @@ let run_toplevel_tests ?root c ppf tests t =
       let lines = lines (eval_test ?root t c test) in
       let lines = split_lines lines in
       let output =
-        let output = List.map (fun x -> `Output x) lines in
+        let output = List.map (fun x -> `Output (trim_end x)) lines in
         if Output.equal output test.output then test.output
         else output
       in
@@ -340,7 +353,7 @@ let run_exn ()
                        match eval_test t ?root c test with
                        | Ok _    -> ()
                        | Error e ->
-                         let output = List.map (fun l -> `Output l) e in
+                         let output = List.map (fun x -> `Output (trim_end x)) e in
                          if Output.equal test.output output then ()
                          else err_eval ~cmd:test.command e
                      ) tests
