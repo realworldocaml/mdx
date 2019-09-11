@@ -99,7 +99,7 @@ let pp_direction fmt = function
   | `To_ml -> Fmt.pf fmt "--direction=to-ml"
 
 let pp_prelude fmt s = Fmt.pf fmt "--prelude=%s" s
-let pp_prelude_str fmt s = Fmt.pf fmt "--prelude-str=%S" s
+let pp_prelude_str fmt s = Fmt.pf fmt "--prelude-str %S" s
 
 let add_opt e s = match e with None -> s | Some e -> String.Set.add e s
 
