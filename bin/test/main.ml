@@ -254,13 +254,10 @@ let update_file_or_block ?root ppf md_file ml_file block direction =
   in
   let direction =
     match direction with
-    | `To_md -> `To_md
-    | `To_ml -> `To_ml
-    | `Infer_timestamp ->
-       let md_file_mtime = (Unix.stat md_file).st_mtime in
-       let ml_file_mtime = (Unix.stat ml_file).st_mtime in
-       if ml_file_mtime < md_file_mtime then `To_ml
-       else `To_md
+    | Some `To_md -> `To_md
+    | Some `To_ml -> `To_ml
+    | None ->
+        Fmt.failwith "--direction must be set to update this file."
   in
   match direction with
   | `To_md ->

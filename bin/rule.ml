@@ -93,9 +93,9 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
   if nd then pp "runtest-all" "--non-deterministic "
 
 let pp_direction fmt = function
-  | `Infer_timestamp -> Fmt.pf fmt "--direction=infer-timestamp"
-  | `To_md -> Fmt.pf fmt "--direction=to-md"
-  | `To_ml -> Fmt.pf fmt "--direction=to-ml"
+  | Some `To_md -> Fmt.pf fmt "--direction=to-md"
+  | Some `To_ml -> Fmt.pf fmt "--direction=to-ml"
+  | None -> ()
 
 let pp_prelude fmt s = Fmt.pf fmt "--prelude=%s" s
 let pp_prelude_str fmt s = Fmt.pf fmt "--prelude-str %S" s
