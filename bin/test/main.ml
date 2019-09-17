@@ -17,6 +17,7 @@
 open Mdx
 open Compat
 open Result
+open Astring
 
 let src = Logs.Src.create "cram.test"
 module Log = (val Logs.src_log src : Logs.LOG)
@@ -24,10 +25,10 @@ module Log = (val Logs.src_log src : Logs.LOG)
 let (/) = Filename.concat
 
 let prelude_env_and_file f =
-  match Astring.String.cut ~sep:":" f with
+  match String.cut ~sep:":" f with
   | None        -> None, f
   | Some (e, f) ->
-    if Astring.String.exists ((=) ' ') e
+    if String.exists ((=) ' ') e
     then None  , f
     else Some e, f
 
@@ -60,18 +61,8 @@ let ansi_color_strip str =
   in
   loop 0
 
-let trim_end s =
-  let l = String.length s in
-  let rec f i =
-    if i > l
-    then
-      i
-    else
-      match s.[l - i - 1] with
-      | ' ' | '\t' | '\011'..'\013' -> f (succ i)
-      | _ -> i
-  in
-  String.sub s 0 (l - (f 0))
+let output_from_line s = 
+  `Output (String.drop ~rev:true ~sat:Char.Ascii.is_blank s)
 
 let with_dir root f =
   match root with
@@ -90,13 +81,13 @@ let with_dir root f =
 let get_env blacklist =
   let blacklist = "INSIDE_DUNE"::blacklist in
   let env = Array.to_list (Unix.environment ()) in
-  let env = List.map (String.split_on_char '=') env in
+  let env = List.map (String.cuts ~sep:"=") env in
   let f env var =
     let g l = String.compare (List.nth l 0) var <> 0 in
     List.filter g env
   in
   let env = List.fold_left f env blacklist in
-  Array.of_list (List.map (String.concat "=") env)
+  Array.of_list (List.map (String.concat ~sep:"=") env)
 
 let run_test ?root blacklist temp_file t =
   let cmd = Cram.command_line t in
@@ -131,7 +122,7 @@ let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
       let n = run_test ?root blacklist temp_file test in
       let lines = read_lines temp_file in
       let output =
-        let output = List.map (fun x -> `Output (trim_end x)) lines in
+        let output = List.map output_from_line lines in
         if Output.equal output test.output then test.output
         else Output.merge output test.output
       in
@@ -169,7 +160,7 @@ let lines = function Ok x | Error x -> x
 let split_lines lines =
   let aux acc s =
     (* XXX(samoht) support windowns *)
-    let lines = String.split_on_char '\n' s in
+    let lines = String.cuts ~sep:"\n" s in
     List.append lines acc
   in
   List.fold_left aux [] (List.rev lines)
@@ -180,7 +171,7 @@ let run_toplevel_tests ?root c ppf tests t =
       let lines = lines (eval_test ?root t c test) in
       let lines = split_lines lines in
       let output =
-        let output = List.map (fun x -> `Output (trim_end x)) lines in
+        let output = List.map output_from_line lines in
         if Output.equal output test.output then test.output
         else output
       in
@@ -232,7 +223,7 @@ let update_block_with_file ppf t file part =
       (match part with None -> "" | Some p -> p)
       file
   | Some lines ->
-    let contents = String.concat "\n" lines in
+    let contents = String.concat ~sep:"\n" lines in
     let contents = String.trim contents in
     Output.pp ppf (`Output contents);
     Block.pp_footer ppf ()
@@ -246,7 +237,7 @@ let update_file_with_block ppf t file part =
       Fmt.failwith "Promoting Cram tests is unsupported for now."
     | Toplevel tests ->
       let f t =
-        t.Toplevel.command |> String.concat "\n\n" in
+        t.Toplevel.command |> String.concat ~sep:"\n\n" in
       List.map f tests
   in
   let current = Mdx_top.Part.replace parts.current ~part ~lines in
@@ -353,7 +344,7 @@ let run_exn ()
                        match eval_test t ?root c test with
                        | Ok _    -> ()
                        | Error e ->
-                         let output = List.map (fun x -> `Output (trim_end x)) e in
+                         let output = List.map output_from_line e in
                          if Output.equal test.output output then ()
                          else err_eval ~cmd:test.command e
                      ) tests
