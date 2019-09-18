@@ -1,0 +1,6 @@
+(alias
+ (name   runtest)
+ (deps   (:x output.md) (:y output.html.expected) (package mdx))
+ (action (progn
+          (run ocaml-mdx output %{x} -o output.html)
+          (diff? %{y} output.html))))

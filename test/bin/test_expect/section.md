@@ -1,5 +1,7 @@
 ## Title
 
+Only blocks that pass the filter 'Testing' should be printed
+
 ### Hello
 
 ```ocaml
@@ -51,10 +53,3 @@ let () = print_endline (string_of_int x)
    42
 ```
 
-## Skipped blocks
-
-This block should not be executed by the tests:
-
-```ocaml skip
-let () = assert false
-```

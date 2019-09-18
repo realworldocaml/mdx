@@ -1,0 +1,30 @@
+(alias
+ (name   runtest)
+ (deps   (:x sync_to_ml.md) (:y sync_to_ml.md.expected)
+         (:a sync_to_ml.ml) (:b sync_to_ml.ml.expected)
+         (:c sync_to_broken_ml.ml) (:d sync_to_ml.mli)
+         (package mdx))
+ (action (progn
+           (run ocaml-mdx test --force-output --direction=to-ml %{x})
+           (diff? %{y} %{x}.corrected)
+           (diff? %{b} %{a}.corrected)
+           (diff? %{c} %{c}.corrected)
+           (diff? %{d} %{d}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x sync_to_empty_ml.md)
+         (:a sync_to_empty_ml.ml) (:b sync_to_empty_ml.ml.expected)
+         (package mdx))
+ (action (progn
+           (run ocaml-mdx test --force-output --direction=to-ml %{x})
+           (diff? %{b} %{a}.corrected))))
+
+(alias
+ (name   runtest)
+ (deps   (:x sync_to_ml_with_correct_md.md)
+         (:a sync_to_ml_with_correct_md.ml) (:b sync_to_ml_with_correct_md.ml.expected)
+         (package mdx))
+ (action (progn
+           (run ocaml-mdx test --direction=to-ml %{x})
+           (diff? %{b} %{a}.corrected))))

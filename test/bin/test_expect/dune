@@ -1,0 +1,20 @@
+(include dune.inc)
+
+(rule
+ (targets dune.gen)
+ (deps (source_tree .))
+ (action
+  (with-stdout-to
+    %{targets}
+   (run ../gen_dune_rules.exe test_expect)
+  )
+ )
+)
+
+(alias
+ (name runtest)
+ (action (diff dune.inc dune.gen))
+)
+
+; Ensure that dir1.md and dir2.md are identical
+(rule (copy dir.md dir2.md))
