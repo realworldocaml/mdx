@@ -256,8 +256,10 @@ let update_file_or_block ?root ppf md_file ml_file block direction =
     match direction with
     | Some `To_md -> `To_md
     | Some `To_ml -> `To_ml
-    | None ->
-        Fmt.failwith "--direction must be set to update this file."
+    | None        ->
+        Fmt.failwith "This block must be synchronised with %s, \
+                      the --direction option must be provided."
+          ml_file
   in
   match direction with
   | `To_md ->
