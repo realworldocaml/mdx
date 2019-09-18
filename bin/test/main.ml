@@ -377,11 +377,11 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
   0
 
 let run setup non_deterministic not_verbose syntax silent verbose_findlib
-    prelude prelude_str file section root direction =
+    prelude prelude_str file section root direction force_output : int =
     try
     run_exn setup non_deterministic not_verbose syntax silent verbose_findlib
-      prelude prelude_str file section root direction
-    with Failure f -> prerr_endline f; exit 1
+      prelude prelude_str file section root direction force_output
+    with Failure f -> (prerr_endline f; exit 1)
  
 (**** Cmdliner ****)
 
