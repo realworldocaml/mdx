@@ -5,6 +5,10 @@
 - Remove trailing whitespaces at the end of toplevel or bash evaluation lines
   (#166, @clecat)
 
+#### Removed
+
+- Remove the `infer-timestamp` direction (#171 @Julow)
+
 ### 1.4.0 (2019-06-11)
 
 - Add `--force-output` option to force generation of diff file (#118 @clecat)
