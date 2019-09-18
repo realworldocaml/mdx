@@ -268,10 +268,11 @@ let update_file_or_block ?root ppf md_file ml_file block direction =
   | `To_ml ->
      update_file_with_block ppf block ml_file (Block.part block)
 
-let run_exn ()
-    non_deterministic not_verbose syntax silent verbose_findlib prelude
-    prelude_str file section root direction force_output
-  =
+let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
+    (`Not_verbose not_verbose) (`Syntax syntax) (`Silent silent)
+    (`Verbose_findlib verbose_findlib) (`Prelude prelude)
+    (`Prelude_str prelude_str) (`File file) (`Section section) (`Root root)
+    (`Direction direction) (`Force_output force_output) =
   let c =
     Mdx_top.init ~verbose:(not not_verbose) ~silent ~verbose_findlib ()
   in
@@ -375,14 +376,12 @@ let run_exn ()
   Hashtbl.iter (write_parts ~force_output) files;
   0
 
-let run ()
-    non_deterministic not_verbose syntax silent verbose_findlib prelude
-    prelude_str file section root direction
-  =
+let run setup non_deterministic not_verbose syntax silent verbose_findlib
+    prelude prelude_str file section root direction force_output : int =
     try
-    run_exn () non_deterministic not_verbose syntax silent verbose_findlib
-      prelude prelude_str file section root direction
-    with Failure f -> prerr_endline f; exit 1
+    run_exn setup non_deterministic not_verbose syntax silent verbose_findlib
+      prelude prelude_str file section root direction force_output
+    with Failure f -> (prerr_endline f; exit 1)
  
 (**** Cmdliner ****)
 
