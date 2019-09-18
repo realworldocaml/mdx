@@ -102,7 +102,7 @@ let pp_prelude_str fmt s = Fmt.pf fmt "--prelude-str %S" s
 
 let add_opt e s = match e with None -> s | Some e -> String.Set.add e s
 
-let run (`Setup ()) (`File md_file) (`Section section) (`Direction direction)
+let run (`Setup ()) (`Files md_files) (`Section section) (`Direction direction)
     (`Prelude prelude) (`Prelude_str prelude_str) (`Root root) =
   let section = match section with
     | None   -> None
@@ -135,7 +135,7 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Direction direction)
       files, dirs, nd, requires
     | Block _ -> acc
   in
-  let on_file file_contents items =
+  let on_file md_file file_contents items =
     let ml_files, dirs, nd, requires =
       let empty = String.Set.empty in
       List.fold_left on_item (empty, empty, false, empty) items
@@ -148,7 +148,9 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Direction direction)
     print_rule ~md_file ~prelude ~nd ~ml_files ~dirs ~root ~requires options;
     file_contents
   in
-  Mdx.run md_file ~f:on_file;
+  md_files |> List.iter (fun md_file ->
+      Mdx.run md_file ~f:(on_file md_file)
+    );
   0
 
 open Cmdliner
@@ -156,6 +158,6 @@ open Cmdliner
 let cmd =
   let doc = "Produce dune rules to synchronize markdown and OCaml files." in
   Term.(pure run
-        $ Cli.setup $ Cli.file $ Cli.section $ Cli.direction
+        $ Cli.setup $ Cli.files $ Cli.section $ Cli.direction
         $ Cli.prelude $ Cli.prelude_str $ Cli.root),
   Term.info "rule" ~doc

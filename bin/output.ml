@@ -84,8 +84,11 @@ let pp_block ppf (b:Mdx.Block.t) =
   Fmt.pf ppf "<div class=\"highlight\"><pre%a><code%a>%t</code></pre></div>"
     pp_attrs () pp_lang () pp_code
 
-let run (`Setup ()) (`File file) (`Output output) =
-  let t = Mdx.parse_file Normal file in
+let run (`Setup ()) (`Files files) (`Output output) =
+  let t =
+    List.map (Mdx.parse_file Normal) files
+    |> List.flatten
+  in
   match t with
   | [] -> 1
   | _  ->
@@ -124,5 +127,5 @@ let output =
 let cmd =
   let doc = "Pre-process markdown files to produce OCaml code." in
   let exits = Term.default_exits in
-  Term.(pure run $ Cli.setup $ Cli.file $ output),
+  Term.(pure run $ Cli.setup $ Cli.files $ output),
   Term.info "output" ~doc ~exits

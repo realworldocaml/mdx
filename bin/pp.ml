@@ -17,35 +17,42 @@
 let src = Logs.Src.create "cram.pp"
 module Log = (val Logs.src_log src : Logs.LOG)
 
-let run (`Setup ()) (`File file) (`Section section) =
-  let t = Mdx.parse_file Normal file in
-  let t = match section with
-    | None   -> t
-    | Some s ->
-      let re = Re.Perl.compile_pat s in
-      match Mdx.filter_section re t with
-      | None   -> []
-      | Some t -> t
+let filter_by_section section lines =
+  match section with
+  | None -> lines
+  | Some s ->
+    let re = Re.Perl.compile_pat s in
+    match Mdx.filter_section re lines with
+    | None -> []
+    | Some lines -> lines
+
+let run (`Setup ()) (`Files files) (`Section section) =
+  let t =
+    List.map (fun p ->
+        (p, Mdx.parse_file Normal p |> (filter_by_section section))
+      ) files
   in
   match t with
   | [] -> 1
   | _  ->
-    List.iter (function
-        | Mdx.Section _ | Text _ -> ()
-        | Block b ->
-          let b = Mdx.Block.eval b in
-          if not (Mdx.Block.skip b) then (
-            Log.debug (fun l -> l "pp: %a" Mdx.Block.dump b);
-            let pp_lines = Fmt.(list ~sep:(unit "\n") string) in
-            let contents = Mdx.Block.executable_contents b in
-            match b.value with
-            | Toplevel _ -> Fmt.pr "%a\n" pp_lines contents
-            | OCaml      ->
-              Fmt.pr "%a\n%a\n"
-                Mdx.Block.pp_line_directive (file, b.line)
-                pp_lines contents
-            | _          -> ()
-          )
+    List.iter (fun (file, blocks) ->
+        List.iter (function
+          | Mdx.Section _ | Text _ -> ()
+          | Block b ->
+            let b = Mdx.Block.eval b in
+            if not (Mdx.Block.skip b) then (
+              Log.debug (fun l -> l "pp: %a" Mdx.Block.dump b);
+              let pp_lines = Fmt.(list ~sep:(unit "\n") string) in
+              let contents = Mdx.Block.executable_contents b in
+              match b.value with
+              | Toplevel _ -> Fmt.pr "%a\n" pp_lines contents
+              | OCaml      ->
+                Fmt.pr "%a\n%a\n"
+                  Mdx.Block.pp_line_directive (file, b.line)
+                  pp_lines contents
+              | _          -> ()
+            )
+        ) blocks
       ) t;
     0
 
@@ -54,5 +61,5 @@ open Cmdliner
 let cmd =
   let doc = "Pre-process markdown files to produce OCaml code." in
   let exits = Term.default_exits in
-  Term.(pure run $ Cli.setup $ Cli.file $ Cli.section),
+  Term.(pure run $ Cli.setup $ Cli.files $ Cli.section),
   Term.info "pp" ~doc ~exits
