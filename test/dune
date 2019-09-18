@@ -66,6 +66,13 @@
 
 (alias
  (name   runtest)
+ (deps   (:x trailing.md) (:y trailing.md.expected) (package mdx))
+ (action (progn
+           (run ocaml-mdx test --force-output %{x})
+           (diff? %{y} %{x}.corrected))))
+
+(alias
+ (name   runtest)
  (deps   (:x empty_lines.md) (:y empty_lines.md.expected) (package mdx))
  (action (progn
            (run ocaml-mdx test --force-output %{x})
