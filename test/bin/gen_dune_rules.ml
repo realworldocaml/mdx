@@ -30,6 +30,12 @@ let read_file filename =
     close_in chan;
     List.rev !lines
 
+let expected_file file =
+  let e = file ^ ".expected" in
+  if not (Sys.file_exists e) then
+    Fmt.failwith "No %s file found when generating an expect rule" e;
+  e
+
 (* Copied from Filename (stdlib) for pre-4.04 compatibility *)
 let chop_extension name =
   let is_dir_sep s i = match Sys.os_type with
@@ -55,8 +61,8 @@ let options_of_file file =
 let pp_options =
   Fmt.(list ~sep:(const string " ") string)
 
-(* Tests that the output of 'ocaml-mdx test [options] <file>' is equal to the
-   contents of '<file>'. Uses the rule generator build into ocaml-mdx. *)
+(** Tests that the output of 'ocaml-mdx test [options] <file>' is equal to the
+    contents of '<file>'. Uses the rule generator build into ocaml-mdx. *)
 let test_fixpoint_rule file =
   let options = options_of_file file in
   let command =
@@ -68,14 +74,10 @@ let test_fixpoint_rule file =
   | WEXITED i -> exit i
   | WSIGNALED _ | WSTOPPED _ -> exit 1
 
-(* Tests that the output of 'ocaml-mdx test [options] <file>' is equal to the
-   contents of '<file>.expected'. *)
+(** Tests that 'ocaml-mdx test [options] <file>' produces a '<file>.corrected'
+    file which is equal to '<file>.expected'. *)
 let test_expect_rule file =
-  let expected_file = file ^ ".expected" in
-  if not (Sys.file_exists expected_file) then
-    failwith (
-      Fmt.strf "No %s file found when generating an expect rule" expected_file
-    );
+  let expected_file = expected_file file in
   let options = options_of_file file in
   Fmt.pr
     {|
@@ -93,6 +95,29 @@ let test_expect_rule file =
     expected_file
     pp_options options
 
+(** Tests that 'ocaml-mdx test [options] <file>' exits with a failing code and
+    that its output is equal to '<file>.expected'. *)
+let test_failure_rule file =
+  let expected_file = expected_file file in
+  let options = options_of_file file in
+  let target_file = file ^ ".actual" in
+  Fmt.pr
+    {|
+(rule
+  (targets %s)
+  (action
+    (with-outputs-to %%{targets}
+      (system "! %%{bin:ocaml-mdx} test %a %%{dep:%s}"))))
+
+(alias
+  (name runtest)
+  (action
+    (diff %s %s)))
+|}
+    target_file
+    pp_options options file
+    expected_file target_file
+
 let rule_gen rule_type () =
   Sys.readdir "."
   |> Array.to_list
@@ -101,6 +126,7 @@ let rule_gen rule_type () =
   |> List.iter (match rule_type with
       | `Test_fixpoint -> test_fixpoint_rule
       | `Test_expect -> test_expect_rule
+      | `Test_failure -> test_failure_rule
     )
 
 open Cmdliner
@@ -108,7 +134,8 @@ open Cmdliner
 let cmds =
   Term.[
     const (rule_gen `Test_fixpoint) $ const (), info "test_fixpoint";
-    const (rule_gen `Test_expect) $ const (), info "test_expect"
+    const (rule_gen `Test_expect) $ const (), info "test_expect";
+    const (rule_gen `Test_failure) $ const (), info "test_failure";
   ]
 
 let default =
