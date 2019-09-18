@@ -102,7 +102,8 @@ let pp_prelude_str fmt s = Fmt.pf fmt "--prelude-str %S" s
 
 let add_opt e s = match e with None -> s | Some e -> String.Set.add e s
 
-let run () md_file section direction prelude prelude_str root =
+let run (`Setup ()) (`File md_file) (`Section section) (`Direction direction)
+    (`Prelude prelude) (`Prelude_str prelude_str) (`Root root) =
   let section = match section with
     | None   -> None
     | Some p -> Some (Re.Perl.compile_pat p)
