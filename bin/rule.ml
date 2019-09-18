@@ -20,6 +20,8 @@ let src = Logs.Src.create "cram.rule"
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
+let (>>-) x f = List.iter f x
+
 let prelude_file f =
   match String.cut ~sep:":" f with
   | None -> f
@@ -148,7 +150,7 @@ let run (`Setup ()) (`Files md_files) (`Section section) (`Direction direction)
     print_rule ~md_file ~prelude ~nd ~ml_files ~dirs ~root ~requires options;
     file_contents
   in
-  md_files |> List.iter (fun md_file ->
+  md_files >>- (fun md_file ->
       Mdx.run md_file ~f:(on_file md_file)
     );
   0

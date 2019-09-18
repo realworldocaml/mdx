@@ -24,6 +24,8 @@ module Log = (val Logs.src_log src : Logs.LOG)
 
 let (/) = Filename.concat
 
+let (>>-) x f = List.iter f x
+
 let prelude_env_and_file f =
   match String.cut ~sep:":" f with
   | None        -> None, f
@@ -116,7 +118,7 @@ let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
     | Some Cram -> pad + 2
     | _ -> pad
   in
-  List.iter (fun test ->
+  tests >>- (fun test ->
       let root = root_dir ?root t in
       let blacklist = Block.unset_variables t in
       let n = run_test ?root blacklist temp_file test in
@@ -127,14 +129,14 @@ let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
         else Output.merge output test.output
       in
       Cram.pp_command ~pad ppf test;
-      List.iter (function
+      output >>- (function
           | `Ellipsis    -> Output.pp ~pad ppf `Ellipsis
           | `Output line ->
             let line = ansi_color_strip line in
             Output.pp ~pad ppf (`Output line)
-        ) output;
+        );
       Cram.pp_exit_code ~pad ppf n;
-    ) tests;
+    );
   Block.pp_footer ?syntax ppf ()
 
 let eval_test t ?root c test =
@@ -167,7 +169,7 @@ let split_lines lines =
 
 let run_toplevel_tests ?root c ppf tests t =
   Block.pp_header ppf t;
-  List.iter (fun test ->
+  tests >>- (fun test ->
       let lines = lines (eval_test ?root t c test) in
       let lines = split_lines lines in
       let output =
@@ -177,13 +179,13 @@ let run_toplevel_tests ?root c ppf tests t =
       in
       let pad = test.hpad in
       Toplevel.pp_command ppf test;
-      List.iter (function
+      output >>- (function
           | `Ellipsis    -> Output.pp ~pad ppf `Ellipsis
           | `Output line ->
             let line = ansi_color_strip line in
             Output.pp ~pad ppf (`Output line)
-        ) output;
-    ) tests;
+        )
+    );
   Block.pp_footer ppf ()
 
 type file = { first: Mdx_top.Part.file; current: Mdx_top.Part.file }
@@ -288,31 +290,31 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
   let () = match prelude, prelude_str with
     | [], [] -> ()
     | [], fs ->
-      List.iter (fun p ->
+      fs >>- (fun p ->
           let env, f = prelude_env_and_file p in
           let eval () = eval_raw Block.empty ?root c ~line:0 [f] in
           match env with
           | None   -> eval ()
           | Some e -> Mdx_top.in_env e eval
-        ) fs
+        )
     | fs, [] ->
-      List.iter (fun p ->
+      fs >>- (fun p ->
           let env, f = prelude_env_and_file p in
           let eval () = eval_raw Block.empty ?root c ~line:0 (read_lines f) in
           match env with
           | None   -> eval ()
           | Some e -> Mdx_top.in_env e eval
-        ) fs
+        )
     | _ -> Fmt.failwith "only one of --prelude or --prelude-str shoud be used"
   in
 
-  files |> List.iter (fun file ->
+  files >>- (fun file ->
     Mdx.run ?syntax ~force_output file ~f:(fun file_contents items ->
         let temp_file = Filename.temp_file "ocaml-mdx" ".output" in
         at_exit (fun () -> Sys.remove temp_file);
         let buf = Buffer.create (String.length file_contents + 1024) in
         let ppf = Format.formatter_of_buffer buf in
-        List.iter (function
+        items >>- (function
             | Section _
             | Text _ as t -> Mdx.pp_line ?syntax ppf t
             | Block t ->
@@ -336,20 +338,20 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
                   | true, false, `Non_det `Output, Cram { tests; _ } ->
                     Block.pp ?syntax ppf t;
                     let blacklist = Block.unset_variables t in
-                    List.iter (fun t ->
+                    tests >>- (fun t ->
                         let _: int = run_test ?root blacklist temp_file t in ()
-                      ) tests
+                      )
                   | true, false, `Non_det `Output, Toplevel tests ->
                     assert (syntax <> Some Cram);
                     Block.pp ppf t;
-                    List.iter (fun test ->
+                    tests >>- (fun test ->
                         match eval_test t ?root c test with
                         | Ok _    -> ()
                         | Error e ->
                           let output = List.map output_from_line e in
                           if Output.equal test.output output then ()
                           else err_eval ~cmd:test.command e
-                      ) tests
+                      )
                   (* Run raw OCaml code *)
                   | true, _, _, OCaml ->
                     assert (syntax <> Some Cram);
@@ -371,7 +373,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
                     | None ->
                       run_toplevel_tests ?root c ppf tests t
                 )
-          ) items;
+          );
       Format.pp_print_flush ppf ();
       Buffer.contents buf
       )

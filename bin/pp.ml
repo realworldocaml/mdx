@@ -17,6 +17,8 @@
 let src = Logs.Src.create "cram.pp"
 module Log = (val Logs.src_log src : Logs.LOG)
 
+let (>>-) x f = List.iter f x
+
 let filter_by_section section lines =
   match section with
   | None -> lines
@@ -35,8 +37,8 @@ let run (`Setup ()) (`Files files) (`Section section) =
   match t with
   | [] -> 1
   | _  ->
-    List.iter (fun (file, blocks) ->
-        List.iter (function
+    t >>- (fun (file, blocks) ->
+        blocks >>- (function
           | Mdx.Section _ | Text _ -> ()
           | Block b ->
             let b = Mdx.Block.eval b in
@@ -52,8 +54,8 @@ let run (`Setup ()) (`Files files) (`Section section) =
                   pp_lines contents
               | _          -> ()
             )
-        ) blocks
-      ) t;
+        )
+      );
     0
 
 open Cmdliner
