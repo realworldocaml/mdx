@@ -3,3 +3,6 @@ only one of --prelude or --prelude-str shoud be used
 Error in block at line 4 in failures/part_not_found.md:
 Cannot find part "part1" in failures/empty.ml
 
+Error in block at line 4 in failures/ml_file_not_found.md:
+failures/not_found.ml: No such file or directory
+

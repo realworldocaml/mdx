@@ -163,6 +163,7 @@
    (progn
     (system "%{bin:ocaml-mdx} test --prelude=a --prelude-str=b %{dep:failures/empty.md} || echo")
     (system "%{bin:ocaml-mdx} test --direction=to-md %{dep:failures/part_not_found.md} || echo")
+    (system "%{bin:ocaml-mdx} test --direction=to-md %{dep:failures/ml_file_not_found.md} || echo")
    ))))
 
 (alias

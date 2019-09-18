@@ -199,10 +199,12 @@ let has_changed ~force_output { first; current } =
 let read_parts file =
   try Hashtbl.find files file
   with Not_found ->
-    let parts = Mdx_top.Part.read file in
-    let f = { first=parts; current=parts} in
-    Hashtbl.add files file f;
-    f
+    match Mdx_top.Part.read file with
+    | exception Sys_error msg -> failwith msg
+    | parts ->
+      let f = { first=parts; current=parts} in
+      Hashtbl.add files file f;
+      f
 
 let write_parts ~force_output file parts =
   let output_file = file ^ ".corrected" in
