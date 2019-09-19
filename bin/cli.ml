@@ -84,7 +84,7 @@ let direction =
              the .md file is the reference and updates the .ml and \
              the .md files accordingly. $(b,to-md) assumes the .ml \
              file is the reference and updates the .md file \
-             accordingly." in
+             accordingly. The default is $(b,to-md)." in
   let opt_names =
     [ "to-md", `To_md
     ; "to-ml", `To_ml ]
@@ -93,7 +93,7 @@ let direction =
   let docv = String.concat "|" (List.map fst opt_names) in
   let docv = "{" ^ docv ^ "}" in
   named (fun x -> `Direction x)
-    Arg.(value & opt (some (enum opt_names)) None & info names ~doc ~docv)
+    Arg.(value & opt (enum opt_names) `To_md & info names ~doc ~docv)
 
 let force_output =
   let doc = "Force generation of corrected file (even if there was no diff)" in

@@ -252,15 +252,6 @@ let update_file_or_block ?root ppf md_file ml_file block direction =
     | None   -> dir / ml_file
     | Some r -> r / dir / ml_file
   in
-  let direction =
-    match direction with
-    | Some `To_md -> `To_md
-    | Some `To_ml -> `To_ml
-    | None        ->
-        Fmt.failwith "This block must be synchronised with %s, \
-                      the --direction option must be provided."
-          ml_file
-  in
   match direction with
   | `To_md ->
      update_block_with_file ppf block ml_file (Block.part block)
