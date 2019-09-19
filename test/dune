@@ -31,18 +31,12 @@
     (run ocaml-mdx rule --direction=to-ml %{dep:dune_rules.md})
     (run ocaml-mdx rule %{dep:require/require-package.md})
     (run ocaml-mdx rule --syntax=cram %{dep:cram.t})
+    (run ocaml-mdx rule -s Testing %{dep:section.md})
    ))))
 
 (alias
  (name runtest)
  (action (diff dune.inc dune.inc.gen)))
-
-(alias
- (name   runtest)
- (deps   (:x section.md) (:y section.md.expected) (package mdx))
- (action (progn
-           (run ocaml-mdx test --force-output -s Testing %{x})
-           (diff? %{y} %{x}.corrected))))
 
 (alias
  (name   runtest)
