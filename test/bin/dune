@@ -86,7 +86,7 @@
  (name   runtest)
  (deps   (:x dir.md) (package mdx))
  (action (progn
-           (run ocaml-mdx test --root "../bin" %{x})
+           (run ocaml-mdx test --root "../../bin" %{x})
            (diff? %{x} %{x}.corrected))))
 
 (rule (copy dir.md dir2.md))
@@ -95,7 +95,7 @@
  (name   runtest)
  (deps   (:x dir2.md) (:y dir.md.expected) (package mdx))
  (action (progn
-           (run ocaml-mdx test --force-output --root=.. %{x})
+           (run ocaml-mdx test --force-output --root "../.." %{x})
            (diff? %{y} %{x}.corrected))))
 (alias
  (name   runtest)
