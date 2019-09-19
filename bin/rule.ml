@@ -91,6 +91,11 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
   pp "runtest" [];
   if nd then pp "runtest-all" ["--non-deterministic"]
 
+let options_of_syntax = function
+  | Some Mdx.Normal -> [ "--syntax=normal" ]
+  | Some Mdx.Cram -> [ "--syntax=cram" ]
+  | None -> []
+
 let pp_direction fmt = function
   | `To_md -> Fmt.pf fmt "--direction=to-md"
   | `To_ml -> Fmt.pf fmt "--direction=to-ml"
@@ -100,7 +105,7 @@ let pp_prelude_str fmt s = Fmt.pf fmt "--prelude-str %S" s
 
 let add_opt e s = match e with None -> s | Some e -> String.Set.add e s
 
-let run (`Setup ()) (`File md_file) (`Section section) (`Direction direction)
+let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direction direction)
     (`Prelude prelude) (`Prelude_str prelude_str) (`Root root) =
   let section = match section with
     | None   -> None
@@ -141,7 +146,8 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Direction direction)
     let options =
       List.map (Fmt.to_to_string pp_prelude) prelude @
       List.map (Fmt.to_to_string pp_prelude_str) prelude_str @
-      [Fmt.to_to_string pp_direction direction]
+      [Fmt.to_to_string pp_direction direction] @
+      options_of_syntax syntax
     in
     print_rule ~md_file ~prelude ~nd ~ml_files ~dirs ~root ~requires options;
     file_contents
@@ -154,6 +160,6 @@ open Cmdliner
 let cmd =
   let doc = "Produce dune rules to synchronize markdown and OCaml files." in
   Term.(pure run
-        $ Cli.setup $ Cli.file $ Cli.section $ Cli.direction
+        $ Cli.setup $ Cli.file $ Cli.section $ Cli.syntax $ Cli.direction
         $ Cli.prelude $ Cli.prelude_str $ Cli.root),
   Term.info "rule" ~doc
