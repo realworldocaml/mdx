@@ -30,8 +30,23 @@ let read_file filename =
     close_in chan;
     List.rev !lines
 
+(* Copied from Filename (stdlib) for pre-4.04 compatibility *)
+let chop_extension name =
+  let is_dir_sep s i = match Sys.os_type with
+    | "Unix" -> s.[i] = '/'
+    | "Win32" | "Cygwin" ->
+      let c = s.[i] in
+      c = '/' || c = '\\' || c = ':'
+    | _ -> assert false
+  in
+  let rec search_dot i =
+    if i < 0 || is_dir_sep name i then invalid_arg "Filename.chop_extension"
+    else if name.[i] = '.' then String.sub name 0 i
+    else search_dot (i - 1) in
+  search_dot (String.length name - 1)
+
 let options_of_file file =
-  let options_file = (Filename.remove_extension file) ^ ".opts" in
+  let options_file = chop_extension file ^ ".opts" in
   if not (Sys.file_exists options_file) then
     [""]
   else
