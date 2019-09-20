@@ -84,19 +84,16 @@ let direction =
              the .md file is the reference and updates the .ml and \
              the .md files accordingly. $(b,to-md) assumes the .ml \
              file is the reference and updates the .md file \
-             accordingly. $(b,infer-timestamp) uses the files last \
-             modification timestamps to determine the reference file \
-             and updates the least recent files." in
+             accordingly. The default is $(b,to-md)." in
   let opt_names =
-    [ "infer-timestamp", `Infer_timestamp
-    ; "to-md", `To_md
+    [ "to-md", `To_md
     ; "to-ml", `To_ml ]
   in
   let names = ["direction"] in
   let docv = String.concat "|" (List.map fst opt_names) in
   let docv = "{" ^ docv ^ "}" in
   named (fun x -> `Direction x)
-    Arg.(value & opt (enum opt_names) `Infer_timestamp & info names ~doc ~docv)
+    Arg.(value & opt (enum opt_names) `To_md & info names ~doc ~docv)
 
 let force_output =
   let doc = "Force generation of corrected file (even if there was no diff)" in

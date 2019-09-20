@@ -20,7 +20,7 @@ val prelude_str: [> `Prelude_str of string list ] t
 
 val root: [> `Root of string option ] t
 
-val direction: [> `Direction of [ `Infer_timestamp | `To_md | `To_ml ] ] t
+val direction: [> `Direction of [ `To_md | `To_ml ] ] t
 
 val force_output: [> `Force_output of bool ] t
 

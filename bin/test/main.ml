@@ -252,16 +252,6 @@ let update_file_or_block ?root ppf md_file ml_file block direction =
     | None   -> dir / ml_file
     | Some r -> r / dir / ml_file
   in
-  let direction =
-    match direction with
-    | `To_md -> `To_md
-    | `To_ml -> `To_ml
-    | `Infer_timestamp ->
-       let md_file_mtime = (Unix.stat md_file).st_mtime in
-       let ml_file_mtime = (Unix.stat ml_file).st_mtime in
-       if ml_file_mtime < md_file_mtime then `To_ml
-       else `To_md
-  in
   match direction with
   | `To_md ->
      update_block_with_file ppf block ml_file (Block.part block)
