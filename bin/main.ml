@@ -28,7 +28,7 @@ let main =
 
 let main () = Term.(exit_status @@ eval_choice main cmds)
 
-let main () = 
+let main () =
   if String.compare (Sys.argv).(0) "mdx" == 0
   then
     Format.eprintf

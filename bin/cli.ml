@@ -25,10 +25,10 @@ let syntax =
   named (fun x -> `Syntax x)
     Arg.(value & opt (some syntax) None & info ["syntax"] ~doc ~docv:"SYNTAX")
 
-let file =
-  let doc = "The file to use." in
-  named (fun x -> `File x)
-    Arg.(required & pos 0 (some string) None & info [] ~doc ~docv:"FILE")
+let files =
+  let doc = "The files to use." in
+  named (fun x -> `Files x)
+    Arg.(non_empty & pos_all string [] & info [] ~doc ~docv:"FILES")
 
 let section =
   let doc =

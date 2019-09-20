@@ -4,7 +4,7 @@ val non_deterministic: [> `Non_deterministic of bool ] t
 
 val syntax: [> `Syntax of Mdx.syntax option ] t
 
-val file: [> `File of string ] t
+val files: [> `Files of string list ] t
 
 val section: [> `Section of string option ] t
 
