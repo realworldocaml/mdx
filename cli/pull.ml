@@ -65,13 +65,13 @@ let mark_duniverse_content_as_vendored ~duniverse_dir =
   Logs.debug (fun l -> l "Successfully wrote %a" Styled_pp.path dune_file);
   Ok ()
 
-let pull ~duniverse_dir src_dep =
+let pull ~duniverse_dir ~cache src_dep =
   let open Result.O in
   let open Duniverse.Deps.Source in
   let { dir; upstream; ref = { Git.Ref.t = ref; commit }; _ } = src_dep in
   let output_dir = Fpath.(duniverse_dir / dir) in
   Bos.OS.Dir.delete ~recurse:true output_dir >>= fun () ->
-  Cache.clone_to ~output_dir ~remote:upstream ~ref ~commit ()
+  Cloner.clone_to ~output_dir ~remote:upstream ~ref ~commit cache
   |> Rresult.R.reword_error (fun (`Msg _) -> `Commit_is_gone dir)
   >>= fun cached ->
   Common.Logs.app (fun l ->
@@ -92,9 +92,9 @@ let report_commit_is_gone_repos repos =
   Common.Logs.app (fun l ->
       l "You should run 'duniverse update' to fix the commits associated with the tracked refs" )
 
-let pull_source_dependencies ~duniverse_dir src_deps =
+let pull_source_dependencies ~duniverse_dir ~cache src_deps =
   let open Result.O in
-  Parallel.map ~f:(pull ~duniverse_dir) src_deps
+  Parallel.map ~f:(pull ~duniverse_dir ~cache) src_deps
   |> Result.List.fold_left ~init:[] ~f:(fun acc res ->
          match res with
          | Ok () -> Ok acc
@@ -123,7 +123,7 @@ let run (`Yes yes) (`Repo repo) () =
       let duniverse_dir = Fpath.(repo // Config.vendor_dir) in
       Bos.OS.Dir.create duniverse_dir >>= fun _created ->
       mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
-      pull_source_dependencies ~duniverse_dir duniverse
+      Cloner.get_cache () >>= fun cache -> pull_source_dependencies ~duniverse_dir ~cache duniverse
 
 let info =
   let open Cmdliner in
