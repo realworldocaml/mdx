@@ -55,7 +55,8 @@ let git_commit_branch_exists_or_create ~repo ~ref ~branch ~commit ~commit_branch
     git_branch_exists_or_create ~repo ~ref ~branch >>= fun cached ->
     Exec.git_branch ~repo ~ref:commit ~branch_name:commit_branch >>| fun () -> cached
 
-(** Check if a remote with a given tag exists in the cache as a branch, and clone to cache if it doesn't exist *)
+(** Check if a remote with a given tag exists in the cache as a branch, and clone to cache if it
+    doesn't exist *)
 let check_package_cache_branch ~repo ~ref ~commit () =
   let commit_branch = commit_branch_name ~commit in
   let branch = cache_branch_name ~ref in
