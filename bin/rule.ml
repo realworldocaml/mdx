@@ -39,7 +39,7 @@ let pp_action fmt = function
   | `Diff_corrected var -> Fmt.pf fmt "(diff? %%{%s} %%{%s}.corrected)" var var
   | `Run args -> Fmt.pf fmt "(run @[<hov 2>%a@])" Fmt.(list ~sep:sp string) args
 
-let pp_rules ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires
+let pp_rules ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~packages
     fmt options =
   let ml_files = List.map (prepend_root root) (String.Set.elements ml_files) in
   let dirs = match root with
@@ -61,7 +61,7 @@ let pp_rules ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires
   let root = match root with None -> [] | Some r -> ["--root=" ^ r] in
   let deps =
     let packages =
-      List.map (fun p -> `Package p) (String.Set.elements requires)
+      List.map (fun p -> `Package p) (String.Set.elements packages)
     and ml_files =
       List.map2 (fun name p -> `Named (name, p)) var_names ml_files
     and dirs = List.map (fun p -> `Source_tree p) dirs
@@ -137,7 +137,7 @@ let pp_prelude_str fmt s = Fmt.pf fmt "--prelude-str %S" s
 let add_opt e s = match e with None -> s | Some e -> String.Set.add e s
 
 let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direction direction)
-    (`Prelude prelude) (`Prelude_str prelude_str) (`Root root) =
+    (`Prelude prelude) (`Prelude_str prelude_str) (`Root root) (`Duniverse_mode _) =
   let active =
     let section = match section with
       | None   -> None
@@ -152,10 +152,10 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direct
   let on_item acc = function
     | Mdx.Section _ | Text _ -> acc
     | Block b when active b ->
-      let files, dirs, nd, requires = acc in
-      let requires =
+      let files, dirs, nd, packages = acc in
+      let packages =
         Mdx.Block.required_packages b
-        |> List.fold_left (fun s e -> String.Set.add e s) requires
+        |> List.fold_left (fun s e -> String.Set.add e s) packages
       in
       let nd = nd || match Mdx.Block.mode b with
         | `Non_det _ -> true
@@ -168,11 +168,11 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direct
         |> String.Set.union source_trees
       in
       let files = add_opt (Mdx.Block.file b) files in
-      files, dirs, nd, requires
+      files, dirs, nd, packages
     | Block _ -> acc
   in
   let on_file file_contents items =
-    let ml_files, dirs, nd, requires =
+    let ml_files, dirs, nd, packages =
       let empty = String.Set.empty in
       List.fold_left on_item (empty, empty, false, empty) items
     in
@@ -184,7 +184,7 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direct
       options_of_section section
     in
     let pp_rules fmt () =
-      pp_rules ~md_file ~prelude ~nd ~ml_files ~dirs ~root ~requires fmt options
+      pp_rules ~md_file ~prelude ~nd ~ml_files ~dirs ~root ~packages fmt options
     in
     print_format_dune_rules pp_rules;
     file_contents
@@ -194,9 +194,17 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direct
 
 open Cmdliner
 
+let duniverse_mode =
+  let doc =
+    "Run mdx in a duniverse-compatible mode. \
+     Expect all toplevel dependencies to be available in your duniverse folder."
+  in
+  Cli.named (fun x -> `Duniverse_mode x)
+    Arg.(value & flag & info ["duniverse-mode"] ~doc)
+
 let cmd =
   let doc = "Produce dune rules to synchronize markdown and OCaml files." in
   Term.(pure run
         $ Cli.setup $ Cli.file $ Cli.section $ Cli.syntax $ Cli.direction
-        $ Cli.prelude $ Cli.prelude_str $ Cli.root),
+        $ Cli.prelude $ Cli.prelude_str $ Cli.root $ duniverse_mode),
   Term.info "rule" ~doc
