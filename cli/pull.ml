@@ -74,10 +74,8 @@ let pull ~duniverse_dir src_dep =
   Cache.clone_to ~output_dir ~remote:upstream ~ref ~commit ()
   |> Rresult.R.reword_error (fun (`Msg _) -> `Commit_is_gone dir)
   >>= fun cached ->
-  if cached then
-    Common.Logs.app (fun l ->
-        l "Pulled sources for %a. %a" Styled_pp.path output_dir Styled_pp.cached () )
-  else Common.Logs.app (fun l -> l "Pulled sources for %a." Styled_pp.path output_dir);
+  Common.Logs.app (fun l ->
+      l "Pulled sources for %a.%a" Styled_pp.path output_dir Styled_pp.cached cached );
   Bos.OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
   Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
 

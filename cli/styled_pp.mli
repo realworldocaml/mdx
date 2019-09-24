@@ -18,4 +18,8 @@ val good : 'a Fmt.t -> 'a Fmt.t
 
 val bad : 'a Fmt.t -> 'a Fmt.t
 
-val cached : unit Fmt.t
+val cached : bool Fmt.t
+(** [cached fmt c] formats [" [CACHED]"] if [c] is [true] and formats nothing
+    otherwise.
+    You should use this to format suffixes of logs that described actions that
+    can be cached. *)

@@ -18,4 +18,5 @@ let good pp = Fmt.(styled `Green pp)
 
 let bad pp = Fmt.(styled `Red pp)
 
-let cached = Fmt.(styled `Green (const string "[CACHED]"))
+let cached fmt cached =
+  if cached then Fmt.(styled `Green (const string " [CACHED]")) fmt () else ()
