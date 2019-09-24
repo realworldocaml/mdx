@@ -9,11 +9,11 @@ let commit_branch_name ~commit = "commit-" ^ commit
 let cache_branch_name ~ref = "branch-" ^ ref
 
 let home () =
-  try Sys.getenv "HOME"
-  with Not_found -> (
-    try (Unix.getpwuid (Unix.getuid ())).Unix.pw_dir
-    with Unix.Unix_error _ | Not_found ->
-      if Sys.win32 then try Sys.getenv "AppData" with Not_found -> "" else "" )
+  let windows () = try Sys.getenv "AppData" with Not_found -> "" in
+  let unix () =
+    try (Unix.getpwuid (Unix.getuid ())).Unix.pw_dir with Unix.Unix_error _ | Not_found -> ""
+  in
+  try Sys.getenv "HOME" with Not_found -> if Sys.win32 then windows () else unix ()
 
 (** Check if the cache repository is initialized and if not, initialize it *)
 let check_duniverse_cache_directory ~repo ~remote =
