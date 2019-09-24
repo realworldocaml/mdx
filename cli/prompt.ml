@@ -1,7 +1,7 @@
 let ask f =
   Logs.app (fun l ->
       f (fun ?header ?tags fmt ->
-          l ?header ?tags ("%a" ^^ fmt ^^ " [Y/n]") Styled_pp.question_header () ) )
+          l ?header ?tags ("%a" ^^ fmt ^^ " [Y/n]") Duniverse_lib.Styled_pp.question_header () ) )
 
 let confirm ~question ~yes =
   let rec loop () =

@@ -8,7 +8,7 @@ val branch : string Fmt.t
 
 val commit : string Fmt.t
 
-val package : Duniverse_lib.Types.Opam.package Fmt.t
+val package : Types.Opam.package Fmt.t
 
 val package_name : string Fmt.t
 

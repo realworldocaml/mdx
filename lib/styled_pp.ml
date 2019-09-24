@@ -8,7 +8,7 @@ let branch = Fmt.(styled `Cyan string)
 
 let commit = branch
 
-let package = Fmt.(styled `Yellow Duniverse_lib.Types.Opam.pp_package)
+let package = Fmt.(styled `Yellow Types.Opam.pp_package)
 
 let package_name = Fmt.(styled `Yellow string)
 

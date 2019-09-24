@@ -42,5 +42,6 @@ end
 module Logs = struct
   let app ?src f =
     Logs.app ?src (fun l ->
-        f (fun ?header ?tags fmt -> l ?header ?tags ("%a" ^^ fmt) Styled_pp.header ()) )
+        f (fun ?header ?tags fmt -> l ?header ?tags ("%a" ^^ fmt) Duniverse_lib.Styled_pp.header ())
+    )
 end
