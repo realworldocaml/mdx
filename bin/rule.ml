@@ -43,12 +43,8 @@ let pp_action fmt = function
 let pp_locks_field fmt dirs_and_files =
   match dirs_and_files with
   | [] -> ()
-  | [lock] ->
-    Fmt.pf fmt " (locks %s)\n" lock
-  | l ->
-    let sep = Fmt.(const string "\n   ") in
-    Fmt.(list ~sep string) fmt (" (locks"::l);
-    Fmt.pf fmt ")\n"
+  | locks ->
+    Fmt.pf fmt " (locks @[%a@])\n" Fmt.(list ~sep:(unit "@\n") string) locks
 
 let pp_rules ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~packages ~locks
     fmt options =
