@@ -214,10 +214,16 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direct
   let on_file file_contents items =
     let empty = String.Set.empty in
     let req_res =
-      requires_from_prelude prelude >>= fun prelude_requires ->
-      requires_from_prelude_str prelude_str >>= fun prelude_str_requires ->
-      let requires = String.Set.union prelude_requires prelude_str_requires in
-      Mdx.Util.Result.List.fold ~f:on_item ~init:(empty, empty, false, requires) items
+      let packages =
+        if duniverse_mode then
+          requires_from_prelude prelude >>= fun prelude_requires ->
+          requires_from_prelude_str prelude_str >>= fun prelude_str_requires ->
+          Ok (String.Set.union prelude_requires prelude_str_requires)
+        else
+          Ok String.Set.empty
+      in
+      packages >>= fun packages ->
+      Mdx.Util.Result.List.fold ~f:on_item ~init:(empty, empty, false, packages) items
     in
     match req_res with
     | Error s ->
