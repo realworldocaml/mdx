@@ -57,9 +57,6 @@ val git_merge :
 val git_resolve : remote:string -> ref:Git.Ref.t -> (Git.Ref.resolved, Rresult.R.msg) result
 (** [git_resolve ~remote ~ref] runs git ls-remote to resolve the given ref to a commit hash *)
 
-val git_resolve_local : repo:Fpath.t -> ref:Git.Ref.t -> (Git.Ref.resolved, Rresult.R.msg) result
-(** [git_resolve ~remote ~ref] runs git ls-remote to resolve the given ref to a commit hash *)
-
 val git_branch :
   repo:Fpath.t -> ref:Git.Ref.t -> branch_name:string -> (unit, [> Rresult.R.msg ]) result
 

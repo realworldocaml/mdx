@@ -15,9 +15,7 @@ let update ~total ~updated src_dep =
   let open Result.O in
   let ref : Duniverse.resolved = src_dep.Duniverse.Deps.Source.ref in
   incr total;
-  Cache.update ~remote:src_dep.upstream ~ref:ref.t ()
-  >>= Cache.resolve ~remote:src_dep.upstream ~ref:ref.t
-  >>= fun new_ref ->
+  Exec.git_resolve ~remote:src_dep.upstream ~ref:ref.t >>= fun new_ref ->
   if not (String.equal ref.commit new_ref.commit) then incr updated;
   debug_update ~src_dep ~new_ref;
   Ok { src_dep with ref = new_ref }

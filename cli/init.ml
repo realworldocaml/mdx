@@ -31,7 +31,7 @@ let compute_deps ~opam_entries =
   Duniverse.Deps.from_opam_entries ~get_default_branch opam_entries
 
 let resolve_ref deps =
-  let resolve_ref ~upstream ~ref = Cache.resolve ~remote:upstream ~ref () in
+  let resolve_ref ~upstream ~ref = Exec.git_resolve ~remote:upstream ~ref in
   Duniverse.Deps.resolve ~resolve_ref deps
 
 let run (`Repo repo) (`Branch branch) (`Explicit_root_packages explicit_root_packages)

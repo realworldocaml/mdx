@@ -72,18 +72,3 @@ let clone_from_cache ~output_dir ~repo (cache_branch_name, cached) =
 let clone_to ~output_dir ~remote ~ref ~commit () =
   get_cache_directory ~remote () >>= fun repo ->
   check_package_cache_branch ~repo ~ref ~commit () >>= clone_from_cache ~output_dir ~repo
-
-let update ~remote ~ref () =
-  get_cache_directory ~remote () >>= fun repo ->
-  let branch = cache_branch_name ~ref in
-  Exec.git_fetch_to ~repo ~remote_name:"origin" ~ref ~branch ~force:true ()
-
-let resolve ~remote ~ref () =
-  get_cache_directory ~remote () >>= fun repo ->
-  let branch = cache_branch_name ~ref in
-  (* Try to resolve locally *)
-  match Exec.git_resolve_local ~repo ~ref:branch with
-  | Ok { commit; _ } -> Ok { Git.Ref.t = ref; commit } (* Translate back the ref. *)
-  | Error _ -> Exec.git_resolve ~remote ~ref
-
-(* Resolve from upstream. *)

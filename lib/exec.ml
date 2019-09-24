@@ -127,15 +127,6 @@ let git_resolve ~remote ~ref =
         remote
   | Error (`Msg _) as err -> err
 
-let git_resolve_local ~repo ~ref =
-  run_and_log_l Cmd.(v "git" % "-C" % p repo % "show-ref" % ref) >>= fun output ->
-  match Git.Ls_remote.commit_pointed_by ~ref output with
-  | Ok commit -> Ok { Git.Ref.t = ref; commit }
-  | Error `No_such_ref -> Rresult.R.error_msgf "No %a ref for in the cache." Git.Ref.pp ref
-  | Error `Multiple_such_refs ->
-      Rresult.R.error_msgf "Multiple refs share the name %a in the cache." Git.Ref.pp ref
-  | Error (`Msg _) as err -> err
-
 let git_branch ~repo ~ref ~branch_name =
   run_git ~ignore_error:false ~repo Cmd.(v "branch" % branch_name % ref)
 
