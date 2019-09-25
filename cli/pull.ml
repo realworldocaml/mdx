@@ -111,7 +111,9 @@ let pull_source_dependencies ~duniverse_dir ~cache src_deps =
       report_commit_is_gone_repos commit_is_gone_repos;
       Error (`Msg "Could not pull all the source dependencies")
 
-let run (`Yes yes) (`Repo repo) () =
+let get_cache ~no_cache = if no_cache then Ok Cloner.no_cache else Cloner.get_cache ()
+
+let run (`Yes yes) (`No_cache no_cache) (`Repo repo) () =
   let open Result.O in
   let duniverse_file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.load ~file:duniverse_file >>= function
@@ -123,7 +125,11 @@ let run (`Yes yes) (`Repo repo) () =
       let duniverse_dir = Fpath.(repo // Config.vendor_dir) in
       Bos.OS.Dir.create duniverse_dir >>= fun _created ->
       mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
-      Cloner.get_cache () >>= fun cache -> pull_source_dependencies ~duniverse_dir ~cache duniverse
+      get_cache ~no_cache >>= fun cache -> pull_source_dependencies ~duniverse_dir ~cache duniverse
+
+let no_cache =
+  let doc = "Run without using the duniverse global cache" in
+  Common.Arg.named (fun x -> `No_cache x) Cmdliner.Arg.(value & flag & info ~doc [ "no-cache" ])
 
 let info =
   let open Cmdliner in
@@ -141,6 +147,6 @@ let info =
 
 let term =
   Cmdliner.Term.(
-    term_result (const run $ Common.Arg.yes $ Common.Arg.repo $ Common.Arg.setup_logs ()))
+    term_result (const run $ Common.Arg.yes $ no_cache $ Common.Arg.repo $ Common.Arg.setup_logs ()))
 
 let cmd = (term, info)
