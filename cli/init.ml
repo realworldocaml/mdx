@@ -34,7 +34,8 @@ let resolve_ref deps =
   let resolve_ref ~upstream ~ref = Exec.git_resolve ~remote:upstream ~ref in
   Duniverse.Deps.resolve ~resolve_ref deps
 
-let run repo branch explicit_root_packages excludes pins overlay remotes () =
+let run (`Repo repo) (`Branch branch) (`Explicit_root_packages explicit_root_packages)
+    (`Excludes excludes) (`Pins pins) (`Overlay overlay) (`Remotes remotes) () =
   let open Rresult.R.Infix in
   Common.Logs.app (fun l -> l "Calculating Duniverse on the %a branch" Styled_pp.branch branch);
   Opam_cmd.find_local_opam_packages repo >>= fun local_packages ->
@@ -67,14 +68,18 @@ let branch =
   let doc =
     "Branch that represents the working tree of the source code. Defaults to $(i,master)"
   in
-  Cmdliner.Arg.(value & opt string "master" & info [ "b" ] ~docv:"BRANCH" ~doc)
+  Common.Arg.named
+    (fun x -> `Branch x)
+    Cmdliner.Arg.(value & opt string "master" & info [ "b" ] ~docv:"BRANCH" ~doc)
 
 let explicit_root_packages =
   let doc =
     "opam packages to calculate duniverse for. If not supplied, any local opam metadata files are \
      used as the default package list."
   in
-  Arg.(value & pos_all string [] & info [] ~doc ~docv:"PACKAGES")
+  Common.Arg.named
+    (fun x -> `Explicit_root_packages x)
+    Arg.(value & pos_all string [] & info [] ~doc ~docv:"PACKAGES")
 
 let excludes =
   let doc =
@@ -82,17 +87,21 @@ let excludes =
      they are not duplicated in the vendor directory.  Repeat this flag multiple times for more \
      than one exclusion."
   in
-  Arg.(value & opt_all string [] & info [ "exclude"; "x" ] ~docv:"EXCLUDE" ~doc)
+  Common.Arg.named
+    (fun x -> `Excludes x)
+    Arg.(value & opt_all string [] & info [ "exclude"; "x" ] ~docv:"EXCLUDE" ~doc)
 
 let overlay =
   let doc =
     "URL or path to the Duniverse opam overlays remote that has overrides for packages that have \
      not yet been ported to Dune upstream."
   in
-  Arg.(
-    value
-    & opt string Config.duniverse_overlays_repo
-    & info [ "overlay-remote" ] ~docv:"OPAM_REMOTE" ~doc)
+  Common.Arg.named
+    (fun x -> `Overlay x)
+    Arg.(
+      value
+      & opt string Config.duniverse_overlays_repo
+      & info [ "overlay-remote" ] ~docv:"OPAM_REMOTE" ~doc)
 
 let pins =
   let open Types.Opam in
@@ -118,14 +127,18 @@ let pins =
     | Some url, Some tag -> Fmt.(pf ppf "%s,%s,%s" pin url tag)
   in
   let t = Arg.conv ~docv:"PIN" (fin, fout) in
-  Arg.(value & opt_all t [] & info [ "pin"; "p" ] ~docv:"PIN" ~doc)
+  Common.Arg.named
+    (fun x -> `Pins x)
+    Arg.(value & opt_all t [] & info [ "pin"; "p" ] ~docv:"PIN" ~doc)
 
 let remotes =
   let doc =
     "Extra opam remotes to add when resolving package names. Repeat this flag multiple times for \
      more than one remote."
   in
-  Arg.(value & opt_all string [] & info [ "opam-remote" ] ~docv:"OPAM_REMOTE" ~doc)
+  Common.Arg.named
+    (fun x -> `Remotes x)
+    Arg.(value & opt_all string [] & info [ "opam-remote" ] ~docv:"OPAM_REMOTE" ~doc)
 
 let info =
   let exits = Term.default_exits in

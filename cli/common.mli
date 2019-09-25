@@ -5,13 +5,18 @@ module Logs : sig
 end
 
 module Arg : sig
+  val named : ('a -> 'b) -> 'a Cmdliner.Term.t -> 'b Cmdliner.Term.t
+  (** Use this to wrap your arguments in a polymorphic variant constructor to avoid
+      confusion when they are later passed to your main function.
+      Example: [named (fun x -> `My_arg x] Arg.(value ...)] *)
+
   val fpath : Fpath.t Cmdliner.Arg.converter
 
-  val repo : Fpath.t Cmdliner.Term.t
+  val repo : [ `Repo of Fpath.t ] Cmdliner.Term.t
   (** CLI option to specify the root directory of the project. Used to find root packages,
       duniverse files and directories. Defaults to the current directory. *)
 
-  val yes : bool Cmdliner.Term.t
+  val yes : [ `Yes of bool ] Cmdliner.Term.t
   (** CLI flag to skip any prompt and perform actions straight away. The value of this flag
       must be passed to [Prompt.confirm]. *)
 

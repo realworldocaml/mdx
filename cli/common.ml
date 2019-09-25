@@ -1,13 +1,18 @@
 module Arg = struct
+  let named f = Cmdliner.Term.(app (const f))
+
   let fpath = Cmdliner.Arg.conv ~docv:"PATH" (Fpath.of_string, Fpath.pp)
 
   let repo =
     let doc = "Path to Git repository to store vendored code in." in
-    Cmdliner.Arg.(value & opt fpath (Fpath.v ".") & info [ "r"; "repo" ] ~docv:"TARGET_REPO" ~doc)
+    named
+      (fun x -> `Repo x)
+      Cmdliner.Arg.(
+        value & opt fpath (Fpath.v ".") & info [ "r"; "repo" ] ~docv:"TARGET_REPO" ~doc)
 
   let yes =
     let doc = "Do not prompt for confirmation and always assume yes" in
-    Cmdliner.Arg.(value & flag & info [ "y"; "yes" ] ~doc)
+    named (fun x -> `Yes x) Cmdliner.Arg.(value & flag & info [ "y"; "yes" ] ~doc)
 
   let thread_safe_reporter reporter =
     let lock = Mutex.create () in

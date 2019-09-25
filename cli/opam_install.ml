@@ -1,8 +1,4 @@
-let run yes repo () = Duniverse_lib.Opam_cmd.install_incompatible_packages yes repo
-
-let yes =
-  let doc = "Answer yes to all yes/no questions without prompting." in
-  Cmdliner.Arg.(value & flag & info [ "yes"; "y" ] ~doc)
+let run (`Yes yes) (`Repo repo) () = Duniverse_lib.Opam_cmd.install_incompatible_packages yes repo
 
 let info =
   let open Cmdliner in
@@ -19,6 +15,7 @@ let info =
   Term.info "opam-install" ~doc ~exits ~man
 
 let term =
-  Cmdliner.Term.(term_result (const run $ yes $ Common.Arg.repo $ Common.Arg.setup_logs ()))
+  Cmdliner.Term.(
+    term_result (const run $ Common.Arg.yes $ Common.Arg.repo $ Common.Arg.setup_logs ()))
 
 let cmd = (term, info)
