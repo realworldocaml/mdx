@@ -139,7 +139,7 @@ let git_fetch_to ~repo ~remote_name ~ref ~branch ?(force = false) () =
   run_git ~repo Cmd.(v "fetch" % remote_name % ref) >>= fun () ->
   run_git ~repo Cmd.(v "branch" %% on force (v "-f") % branch % "FETCH_HEAD")
 
-let git_init_bare ~repo = run_git ~repo Cmd.(v "init" % "--bare" % p repo)
+let git_init_bare ~repo = run_and_log Cmd.(v "git" % "init" % "--bare" % p repo)
 
 let git_clone ~branch ~remote ~output_dir =
   run_and_log
