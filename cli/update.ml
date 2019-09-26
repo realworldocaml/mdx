@@ -20,7 +20,7 @@ let update ~total ~updated src_dep =
   debug_update ~src_dep ~new_ref;
   Ok { src_dep with ref = new_ref }
 
-let run repo () =
+let run (`Repo repo) () =
   let open Result.O in
   let duniverse_file = Fpath.(repo // Config.duniverse_file) in
   Common.Logs.app (fun l ->

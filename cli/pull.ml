@@ -124,7 +124,7 @@ let pull_source_dependencies ~duniverse_dir src_deps =
       report_commit_is_gone_repos commit_is_gone_repos;
       Error (`Msg "Could not pull all the source dependencies")
 
-let run yes repo () =
+let run (`Yes yes) (`Repo repo) () =
   let open Result.O in
   let duniverse_file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.load ~file:duniverse_file >>= function
