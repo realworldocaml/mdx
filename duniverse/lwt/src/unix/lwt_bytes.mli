@@ -124,10 +124,16 @@ type io_vector = {
 val io_vector : buffer : t -> offset : int -> length : int -> io_vector
 
 val recv_msg : socket : Lwt_unix.file_descr -> io_vectors : io_vector list -> (int * Unix.file_descr list) Lwt.t
-(** Not implemented on Windows. *)
+  [@@ocaml.deprecated " Use Lwt_unix.Versioned.recv_msg_2."]
+(** Not implemented on Windows.
+
+    @deprecated Use {!Lwt_unix.Versioned.recv_msg_2}. *)
 
 val send_msg : socket : Lwt_unix.file_descr -> io_vectors : io_vector list -> fds : Unix.file_descr list -> int Lwt.t
-(** Not implemented on Windows. *)
+  [@@ocaml.deprecated " Use Lwt_unix.Versioned.send_msg_2."]
+(** Not implemented on Windows.
+
+    @deprecated Use {!Lwt_unix.Versioned.send_msg_2}. *)
 
 (** {2 Memory mapped files} *)
 
@@ -148,6 +154,10 @@ type advice =
   | MADV_SEQUENTIAL
   | MADV_WILLNEED
   | MADV_DONTNEED
+  | MADV_MERGEABLE
+  | MADV_UNMERGEABLE
+  | MADV_HUGEPAGE
+  | MADV_NOHUGEPAGE
 
 val madvise : t -> int -> int -> advice -> unit
   (** [madvise buffer pos len advice] advises the kernel how the

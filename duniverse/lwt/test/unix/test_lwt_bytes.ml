@@ -66,8 +66,14 @@ let gen_buf n =
  * The main purposes of those functions are not tested.
  * *)
 
+let file_suffix =
+  let last_file_suffix = ref 0 in
+  fun () ->
+    incr last_file_suffix;
+    !last_file_suffix
+
 let test_mincore buff_len offset n_states =
-  let test_file = "bytes_mincore_write" in
+  let test_file = Printf.sprintf "bytes_mincore_write_%i" (file_suffix ()) in
   Lwt_unix.openfile test_file [O_RDWR;O_TRUNC; O_CREAT] 0o666
   >>= fun fd ->
   let buf_write = gen_buf buff_len in
@@ -84,7 +90,7 @@ let test_mincore buff_len offset n_states =
   Lwt.return ()
 
 let test_wait_mincore buff_len offset =
-  let test_file = "bytes_mincore_write" in
+  let test_file = Printf.sprintf "bytes_mincore_write_%i" (file_suffix ()) in
   Lwt_unix.openfile test_file [O_RDWR;O_TRUNC; O_CREAT] 0o666
   >>= fun fd ->
   let buf_write = gen_buf buff_len in
@@ -685,7 +691,7 @@ let suite = suite "lwt_bytes" [
       let offset = 0 in
       let io_vectors = [Lwt_bytes.io_vector ~buffer ~offset ~length:6] in
       let server_logic socket =
-        Lwt_bytes.recv_msg ~socket ~io_vectors
+        (Lwt_bytes.recv_msg [@ocaml.warning "-3"]) ~socket ~io_vectors
       in
       let client_logic socket sockaddr =
         let message = Lwt_bytes.of_string "abcdefghij" in
@@ -702,14 +708,14 @@ let suite = suite "lwt_bytes" [
       let offset = 0 in
       let server_logic socket =
         let io_vectors = [Lwt_bytes.io_vector ~buffer ~offset ~length:6] in
-        Lwt_bytes.recv_msg ~socket ~io_vectors
+        (Lwt_bytes.recv_msg [@ocaml.warning "-3"]) ~socket ~io_vectors
       in
       let client_logic socket sockaddr =
         Lwt_unix.connect socket sockaddr
         >>= fun () ->
         let message = Lwt_bytes.of_string "abcdefghij" in
         let io_vectors = [Lwt_bytes.io_vector ~buffer:message ~offset ~length:9] in
-        Lwt_bytes.send_msg ~socket ~io_vectors ~fds:[]
+        (Lwt_bytes.send_msg [@ocaml.warning "-3"]) ~socket ~io_vectors ~fds:[]
       in
       udp_server_client_exchange server_logic client_logic
       >>= fun () ->

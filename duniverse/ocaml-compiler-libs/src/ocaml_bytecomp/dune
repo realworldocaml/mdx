@@ -8,7 +8,7 @@
 (rule
  (targets ocaml_bytecomp.ml)
  (deps
-  (:< ../gen/gen.exe))
+  (:first_dep ../gen/gen.exe))
  (action
-  (run %{<} -archive %{ocaml_where}/compiler-libs/ocamlbytecomp.cma -o
+  (run %{first_dep} -archive %{ocaml_where}/compiler-libs/ocamlbytecomp.cma -o
     %{targets})))

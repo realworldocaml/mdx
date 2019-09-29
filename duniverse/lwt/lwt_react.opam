@@ -13,13 +13,11 @@ authors: [
 ]
 maintainer: [
   "Anton Bachin <antonbachin@yahoo.com>"
-  "Mauricio Fernandez <mfp@acm.org>"
-  "Simon Cruanes <simon.cruanes.2007@m4x.org>"
 ]
 dev-repo: "git+https://github.com/ocsigen/lwt.git"
 
 depends: [
-  "dune" {build}
+  "dune"
   "lwt" {>= "3.0.0"}
   "ocaml"
   "react" {>= "1.0.0"}

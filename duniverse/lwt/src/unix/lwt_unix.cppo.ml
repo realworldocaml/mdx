@@ -559,12 +559,6 @@ let wrap_syscall event ch action =
     Lwt.fail e
 
 (* +-----------------------------------------------------------------+
-   | Generated jobs                                                  |
-   +-----------------------------------------------------------------+ *)
-
-module Jobs = Lwt_unix_jobs.Make(struct type 'a t = 'a job end)
-
-(* +-----------------------------------------------------------------+
    | Basic file input/output                                         |
    +-----------------------------------------------------------------+ *)
 
@@ -597,6 +591,8 @@ let openfile name flags perms =
     run_job (open_job name flags perms) >>= fun (fd, blocking) ->
     Lwt.return (of_unix_file_descr ~blocking fd)
 
+external close_job : Unix.file_descr -> unit job = "lwt_unix_close_job"
+
 let close ch =
   if ch.state = Closed then check_descriptor ch;
   set_state ch Closed;
@@ -604,7 +600,7 @@ let close ch =
   if Sys.win32 then
     Lwt.return (Unix.close ch.fd)
   else
-    run_job (Jobs.close_job ch.fd)
+    run_job (close_job ch.fd)
 
 let wait_read ch =
   Lwt.catch
@@ -807,37 +803,49 @@ type seek_command =
   | SEEK_CUR
   | SEEK_END
 
+external lseek_job :
+  Unix.file_descr -> int -> Unix.seek_command -> int job = "lwt_unix_lseek_job"
+
 let lseek ch offset whence =
   check_descriptor ch;
   if Sys.win32 then
     Lwt.return (Unix.lseek ch.fd offset whence)
   else
-    run_job (Jobs.lseek_job ch.fd offset whence)
+    run_job (lseek_job ch.fd offset whence)
+
+external truncate_job : string -> int -> unit job = "lwt_unix_truncate_job"
 
 let truncate name offset =
   if Sys.win32 then
     Lwt.return (Unix.truncate name offset)
   else
-    run_job (Jobs.truncate_job name offset)
+    run_job (truncate_job name offset)
+
+external ftruncate_job :
+  Unix.file_descr -> int -> unit job = "lwt_unix_ftruncate_job"
 
 let ftruncate ch offset =
   check_descriptor ch;
   if Sys.win32 then
     Lwt.return (Unix.ftruncate ch.fd offset)
   else
-    run_job (Jobs.ftruncate_job ch.fd offset)
+    run_job (ftruncate_job ch.fd offset)
 
 (* +-----------------------------------------------------------------+
    | File system synchronisation                                     |
    +-----------------------------------------------------------------+ *)
 
+external fdatasync_job : Unix.file_descr -> unit job = "lwt_unix_fdatasync_job"
+
 let fdatasync ch =
   check_descriptor ch;
-  run_job (Jobs.fdatasync_job ch.fd)
+  run_job (fdatasync_job ch.fd)
+
+external fsync_job : Unix.file_descr -> unit job = "lwt_unix_fsync_job"
 
 let fsync ch =
   check_descriptor ch;
-  run_job (Jobs.fsync_job ch.fd)
+  run_job (fsync_job ch.fd)
 
 (* +-----------------------------------------------------------------+
    | File status                                                     |
@@ -948,25 +956,35 @@ struct
       st_ctime : float;
     }
 
+  external lseek_64_job :
+    Unix.file_descr -> int64 -> Unix.seek_command -> int64 job =
+    "lwt_unix_lseek_64_job"
+
   let lseek ch offset whence =
     check_descriptor ch;
     if Sys.win32 then
       Lwt.return (Unix.LargeFile.lseek ch.fd offset whence)
     else
-      run_job (Jobs.lseek_64_job ch.fd offset whence)
+      run_job (lseek_64_job ch.fd offset whence)
+
+  external truncate_64_job :
+    string -> int64 -> unit job = "lwt_unix_truncate_64_job"
 
   let truncate name offset =
     if Sys.win32 then
       Lwt.return (Unix.LargeFile.truncate name offset)
     else
-      run_job (Jobs.truncate_64_job name offset)
+      run_job (truncate_64_job name offset)
+
+  external ftruncate_64_job :
+    Unix.file_descr -> int64 -> unit job = "lwt_unix_ftruncate_64_job"
 
   let ftruncate ch offset =
     check_descriptor ch;
     if Sys.win32 then
       Lwt.return (Unix.LargeFile.ftruncate ch.fd offset)
     else
-      run_job (Jobs.ftruncate_64_job ch.fd offset)
+      run_job (ftruncate_64_job ch.fd offset)
 
   external stat_job : string -> Unix.LargeFile.stats job = "lwt_unix_stat_64_job"
 
@@ -1008,53 +1026,68 @@ end
    | Operations on file names                                        |
    +-----------------------------------------------------------------+ *)
 
+external unlink_job : string -> unit job = "lwt_unix_unlink_job"
+
 let unlink name =
   if Sys.win32 then
     Lwt.return (Unix.unlink name)
   else
-    run_job (Jobs.unlink_job name)
+    run_job (unlink_job name)
+
+external rename_job : string -> string -> unit job = "lwt_unix_rename_job"
 
 let rename name1 name2 =
   if Sys.win32 then
     Lwt.return (Unix.rename name1 name2)
   else
-    run_job (Jobs.rename_job name1 name2)
+    run_job (rename_job name1 name2)
+
+external link_job : string -> string -> unit job = "lwt_unix_link_job"
 
 let link oldpath newpath =
   if Sys.win32 then
     Lwt.return (Unix.link oldpath newpath)
   else
-    run_job (Jobs.link_job oldpath newpath)
+    run_job (link_job oldpath newpath)
 
 (* +-----------------------------------------------------------------+
    | File permissions and ownership                                  |
    +-----------------------------------------------------------------+ *)
 
+external chmod_job : string -> int -> unit job = "lwt_unix_chmod_job"
+
 let chmod name mode =
   if Sys.win32 then
     Lwt.return (Unix.chmod name mode)
   else
-    run_job (Jobs.chmod_job name mode)
+    run_job (chmod_job name mode)
+
+external fchmod_job : Unix.file_descr -> int -> unit job = "lwt_unix_fchmod_job"
 
 let fchmod ch mode =
   check_descriptor ch;
   if Sys.win32 then
     Lwt.return (Unix.fchmod ch.fd mode)
   else
-    run_job (Jobs.fchmod_job ch.fd mode)
+    run_job (fchmod_job ch.fd mode)
+
+external chown_job : string -> int -> int -> unit job = "lwt_unix_chown_job"
 
 let chown name uid gid =
   if Sys.win32 then
     Lwt.return (Unix.chown name uid gid)
   else
-    run_job (Jobs.chown_job name uid gid)
+    run_job (chown_job name uid gid)
+
+external fchown_job :
+  Unix.file_descr -> int -> int -> unit job = "lwt_unix_fchown_job"
 
 let fchown ch uid gid =
   check_descriptor ch;
   if Sys.win32 then
     Lwt.return (Unix.fchown ch.fd uid gid)
   else
-    run_job (Jobs.fchown_job ch.fd uid gid)
+    run_job (fchown_job ch.fd uid gid)
 
 type access_permission =
   Unix.access_permission =
@@ -1063,11 +1096,14 @@ type access_permission =
   | X_OK
   | F_OK
 
+external access_job :
+  string -> Unix.access_permission list -> unit job = "lwt_unix_access_job"
+
 let access name mode =
   if Sys.win32 then
     Lwt.return (Unix.access name mode)
   else
-    run_job (Jobs.access_job name mode)
+    run_job (access_job name mode)
 
 (* +-----------------------------------------------------------------+
    | Operations on file descriptors                                  |
@@ -1126,23 +1162,29 @@ let clear_close_on_exec ch =
    | Directories                                                     |
    +-----------------------------------------------------------------+ *)
 
+external mkdir_job : string -> int -> unit job = "lwt_unix_mkdir_job"
+
 let mkdir name perms =
   if Sys.win32 then
     Lwt.return (Unix.mkdir name perms)
   else
-    run_job (Jobs.mkdir_job name perms)
+    run_job (mkdir_job name perms)
+
+external rmdir_job : string -> unit job = "lwt_unix_rmdir_job"
 
 let rmdir name =
   if Sys.win32 then
     Lwt.return (Unix.rmdir name)
   else
-    run_job (Jobs.rmdir_job name)
+    run_job (rmdir_job name)
+
+external chdir_job : string -> unit job = "lwt_unix_chdir_job"
 
 let chdir name =
   if Sys.win32 then
     Lwt.return (Unix.chdir name)
   else
-    run_job (Jobs.chdir_job name)
+    run_job (chdir_job name)
 
 external getcwd_job : unit -> string job = "lwt_unix_getcwd_job"
 
@@ -1152,11 +1194,13 @@ let getcwd () =
   else
     run_job (getcwd_job ())
 
+external chroot_job : string -> unit job = "lwt_unix_chroot_job"
+
 let chroot name =
   if Sys.win32 then
     Lwt.return (Unix.chroot name)
   else
-    run_job (Jobs.chroot_job name)
+    run_job (chroot_job name)
 
 type dir_handle = Unix.dir_handle
 
@@ -1295,21 +1339,25 @@ let pipe_out () =
   let (out_fd, in_fd) = Unix.pipe() in
   (out_fd, mk_ch ~blocking:Sys.win32 in_fd)
 
+external mkfifo_job : string -> int -> unit job = "lwt_unix_mkfifo_job"
+
 let mkfifo name perms =
   if Sys.win32 then
     Lwt.return (Unix.mkfifo name perms)
   else
-    run_job (Jobs.mkfifo_job name perms)
+    run_job (mkfifo_job name perms)
 
 (* +-----------------------------------------------------------------+
    | Symbolic links                                                  |
    +-----------------------------------------------------------------+ *)
 
+external symlink_job : string -> string -> unit job = "lwt_unix_symlink_job"
+
 let symlink name1 name2 =
   if Sys.win32 then
     Lwt.return (Unix.symlink name1 name2)
   else
-    run_job (Jobs.symlink_job name1 name2)
+    run_job (symlink_job name1 name2)
 
 external readlink_job : string -> string job = "lwt_unix_readlink_job"
 
@@ -1464,28 +1512,42 @@ let io_vector ~buffer ~offset ~length = {
   iov_length = length;
 }
 
-let check_io_vectors func_name iovs =
-  List.iter (fun iov ->
-    if iov.iov_offset < 0
-    || iov.iov_length < 0
-    || iov.iov_offset > String.length iov.iov_buffer - iov.iov_length then
-      invalid_arg func_name) iovs
+let convert_io_vectors old_io_vectors =
+  let io_vectors = IO_vectors.create () in
+  old_io_vectors |> List.iter (fun {iov_buffer; iov_offset; iov_length} ->
+    IO_vectors.append_bytes
+      io_vectors (Bytes.unsafe_of_string iov_buffer) iov_offset iov_length);
+  io_vectors
 
-external stub_recv_msg : Unix.file_descr -> int -> io_vector list -> int * Unix.file_descr list = "lwt_unix_recv_msg"
+external stub_recv_msg :
+  Unix.file_descr -> int -> IO_vectors.io_vector list ->
+    int * Unix.file_descr list =
+  "lwt_unix_recv_msg"
+
+let recv_msg_new ~socket ~io_vectors =
+  let count = check_io_vectors "Lwt_unix.recv_msg" io_vectors in
+  wrap_syscall Read socket (fun () ->
+    stub_recv_msg socket.fd count io_vectors.IO_vectors.prefix)
 
 let recv_msg ~socket ~io_vectors =
-  check_io_vectors "Lwt_unix.recv_msg" io_vectors;
-  let n_iovs = List.length io_vectors in
-  wrap_syscall Read socket (fun () -> stub_recv_msg socket.fd n_iovs io_vectors)
+  recv_msg_new ~socket ~io_vectors:(convert_io_vectors io_vectors)
 
-external stub_send_msg : Unix.file_descr -> int -> io_vector list -> int -> Unix.file_descr list -> int = "lwt_unix_send_msg"
+external stub_send_msg :
+  Unix.file_descr ->
+  int -> IO_vectors.io_vector list ->
+  int -> Unix.file_descr list ->
+    int =
+  "lwt_unix_send_msg"
+
+let send_msg_new ~socket ~io_vectors ~fds =
+  let vector_count = check_io_vectors "Lwt_unix.send_msg" io_vectors in
+  let fd_count = List.length fds in
+  wrap_syscall Write socket (fun () ->
+    stub_send_msg
+      socket.fd vector_count io_vectors.IO_vectors.prefix fd_count fds)
 
 let send_msg ~socket ~io_vectors ~fds =
-  check_io_vectors "Lwt_unix.send_msg" io_vectors;
-  let n_iovs = List.length io_vectors and n_fds = List.length fds in
-  wrap_syscall Write socket
-    (fun () ->
-       stub_send_msg socket.fd n_iovs io_vectors n_fds fds)
+  send_msg_new ~socket ~io_vectors:(convert_io_vectors io_vectors) ~fds
 
 type inet_addr = Unix.inet_addr
 
@@ -1558,7 +1620,7 @@ let accept_n ch n =
 
 let connect ch addr =
   if Sys.win32 then
-    (* [in_progress] tell wether connection has started but not
+    (* [in_progress] tell whether connection has started but not
        terminated: *)
     let in_progress = ref false in
     wrap_syscall Write ch begin fun () ->
@@ -1583,13 +1645,13 @@ let connect ch addr =
           raise Retry
     end
   else
-    (* [in_progress] tell wether connection has started but not
+    (* [in_progress] tell whether connection has started but not
        terminated: *)
     let in_progress = ref false in
     wrap_syscall Write ch begin fun () ->
       if !in_progress then
         (* If the connection is in progress, [getsockopt_error] tells
-           wether it succceed: *)
+           whether it succceed: *)
         match Unix.getsockopt_error ch.fd with
         | None ->
           (* The socket is connected *)
@@ -1993,33 +2055,44 @@ let tcsetattr ch when_ attrs =
   else
     run_job (tcsetattr_job ch.fd when_ attrs)
 
+external tcsendbreak_job :
+  Unix.file_descr -> int -> unit job = "lwt_unix_tcsendbreak_job"
+
 let tcsendbreak ch delay =
   check_descriptor ch;
   if Sys.win32 then
     Lwt.return (Unix.tcsendbreak ch.fd delay)
   else
-    run_job (Jobs.tcsendbreak_job ch.fd delay)
+    run_job (tcsendbreak_job ch.fd delay)
+
+external tcdrain_job : Unix.file_descr -> unit job = "lwt_unix_tcdrain_job"
 
 let tcdrain ch =
   check_descriptor ch;
   if Sys.win32 then
     Lwt.return (Unix.tcdrain ch.fd)
   else
-    run_job (Jobs.tcdrain_job ch.fd)
+    run_job (tcdrain_job ch.fd)
+
+external tcflush_job :
+  Unix.file_descr -> Unix.flush_queue -> unit job = "lwt_unix_tcflush_job"
 
 let tcflush ch q =
   check_descriptor ch;
   if Sys.win32 then
     Lwt.return (Unix.tcflush ch.fd q)
   else
-    run_job (Jobs.tcflush_job ch.fd q)
+    run_job (tcflush_job ch.fd q)
+
+external tcflow_job :
+  Unix.file_descr -> Unix.flow_action -> unit job = "lwt_unix_tcflow_job"
 
 let tcflow ch act =
   check_descriptor ch;
   if Sys.win32 then
     Lwt.return (Unix.tcflow ch.fd act)
   else
-    run_job (Jobs.tcflow_job ch.fd act)
+    run_job (tcflow_job ch.fd act)
 
 (* +-----------------------------------------------------------------+
    | Reading notifications                                           |
@@ -2374,4 +2447,8 @@ struct
     Unix.bind ch.fd addr
 
   let bind_2 = bind
+
+  let recv_msg_2 = recv_msg_new
+
+  let send_msg_2 = send_msg_new
 end

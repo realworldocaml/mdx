@@ -17,12 +17,18 @@ open Lwt.Infix
 
 exception Dummy_error
 
-let local = Unix.ADDR_INET (Unix.inet_addr_loopback, 4321)
+let local =
+  let last_port = ref 4321 in
+  fun () ->
+    incr last_port;
+    Unix.ADDR_INET (Unix.inet_addr_loopback, !last_port)
 
 (* Helpers for [establish_server] tests. *)
 module Establish_server =
 struct
   let with_client f =
+    let local = local () in
+
     let handler_finished, notify_handler_finished = Lwt.wait () in
 
     Lwt_io.establish_server_with_client_address
@@ -128,6 +134,8 @@ let suite = suite "lwt_io" [
         Lwt.return_true
       in
 
+      let local = local () in
+
       let server =
         (Lwt_io.Versioned.establish_server_1 [@ocaml.warning "-3"])
           local (fun channels -> Lwt.wakeup run_handler channels)
@@ -143,6 +151,8 @@ let suite = suite "lwt_io" [
   test "open_connection: shutdown: server closes first"
     (fun () ->
       let wait_for_server, server_finished = Lwt.wait () in
+
+      let local = local () in
 
       let server =
         (Lwt_io.Versioned.establish_server_1 [@ocaml.warning "-3"])
@@ -200,7 +210,7 @@ let suite = suite "lwt_io" [
       in_closed_after_handler &&
       out_closed_after_handler);
 
-  test "establish_server: implicit close on exception"
+  test ~sequential:true "establish_server: implicit close on exception"
     (fun () ->
       let open Establish_server in
 
@@ -260,6 +270,8 @@ let suite = suite "lwt_io" [
       let in_channel' = ref Lwt_io.stdin in
       let out_channel' = ref Lwt_io.stdout in
 
+      let local = local () in
+
       Lwt_io.establish_server_with_client_address local
         (fun _client_address _channels -> Lwt.return_unit)
       >>= fun server ->
@@ -297,8 +309,8 @@ let suite = suite "lwt_io" [
       let in_channel = Lwt_io.of_fd ~mode:Lwt_io.input fd_r in
       let out_channel = Lwt_io.of_fd ~mode:Lwt_io.output fd_w in
 
-      Unix.close (Lwt_unix.unix_file_descr fd_r);
-      Unix.close (Lwt_unix.unix_file_descr fd_w);
+      Lwt_unix.close fd_r >>= fun () ->
+      Lwt_unix.close fd_w >>= fun () ->
 
       expecting_ebadf (fun () ->
         Lwt_io.with_close_connection
@@ -306,8 +318,8 @@ let suite = suite "lwt_io" [
             expecting_ebadf (fun () -> Lwt_io.close in_channel) >>= fun () ->
             expecting_ebadf (fun () -> Lwt_io.close out_channel))
           (in_channel, out_channel))
-        >|= fun () ->
-        !exceptions_observed = 2);
+      >|= fun () ->
+      !exceptions_observed = 2);
 
   test "open_temp_file"
     (fun () ->
@@ -320,27 +332,17 @@ let suite = suite "lwt_io" [
   test "with_temp_filename"
     (fun () ->
        let prefix = "test_tempfile" in
-       let startswith x y =
-         let n = String.length x and
-             m = String.length y in
-         (n >= m && y = (String.sub x 0 m)) in
-       let check_no_tempfiles () =
-         let handle = Unix.opendir "." in
-         let rec helper x =
-           try
-              not (startswith (Unix.readdir x) prefix) && helper x
-           with End_of_file -> true in
-         helper handle
-       in
-       let write_data (_, chan) = Lwt_io.write chan "test file content" in
+      let filename = ref "." in
+      let wrap f (filename', chan) = filename := filename'; f chan in
+      let write_data chan = Lwt_io.write chan "test file content" in
        let write_data_fail _ = Lwt.fail Dummy_error in
-       Lwt_io.with_temp_file write_data ~prefix >>= fun _ ->
-       Lwt.return (check_no_tempfiles ()) >>= fun no_temps1 ->
+      Lwt_io.with_temp_file (wrap write_data) ~prefix >>= fun _ ->
+      let no_temps1 = not (Sys.file_exists !filename) in
        Lwt.catch
-         (fun () -> Lwt_io.with_temp_file write_data_fail)
+         (fun () -> Lwt_io.with_temp_file (wrap write_data_fail))
          (fun exn ->
             if exn = Dummy_error
-            then Lwt.return (check_no_tempfiles ())
+            then Lwt.return (not (Sys.file_exists !filename))
             else Lwt.return_false
          )
        >>= fun no_temps2 ->
@@ -367,7 +369,7 @@ let suite = suite "lwt_io" [
       | exn -> Lwt.fail exn)
   end;
 
-  test "input channel of_bytes inital position"
+  test "input channel of_bytes initial position"
     (fun () ->
        let ichan = Lwt_io.of_bytes ~mode:Lwt_io.input @@ Lwt_bytes.of_string "abcd" in
        Lwt.return (Lwt_io.position ichan = 0L)
@@ -387,7 +389,7 @@ let suite = suite "lwt_io" [
        Lwt_io.position ichan = 2L
     );
 
-  test "output channel of_bytes inital position"
+  test "output channel of_bytes initial position"
     (fun () ->
        let ochan = Lwt_io.of_bytes ~mode:Lwt_io.output @@ Lwt_bytes.create 4 in
        Lwt.return (Lwt_io.position ochan = 0L)
@@ -406,4 +408,188 @@ let suite = suite "lwt_io" [
        Lwt_io.set_position ochan 2L >|= fun _ ->
        Lwt_io.position ochan = 2L
     );
+
+  test "NumberIO.LE.read_int" begin fun () ->
+    Lwt_bytes.of_string "\x01\x02\x03\x04"
+    |> Lwt_io.(of_bytes ~mode:input)
+    |> Lwt_io.LE.read_int
+    >|= (=) 0x04030201
+  end;
+
+  test "NumberIO.BE.read_int" begin fun () ->
+    Lwt_bytes.of_string "\x01\x02\x03\x04"
+    |> Lwt_io.(of_bytes ~mode:input)
+    |> Lwt_io.BE.read_int
+    >|= (=) 0x01020304
+  end;
+
+  test "NumberIO.LE.read_int16" begin fun () ->
+    Lwt_bytes.of_string "\x01\x02"
+    |> Lwt_io.(of_bytes ~mode:input)
+    |> Lwt_io.LE.read_int16
+    >|= (=) 0x0201
+  end;
+
+  test "NumberIO.BE.read_int16" begin fun () ->
+    Lwt_bytes.of_string "\x01\x02"
+    |> Lwt_io.(of_bytes ~mode:input)
+    |> Lwt_io.BE.read_int16
+    >|= (=) 0x0102
+  end;
+
+  test "NumberIO.LE.read_int16, negative" begin fun () ->
+    Lwt_bytes.of_string "\xfe\xff"
+    |> Lwt_io.(of_bytes ~mode:input)
+    |> Lwt_io.LE.read_int16
+    >|= (=) (-2)
+  end;
+
+  test "NumberIO.BE.read_int16, negative" begin fun () ->
+    Lwt_bytes.of_string "\xff\xfe"
+    |> Lwt_io.(of_bytes ~mode:input)
+    |> Lwt_io.BE.read_int16
+    >|= (=) (-2)
+  end;
+
+  test "NumberIO.LE.read_int32" begin fun () ->
+    Lwt_bytes.of_string "\x01\x02\x03\x04"
+    |> Lwt_io.(of_bytes ~mode:input)
+    |> Lwt_io.LE.read_int32
+    >|= (=) 0x04030201l
+  end;
+
+  test "NumberIO.BE.read_int32" begin fun () ->
+    Lwt_bytes.of_string "\x01\x02\x03\x04"
+    |> Lwt_io.(of_bytes ~mode:input)
+    |> Lwt_io.BE.read_int32
+    >|= (=) 0x01020304l
+  end;
+
+  test "NumberIO.LE.read_int64" begin fun () ->
+    Lwt_bytes.of_string "\x01\x02\x03\x04\x05\x06\x07\x08"
+    |> Lwt_io.(of_bytes ~mode:input)
+    |> Lwt_io.LE.read_int64
+    >|= (=) 0x0807060504030201L
+  end;
+
+  test "NumberIO.BE.read_int64" begin fun () ->
+    Lwt_bytes.of_string "\x01\x02\x03\x04\x05\x06\x07\x08"
+    |> Lwt_io.(of_bytes ~mode:input)
+    |> Lwt_io.BE.read_int64
+    >|= (=) 0x0102030405060708L
+  end;
+
+  test "NumberIO.LE.read_float32" begin fun () ->
+    Lwt_bytes.of_string "\x80\x01\x81\x47"
+    |> Lwt_io.(of_bytes ~mode:input)
+    |> Lwt_io.LE.read_float32
+    >|= (=) 66051.
+  end;
+
+  test "NumberIO.BE.read_float32" begin fun () ->
+    Lwt_bytes.of_string "\x47\x81\x01\x80"
+    |> Lwt_io.(of_bytes ~mode:input)
+    |> Lwt_io.BE.read_float32
+    >|= (=) 66051.
+  end;
+
+  test "NumberIO.LE.read_float64" begin fun () ->
+    Lwt_bytes.of_string "\x70\x60\x50\x40\x30\x20\xf0\x42"
+    |> Lwt_io.(of_bytes ~mode:input)
+    |> Lwt_io.LE.read_float64
+    >|= Int64.bits_of_float
+    >|= (=) 0x42F0203040506070L
+  end;
+
+  test "NumberIO.BE.read_float64" begin fun () ->
+    Lwt_bytes.of_string "\x42\xf0\x20\x30\x40\x50\x60\x70"
+    |> Lwt_io.(of_bytes ~mode:input)
+    |> Lwt_io.BE.read_float64
+    >|= Int64.bits_of_float
+    >|= (=) 0x42F0203040506070L
+  end;
+
+  test "NumberIO.LE.write_int" begin fun () ->
+    let buffer = Lwt_bytes.create 4 in
+    Lwt_io.LE.write_int (Lwt_io.(of_bytes ~mode:output) buffer)
+      0x01020304 >>= fun () ->
+    Lwt.return (Lwt_bytes.to_string buffer = "\x04\x03\x02\x01")
+  end;
+
+  test "NumberIO.BE.write_int" begin fun () ->
+    let buffer = Lwt_bytes.create 4 in
+    Lwt_io.BE.write_int (Lwt_io.(of_bytes ~mode:output) buffer)
+      0x01020304 >>= fun () ->
+    Lwt.return (Lwt_bytes.to_string buffer = "\x01\x02\x03\x04")
+  end;
+
+  test "NumberIO.LE.write_int16" begin fun () ->
+    let buffer = Lwt_bytes.create 2 in
+    Lwt_io.LE.write_int16 (Lwt_io.(of_bytes ~mode:output) buffer)
+      0x0102 >>= fun () ->
+    Lwt.return (Lwt_bytes.to_string buffer = "\x02\x01")
+  end;
+
+  test "NumberIO.BE.write_int16" begin fun () ->
+    let buffer = Lwt_bytes.create 2 in
+    Lwt_io.BE.write_int16 (Lwt_io.(of_bytes ~mode:output) buffer)
+      0x0102 >>= fun () ->
+    Lwt.return (Lwt_bytes.to_string buffer = "\x01\x02")
+  end;
+
+  test "NumberIO.LE.write_int32" begin fun () ->
+    let buffer = Lwt_bytes.create 4 in
+    Lwt_io.LE.write_int32 (Lwt_io.(of_bytes ~mode:output) buffer)
+      0x01020304l >>= fun () ->
+    Lwt.return (Lwt_bytes.to_string buffer = "\x04\x03\x02\x01")
+  end;
+
+  test "NumberIO.BE.write_int32" begin fun () ->
+    let buffer = Lwt_bytes.create 4 in
+    Lwt_io.BE.write_int32 (Lwt_io.(of_bytes ~mode:output) buffer)
+      0x01020304l >>= fun () ->
+    Lwt.return (Lwt_bytes.to_string buffer = "\x01\x02\x03\x04")
+  end;
+
+  test "NumberIO.LE.write_int64" begin fun () ->
+    let buffer = Lwt_bytes.create 8 in
+    Lwt_io.LE.write_int64 (Lwt_io.(of_bytes ~mode:output) buffer)
+      0x0102030405060708L >>= fun () ->
+    Lwt.return (Lwt_bytes.to_string buffer = "\x08\x07\x06\x05\x04\x03\x02\x01")
+  end;
+
+  test "NumberIO.BE.write_int64" begin fun () ->
+    let buffer = Lwt_bytes.create 8 in
+    Lwt_io.BE.write_int64 (Lwt_io.(of_bytes ~mode:output) buffer)
+      0x0102030405060708L >>= fun () ->
+    Lwt.return (Lwt_bytes.to_string buffer = "\x01\x02\x03\x04\x05\x06\x07\x08")
+  end;
+
+  test "NumberIO.LE.write_float32" begin fun () ->
+    let buffer = Lwt_bytes.create 4 in
+    Lwt_io.LE.write_float32 (Lwt_io.(of_bytes ~mode:output) buffer)
+      66051. >>= fun () ->
+    Lwt.return (Lwt_bytes.to_string buffer = "\x80\x01\x81\x47")
+  end;
+
+  test "NumberIO.BE.write_float32" begin fun () ->
+    let buffer = Lwt_bytes.create 4 in
+    Lwt_io.BE.write_float32 (Lwt_io.(of_bytes ~mode:output) buffer)
+      66051. >>= fun () ->
+    Lwt.return (Lwt_bytes.to_string buffer = "\x47\x81\x01\x80")
+  end;
+
+  test "NumberIO.LE.write_float64" begin fun () ->
+    let buffer = Lwt_bytes.create 8 in
+    Lwt_io.LE.write_float64 (Lwt_io.(of_bytes ~mode:output) buffer)
+      (Int64.float_of_bits 0x42F0203040506070L) >>= fun () ->
+    Lwt.return (Lwt_bytes.to_string buffer = "\x70\x60\x50\x40\x30\x20\xf0\x42")
+  end;
+
+  test "NumberIO.BE.write_float64" begin fun () ->
+    let buffer = Lwt_bytes.create 8 in
+    Lwt_io.BE.write_float64 (Lwt_io.(of_bytes ~mode:output) buffer)
+      (Int64.float_of_bits 0x42F0203040506070L) >>= fun () ->
+    Lwt.return (Lwt_bytes.to_string buffer = "\x42\xf0\x20\x30\x40\x50\x60\x70")
+  end;
 ]

@@ -1,28 +1,22 @@
 set -e
 set -x
 
-ocamlc -version
-
-DIRECTORY=$(pwd)
-
-# AppVeyor does not cache empty subdirectories of .opam, such as $SWITCH/build.
-# To get around that, create a tar archive of .opam.
-CACHE=$DIRECTORY/../opam-cache-$SYSTEM-$COMPILER-$LIBEV.tar
-
-if [ ! -f $CACHE ]
+if [ "$APPVEYOR_SCHEDULED_BUILD" == True ]
 then
-    opam init -y --auto-setup
-    eval `opam config env`
-
-    # Pin Lwt and install its dependencies.
-    make dev-deps
-    if [ "$LIBEV" = yes ]
-    then
-        opam install -y conf-libev
-    fi
-
-    ( cd ~ ; tar cf $CACHE .opam )
-else
-    ( cd ~ ; tar xf $CACHE )
-    eval `opam config env`
+    rm -rf ~/.opam
+    rm -rf ./_cache
 fi
+
+date
+
+opam init default https://github.com/fdopen/opam-repository-mingw.git#opam2 -c ocaml-variants.4.07.1+mingw64c --disable-sandboxing --yes --auto-setup
+
+date
+
+make dev-deps
+opam clean
+
+eval `opam config env`
+
+opam --version
+ocaml -version

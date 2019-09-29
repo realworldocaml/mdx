@@ -113,7 +113,7 @@ let suites = suites @ [trivial_promise_tests]
 
 
 (* Tests for promises created with [Lwt.wait] and [Lwt.task], not including
-   tests for cancelation of the latter. Tests for double use of [Lwt.wakeup]
+   tests for cancellation of the latter. Tests for double use of [Lwt.wakeup]
    and related functions are in a separated suite. So are tests for
    [Lwt.wakeup_later] and related functions. *)
 
@@ -237,7 +237,7 @@ let suites = suites @ [double_resolve_tests]
 
 
 (* Tests for sequential composition functions, such as [Lwt.bind], but not
-   including testing for interaction with cancelation and sequence-associated
+   including testing for interaction with cancellation and sequence-associated
    storage. Those tests come later. *)
 
 let bind_tests = suite "bind" [
@@ -1466,7 +1466,7 @@ let on_success_tests = suite "on_success" [
     later (fun () -> !f_ran = true)
   end;
 
-  test "fulfilled, f raises" begin fun () ->
+  test ~sequential:true "fulfilled, f raises" begin fun () ->
     let saw = ref None in
     let restore =
       set_async_exception_hook (fun exn -> saw := Some exn) in
@@ -1497,7 +1497,7 @@ let on_success_tests = suite "on_success" [
     later (fun () -> !f_ran = true)
   end;
 
-  test "pending, fulfilled, f raises" begin fun () ->
+  test ~sequential:true "pending, fulfilled, f raises" begin fun () ->
     let saw = ref None in
     let p, r = Lwt.wait () in
     Lwt.on_success p (fun () -> raise Exception);
@@ -1532,7 +1532,7 @@ let on_failure_tests = suite "on_failure" [
     later (fun () -> !saw = Some Exception)
   end;
 
-  test "rejected, f raises" begin fun () ->
+  test ~sequential:true "rejected, f raises" begin fun () ->
     let saw = ref None in
     let restore =
       set_async_exception_hook (fun exn -> saw := Some exn) in
@@ -1564,7 +1564,7 @@ let on_failure_tests = suite "on_failure" [
     later (fun () -> !saw = Some Exception)
   end;
 
-  test "pending, rejected, f raises" begin fun () ->
+  test ~sequential:true "pending, rejected, f raises" begin fun () ->
     let saw = ref None in
     let p, r = Lwt.wait () in
     Lwt.on_failure p (fun _ -> raise Exception);
@@ -1585,7 +1585,7 @@ let on_termination_tests = suite "on_termination" [
     later (fun () -> !f_ran = true)
   end;
 
-  test "fulfilled, f raises" begin fun () ->
+  test ~sequential:true "fulfilled, f raises" begin fun () ->
     let saw = ref None in
     let restore =
       set_async_exception_hook (fun exn -> saw := Some exn) in
@@ -1601,7 +1601,7 @@ let on_termination_tests = suite "on_termination" [
     later (fun () -> !f_ran = true)
   end;
 
-  test "rejected, f raises" begin fun () ->
+  test ~sequential:true "rejected, f raises" begin fun () ->
     let saw = ref None in
     let restore =
       set_async_exception_hook (fun exn -> saw := Some exn) in
@@ -1625,7 +1625,7 @@ let on_termination_tests = suite "on_termination" [
     later (fun () -> !f_ran = true)
   end;
 
-  test "pending, fulfilled, f raises" begin fun () ->
+  test ~sequential:true "pending, fulfilled, f raises" begin fun () ->
     let saw = ref None in
     let p, r = Lwt.wait () in
     Lwt.on_termination p (fun () -> raise Exception);
@@ -1645,7 +1645,7 @@ let on_termination_tests = suite "on_termination" [
     later (fun () -> !f_ran = true)
   end;
 
-  test "pending, rejected, f raises" begin fun () ->
+  test ~sequential:true "pending, rejected, f raises" begin fun () ->
     let saw = ref None in
     let p, r = Lwt.wait () in
     Lwt.on_termination p (fun () -> raise Exception);
@@ -1670,7 +1670,7 @@ let on_any_tests = suite "on_any" [
     later (fun () -> !f_ran = true && !g_ran = false)
   end;
 
-  test "fulfilled, f raises" begin fun () ->
+  test ~sequential:true "fulfilled, f raises" begin fun () ->
     let saw = ref None in
     let restore =
       set_async_exception_hook (fun exn -> saw := Some exn) in
@@ -1686,7 +1686,7 @@ let on_any_tests = suite "on_any" [
     later (fun () -> !saw = Some Exception)
   end;
 
-  test "rejected, f raises" begin fun () ->
+  test ~sequential:true "rejected, f raises" begin fun () ->
     let saw = ref None in
     let restore =
       set_async_exception_hook (fun exn -> saw := Some exn) in
@@ -1711,7 +1711,7 @@ let on_any_tests = suite "on_any" [
     later (fun () -> !f_ran = true && !g_ran = false)
   end;
 
-  test "pending, fulfilled, f raises" begin fun () ->
+  test ~sequential:true "pending, fulfilled, f raises" begin fun () ->
     let saw = ref None in
     let p, r = Lwt.wait () in
     Lwt.on_any p (fun () -> raise Exception) ignore;
@@ -1731,7 +1731,7 @@ let on_any_tests = suite "on_any" [
     later (fun () -> !saw = Some Exception)
   end;
 
-  test "pending, rejected, g raises" begin fun () ->
+  test ~sequential:true "pending, rejected, g raises" begin fun () ->
     let saw = ref None in
     let p, r = Lwt.wait () in
     Lwt.on_any p ignore (fun _ -> raise Exception);
@@ -1747,9 +1747,9 @@ let suites = suites @ [on_any_tests]
 
 
 
-(* Concurrent composition tests, not including cancelation and
+(* Concurrent composition tests, not including cancellation and
    sequence-associated storage. Also not including [Lwt.pick] and [Lwt.npick],
-   as those interact with cancelation. *)
+   as those interact with cancellation. *)
 
 let async_tests = suite "async" [
   test "fulfilled" begin fun () ->
@@ -1758,7 +1758,7 @@ let async_tests = suite "async" [
     later (fun () -> !f_ran = true)
   end;
 
-  test "f raises" begin fun () ->
+  test ~sequential:true "f raises" begin fun () ->
     let saw = ref None in
     let restore =
       set_async_exception_hook (fun exn -> saw := Some exn) in
@@ -1768,7 +1768,7 @@ let async_tests = suite "async" [
       !saw = Some Exception)
   end;
 
-  test "rejected" begin fun () ->
+  test ~sequential:true "rejected" begin fun () ->
     let saw = ref None in
     let restore =
       set_async_exception_hook (fun exn -> saw := Some exn) in
@@ -1789,7 +1789,7 @@ let async_tests = suite "async" [
     later (fun () -> !resolved = true)
   end;
 
-  test "pending, rejected" begin fun () ->
+  test ~sequential:true "pending, rejected" begin fun () ->
     let saw = ref None in
     let p, r = Lwt.wait () in
     Lwt.async (fun () -> p);
@@ -1826,7 +1826,7 @@ let ignore_result_tests = suite "ignore_result" [
     Lwt.return true
   end;
 
-  test "pending, rejected" begin fun () ->
+  test ~sequential:true "pending, rejected" begin fun () ->
     let saw = ref None in
     let p, r = Lwt.wait () in
     Lwt.ignore_result p;
@@ -2473,7 +2473,7 @@ let suites = suites @ [wakeup_later_tests]
 
 
 
-(* Cancelation and its interaction with the rest of the API. *)
+(* Cancellation and its interaction with the rest of the API. *)
 
 let cancel_tests = suite "cancel" [
   test "fulfilled" begin fun () ->
@@ -3046,7 +3046,7 @@ let cancel_catch_tests = suite "cancel catch" [
   end;
 
   (* In [p' = Lwt.catch (fun () -> p) f], if [p] is cancelable, canceling [p']
-     propagates to [p], and then the cancelation exception can be "intercepted"
+     propagates to [p], and then the cancellation exception can be "intercepted"
      by [f], which can resolve [p'] in an arbitrary way. *)
   test "task, pending, canceled" begin fun () ->
     let saw = ref None in
@@ -3086,7 +3086,7 @@ let cancel_catch_tests = suite "cancel catch" [
        !on_cancel_2_ran = false)
   end;
 
-  (* Same as above, except this time, cancelation is passed on to the outer
+  (* Same as above, except this time, cancellation is passed on to the outer
      promise, so we can expect both cancel callbacks to run. *)
   test "task, pending, canceled, on_cancel, forwarded" begin fun () ->
     let on_cancel_2_ran = ref false in
@@ -3374,7 +3374,7 @@ let cancel_join_tests = suite "cancel join" [
 
   (* In [p' = Lwt.join [p; p]], if [p'] is canceled, the cancel handler on [p]
      is called only once, even though it is reachable by two paths in the
-     cancelation graph. *)
+     cancellation graph. *)
   test "cancel diamond" begin fun () ->
     let ran = ref 0 in
     let p, _ = Lwt.task () in
@@ -4082,7 +4082,7 @@ let suites = suites @ [make_value_and_error_tests]
 
 
 (* These tests exercise the callback cleanup mechanism of the Lwt core, which is
-   an implementation detail. When a promise [p] is repeatedly used in fuctions
+   an implementation detail. When a promise [p] is repeatedly used in functions
    such as [Lwt.choose], but remains pending, while other promises passed to
    [Lwt.choose] resolve, [p] accumulates disabled callback cells. They need to
    be occasionally cleaned up; in particular, this should happen every

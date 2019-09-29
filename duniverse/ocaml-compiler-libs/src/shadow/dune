@@ -10,6 +10,6 @@
 (rule
  (targets ocaml_shadow.ml)
  (deps
-  (:< gen/gen.exe))
+  (:first_dep gen/gen.exe))
  (action
-  (run %{<} -dir %{ocaml_where}/compiler-libs -o %{targets})))
+  (run %{first_dep} -dir %{ocaml_where}/compiler-libs -o %{targets})))
