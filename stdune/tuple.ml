@@ -7,6 +7,8 @@ module T2 = struct
 
   let compare f g (a1, b1) (a2, b2) =
     match f a1 a2 with
-    | Ordering.Lt | Gt  as x -> x
+    | (Ordering.Lt | Gt) as x -> x
     | Eq -> g b1 b2
+
+  let swap (x, y) = (y, x)
 end

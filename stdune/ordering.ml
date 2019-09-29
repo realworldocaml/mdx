@@ -13,8 +13,8 @@ let of_int n =
 
 let to_int = function
   | Lt -> -1
-  | Eq ->  0
-  | Gt ->  1
+  | Eq -> 0
+  | Gt -> 1
 
 let to_string = function
   | Lt -> "<"
@@ -23,8 +23,12 @@ let to_string = function
 
 let neq = function
   | Eq -> false
-  | Lt | Gt -> true
+  | Lt
+   |Gt ->
+    true
 
 let is_eq = function
   | Eq -> true
-  | Lt | Gt -> false
+  | Lt
+   |Gt ->
+    false

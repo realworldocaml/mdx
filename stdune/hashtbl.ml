@@ -1,107 +1,87 @@
 module type S = Hashtbl_intf.S
 
-include struct
-  [@@@warning "-32"]
+module Make (H : sig
+  include Hashable.S
 
-  let find_opt t key =
-    match MoreLabels.Hashtbl.find t key with
-    | x -> Some x
-    | exception Not_found -> None
+  val to_dyn : t -> Dyn.t
+end) =
+struct
+  include MoreLabels.Hashtbl.Make (H)
 
-  let find_exn t key = Option.value_exn (find_opt t key)
-end
+  let find = find_opt
 
-module Make(H : Hashable.S) = struct
-  include MoreLabels.Hashtbl.Make(H)
+  let find_exn t key =
+    match find_opt t key with
+    | Some v -> v
+    | None -> Code_error.raise "Hashtbl.find_exn" [ ("key", H.to_dyn key) ]
 
-  include struct
-    [@@@warning "-32"]
+  let set t key data = add t ~key ~data
 
-    let find_opt t key =
-      match find t key with
-      | x -> Some x
-      | exception Not_found -> None
-  end
+  let find_or_add t key ~f =
+    match find t key with
+    | Some x -> x
+    | None ->
+      let x = f key in
+      set t key x;
+      x
 
-  include struct
-    let find = find_opt
-    let find_exn t key = Option.value_exn (find_opt t key)
-    let add t key data = add t ~key ~data
+  let foldi t ~init ~f = fold t ~init ~f:(fun ~key ~data acc -> f key data acc)
 
-    let find_or_add t key ~f =
-      match find t key with
-      | Some x -> x
-      | None ->
-        let x = f key in
-        add t key x;
-        x
-
-    let foldi t ~init ~f =
-      fold t ~init ~f:(fun ~key ~data acc -> f key data acc)
-    let fold  t ~init ~f = foldi t ~init ~f:(fun _ x -> f x)
-  end
+  let fold t ~init ~f = foldi t ~init ~f:(fun _ x -> f x)
 
   let of_list l =
     let h = create (List.length l) in
     let rec loop = function
       | [] -> Result.Ok h
-      | (k, v) :: xs ->
-        begin match find h k with
-        | None -> add h k v; loop xs
-        | Some v' -> Error (k, v', v)
-        end
+      | (k, v) :: xs -> (
+        match find h k with
+        | None ->
+          set h k v;
+          loop xs
+        | Some v' -> Error (k, v', v) )
     in
     loop l
 
   let of_list_exn l =
     match of_list l with
     | Result.Ok h -> h
-    | Error (_, _, _) ->
-      Exn.code_error "Hashtbl.of_list_exn duplicate keys" []
+    | Error (key, _, _) ->
+      Code_error.raise "Hashtbl.of_list_exn duplicate keys"
+        [ ("key", H.to_dyn key) ]
+
+  let add_exn t key data =
+    match find t key with
+    | None -> set t key data
+    | Some _ ->
+      Code_error.raise "Hastbl.add_exn: key already exists"
+        [ ("key", H.to_dyn key) ]
+
+  let add t key data =
+    match find t key with
+    | None ->
+      set t key data;
+      Result.Ok ()
+    | Some p -> Result.Error p
+
+  let keys t = foldi t ~init:[] ~f:(fun key _ acc -> key :: acc)
+
+  let to_dyn f t =
+    Dyn.Map
+      ( foldi t ~init:[] ~f:(fun key data acc -> (H.to_dyn key, f data) :: acc)
+      |> List.sort ~compare:(fun (k, _) (k', _) -> Dyn.compare k k') )
+
+  let filteri_inplace t ~f =
+    (* Surely there's a more performant way of writing this. (e.g. using
+       filter_map_inplace), but starting with a simple thing for now, in part
+       because [filter_map_inplace] is not available in 4.02. *)
+    let to_delete = ref [] in
+    iter t ~f:(fun ~key ~data ->
+        match f ~key ~data with
+        | false -> to_delete := key :: !to_delete
+        | true -> ());
+    List.iter !to_delete ~f:(fun k -> remove t k)
+
+  let iter t ~f = iter t ~f:(fun ~key:_ ~data -> f data)
 end
 
-open MoreLabels.Hashtbl
-
-type nonrec ('a, 'b) t = ('a, 'b) t
-
-let hash = hash
-let create = create
-let add = add
-let replace = replace
-let length = length
-let remove = remove
-let mem = mem
-let reset = reset
-
-let find = find_opt
-
-let add t key data = add t ~key ~data
-
-let find_or_add t key ~f =
-  match find t key with
-  | Some x -> x
-  | None ->
-    let x = f key in
-    add t key x;
-    x
-
-let foldi t ~init ~f = fold  t ~init ~f:(fun ~key ~data acc -> f key data acc)
-let fold  t ~init ~f = foldi t ~init ~f:(fun _ x -> f x)
-
-let iter t ~f = iter ~f t
-
-let keys t = foldi t ~init:[] ~f:(fun key _ acc -> key :: acc)
-
-let to_dyn (type key) f g t =
-  let module M =
-    Map.Make(struct
-      type t = key
-      let compare a b = Ordering.of_int (compare a b)
-    end)
-  in
-  Map.to_dyn M.to_list f g
-    (foldi t ~init:M.empty ~f:(fun key data acc ->
-       M.add acc key data))
-
-let to_sexp f g t =
-  Dyn.to_sexp (to_dyn (Dyn.Encoder.via_sexp f) (Dyn.Encoder.via_sexp g) t)
+let hash = MoreLabels.Hashtbl.hash
