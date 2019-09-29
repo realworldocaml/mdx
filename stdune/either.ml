@@ -1,5 +1,5 @@
 type ('a, 'b) t =
-  | Left  of 'a
+  | Left of 'a
   | Right of 'b
 
 let map t ~l ~r =
@@ -8,4 +8,5 @@ let map t ~l ~r =
   | Right x -> r x
 
 let left x = Left x
+
 let right x = Right x

@@ -1,4 +1,3 @@
 (library
  (name dune_caml)
- (libraries dune_result)
  (synopsis "[Internal] Wrapped version of the OCaml stdlib"))

@@ -1,0 +1,31 @@
+
+= How to create the library ?
+
+You need Objective Caml >= 3.10.2 to compile this library.
+
+Configure with
+
+        autoconf
+	./configure
+
+Compile with
+
+	make
+
+Install (as root if needed) with
+
+	make install
+
+To install somewhere else, with a different path prefix, use instead
+
+        make DESTDIR=/another/place install
+
+findlib users may also do
+
+	make install-findlib
+
+== How to create the documentation ?
+
+create a local documentation with
+
+	make doc

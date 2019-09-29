@@ -8,8 +8,7 @@ module type S = sig
   (** Generate a new id. *)
   val gen : unit -> t
 
-  (** Get the next id that would be generated, without actually
-      generating it. *)
+  (** Get the next id that would be generated, without actually generating it. *)
   val peek : unit -> t
 
   (** Convert the id to an integer. *)
@@ -19,9 +18,10 @@ module type S = sig
   val compare : t -> t -> Ordering.t
 
   val equal : t -> t -> bool
+
   val hash : t -> int
+
   val to_dyn : t -> Dyn.t
-  val to_sexp : t -> Sexp.t
 end
 
 (** A functor to create a new ID generator module. *)

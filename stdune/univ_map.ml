@@ -5,33 +5,40 @@ module Key = struct
 
   module type T = sig
     type t
+
     type 'a Witness.t += T : t Witness.t
+
     val id : int
+
     val name : string
-    val to_sexp : t -> Sexp.t
+
+    val to_dyn : t -> Dyn.t
   end
 
   type 'a t = (module T with type t = 'a)
 
   let next = ref 0
 
-  let create (type a) ~name to_sexp =
+  let create (type a) ~name to_dyn =
     let n = !next in
     next := n + 1;
     let module M = struct
       type t = a
+
       type 'a Witness.t += T : t Witness.t
+
       let id = n
-      let to_sexp = to_sexp
+
+      let to_dyn = to_dyn
+
       let name = name
     end in
     (module M : T with type t = a)
 
   let id (type a) (module M : T with type t = a) = M.id
 
-  let eq (type a) (type b)
-        (module A : T with type t = a)
-        (module B : T with type t = b) : (a, b) Type_eq.t =
+  let eq (type a b) (module A : T with type t = a)
+      (module B : T with type t = b) : (a, b) Type_eq.t =
     match A.T with
     | B.T -> Type_eq.T
     | _ -> assert false
@@ -44,12 +51,13 @@ end
 type t = Binding.t Int.Map.t
 
 let empty = Int.Map.empty
+
 let is_empty = Int.Map.is_empty
 
 let add (type a) t (key : a Key.t) x =
   let (module M) = key in
   let data = Binding.T (key, x) in
-  Int.Map.add t M.id data
+  Int.Map.set t M.id data
 
 let mem t key = Int.Map.mem t (Key.id key)
 
@@ -73,13 +81,10 @@ let singleton key v = Int.Map.singleton (Key.id key) (Binding.T (key, v))
 
 let superpose = Int.Map.superpose
 
-let to_sexp (t : t) =
-  let open Sexp in
-  List (
-    Int.Map.to_list t
-    |> List.map ~f:(fun (_, (Binding.T (key, v))) ->
-      let (module K) = key in
-      List
-        [ Atom K.name
-        ; K.to_sexp v
-        ]))
+let to_dyn (t : t) =
+  let open Dyn.Encoder in
+  Dyn.Map
+    ( Int.Map.values t
+    |> List.map ~f:(fun (Binding.T (key, v)) ->
+           let (module K) = key in
+           (string K.name, K.to_dyn v)) )

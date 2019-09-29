@@ -1,23 +1,62 @@
-(** Relative path with unspecified root *)
-module Relative : sig
-  include Path_intf.S
+(** Representation of paths *)
 
-  (** [root] refers to empty relative path, so whatever the path is interpreted
-      relative to. *)
-  val root : t
+(** The aim of this module is to provide a solid basis to reason about file and
+    directory paths inside the Dune code base. What it is not is a complete API
+    for paths management that handles all the aspects of file system paths. It
+    simply exposes a high-level and portable API that covers the needs of Dune.
 
-  module L : sig
-    val relative : ?error_loc:Loc0.t -> t -> string list -> t
-  end
+    {1 Model of the file system}
 
-  val relative : ?error_loc:Loc0.t -> t -> string -> t
-  val split_first_component : t -> (string * t) option
-  val explode : t -> string list
+    {2 Local paths}
+
+    Dune sees the file system as two parts. The first part is composed of the
+    source tree and the build directory. In this part, Dune doesn't know about
+    symlinks and has a fully expanded view of the file system. This means that
+    if the user has a symlink `src/foo` pointing to `bar`, then `src/foo/x` and
+    `bar/x` are seen as two different paths.
+
+    A path in this world is called a local path and is simply a sequence of
+    path components. A path component being a string other than "." or ".." and
+    not containing the path separator character ('/').
+
+    Such a path can be rooted at the source tree root, the build directory or
+    an unspecified root. All these paths are represented by values of type ['a
+    Path.Local_gen.t] where ['a] denotes the root of the path.
+
+    {2 External paths}
+
+    The second part is the "external world". It is all the paths that live
+    outside of the workspace and build directory. To be on the safe side Dune
+    makes no assumption does nothing clever with these paths.
+
+    External paths are presented as [Path.External.t] values.contents
+
+    {1 The Path.t type}
+
+    The [Path.t] type represents all possible paths, i.e. both local and
+    extenral paths. *)
+
+(** Relative path relative to the root tracked by the type system.
+
+    Represented as: either the root, or a '/' separated list of components
+    other that ".", ".." and not containing a '/'. *)
+module Local_gen : Path_intf.Local_gen
+
+module Unspecified : sig
+  type w = Path_intf.Unspecified.w
 end
 
-(** In the current workspace (anything under the current project root) *)
+(** Relative path with unspecified root.
+
+    Either root, or a '/' separated list of components other that ".", ".." and
+    not containing a '/'. *)
 module Local : sig
-  include Path_intf.S
+  type w = Unspecified.w
+
+  type t = w Local_gen.t
+
+  include Path_intf.S with type t := t
+
   val root : t
 
   module L : sig
@@ -25,26 +64,36 @@ module Local : sig
   end
 
   val relative : ?error_loc:Loc0.t -> t -> string -> t
-  val split_first_component : t -> (string * Relative.t) option
+
+  val split_first_component : t -> (string * t) option
+
   val explode : t -> string list
 end
 
 (** In the source section of the current workspace. *)
 module Source : sig
-  include Path_intf.S
+  type w
+
+  type t = w Local_gen.t
+
+  include Path_intf.S with type t := t
+
   val root : t
 
   module L : sig
     val relative : ?error_loc:Loc0.t -> t -> string list -> t
   end
 
-  val of_relative : Relative.t -> t
+  val of_local : Local.t -> t
+
   val relative : ?error_loc:Loc0.t -> t -> string -> t
-  val split_first_component : t -> (string * Relative.t) option
+
+  val split_first_component : t -> (string * Local.t) option
+
   val explode : t -> string list
 
-  (** [Source.t] does not statically forbid overlap with build directory,
-      even though having such paths is almost always an error. *)
+  (** [Source.t] does not statically forbid overlap with build directory, even
+      though having such paths is almost always an error. *)
   val is_in_build_dir : t -> bool
 
   val to_local : t -> Local.t
@@ -62,21 +111,16 @@ module External : sig
   val mkdir_p : t -> unit
 end
 
-module Kind : sig
-  type t = private
-    | External of External.t
-    | Local    of Local.t
-
-  val of_string : string -> t
-end
-
 module Build : sig
-  include Path_intf.S
+  type w
+
+  type t = w Local_gen.t
+
+  include Path_intf.S with type t := t
+
   val root : t
 
   val append_source : t -> Source.t -> t
-
-  val append_relative : t -> Relative.t -> t
 
   val append_local : t -> Local.t -> t
 
@@ -85,37 +129,64 @@ module Build : sig
   end
 
   val relative : ?error_loc:Loc0.t -> t -> string -> t
-  val split_first_component : t -> (string * Relative.t) option
+
+  val split_first_component : t -> (string * Local.t) option
+
   val explode : t -> string list
 
   val local : t -> Local.t
 
-  val drop_build_context     : t -> Source.t option
+  val drop_build_context : t -> Source.t option
+
   val drop_build_context_exn : t -> Source.t
 
-  val extract_build_context  : t -> (string * Source.t) option
-  val extract_build_context_exn  : t -> (string * Source.t)
+  (** [Source.t] here is a lie in some cases: consider when the context name
+      happens to be ["install"] or [".alias"]. *)
+  val extract_build_context : t -> (string * Source.t) option
+
+  val extract_build_context_exn : t -> string * Source.t
+
   val extract_build_context_dir : t -> (t * Source.t) option
-  val extract_build_context_dir_exn : t -> (t * Source.t)
+
+  val extract_build_context_dir_exn : t -> t * Source.t
+
+  (** This function does the same as [extract_build_context], but has a
+      "righter" type. *)
+  val extract_first_component : t -> (string * Local.t) option
 
   val is_alias_stamp_file : t -> bool
+
+  module Kind : sig
+    type t = private
+      | External of External.t
+      | In_source_dir of Local.t
+
+    val of_string : string -> t
+  end
 
   (** set the build directory. Can only be called once and must be done before
       paths are converted to strings elsewhere. *)
   val set_build_dir : Kind.t -> unit
+
+  val split_sandbox_root : t -> t option * t
+
+  val of_local : Local.t -> t
 end
 
-(** In the outside world *)
-include Path_intf.S
+type t = private
+  | External of External.t
+  | In_source_tree of Source.t
+  | In_build_dir of Build.t
+
+include Path_intf.S with type t := t
 
 val hash : t -> int
 
 (** [to_string_maybe_quoted t] is [maybe_quoted (to_string t)] *)
 val to_string_maybe_quoted : t -> string
 
-val kind : t -> Kind.t
-
 val root : t
+
 val is_root : t -> bool
 
 val is_managed : t -> bool
@@ -136,54 +207,58 @@ val reach : t -> from:t -> string
 val reach_for_running : ?from:t -> t -> string
 
 val descendant : t -> of_:t -> t option
+
 val is_descendant : t -> of_:t -> bool
 
-val append : t -> t -> t
-val append_relative : t -> Relative.t -> t
 val append_local : t -> Local.t -> t
+
 val append_source : t -> Source.t -> t
 
 val extend_basename : t -> suffix:string -> t
 
-(** Extract the build context from a path. For instance, representing paths as strings:
+(** Extract the build context from a path. For instance, representing paths as
+    strings:
 
-    {[
-      extract_build_context "_build/blah/foo/bar" = Some ("blah", "foo/bar")
+    {[ extract_build_context "_build/blah/foo/bar" = Some ("blah", "foo/bar")
     ]}
 
     It doesn't work correctly (doesn't return a sensible source path) for build
-    directories that are not build contexts, e.g. "_build/install" and "_build/.aliases".
-*)
-val extract_build_context     : t -> (string * Source.t) option
-val extract_build_context_exn : t -> (string * Source.t)
+    directories that are not build contexts, e.g. "_build/install" and
+    "_build/.aliases". *)
+val extract_build_context : t -> (string * Source.t) option
 
-val extract_build_dir_first_component     : t -> (string * Relative.t) option
+val extract_build_context_exn : t -> string * Source.t
+
+val extract_build_dir_first_component : t -> (string * Local.t) option
 
 (** Same as [extract_build_context] but return the build context as a path:
 
-    {[
-      extract_build_context "_build/blah/foo/bar" = Some ("_build/blah", "foo/bar")
-    ]}
-*)
-val extract_build_context_dir     : t -> (t * Source.t) option
-val extract_build_context_dir_exn : t -> (t * Source.t)
+    {[ extract_build_context "_build/blah/foo/bar" = Some ("_build/blah",
+    "foo/bar") ]} *)
+val extract_build_context_dir : t -> (t * Source.t) option
+
+val extract_build_context_dir_maybe_sandboxed : t -> (t * Source.t) option
+
+val extract_build_context_dir_exn : t -> t * Source.t
 
 (** Drop the "_build/blah" prefix *)
 val drop_build_context : t -> Source.t option
+
 val drop_build_context_exn : t -> Source.t
 
 (** Drop the "_build/blah" prefix if present, return [t] otherwise *)
 val drop_optional_build_context : t -> t
 
+val drop_optional_build_context_maybe_sandboxed : t -> t
+
+val drop_optional_sandbox_root : t -> t
+
 (** Drop the "_build/blah" prefix if present, return [t] if it's a source file,
     otherwise fail. *)
 val drop_optional_build_context_src_exn : t -> Source.t
 
-(** Transform managed paths so that they are descedant of
-    [sandbox_dir]. *)
-val sandbox_managed_paths : sandbox_dir:Build.t -> t -> t
-
 val explode : t -> string list option
+
 val explode_exn : t -> string list
 
 (** The build directory *)
@@ -194,30 +269,43 @@ val is_in_build_dir : t -> bool
 
 (** [is_in_build_dir t = is_managed t && not (is_in_build_dir t)] *)
 val is_in_source_tree : t -> bool
+
 val as_in_source_tree : t -> Source.t option
+
+val as_in_source_tree_exn : t -> Source.t
+
 val as_in_build_dir : t -> Build.t option
+
 val as_in_build_dir_exn : t -> Build.t
 
-(** [is_strict_descendant_of_build_dir t = is_in_build_dir t && t <>
-    build_dir] *)
+(** [is_strict_descendant_of_build_dir t = is_in_build_dir t && t <> build_dir] *)
 val is_strict_descendant_of_build_dir : t -> bool
 
-(**  Split after the first component if [t] is local *)
+(** Split after the first component if [t] is local *)
 val split_first_component : t -> (string * t) option
 
 val insert_after_build_dir_exn : t -> string -> t
 
 val exists : t -> bool
+
 val readdir_unsorted : t -> (string list, Unix.error) Result.t
+
 val is_directory : t -> bool
+
 val is_file : t -> bool
+
 val rmdir : t -> unit
+
 val unlink : t -> unit
+
 val unlink_no_err : t -> unit
+
 val rm_rf : t -> unit
+
 val mkdir_p : t -> unit
 
-val pp_in_source : Format.formatter -> t -> unit
+val touch : t -> unit
+
 val pp_debug : Format.formatter -> t -> unit
 
 val build_dir_exists : unit -> bool
@@ -225,6 +313,7 @@ val build_dir_exists : unit -> bool
 val ensure_build_dir_exists : unit -> unit
 
 val source : Source.t -> t
+
 val build : Build.t -> t
 
 (** paths guaranteed to be in the source directory *)
@@ -236,27 +325,20 @@ val of_local : Local.t -> t
     absolute *)
 val set_root : External.t -> unit
 
-(** Internal use only *)
-module Internal : sig
-  val raw_kind : t -> Kind.t
-end
-
 module L : sig
   val relative : t -> string list -> t
 end
 
-(** Return the "local part" of a path.
-    For local paths (in build directory or source tree),
-    this returns the path itself.
-    For external paths, it returns a path that is relative to the current
-    directory. For example, the local part of [/a/b] is [./a/b]. *)
-val local_part : t -> Relative.t
+(** Return the "local part" of a path. For local paths (in build directory or
+    source tree), this returns the path itself. For external paths, it returns
+    a path that is relative to the current directory. For example, the local
+    part of [/a/b] is [./a/b]. *)
+val local_part : t -> Local.t
 
 val stat : t -> Unix.stats
 
-(* it would be nice to call this [Set.of_source_paths], but it's annoying
-   to change the [Set] signature because then we don't comply with [Path_intf.S]
-*)
+(* it would be nice to call this [Set.of_source_paths], but it's annoying to
+   change the [Set] signature because then we don't comply with [Path_intf.S] *)
 val set_of_source_paths : Source.Set.t -> Set.t
 
 val set_of_build_paths_list : Build.t list -> Set.t
