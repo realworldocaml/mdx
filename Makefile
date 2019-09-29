@@ -17,7 +17,7 @@ test:
 
 install:
 	mkdir -p $(PREFIX)
-	cp _build/install/default/bin/duniverse $(PREFIX)/bin
+	cp _build/install/default/bin/duniverse $(PREFIX)/duniverse
 
 update: build
 	dune exec -- duniverse init duniverse alcotest 
