@@ -19,6 +19,11 @@ install:
 	mkdir -p $(PREFIX)
 	cp _build/install/default/bin/duniverse $(PREFIX)/bin
 
+update: build
+	dune exec -- duniverse init duniverse alcotest 
+	rm -rf duniverse
+	dune exec -- duniverse pull
+
 format:
 	- dune build @fmt 2> /dev/null
 	dune promote
