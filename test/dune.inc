@@ -150,3 +150,9 @@
  (action (progn
            (run ocaml-mdx test --direction=to-md %{x})
            (diff? %{x} %{x}.corrected))))
+(alias
+ (name   runtest)
+ (deps   (:x cram.t))
+ (action (progn
+           (run ocaml-mdx test --direction=to-md --syntax=cram %{x})
+           (diff? %{x} %{x}.corrected))))
