@@ -30,6 +30,7 @@
     (run ocaml-mdx rule --prelude prelude.ml %{dep:prelude_file.md})
     (run ocaml-mdx rule --direction=to-ml %{dep:dune_rules.md})
     (run ocaml-mdx rule %{dep:require/require-package.md})
+    (run ocaml-mdx rule --syntax=cram %{dep:cram.t})
    ))))
 
 (alias
@@ -85,12 +86,6 @@
            (run ocaml-mdx output %{x} -o output.html)
            (diff? %{y} output.html))))
 
-(alias
- (name   runtest)
- (deps   (:x cram.t) (package mdx))
- (action (progn
-           (run ocaml-mdx test --syntax=cram %{x})
-           (diff? %{x} %{x}.corrected))))
 
 (alias
  (name   runtest)

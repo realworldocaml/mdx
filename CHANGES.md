@@ -1,5 +1,10 @@
 ### unreleased
 
+#### Added
+
+- Add `--syntax` option to `rule` subcommand to allow generating rules for cram
+  tests (#177, @craigfe)
+
 #### Fixed
 
 - Remove trailing whitespaces at the end of toplevel or bash evaluation lines
