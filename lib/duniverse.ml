@@ -171,4 +171,17 @@ type t = { config : Config.t; deps : resolved Deps.t } [@@deriving sexp]
 
 let load ~file = Persist.load_sexp "duniverse" t_of_sexp file
 
-let save ~file t = Persist.save_sexp "duniverse" sexp_of_t file t
+let sort ({ deps = { opamverse; duniverse }; _ } as t) =
+  let sorted_opamverse =
+    let open Deps.Opam in
+    let compare opam opam' = String.compare opam.name opam'.name in
+    List.sort ~compare opamverse
+  in
+  let sorted_duniverse =
+    let open Deps.Source in
+    let compare source source' = String.compare source.dir source'.dir in
+    List.sort ~compare duniverse
+  in
+  { t with deps = { opamverse = sorted_opamverse; duniverse = sorted_duniverse } }
+
+let save ~file t = Persist.save_sexp "duniverse" sexp_of_t file (sort t)
