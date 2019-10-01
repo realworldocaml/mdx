@@ -375,6 +375,17 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
   Hashtbl.iter (write_parts ~force_output) files;
   0
 
+let report_error_in_block block msg =
+  let kind =
+    match block.Block.value with
+    | Raw | Error _ -> ""
+    | OCaml -> "OCaml "
+    | Cram _ -> "cram "
+    | Toplevel _ -> "toplevel "
+  in
+  Fmt.epr "Error in the %scode block in %s at line %d:@]\n%s\n"
+    kind block.file block.line msg
+
 let run setup non_deterministic not_verbose syntax silent verbose_findlib
     prelude prelude_str file section root direction force_output : int =
     try
@@ -385,8 +396,7 @@ let run setup non_deterministic not_verbose syntax silent verbose_findlib
       prerr_endline f;
       1
     | Test_block_failure (block, msg) ->
-      Fmt.epr "Error in block at line %d in %s:@\n%s\n"
-        block.line block.file msg;
+      report_error_in_block block msg;
       1
 
 (**** Cmdliner ****)
