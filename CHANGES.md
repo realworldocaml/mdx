@@ -1,9 +1,16 @@
-### unreleased
+### 1.5.0 (2019-10-01)
 
 #### Added
 
 - Add `--syntax` option to `rule` subcommand to allow generating rules for cram
   tests (#177, @craigfe)
+- Add a `require-package` label to explicitly declare dune `package` dependencies of a code block
+  (#149, @Julow)
+- Add an `unset-` label to unset env variables in shell blocks (#132, @clecat)
+
+#### Changed
+
+- Run promotion of markdown files before `.ml` files in generated dune rules (#140, @clecat)
 
 #### Fixed
 
@@ -11,6 +18,16 @@
   (#166, @clecat)
 - Improve error reporting of ocaml-mdx test (#172, @Julow)
 - Rule: Pass the --section option to `test` (#176, @Julow)
+- Remove trailing whitespaces from shell outputs and toplevel evals (#166, @clecat)
+- Remove inappropriate empty lines in generated dune rules (#163, @Julow)
+- Fix ignored `skip` label in `ocaml-mdx pp` (#1561, @CraigFe)
+- Fix synchronization of new parts from markdown to `.ml` (#156, @Julow)
+- Fix ignored `[@@@parts ...]` markers within module definitions (#155, @Julow)
+- Fix a bug in internal OCaml version comparison that lead to crashes in some cases (#145, @gpetiot)
+- Promote to empty `.ml` file when using `to-ml` direction (#139, @clecat)
+- Apply `--force-output` to `.ml` file as well (#137, @clecat)
+- Fix a bug preventing `.corrected` files to be written in some cases (#136, @clecat)
+- Add compatibility with `4.09.0` (#133, @xclerc)
 
 #### Removed
 
