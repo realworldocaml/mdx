@@ -131,15 +131,13 @@ let no_cache =
   let doc = "Run without using the duniverse global cache" in
   Common.Arg.named (fun x -> `No_cache x) Cmdliner.Arg.(value & flag & info ~doc [ "no-cache" ])
 
-let cache_env_var ?(windows_only=false) ~priority ~extra_path ~var () =
+let cache_env_var ?(windows_only = false) ~priority ~extra_path ~var () =
   let windows_only = if windows_only then " (only on windows" else "" in
   let doc =
     Printf.sprintf
-      "Used to determine the cache location%s. It has priority %s. \
-       If set, the cache will be read from/written to $(b,\\$)$(env)$(b,/%s)."
-      windows_only
-      priority
-      extra_path
+      "Used to determine the cache location%s. It has priority %s. If set, the cache will be read \
+       from/written to $(b,\\$)$(env)$(b,/%s)."
+      windows_only priority extra_path
   in
   Cmdliner.Term.env_info ~doc var
 
@@ -153,12 +151,8 @@ let info =
   let xdg_cache = cache_env_var ~priority:"2" ~extra_path:"duniverse" ~var:"XDG_CACHE_HOME" () in
   let home_cache = cache_env_var ~priority:"3" ~extra_path:".cache/duniverse" ~var:"HOME" () in
   let app_data_cache =
-    cache_env_var
-      ~windows_only:true
-      ~priority:"4 (the lowest)"
-      ~extra_path:"Local Settings/Cache/duniverse"
-      ~var:"AppData"
-      ()
+    cache_env_var ~windows_only:true ~priority:"4 (the lowest)"
+      ~extra_path:"Local Settings/Cache/duniverse" ~var:"AppData" ()
   in
   let man =
     [ `S Manpage.s_description;
@@ -167,16 +161,15 @@ let info =
          from their respective Git remotes and stores them in the $(b,duniverse/) directory in \
          the repository.";
       `P
-        "This command uses a global duniverse cache to avoid repeated downloads. \
-         To determine where the cache should be located it reads a few environment variables. \
-         If none of those are set, a warning will be displayed and the cache will be disabled. \
-         To learn more about which variables are used and their priority go to the \
-         $(b,ENVIRONMENT) section. \
-         Note that you can also manually disable the cache using the $(b,--no-cache) CLI flag \
-         documented in the $(b,OPTIONS) section below.";
+        "This command uses a global duniverse cache to avoid repeated downloads. To determine \
+         where the cache should be located it reads a few environment variables. If none of those \
+         are set, a warning will be displayed and the cache will be disabled. To learn more about \
+         which variables are used and their priority go to the $(b,ENVIRONMENT) section. Note \
+         that you can also manually disable the cache using the $(b,--no-cache) CLI flag \
+         documented in the $(b,OPTIONS) section below."
     ]
   in
-  Term.info "pull" ~doc ~exits ~man ~envs:[duniverse_cache; xdg_cache; home_cache; app_data_cache]
+  Term.info "pull" ~doc ~exits ~man ~envs:[ duniverse_cache; xdg_cache; home_cache; app_data_cache ]
 
 let term =
   Cmdliner.Term.(
