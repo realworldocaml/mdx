@@ -152,3 +152,21 @@
  (name   runtest)
  (deps   (:x section.out) (:y section.out.expected))
  (action (diff? %{x} %{y})))
+
+; Test failures
+
+(rule
+ (targets failures.outputs)
+ (deps    (package mdx) failures/empty.ml)
+ (action
+  (with-outputs-to %{targets}
+   (progn
+    (system "%{bin:ocaml-mdx} test --prelude=a --prelude-str=b %{dep:failures/empty.md} || echo")
+    (system "%{bin:ocaml-mdx} test --direction=to-md %{dep:failures/part_not_found.md} || echo")
+    (system "%{bin:ocaml-mdx} test --direction=to-md %{dep:failures/ml_file_not_found.md} || echo")
+    (system "%{bin:ocaml-mdx} test --direction=to-md %{dep:failures/in_toplevel.md} || echo")
+   ))))
+
+(alias
+ (name runtest)
+ (action (diff failures.expected failures.outputs)))
