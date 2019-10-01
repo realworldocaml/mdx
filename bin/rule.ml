@@ -97,7 +97,7 @@ let options_of_syntax = function
   | None -> []
 
 let options_of_section = function
-  | Some s -> [ Fmt.str "--section %S" s ]
+  | Some s -> [ Fmt.to_to_string (Fmt.fmt "--section %S") s ]
   | None -> []
 
 let pp_direction fmt = function
