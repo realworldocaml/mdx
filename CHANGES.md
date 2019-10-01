@@ -9,6 +9,7 @@
 
 - Remove trailing whitespaces at the end of toplevel or bash evaluation lines
   (#166, @clecat)
+- Improve error reporting of ocaml-mdx test (#172, @Julow)
 - Rule: Pass the --section option to `test` (#176, @Julow)
 
 #### Removed
