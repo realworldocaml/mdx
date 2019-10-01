@@ -160,5 +160,5 @@
  (name   runtest)
  (deps   (:x section.md))
  (action (progn
-           (run ocaml-mdx test --direction=to-md -s "Testing" %{x})
+           (run ocaml-mdx test --direction=to-md --section "Testing" %{x})
            (diff? %{x} %{x}.corrected))))
