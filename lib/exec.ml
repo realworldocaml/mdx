@@ -127,6 +127,37 @@ let git_resolve ~remote ~ref =
         remote
   | Error (`Msg _) as err -> err
 
+let git_branch ~repo ~ref ~branch_name =
+  run_git ~ignore_error:false ~repo Cmd.(v "branch" % branch_name % ref)
+
+let git_remote_add ~repo ~remote_url ~remote_name =
+  run_git ~repo Cmd.(v "remote" % "add" % remote_name % remote_url)
+
+let git_remote_remove ~repo ~remote_name = run_git ~repo Cmd.(v "remote" % "remove" % remote_name)
+
+let git_fetch_to ~repo ~remote_name ~ref ~branch ?(force = false) () =
+  run_git ~repo Cmd.(v "fetch" % remote_name % ref) >>= fun () ->
+  run_git ~repo Cmd.(v "branch" %% on force (v "-f") % branch % "FETCH_HEAD")
+
+let git_init_bare ~repo = run_and_log Cmd.(v "git" % "init" % "--bare" % p repo)
+
+let git_clone ~branch ~remote ~output_dir =
+  run_and_log
+    Cmd.(v "git" % "clone" % "--depth" % "1" % "--branch" % branch % remote % p output_dir)
+
+let git_rename_branch_to ~repo ~branch = run_git ~repo Cmd.(v "branch" % "-m" % branch)
+
+let git_remotes ~repo =
+  let cmd = Cmd.(v "git" % "-C" % p repo % "remote") in
+  run_and_log_l cmd
+
+let git_branch_exists ~repo ~branch =
+  match
+    OS.Cmd.run_status ~quiet:true Cmd.(v "git" % "-C" % p repo % "rev-parse" % "--verify" % branch)
+  with
+  | Ok (`Exited 0) -> true
+  | _ -> false
+
 let opam_cmd ~root sub_cmd =
   let open Cmd in
   v "opam" % sub_cmd % Fmt.strf "--root=%a" Fpath.pp root
