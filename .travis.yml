@@ -10,3 +10,4 @@ env:
   - DISTRO="alpine"
   - DISTRO="ubuntu-16.04"
   - DISTRO="ubuntu"
+  - OCAMLFORMAT="0.9"

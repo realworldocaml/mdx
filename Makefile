@@ -3,7 +3,7 @@
 PREFIX ?= /usr/local/bin
 
 build:
-	dune build 
+	dune build
 
 clean:
 	dune clean
@@ -20,7 +20,7 @@ install:
 	cp _build/install/default/bin/duniverse $(PREFIX)/duniverse
 
 update: build
-	dune exec -- duniverse init duniverse alcotest 
+	dune exec -- duniverse init duniverse alcotest
 	rm -rf duniverse
 	dune exec -- duniverse pull
 
