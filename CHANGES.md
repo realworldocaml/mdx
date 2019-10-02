@@ -2,18 +2,6 @@
 
 #### Added
 
-#### Changed
-
-#### Deprecated
-
-#### Removed
-
-#### Fixed
-
-### 1.5.0 (2019-10-01)
-
-#### Added
-
 - Add `--syntax` option to `rule` subcommand to allow generating rules for cram
   tests (#177, @craigfe)
 - Add a `require-package` label to explicitly declare dune `package` dependencies of a code block
