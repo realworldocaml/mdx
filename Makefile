@@ -1,9 +1,9 @@
-.PHONY: all test
+.PHONY: build test clean
 
-all:
+build:
 	dune build
 
-test:
+test: build
 	dune runtest
 
 clean:
