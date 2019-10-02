@@ -95,7 +95,9 @@ let pp_rules ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires
 
 let print_format_dune_rules pp_rules =
   let open Unix in
-  let read_pipe, write_pipe = pipe ~cloexec:true () in
+  let read_pipe, write_pipe = pipe () in
+  set_close_on_exec read_pipe;
+  set_close_on_exec write_pipe;
   let dune_file_format =
     create_process "dune" [|"dune"; "format-dune-file"|] read_pipe stdout stderr
   in
