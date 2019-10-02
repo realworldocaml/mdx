@@ -72,6 +72,12 @@
            (diff? %{x} %{x}.corrected))))
 (alias
  (name   runtest)
+ (deps   (:x module_alias.md))
+ (action (progn
+           (run ocaml-mdx test --direction=to-md %{x})
+           (diff? %{x} %{x}.corrected))))
+(alias
+ (name   runtest)
  (deps   (:x multilines.md))
  (action (progn
            (run ocaml-mdx test --direction=to-md %{x})
