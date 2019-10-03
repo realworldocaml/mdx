@@ -39,7 +39,8 @@ let pp_action fmt = function
   | `Diff_corrected var -> Fmt.pf fmt "(diff? %%{%s} %%{%s}.corrected)" var var
   | `Run args -> Fmt.pf fmt "(run @[<hov 2>%a@])" Fmt.(list ~sep:sp string) args
 
-let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
+let pp_rules ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires
+    fmt options =
   let ml_files = List.map (prepend_root root) (String.Set.elements ml_files) in
   let dirs = match root with
     | None      -> String.Set.elements dirs
@@ -77,8 +78,8 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
     `Diff_corrected "x" ::
     List.map (fun v -> `Diff_corrected v) var_names
   in
-  let pp name arg =
-    Fmt.pr
+  let pp fmt name arg =
+    Fmt.pf fmt
       "\
 (alias@\n\
 \ (name   %s)@\n\
@@ -88,8 +89,34 @@ let print_rule ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires options =
       Fmt.(list ~sep:sp pp_dep) deps
       Fmt.(list ~sep:cut pp_action) (actions arg)
   in
-  pp "runtest" [];
-  if nd then pp "runtest-all" ["--non-deterministic"]
+  pp fmt "runtest" [];
+  if nd then
+    pp fmt "runtest-all" ["--non-deterministic"]
+
+let print_format_dune_rules pp_rules =
+  let open Unix in
+  let read_pipe, write_pipe = pipe () in
+  set_close_on_exec read_pipe;
+  set_close_on_exec write_pipe;
+  let dune_file_format =
+    create_process "dune" [|"dune"; "format-dune-file"|] read_pipe stdout stderr
+  in
+  close read_pipe;
+  let oc = out_channel_of_descr write_pipe in
+  let fmt = Format.formatter_of_out_channel oc in
+  pp_rules fmt ();
+  close_out oc;
+  match waitpid [] dune_file_format with
+  | _, WEXITED 0 -> ()
+  | _, WEXITED _ ->
+    let msg =
+      Format.asprintf
+        "Failed to format the following rules with 'dune format-dune-file':\n%a"
+        pp_rules ()
+    in
+    failwith msg
+  | _, (WSIGNALED _ | WSTOPPED _) ->
+    failwith "Child process 'dune format-dune-file' was interrupted"
 
 let options_of_syntax = function
   | Some Mdx.Normal -> [ "--syntax=normal" ]
@@ -156,7 +183,10 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direct
       options_of_syntax syntax @
       options_of_section section
     in
-    print_rule ~md_file ~prelude ~nd ~ml_files ~dirs ~root ~requires options;
+    let pp_rules fmt () =
+      pp_rules ~md_file ~prelude ~nd ~ml_files ~dirs ~root ~requires fmt options
+    in
+    print_format_dune_rules pp_rules;
     file_contents
   in
   Mdx.run md_file ~f:on_file;
