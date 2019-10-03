@@ -19,6 +19,7 @@
     (run ocaml-mdx rule %{dep:semisemi.md})
     (run ocaml-mdx rule %{dep:exit.md})
     (run ocaml-mdx rule %{dep:padding.md})
+    (run ocaml-mdx rule %{dep:module_alias.md})
     (run ocaml-mdx rule %{dep:multilines.md})
     (run ocaml-mdx rule %{dep:lines.md})
     (run ocaml-mdx rule %{dep:lwt.md})

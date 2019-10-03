@@ -761,7 +761,7 @@ let rec save_summary acc s =
   | Env_value (summary, id, _) ->
      save_summary (Ident.name id :: acc) summary
 #if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-  | Env_module (summary, id, _, _)
+  | Env_module (summary, id, Mp_present, _)
 #else
   | Env_module (summary, id, _)
 #endif
@@ -779,6 +779,9 @@ let rec save_summary acc s =
         else acc
       in
       save_summary acc summary
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+  | Env_module (_, _, Mp_absent, _)
+#endif
   | Env_empty -> acc
 #if OCAML_MAJOR >= 4 && OCAML_MINOR >= 4
   | Env_constraints (summary, _)
