@@ -14,6 +14,7 @@
 
 #### Fixed
 
+- Used module_presence information on Env.summary to prevent fetching absent modules from the toplevel env (#186, @clecat)
 - Remove trailing whitespaces at the end of toplevel or bash evaluation lines
   (#166, @clecat)
 - Improve error reporting of ocaml-mdx test (#172, @Julow)
