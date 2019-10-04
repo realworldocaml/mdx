@@ -14,7 +14,7 @@
  (action
   (diff dune.inc dune.gen)))
 
-; Ensure that dir1.md and dir2.md are identical
+; Ensure that dir.md and dir2.md are identical
 
 (rule
  (copy dir.md dir2.md))

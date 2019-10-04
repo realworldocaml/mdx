@@ -25,7 +25,7 @@ let read_file filename =
     while true do
       lines := input_line chan :: !lines
     done;
-    !lines
+    assert false
   with End_of_file ->
     close_in chan;
     List.rev !lines
@@ -54,7 +54,7 @@ let chop_extension name =
 let options_of_file file =
   let options_file = chop_extension file ^ ".opts" in
   if not (Sys.file_exists options_file) then
-    [""]
+    []
   else
     read_file options_file
 
@@ -119,15 +119,16 @@ let test_failure_rule file =
     expected_file target_file
 
 let rule_gen rule_type () =
+  let rule_generator = match rule_type with
+    | `Test_fixpoint -> test_fixpoint_rule
+    | `Test_expect -> test_expect_rule
+    | `Test_failure -> test_failure_rule
+  in
   Sys.readdir "."
   |> Array.to_list
   |> List.sort String.compare
   |> List.filter is_testcase
-  |> List.iter (match rule_type with
-      | `Test_fixpoint -> test_fixpoint_rule
-      | `Test_expect -> test_expect_rule
-      | `Test_failure -> test_failure_rule
-    )
+  |> List.iter rule_generator
 
 open Cmdliner
 
