@@ -55,7 +55,7 @@ let pp_cram ppf (t:Mdx.Cram.t) =
     (pp_list pp_line) t.command
     (pp_list pp_output) t.output pp_exit
 
-let pp_block ppf (b:Mdx.Block.t) =
+let pp_block_html ppf (b:Mdx.Block.t) =
   let lang, pp_code, attrs = match b.value with
     | Toplevel t -> Some "ocaml", (fun ppf -> pp_list pp_toplevel ppf t), [
         ("class"             , "command-line");
@@ -84,7 +84,31 @@ let pp_block ppf (b:Mdx.Block.t) =
   Fmt.pf ppf "<div class=\"highlight\"><pre%a><code%a>%t</code></pre></div>"
     pp_attrs () pp_lang () pp_code
 
-let run (`Setup ()) (`File file) (`Output output) =
+let pp_block_latex ppf (b:Mdx.Block.t) =
+  let lang, pp_code = match b.value with
+    | Toplevel t -> Some "ocaml", (fun ppf -> pp_list pp_toplevel ppf t)
+    | OCaml  -> Some "ocaml", pp_contents b
+    | Cram t -> Some "bash" , (fun ppf -> pp_list pp_cram ppf t.tests)
+    | Raw     -> b.header, pp_contents b
+    | Error s -> Some "error", (fun ppf -> pp_list Fmt.string ppf s)
+  in
+  let lang = match lang with
+    | None   -> "clike"
+    | Some l -> l
+  in
+  Fmt.pf ppf "```%s\n%t\n```"
+    lang pp_code
+
+type outputs =
+    Html
+  | Latex
+
+let get_output_infos = function
+  | Html -> pp_block_html, "-t html"
+  | Latex -> pp_block_latex, "-t latex --listings"
+
+let run (`Setup ()) (`File file) (`Output output) output_type =
+  let (pp_block, out_args) = get_output_infos output_type in
   let t = Mdx.parse_file Normal file in
   match t with
   | [] -> 1
@@ -110,8 +134,8 @@ let run (`Setup ()) (`File file) (`Output output) =
       \  --section-divs \
       \  -f markdown-ascii_identifiers \
       \  --no-highlight\
-      \  -t html5 %s -o %s"
-      tmp output
+      \  %s %s -o %s"
+      out_args tmp output
 
 open Cmdliner
 
@@ -121,8 +145,12 @@ let output =
   Term.(app (const (fun x -> `Output x)))
     Arg.(value & opt (some string) None & info ["o";"output"] ~doc ~docv:"FILE")
 
+let out_type =
+  let doc = "Output type: html or latex. Default is html" in
+  Arg.(value & opt (enum ["html", Html; "latex", Latex]) Html & info ["t";"type"] ~doc ~docv:"TYPE")
+
 let cmd =
   let doc = "Pre-process markdown files to produce OCaml code." in
   let exits = Term.default_exits in
-  Term.(pure run $ Cli.setup $ Cli.file $ output),
+  Term.(pure run $ Cli.setup $ Cli.file $ output $ out_type),
   Term.info "output" ~doc ~exits

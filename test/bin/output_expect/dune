@@ -8,3 +8,14 @@
   (progn
    (run ocaml-mdx output %{x} -o output.html)
    (diff? %{y} output.html))))
+
+(alias
+ (name runtest)
+ (deps
+  (:x latex.md)
+  (:y latex.tex.expected)
+  (package mdx))
+ (action
+  (progn
+   (run ocaml-mdx output %{x} -t latex -o latex.tex)
+   (diff? %{y} latex.tex))))

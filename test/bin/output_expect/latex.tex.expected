@@ -1,0 +1,36 @@
+Latex files can also be generated
+
+\hypertarget{test0--toto--and-titi}{%
+\section{Test0, -toto- and titi}\label{test0--toto--and-titi}}
+
+toto
+
+\hypertarget{test-toto-and-titi}{%
+\section{Test1, -toto- and titi!}\label{test-toto-and-titi}}
+
+titi
+
+\hypertarget{test2-and-titi}{%
+\section{\texorpdfstring{Test2, and
+titi!}{Test2,  and titi!}}\label{test2-and-titi}}
+
+yo!
+
+\hypertarget{test3-toto-and-titi}{%
+\section{Test3, toto and titi!}\label{test3-toto-and-titi}}
+
+haha!!
+
+\hypertarget{test4-toto-a.nd.-io}{%
+\section{--Test4, ?toto! a.nd. I/O}\label{test4-toto-a.nd.-io}}
+
+foo
+
+\begin{lstlisting}[language=Caml]
+type &lt;record-name&gt; =
+    { &lt;field&gt; : &lt;type&gt;;
+      &lt;field&gt; : &lt;type&gt;;
+      ...
+    }
+\end{lstlisting}
+
