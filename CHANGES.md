@@ -7,6 +7,7 @@
 - Add a `require-package` label to explicitly declare dune `package` dependencies of a code block
   (#149, @Julow)
 - Add an `unset-` label to unset env variables in shell blocks (#132, @clecat)
+- Add latex generation with `-t` option to output command (#188, @clecat)
 
 #### Changed
 
