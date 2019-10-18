@@ -27,9 +27,9 @@ haha!!
 foo
 
 \begin{lstlisting}[language=Caml]
-type &lt;record-name&gt; =
-    { &lt;field&gt; : &lt;type&gt;;
-      &lt;field&gt; : &lt;type&gt;;
+type <record-name> =
+    { <field> : <type>;
+      <field> : <type>;
       ...
     }
 \end{lstlisting}
