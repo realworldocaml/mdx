@@ -1,0 +1,51 @@
+The tabulations will be converted to spaces:
+
+```ocaml version<4.08
+# let gen_shape =
+	let open Quickcheck.Generator.Let_syntax in
+	let module G = Quickcheck.Generator in
+	let circle =
+	  let%map radius = Float.gen_positive in
+	  Circle { radius }
+	in
+	let rect =
+	  let%map height = Float.gen_positive
+	  and width = Float.gen_positive
+	  in
+	  Rect { height; width }
+	in
+	let poly =
+	  let%map points =
+		List.gen (G.both Float.gen_positive Float.gen_positive)
+	  in
+	  Poly points
+	in
+	G.union [circle; rect; poly];;
+Characters 31-62:
+Error: Unbound module Quickcheck
+```
+
+```ocaml version>=4.08
+# let gen_shape =
+	let open Quickcheck.Generator.Let_syntax in
+	let module G = Quickcheck.Generator in
+	let circle =
+	  let%map radius = Float.gen_positive in
+	  Circle { radius }
+	in
+	let rect =
+	  let%map height = Float.gen_positive
+	  and width = Float.gen_positive
+	  in
+	  Rect { height; width }
+	in
+	let poly =
+	  let%map points =
+		List.gen (G.both Float.gen_positive Float.gen_positive)
+	  in
+	  Poly points
+	in
+	G.union [circle; rect; poly];;
+Line 2, characters 16-47:
+Error: Unbound module Quickcheck
+```

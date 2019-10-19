@@ -349,6 +349,9 @@ let guess_ocaml_kind b =
 let toplevel ~file ~line lines = Toplevel (Toplevel.of_lines ~line ~file lines)
 
 let eval t =
+  let re_tab = Re.(compile (char '\t')) in
+  let contents = List.map Re.(replace_string re_tab ~by:"      ") t.contents in
+  let t = {t with contents} in
   match check_labels t with
   | Error e -> { t with value = Error e }
   | Ok ()   ->

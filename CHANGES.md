@@ -35,6 +35,7 @@
 
 #### Fixed
 
+- Convert tabulations to spaces to fix the parsing of code blocks in toplevel (#191, @gpetiot)
 - Use module_presence information on Env.summary to prevent fetching absent modules from the
   toplevel env (#186, @clecat)
 - Remove trailing whitespaces at the end of toplevel or bash evaluation lines
