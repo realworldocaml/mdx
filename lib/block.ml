@@ -14,6 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+open Migrate_ast
 open Astring
 open Result
 
@@ -29,6 +30,7 @@ type value =
   | Toplevel of Toplevel.t list
 
 type t = {
+  loc     : Location.t;
   line    : int;
   file    : string;
   section : section option;
@@ -40,6 +42,7 @@ type t = {
 }
 
 let empty = {
+  loc=Location.none;
   line=0;
   file="";
   section=None;
@@ -73,10 +76,12 @@ let dump_relation ppf = function
 let dump_labels =
   Fmt.(Dump.(list (pair dump_string (option (pair dump_relation dump_string)))))
 
-let dump ppf { file; line; section; labels; header; contents; value } =
+let dump ppf { loc; file; line; section; labels; header; contents; value } =
   Fmt.pf ppf
-    "{@[file: %s;@ line: %d;@ section: %a;@ labels: %a;@ header: %a;@
+    "{@[%!@{<loc>%a@}:@
+        file: %s;@ line: %d;@ section: %a;@ labels: %a;@ header: %a;@
         contents: %a;@ value: %a@]}"
+    Location.print_loc loc
     file line
     Fmt.(Dump.option dump_section) section
     dump_labels labels
@@ -325,6 +330,7 @@ let required_libraries = function
   | { value = Toplevel _; contents; _} -> require_from_lines contents
   | { value = (Raw | OCaml | Error _ | Cram _); _ } -> Ok Library.Set.empty
 
+let location t = t.loc
 let value t = t.value
 let section t = t.section
 let header t = t.header
@@ -350,7 +356,15 @@ let toplevel ~file ~line lines = Toplevel (Toplevel.of_lines ~line ~file lines)
 
 let eval t =
   let re_tab = Re.(compile (char '\t')) in
-  let contents = List.map Re.(replace_string re_tab ~by:"      ") t.contents in
+  let on_line i s =
+    let s' =  Re.replace_string re_tab ~by:"    " s in
+    if not (String.equal s s') then
+      Misc.warn (location t)
+        ("Warning: tabulation of line " ^ Int.to_string i ^
+         " automatically converted to 4 spaces, please update the source.");
+    s'
+  in
+  let contents = List.mapi on_line t.contents in
   let t = {t with contents} in
   match check_labels t with
   | Error e -> { t with value = Error e }

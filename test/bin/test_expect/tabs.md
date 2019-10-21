@@ -46,6 +46,6 @@ Error: Unbound module Quickcheck
 	  Poly points
 	in
 	G.union [circle; rect; poly];;
-Line 2, characters 16-47:
+Line 2, characters 14-45:
 Error: Unbound module Quickcheck
 ```

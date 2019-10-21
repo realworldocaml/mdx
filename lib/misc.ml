@@ -60,3 +60,7 @@ let err lexbuf fmt =
   Fmt.kstrf (fun str ->
       Fmt.failwith "%a: %s" pp_position lexbuf str
     ) fmt
+
+let warn loc s =
+  Format.fprintf Format.err_formatter "%!@{<loc>%a@}:@ %s\n%!"
+    Location.print_loc loc s

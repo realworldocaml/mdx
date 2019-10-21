@@ -14,6 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+open Migrate_ast
+
 (** Code blocks. *)
 
 type cram_value = { pad: int; tests: Cram.t list }
@@ -31,6 +33,7 @@ type section = int * string
 
 (** The type for supported code blocks. *)
 type t = {
+  loc     : Location.t;
   line    : int;
   file    : string;
   section : section option;
@@ -66,6 +69,8 @@ val pp_line_directive: (string * int) Fmt.t
    filename and line number. *)
 
 (** {2 Accessors} *)
+
+val location : t -> Location.t
 
 val mode: t -> [`Non_det of [`Command|`Output] | `Normal]
 (** [mode t] is [t]'s mode. *)
