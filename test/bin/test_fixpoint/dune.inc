@@ -168,6 +168,14 @@
 (alias
  (name runtest)
  (deps
+  (:x ocaml-408-syntax.md))
+ (action
+  (progn
+   (run ocaml-mdx test --direction=to-md %{x})
+   (diff? %{x} %{x}.corrected))))
+(alias
+ (name runtest)
+ (deps
   (:x padding.md))
  (action
   (progn
