@@ -2,6 +2,7 @@
 
 #### Added
 
+- Migrate to OCaml 4.08 AST to add support for `let*` bindings (#190, @gpetiot)
 - Add `--syntax` option to `rule` subcommand to allow generating rules for cram
   tests (#177, @craigfe)
 - Add a `require-package` label to explicitly declare dune `package` dependencies of a code block

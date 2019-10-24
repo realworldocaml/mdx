@@ -179,7 +179,8 @@ module Phrase = struct
       | _ -> false
     in
     function
-    | { parsed = Ok (Ptop_dir (dir, _)); _ } -> findlib_directive dir
+    | { parsed = Ok (Ptop_dir {pdir_name= {txt= dir; _}; _}); _ } ->
+      findlib_directive dir
     | _ -> false
 
 end
@@ -317,7 +318,14 @@ module Rewrite = struct
 
   let preload verbose ppf =
     let require pkg =
-      let p = Ptop_dir ("require", Pdir_string pkg) in
+      let p =
+        Ptop_dir {
+          pdir_name= {txt= "require"; loc= Location.none};
+          pdir_arg=
+            Some {pdira_desc= Pdir_string pkg; pdira_loc= Location.none};
+          pdir_loc= Location.none
+        }
+      in
       let _ = Toploop.execute_phrase verbose ppf p in
       ()
     in

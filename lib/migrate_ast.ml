@@ -31,39 +31,39 @@ module Asttypes_ = Asttypes
 module Parsetree_ = Parsetree
 
 include (
-  Migrate_parsetree.Ast_406 :
+  Migrate_parsetree.Ast_408 :
   module type of struct
-      include Migrate_parsetree.Ast_406
+      include Migrate_parsetree.Ast_408
     end
-    with module Location := Migrate_parsetree.Ast_406.Location
-     and module Outcometree := Migrate_parsetree.Ast_406.Outcometree
-     and module Asttypes := Migrate_parsetree.Ast_406.Asttypes
-     and module Ast_helper := Migrate_parsetree.Ast_406.Ast_helper
-     and module Parsetree := Migrate_parsetree.Ast_406.Parsetree
+    with module Location := Migrate_parsetree.Ast_408.Location
+     and module Outcometree := Migrate_parsetree.Ast_408.Outcometree
+     and module Asttypes := Migrate_parsetree.Ast_408.Asttypes
+     and module Ast_helper := Migrate_parsetree.Ast_408.Ast_helper
+     and module Parsetree := Migrate_parsetree.Ast_408.Parsetree
  )
 
-module Asttypes = Migrate_parsetree.Ast_406.Asttypes
-module Ast_helper = Migrate_parsetree.Ast_406.Ast_helper
-module Parsetree = Migrate_parsetree.Ast_406.Parsetree
+module Asttypes = Migrate_parsetree.Ast_408.Asttypes
+module Ast_helper = Migrate_parsetree.Ast_408.Ast_helper
+module Parsetree = Migrate_parsetree.Ast_408.Parsetree
 
 module Parse = struct
   open Migrate_parsetree
 
   let toplevel_phrase lexbuf =
-    Parse.toplevel_phrase Versions.ocaml_406 lexbuf
+    Parse.toplevel_phrase Versions.ocaml_408 lexbuf
 
   let implementation lexbuf =
-    Parse.implementation Versions.ocaml_406 lexbuf
+    Parse.implementation Versions.ocaml_408 lexbuf
 
   let interface lexbuf =
-    Parse.interface Versions.ocaml_406 lexbuf
+    Parse.interface Versions.ocaml_408 lexbuf
 end
 
 let to_current =
-  Migrate_parsetree.Versions.(migrate ocaml_406 ocaml_current)
+  Migrate_parsetree.Versions.(migrate ocaml_408 ocaml_current)
 
-let to_406 =
-  Migrate_parsetree.Versions.(migrate ocaml_current ocaml_406)
+let to_408 =
+  Migrate_parsetree.Versions.(migrate ocaml_current ocaml_408)
 
 module Typemod = struct
   open Typemod
@@ -75,46 +75,7 @@ end
 module Printast = struct
   open Printast
 
-#if OCAML_MAJOR = 4 && OCAML_MINOR >= 8
-  let copy_directive_argument (x : Parsetree.directive_argument) =
-    let open Migrate_parsetree.Versions.OCaml_current.Ast.Parsetree in
-    match x with
-    | Pdir_none -> None
-    | Pdir_string s -> Some ({ pdira_desc = Pdir_string s; pdira_loc = Location.none })
-    | Pdir_int (s, c) -> Some ({ pdira_desc = Pdir_int (s, c); pdira_loc = Location.none })
-    | Pdir_ident i -> Some ({ pdira_desc = Pdir_ident i; pdira_loc = Location.none })
-    | Pdir_bool b -> Some ({ pdira_desc = Pdir_bool b; pdira_loc = Location.none })
-
-  let top_phrase f (x : Parsetree.toplevel_phrase) =
-    match x with
-    | Ptop_def s ->
-       top_phrase f (Ptop_def (to_current.copy_structure s))
-    | Ptop_dir (d, a) ->
-      top_phrase f (Ptop_dir { pdir_name = Location.mknoloc d
-                             ; pdir_arg = copy_directive_argument a
-                             ; pdir_loc = Location.none})
-#else
-  let copy_directive_argument (x : Parsetree.directive_argument) =
-    let open Migrate_parsetree.Versions.OCaml_current.Ast.Parsetree in
-    match x with
-    | Pdir_none -> Pdir_none
-    | Pdir_string s -> Pdir_string s
-#if OCAML_MAJOR = 4 && OCAML_MINOR <= 2
-    | Pdir_int (s, _) -> Pdir_int (int_of_string s)
-#else
-    | Pdir_int (s, c) -> Pdir_int (s, c)
-#endif
-    | Pdir_ident i -> Pdir_ident i
-    | Pdir_bool b -> Pdir_bool b
-
-  let top_phrase f (x : Parsetree.toplevel_phrase) =
-    match x with
-    | Ptop_def s ->
-       top_phrase f (Ptop_def (to_current.copy_structure s))
-    | Ptop_dir (d, a) ->
-       top_phrase f (Ptop_dir (d, copy_directive_argument a))
-#endif
-
+  let top_phrase f x = top_phrase f (to_current.copy_toplevel_phrase x)
 end
 
 module Pprintast = struct
@@ -139,7 +100,7 @@ module Pparse = struct
 
   let apply_rewriters_str ~tool_name s =
     apply_rewriters_str ~tool_name (to_current.copy_structure s)
-    |> to_406.copy_structure
+    |> to_408.copy_structure
 end
 
 module Position = struct
@@ -166,7 +127,7 @@ module Position = struct
 end
 
 module Location = struct
-  include Migrate_parsetree.Ast_406.Location
+  include Migrate_parsetree.Ast_408.Location
 
   let fmt fs {loc_start; loc_end; loc_ghost} =
     Format.fprintf fs "(%a..%a)%s" Position.fmt loc_start Position.fmt
