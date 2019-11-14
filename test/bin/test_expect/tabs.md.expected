@@ -21,7 +21,7 @@ The tabulations will be converted to spaces:
       Poly points
     in
     G.union [circle; rect; poly];;
-Characters 31-62:
+Characters 29-60:
 Error: Unbound module Quickcheck
 ```
 
