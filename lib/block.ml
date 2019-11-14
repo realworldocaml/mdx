@@ -360,7 +360,7 @@ let eval t =
     let s' =  Re.replace_string re_tab ~by:"    " s in
     if not (String.equal s s') then
       Misc.warn (location t)
-        ("Warning: tabulation of line " ^ Int.to_string i ^
+        ("Warning: tabulation of line " ^ string_of_int i ^
          " automatically converted to 4 spaces, please update the source.");
     s'
   in
