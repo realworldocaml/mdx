@@ -2,6 +2,8 @@
 
 #### Added
 
+- Add a `--output`/`-o` option to the `test` subcommand to allow specifying a different
+  output file to write the corrected to, or to write it to the standard output (#194, @NathanReb)
 - Migrate to OCaml 4.08 AST to add support for `let*` bindings (#190, @gpetiot)
 - Add `--syntax` option to `rule` subcommand to allow generating rules for cram
   tests (#177, @craigfe)
