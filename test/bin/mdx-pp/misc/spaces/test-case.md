@@ -1,4 +1,5 @@
-Mdx test should preserve empty lines in code blocks
+Mdx pp should properly locate lines in generated code, even when the original
+code block had empty lines
 
 ```ocaml
 
