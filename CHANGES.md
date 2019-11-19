@@ -35,6 +35,7 @@
 
 #### Removed
 
+- Remove the `output` subcommand as it was very specific to RealWorldOCaml needs (#195, @NathanReb)
 - Remove the `infer-timestamp` direction (#171 @Julow)
 
 ### 1.4.0 (2019-06-11)
