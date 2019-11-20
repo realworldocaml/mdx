@@ -1,7 +1,7 @@
 Mdx can also understand ocaml code blocks:
 
 
-```ocaml file=sync_to_ml.ml,part=toto
+```ocaml file=test_case.ml,part=toto
 # let x = 3;;
 val x : int = 3
 # let y = 4;;
@@ -14,11 +14,11 @@ val y : int = 4
 - : unit = ()
 ```
 
-```ocaml file=sync_to_ml.ml,part=zzz
+```ocaml file=test_case.ml,part=zzz
 let f = "hello world!"
 ```
 
-```ocaml file=sync_to_ml.ml
+```ocaml file=test_case.ml
 x;;
 ```
 
@@ -30,25 +30,25 @@ val x : int = 2
 - : unit = ()
 ```
 
-```ocaml file=sync_to_ml.ml,part=new-part-not-in-original
+```ocaml file=test_case.ml,part=new-part-not-in-original
 let g = [ f ]
 ```
 
-```ocaml file=sync_to_broken_ml.ml
+```ocaml file=broken.ml
 let () =
   module MyString = String;
   ()
 ```
 
-```ocaml file=sync_to_ml.mli,part=1
+```ocaml file=test_case.mli,part=1
 module A =
 struct
 ```
 
-```ocaml file=sync_to_ml.mli,part=2
+```ocaml file=test_case.mli,part=2
   type t = Some of int | Many
 ```
 
-```ocaml file=sync_to_ml.mli,part=3
+```ocaml file=test_case.mli,part=3
 end
 ```

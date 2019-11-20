@@ -1,12 +1,12 @@
 (rule
  (targets
-   test_case.md.corrected
+   test-case.md.corrected
    test_case.ml.corrected
    broken.ml.corrected
-   test_case.mli)
+   test_case.mli.corrected)
  (deps
   (package mdx)
-  (:md sync_to_ml.md)
+  (:md test-case.md)
   test_case.ml
   broken.ml
   test_case.mli)
@@ -23,8 +23,8 @@
 
 (alias
  (name runtest)
- (action (diff broken.ml.expected broken.ml.corrected)))
+ (action (diff broken.ml broken.ml.corrected)))
 
 (alias
  (name runtest)
- (action (diff test_case.mli.expected test_case.mli.corrected)))
+ (action (diff test_case.mli test_case.mli.corrected)))
