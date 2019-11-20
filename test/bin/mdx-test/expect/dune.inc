@@ -1,6 +1,6 @@
 
 (rule
- (target code.corrected)
+ (target code.actual)
  (deps (package mdx) (source_tree code))
  (action
   (with-stdout-to %{target}
@@ -9,22 +9,22 @@
 
 (alias
  (name runtest)
- (action (diff code/test-case.md code.corrected)))
+ (action (diff code/test-case.md code.actual)))
 
 (rule
- (target cram.corrected)
+ (target cram.actual)
  (deps (package mdx) (source_tree cram))
  (action
   (with-stdout-to %{target}
    (chdir cram
-    (run ocaml-mdx test --output - --syntax=cram test-case.md)))))
+    (run ocaml-mdx test --output - --syntax=cram test-case.t)))))
 
 (alias
  (name runtest)
- (action (diff cram/test-case.md cram.corrected)))
+ (action (diff cram/test-case.t cram.actual)))
 
 (rule
- (target ellipsis.corrected)
+ (target ellipsis.actual)
  (deps (package mdx) (source_tree ellipsis))
  (action
   (with-stdout-to %{target}
@@ -33,10 +33,10 @@
 
 (alias
  (name runtest)
- (action (diff ellipsis/test-case.md ellipsis.corrected)))
+ (action (diff ellipsis/test-case.md ellipsis.actual)))
 
 (rule
- (target ellipsis-updates.corrected)
+ (target ellipsis-updates.actual)
  (deps (package mdx) (source_tree ellipsis-updates))
  (action
   (with-stdout-to %{target}
@@ -45,10 +45,10 @@
 
 (alias
  (name runtest)
- (action (diff ellipsis-updates/test-case.md.expected ellipsis-updates.corrected)))
+ (action (diff ellipsis-updates/test-case.md.expected ellipsis-updates.actual)))
 
 (rule
- (target empty-line.corrected)
+ (target empty-line.actual)
  (deps (package mdx) (source_tree empty-line))
  (action
   (with-stdout-to %{target}
@@ -57,10 +57,10 @@
 
 (alias
  (name runtest)
- (action (diff empty-line/test-case.md empty-line.corrected)))
+ (action (diff empty-line/test-case.md empty-line.actual)))
 
 (rule
- (target empty-lines.corrected)
+ (target empty-lines.actual)
  (deps (package mdx) (source_tree empty-lines))
  (action
   (with-stdout-to %{target}
@@ -69,10 +69,10 @@
 
 (alias
  (name runtest)
- (action (diff empty-lines/test-case.md.expected empty-lines.corrected)))
+ (action (diff empty-lines/test-case.md.expected empty-lines.actual)))
 
 (rule
- (target environment-variable.corrected)
+ (target environment-variable.actual)
  (deps (package mdx) (source_tree environment-variable))
  (action
   (with-stdout-to %{target}
@@ -81,10 +81,10 @@
 
 (alias
  (name runtest)
- (action (diff environment-variable/test-case.md environment-variable.corrected)))
+ (action (diff environment-variable/test-case.md environment-variable.actual)))
 
 (rule
- (target environment-variable-set.corrected)
+ (target environment-variable-set.actual)
  (deps (package mdx) (source_tree environment-variable-set))
  (action
   (with-stdout-to %{target}
@@ -93,10 +93,10 @@
 
 (alias
  (name runtest)
- (action (diff environment-variable-set/test-case.md environment-variable-set.corrected)))
+ (action (diff environment-variable-set/test-case.md environment-variable-set.actual)))
 
 (rule
- (target environment-variable-unset.corrected)
+ (target environment-variable-unset.actual)
  (deps (package mdx) (source_tree environment-variable-unset))
  (action
   (with-stdout-to %{target}
@@ -105,10 +105,10 @@
 
 (alias
  (name runtest)
- (action (diff environment-variable-unset/test-case.md environment-variable-unset.corrected)))
+ (action (diff environment-variable-unset/test-case.md environment-variable-unset.actual)))
 
 (rule
- (target envs.corrected)
+ (target envs.actual)
  (deps (package mdx) (source_tree envs))
  (action
   (with-stdout-to %{target}
@@ -117,10 +117,10 @@
 
 (alias
  (name runtest)
- (action (diff envs/test-case.md envs.corrected)))
+ (action (diff envs/test-case.md envs.actual)))
 
 (rule
- (target errors.corrected)
+ (target errors.actual)
  (deps (package mdx) (source_tree errors))
  (action
   (with-stdout-to %{target}
@@ -129,10 +129,10 @@
 
 (alias
  (name runtest)
- (action (diff errors/test-case.md errors.corrected)))
+ (action (diff errors/test-case.md errors.actual)))
 
 (rule
- (target exit.corrected)
+ (target exit.actual)
  (deps (package mdx) (source_tree exit))
  (action
   (with-stdout-to %{target}
@@ -141,10 +141,10 @@
 
 (alias
  (name runtest)
- (action (diff exit/test-case.md exit.corrected)))
+ (action (diff exit/test-case.md exit.actual)))
 
 (rule
- (target heredoc.corrected)
+ (target heredoc.actual)
  (deps (package mdx) (source_tree heredoc))
  (action
   (with-stdout-to %{target}
@@ -153,10 +153,10 @@
 
 (alias
  (name runtest)
- (action (diff heredoc/test-case.md heredoc.corrected)))
+ (action (diff heredoc/test-case.md heredoc.actual)))
 
 (rule
- (target labels.corrected)
+ (target labels.actual)
  (deps (package mdx) (source_tree labels))
  (action
   (with-stdout-to %{target}
@@ -165,10 +165,10 @@
 
 (alias
  (name runtest)
- (action (diff labels/test-case.md.expected labels.corrected)))
+ (action (diff labels/test-case.md.expected labels.actual)))
 
 (rule
- (target lines.corrected)
+ (target lines.actual)
  (deps (package mdx) (source_tree lines))
  (action
   (with-stdout-to %{target}
@@ -177,10 +177,10 @@
 
 (alias
  (name runtest)
- (action (diff lines/test-case.md lines.corrected)))
+ (action (diff lines/test-case.md lines.actual)))
 
 (rule
- (target lwt.corrected)
+ (target lwt.actual)
  (deps (package mdx) (source_tree lwt))
  (action
   (with-stdout-to %{target}
@@ -189,10 +189,10 @@
 
 (alias
  (name runtest)
- (action (diff lwt/test-case.md lwt.corrected)))
+ (action (diff lwt/test-case.md lwt.actual)))
 
 (rule
- (target mlt.corrected)
+ (target mlt.actual)
  (deps (package mdx) (source_tree mlt))
  (action
   (with-stdout-to %{target}
@@ -201,10 +201,10 @@
 
 (alias
  (name runtest)
- (action (diff mlt/test-case.md mlt.corrected)))
+ (action (diff mlt/test-case.md mlt.actual)))
 
 (rule
- (target module-alias.corrected)
+ (target module-alias.actual)
  (deps (package mdx) (source_tree module-alias))
  (action
   (with-stdout-to %{target}
@@ -213,10 +213,10 @@
 
 (alias
  (name runtest)
- (action (diff module-alias/test-case.md module-alias.corrected)))
+ (action (diff module-alias/test-case.md module-alias.actual)))
 
 (rule
- (target multilines.corrected)
+ (target multilines.actual)
  (deps (package mdx) (source_tree multilines))
  (action
   (with-stdout-to %{target}
@@ -225,10 +225,10 @@
 
 (alias
  (name runtest)
- (action (diff multilines/test-case.md multilines.corrected)))
+ (action (diff multilines/test-case.md multilines.actual)))
 
 (rule
- (target non-det.corrected)
+ (target non-det.actual)
  (deps (package mdx) (source_tree non-det))
  (action
   (with-stdout-to %{target}
@@ -237,10 +237,10 @@
 
 (alias
  (name runtest)
- (action (diff non-det/test-case.md non-det.corrected)))
+ (action (diff non-det/test-case.md non-det.actual)))
 
 (rule
- (target ocaml-408-syntax.corrected)
+ (target ocaml-408-syntax.actual)
  (deps (package mdx) (source_tree ocaml-408-syntax))
  (action
   (with-stdout-to %{target}
@@ -249,10 +249,10 @@
 
 (alias
  (name runtest)
- (action (diff ocaml-408-syntax/test-case.md ocaml-408-syntax.corrected)))
+ (action (diff ocaml-408-syntax/test-case.md ocaml-408-syntax.actual)))
 
 (rule
- (target padding.corrected)
+ (target padding.actual)
  (deps (package mdx) (source_tree padding))
  (action
   (with-stdout-to %{target}
@@ -261,10 +261,10 @@
 
 (alias
  (name runtest)
- (action (diff padding/test-case.md padding.corrected)))
+ (action (diff padding/test-case.md padding.actual)))
 
 (rule
- (target prelude.corrected)
+ (target prelude.actual)
  (deps (package mdx) (source_tree prelude))
  (action
   (with-stdout-to %{target}
@@ -273,10 +273,10 @@
 
 (alias
  (name runtest)
- (action (diff prelude/test-case.md prelude.corrected)))
+ (action (diff prelude/test-case.md prelude.actual)))
 
 (rule
- (target prelude-file.corrected)
+ (target prelude-file.actual)
  (deps (package mdx) (source_tree prelude-file))
  (action
   (with-stdout-to %{target}
@@ -285,10 +285,10 @@
 
 (alias
  (name runtest)
- (action (diff prelude-file/test-case.md prelude-file.corrected)))
+ (action (diff prelude-file/test-case.md prelude-file.actual)))
 
 (rule
- (target recursive-compile.corrected)
+ (target recursive-compile.actual)
  (deps (package mdx) (source_tree recursive-compile))
  (action
   (with-stdout-to %{target}
@@ -297,10 +297,10 @@
 
 (alias
  (name runtest)
- (action (diff recursive-compile/test-case.md recursive-compile.corrected)))
+ (action (diff recursive-compile/test-case.md recursive-compile.actual)))
 
 (rule
- (target root-option.corrected)
+ (target root-option.actual)
  (deps (package mdx) (source_tree root-option))
  (action
   (with-stdout-to %{target}
@@ -309,10 +309,10 @@
 
 (alias
  (name runtest)
- (action (diff root-option/test-case.md.expected root-option.corrected)))
+ (action (diff root-option/test-case.md.expected root-option.actual)))
 
 (rule
- (target section.corrected)
+ (target section.actual)
  (deps (package mdx) (source_tree section))
  (action
   (with-stdout-to %{target}
@@ -321,10 +321,10 @@
 
 (alias
  (name runtest)
- (action (diff section/test-case.md.expected section.corrected)))
+ (action (diff section/test-case.md.expected section.actual)))
 
 (rule
- (target semisemi.corrected)
+ (target semisemi.actual)
  (deps (package mdx) (source_tree semisemi))
  (action
   (with-stdout-to %{target}
@@ -333,10 +333,10 @@
 
 (alias
  (name runtest)
- (action (diff semisemi/test-case.md semisemi.corrected)))
+ (action (diff semisemi/test-case.md semisemi.actual)))
 
 (rule
- (target spaces.corrected)
+ (target spaces.actual)
  (deps (package mdx) (source_tree spaces))
  (action
   (with-stdout-to %{target}
@@ -345,10 +345,10 @@
 
 (alias
  (name runtest)
- (action (diff spaces/test-case.md spaces.corrected)))
+ (action (diff spaces/test-case.md spaces.actual)))
 
 (rule
- (target sync-to-md.corrected)
+ (target sync-to-md.actual)
  (deps (package mdx) (source_tree sync-to-md))
  (action
   (with-stdout-to %{target}
@@ -357,10 +357,10 @@
 
 (alias
  (name runtest)
- (action (diff sync-to-md/test-case.md.expected sync-to-md.corrected)))
+ (action (diff sync-to-md/test-case.md.expected sync-to-md.actual)))
 
 (rule
- (target trailing-whitespaces.corrected)
+ (target trailing-whitespaces.actual)
  (deps (package mdx) (source_tree trailing-whitespaces))
  (action
   (with-stdout-to %{target}
@@ -369,4 +369,4 @@
 
 (alias
  (name runtest)
- (action (diff trailing-whitespaces/test-case.md.expected trailing-whitespaces.corrected)))
+ (action (diff trailing-whitespaces/test-case.md.expected trailing-whitespaces.actual)))

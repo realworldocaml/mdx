@@ -1,7 +1,7 @@
 
 (rule
- (target both-prelude.corrected)
- (deps (package mdx) both-prelude/test-case.md both-prelude/test-case.opts)
+ (target both-prelude.actual)
+ (deps (package mdx) (source_tree both-prelude))
  (action
   (with-outputs-to %{target}
    (chdir both-prelude
@@ -9,11 +9,11 @@
 
 (alias
  (name runtest)
- (action (diff both-prelude/test-case.md.expected both-prelude.corrected)))
+ (action (diff both-prelude/test-case.md.expected both-prelude.actual)))
 
 (rule
- (target in-toplevel.corrected)
- (deps (package mdx) in-toplevel/test-case.md)
+ (target in-toplevel.actual)
+ (deps (package mdx) (source_tree in-toplevel))
  (action
   (with-outputs-to %{target}
    (chdir in-toplevel
@@ -21,11 +21,11 @@
 
 (alias
  (name runtest)
- (action (diff in-toplevel/test-case.md.expected in-toplevel.corrected)))
+ (action (diff in-toplevel/test-case.md.expected in-toplevel.actual)))
 
 (rule
- (target ml-file-not-found.corrected)
- (deps (package mdx) ml-file-not-found/test-case.md)
+ (target ml-file-not-found.actual)
+ (deps (package mdx) (source_tree ml-file-not-found))
  (action
   (with-outputs-to %{target}
    (chdir ml-file-not-found
@@ -33,11 +33,11 @@
 
 (alias
  (name runtest)
- (action (diff ml-file-not-found/test-case.md.expected ml-file-not-found.corrected)))
+ (action (diff ml-file-not-found/test-case.md.expected ml-file-not-found.actual)))
 
 (rule
- (target part-not-found.corrected)
- (deps (package mdx) part-not-found/test-case.md part-not-found/test-case.opts)
+ (target part-not-found.actual)
+ (deps (package mdx) (source_tree part-not-found))
  (action
   (with-outputs-to %{target}
    (chdir part-not-found
@@ -45,4 +45,4 @@
 
 (alias
  (name runtest)
- (action (diff part-not-found/test-case.md.expected part-not-found.corrected)))
+ (action (diff part-not-found/test-case.md.expected part-not-found.actual)))
