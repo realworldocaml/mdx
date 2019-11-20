@@ -93,25 +93,29 @@ let run_str ~syntax ~f file =
   let items = parse_lexbuf syntax lexbuf in
   let items = List.map eval items in
   Log.debug (fun l -> l "run @[%a@]" dump items);
-  let expected = f file_contents items in
-  let result = if expected <> file_contents then Differs else Identical in
-  (result, expected)
+  let corrected = f file_contents items in
+  let result = if corrected <> file_contents then Differs else Identical in
+  (result, corrected)
 
-let run_to_file ?(syntax=Normal) ?(force_output=false) ~f ~outfile infile =
-  let (test_result, expected) = run_str ~syntax ~f infile in
-  match force_output, test_result with
-  | true, _
-  | false, Differs ->
-    let oc = open_out_bin outfile in
-    output_string oc expected;
-    close_out oc
-  | false, Identical ->
-    if Sys.file_exists outfile then Sys.remove outfile
+let write_file ~outfile content =
+  let oc = open_out_bin outfile in
+  output_string oc content;
+  close_out oc
 
 let run_to_stdout ?(syntax=Normal) ~f infile =
-  let (_, expected) = run_str ~syntax ~f infile in
-  print_string expected
+  let (_, corrected) = run_str ~syntax ~f infile in
+  print_string corrected
+
+let run_to_file ?(syntax=Normal) ~f ~outfile infile =
+  let (_, corrected) = run_str ~syntax ~f infile in
+  write_file ~outfile corrected
 
 let run ?(syntax=Normal) ?(force_output=false) ~f infile =
   let outfile = infile ^ ".corrected" in
-  run_to_file ~syntax ~force_output ~f ~outfile infile
+  let (test_result, corrected) = run_str ~syntax ~f infile in
+  match force_output, test_result with
+  | true, _
+  | false, Differs ->
+    write_file ~outfile corrected
+  | false, Identical ->
+    if Sys.file_exists outfile then Sys.remove outfile

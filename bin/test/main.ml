@@ -372,13 +372,12 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     Format.pp_print_flush ppf ();
     Buffer.contents buf
   in
-  let run_to_file outfile =
-    Mdx.run_to_file ?syntax ~force_output ~outfile ~f:gen_corrected file
-  in
   (match (output : Cli.output option) with
    | Some Stdout -> Mdx.run_to_stdout ?syntax ~f:gen_corrected file
-   | Some (File outfile) -> run_to_file outfile
-   | None -> run_to_file (file ^ ".corrected"));
+   | Some (File outfile) ->
+     Mdx.run_to_file ?syntax ~outfile ~f:gen_corrected file
+   | None ->
+     Mdx.run ?syntax ~force_output ~f:gen_corrected file);
   Hashtbl.iter (write_parts ~force_output) files;
   0
 

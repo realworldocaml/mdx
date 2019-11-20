@@ -76,20 +76,18 @@ val run_to_stdout : ?syntax: syntax -> f:(string -> t -> string) -> string -> un
 
 val run_to_file :
   ?syntax: syntax ->
-  ?force_output: bool ->
   f:(string -> t -> string) ->
   outfile: string ->
   string ->
   unit
+(** Same as [run_to_stdout] but writes the corrected version to [outfile]*)
+
+val run: ?syntax:syntax -> ?force_output:bool -> f:(string -> t -> string) -> string -> unit
 (** [run_to_file ?syntax ?force_output ~f ~outfile file] runs the callback [f]
     similarly to [run_to_stdout] to generate its corrected version. If
     [force_output] is [true] (defaults to [false]) or if the corrected version
-    differs from the original file content, it writes it to [outfile].
-    Otherwise, if [outfile] already exists, it removes it. *)
-
-val run: ?syntax:syntax -> ?force_output:bool -> f:(string -> t -> string) -> string -> unit
-(** [run ?syntax ?force_output ~f file] is
-    [run_to_file ?syntax ?force_output ~f ~outfile:(file ^ ".corrected") file]. *)
+    differs from the original file content, it writes it to <file>.corrected.
+    Otherwise, if <file>.corrected already exists, it removes it. *)
 
 (** {2 Filtering} *)
 

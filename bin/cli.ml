@@ -127,7 +127,7 @@ let output =
     Printf.sprintf
       "Specify where to write the command output. $(docv) should be $(b,-) for \
        stdout or a filename. Defaults to $(i,%s).corrected. \
-       Note that setting the output to stdout implies $(b,--force-output)."
+       Note that setting this option implies $(b,--force-output)."
       file_docv
   in
   named (fun x -> `Output x)
