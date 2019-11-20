@@ -66,22 +66,14 @@ Error: This expression has type string but an expression was expected of type
          int
 ```
 
-Let's go recursive:
+Line directives work for `sh` blocks as well:
 
-```sh version<4.08
-$ ocamlc -pp "ocaml-mdx pp" -impl test-case.md
-File "lines.md", line 33, characters 6-11:
-Error: This expression has type string but an expression was expected of type
-         int
-[2]
+```sh version=4.08.1
+$ ocamlc -version
+4.08.1
 ```
 
-```sh version>=4.08
-$ ocamlc -pp "ocaml-mdx pp" -impl lines.md
-File "lines.md", line 33, characters 6-11:
-33 |   n + "foo"
-           ^^^^^
-Error: This expression has type string but an expression was expected of type
-         int
-[2]
+```sh version=4.07.1
+$ ocamlc -version
+4.07.1
 ```
