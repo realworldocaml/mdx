@@ -288,18 +288,6 @@
  (action (diff prelude-file/test-case.md prelude-file.actual)))
 
 (rule
- (target recursive-compile.actual)
- (deps (package mdx) (source_tree recursive-compile))
- (action
-  (with-stdout-to %{target}
-   (chdir recursive-compile
-    (run ocaml-mdx test --output - test-case.md)))))
-
-(alias
- (name runtest)
- (action (diff recursive-compile/test-case.md recursive-compile.actual)))
-
-(rule
  (target root-option.actual)
  (deps (package mdx) (source_tree root-option))
  (action
