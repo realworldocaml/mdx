@@ -69,12 +69,25 @@ val parse_lexbuf: syntax -> Lexing.lexbuf -> t
 
 (** {2 Evaluation} *)
 
+val run_to_stdout : ?syntax: syntax -> f:(string -> t -> string) -> string -> unit
+(** [run_to_stdout ?syntax ~f file] runs the callback [f] on the raw and
+    structured content of [file], as specified  by [syntax] (defaults to [Normal]).
+    The returned corrected version is then written to stdout. *)
+
+val run_to_file :
+  ?syntax: syntax ->
+  f:(string -> t -> string) ->
+  outfile: string ->
+  string ->
+  unit
+(** Same as [run_to_stdout] but writes the corrected version to [outfile]*)
+
 val run: ?syntax:syntax -> ?force_output:bool -> f:(string -> t -> string) -> string -> unit
-(** [run ?syntax ~f n] runs the expect callback [f] over the file named
-   [n]. [f] is called with the raw contents of [n] and its structured
-   contents; it returns the new file contents. If the result of [f] is
-   different from the initial contents or if force_output was set to true, then
-   [$n.corrected] is created with the new contents. *)
+(** [run_to_file ?syntax ?force_output ~f ~outfile file] runs the callback [f]
+    similarly to [run_to_stdout] to generate its corrected version. If
+    [force_output] is [true] (defaults to [false]) or if the corrected version
+    differs from the original file content, it writes it to <file>.corrected.
+    Otherwise, if <file>.corrected already exists, it removes it. *)
 
 (** {2 Filtering} *)
 

@@ -266,7 +266,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     (`Not_verbose not_verbose) (`Syntax syntax) (`Silent silent)
     (`Verbose_findlib verbose_findlib) (`Prelude prelude)
     (`Prelude_str prelude_str) (`File file) (`Section section) (`Root root)
-    (`Direction direction) (`Force_output force_output) =
+    (`Direction direction) (`Force_output force_output) (`Output output) =
   let c =
     Mdx_top.init ~verbose:(not not_verbose) ~silent ~verbose_findlib ()
   in
@@ -353,25 +353,31 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
       | None ->
         run_toplevel_tests ?root c ppf tests t
   in
-
-  Mdx.run ?syntax ~force_output file ~f:(fun file_contents items ->
-      let temp_file = Filename.temp_file "ocaml-mdx" ".output" in
-      at_exit (fun () -> Sys.remove temp_file);
-      let buf = Buffer.create (String.length file_contents + 1024) in
-      let ppf = Format.formatter_of_buffer buf in
-      List.iter (function
-          | Section _
-          | Text _ as t -> Mdx.pp_line ?syntax ppf t
-          | Block t ->
-            List.iter (fun (k, v) -> Unix.putenv k v) (Block.set_variables t);
-            try
-              Mdx_top.in_env (Block.environment t)
-                (fun () -> test_block ~ppf ~temp_file t)
-            with Failure msg ->
-              raise (Test_block_failure (t, msg))
-        ) items;
-      Format.pp_print_flush ppf ();
-      Buffer.contents buf);
+  let gen_corrected file_contents items =
+    let temp_file = Filename.temp_file "ocaml-mdx" ".output" in
+    at_exit (fun () -> Sys.remove temp_file);
+    let buf = Buffer.create (String.length file_contents + 1024) in
+    let ppf = Format.formatter_of_buffer buf in
+    List.iter (function
+        | Section _
+        | Text _ as t -> Mdx.pp_line ?syntax ppf t
+        | Block t ->
+          List.iter (fun (k, v) -> Unix.putenv k v) (Block.set_variables t);
+          try
+            Mdx_top.in_env (Block.environment t)
+              (fun () -> test_block ~ppf ~temp_file t)
+          with Failure msg ->
+            raise (Test_block_failure (t, msg))
+      ) items;
+    Format.pp_print_flush ppf ();
+    Buffer.contents buf
+  in
+  (match (output : Cli.output option) with
+   | Some Stdout -> Mdx.run_to_stdout ?syntax ~f:gen_corrected file
+   | Some (File outfile) ->
+     Mdx.run_to_file ?syntax ~outfile ~f:gen_corrected file
+   | None ->
+     Mdx.run ?syntax ~force_output ~f:gen_corrected file);
   Hashtbl.iter (write_parts ~force_output) files;
   0
 
@@ -387,10 +393,10 @@ let report_error_in_block block msg =
     kind block.file block.line msg
 
 let run setup non_deterministic not_verbose syntax silent verbose_findlib
-    prelude prelude_str file section root direction force_output : int =
+    prelude prelude_str file section root direction force_output output : int =
     try
     run_exn setup non_deterministic not_verbose syntax silent verbose_findlib
-      prelude prelude_str file section root direction force_output
+      prelude prelude_str file section root direction force_output output
     with
     | Failure f ->
       prerr_endline f;
@@ -410,7 +416,8 @@ let cmd =
   Term.(pure run
         $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose $ Cli.syntax
         $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
-        $ Cli.file $ Cli.section $ Cli.root $ Cli.direction $ Cli.force_output),
+        $ Cli.file $ Cli.section $ Cli.root $ Cli.direction $ Cli.force_output
+        $ Cli.output),
   Term.info "ocaml-mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man
 
 let main () = Term.(exit_status @@ eval cmd)

@@ -1,4 +1,5 @@
 open Cmdliner
+open Result
 
 let named wrapper =
   Term.(app (const wrapper))
@@ -25,10 +26,12 @@ let syntax =
   named (fun x -> `Syntax x)
     Arg.(value & opt (some syntax) None & info ["syntax"] ~doc ~docv:"SYNTAX")
 
+let file_docv = "FILE"
+
 let file =
   let doc = "The file to use." in
   named (fun x -> `File x)
-    Arg.(required & pos 0 (some string) None & info [] ~doc ~docv:"FILE")
+    Arg.(required & pos 0 (some string) None & info [] ~doc ~docv:file_docv)
 
 let section =
   let doc =
@@ -99,6 +102,36 @@ let force_output =
   let doc = "Force generation of corrected file (even if there was no diff)" in
   named (fun x -> `Force_output x)
     Arg.(value & flag & info ["force-output"] ~doc)
+
+type output =
+  | File of string
+  | Stdout
+
+let output_conv =
+  let (sparse, sprint) = Arg.string in
+  let parse s =
+    match sparse s with
+    | `Ok "-" -> Ok Stdout
+    | `Ok s -> Ok (File s)
+    | `Error msg -> Error (`Msg msg)
+  in
+  let print fmt = function
+    | Stdout -> sprint fmt "-"
+    | File s -> sprint fmt s
+  in
+  Arg.conv ~docv:"OUTPUT" (parse, print)
+
+let output =
+  let docv = "OUTPUT" in
+  let doc =
+    Printf.sprintf
+      "Specify where to write the command output. $(docv) should be $(b,-) for \
+       stdout or a filename. Defaults to $(i,%s).corrected. \
+       Note that setting this option implies $(b,--force-output)."
+      file_docv
+  in
+  named (fun x -> `Output x)
+    Arg.(value & opt (some output_conv) None & info ~doc ~docv ["o"; "output"])
 
 let setup_log style_renderer level =
   Fmt_tty.setup_std_outputs ?style_renderer ();

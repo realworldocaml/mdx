@@ -48,18 +48,6 @@ let init file =
     };
   file_contents, lexbuf
 
-let run_expect_test ~force_output file ~f =
-  let file_contents, lexbuf = init file in
-  let expected = f file_contents lexbuf in
-  let corrected_file = file ^ ".corrected" in
-  if force_output || file_contents <> expected then begin
-    let oc = open_out_bin corrected_file in
-    output_string oc expected;
-    close_out oc;
-  end else begin
-    if Sys.file_exists corrected_file then Sys.remove corrected_file
-  end
-
 let pp_position ppf lexbuf =
   let p = Lexing.lexeme_start_p lexbuf in
   Fmt.pf ppf

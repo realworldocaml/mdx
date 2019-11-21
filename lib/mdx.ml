@@ -84,10 +84,38 @@ let eval = function
     let t' = Block.eval t in
     if t == t' then x else Block t'
 
-let run ?(syntax=Normal) ?(force_output=false) ~f n =
-  Misc.run_expect_test ~force_output n ~f:(fun c l ->
-      let items = parse_lexbuf syntax l in
-      let items = List.map eval items in
-      Log.debug (fun l -> l "run @[%a@]" dump items);
-      f c items
-    )
+type expect_result =
+  | Identical
+  | Differs
+
+let run_str ~syntax ~f file =
+  let file_contents, lexbuf = Misc.init file in
+  let items = parse_lexbuf syntax lexbuf in
+  let items = List.map eval items in
+  Log.debug (fun l -> l "run @[%a@]" dump items);
+  let corrected = f file_contents items in
+  let result = if corrected <> file_contents then Differs else Identical in
+  (result, corrected)
+
+let write_file ~outfile content =
+  let oc = open_out_bin outfile in
+  output_string oc content;
+  close_out oc
+
+let run_to_stdout ?(syntax=Normal) ~f infile =
+  let (_, corrected) = run_str ~syntax ~f infile in
+  print_string corrected
+
+let run_to_file ?(syntax=Normal) ~f ~outfile infile =
+  let (_, corrected) = run_str ~syntax ~f infile in
+  write_file ~outfile corrected
+
+let run ?(syntax=Normal) ?(force_output=false) ~f infile =
+  let outfile = infile ^ ".corrected" in
+  let (test_result, corrected) = run_str ~syntax ~f infile in
+  match force_output, test_result with
+  | true, _
+  | false, Differs ->
+    write_file ~outfile corrected
+  | false, Identical ->
+    if Sys.file_exists outfile then Sys.remove outfile
