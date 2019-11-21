@@ -1,3 +1,12 @@
+(* Required for compat with OCaml < 4.04 *)
+let extension filename =
+  let length = String.length filename in
+  let last_dot =
+    try String.rindex filename '.'
+    with Not_found -> (length - 1)
+  in
+  String.sub filename last_dot (length - last_dot)
+
 let read_file filename =
   let lines = ref [] in
   let chan = open_in filename in
@@ -45,7 +54,7 @@ type dir =
   }
 
 let test_file ~dir_name files =
-  let is_test_file f = String.equal f cwd_test_file_md || String.equal f cwd_test_file_t in
+  let is_test_file f = f = cwd_test_file_md || f = cwd_test_file_t in
   match List.filter is_test_file files with
   | [test_file] -> test_file
   | [] ->
@@ -58,7 +67,7 @@ let test_file ~dir_name files =
     exit 1
 
 let expected_file ~dir_name ~test_file files =
-  let is_expected_file f = String.equal (Filename.extension f) ".expected" in
+  let is_expected_file f = extension f = ".expected" in
   match List.filter is_expected_file files with
   | [] -> test_file
   | [expected_file] -> expected_file
