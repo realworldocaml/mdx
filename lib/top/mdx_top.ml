@@ -17,12 +17,7 @@
 
 open Mdx.Migrate_ast
 open Mdx.Compat
-
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-let try_finally = Misc.try_finally
-#else
-let try_finally f ~always = Misc.try_finally f always
-#endif
+open Compat_top
 
 module Toploop = struct
   include Toploop
@@ -88,22 +83,8 @@ module Lexbuf = struct
       lexbuf.Lexing.lex_last_action
     | _ -> assert false
 
-  let shift_location_error (start : Lexing.position) =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-  let aux (msg : Location.msg) =
-    { msg with loc = shift_toplevel_location ~start msg.loc}
-  in
-  fun (report : Location.report) ->
-    { report with main = aux report.main;
-                  sub = List.map aux report.sub; }
-#else
-    let open Location in
-     let rec aux (error : Location.error) =
-        {error with sub = List.map aux error.sub;
-                    loc = shift_toplevel_location ~start error.loc}
-      in
-      aux
-#endif
+  let shift_location_error start =
+    map_error_loc ~f:(shift_toplevel_location ~start)
 
   let position_mapper start =
     let open Ast_mapper in
@@ -137,16 +118,10 @@ module Phrase = struct
     let parsed = match Parse.toplevel_phrase lexbuf with
       | phrase -> Result.Ok phrase
       | exception exn ->
-        let exn = match Location.error_of_exn exn with
+        let exn = match error_of_exn exn with
           | None -> raise exn
-#if OCAML_MAJOR >= 4 && OCAML_MINOR > 5
-          | Some `Already_displayed -> raise exn
-          | Some (`Ok error) ->
-            Location.Error (Lexbuf.shift_location_error startpos error)
-#else
           | Some error ->
             Location.Error (Lexbuf.shift_location_error startpos error)
-#endif
         in
         if lexbuf.Lexing.lex_last_action <> Lexbuf.semisemi_action then begin
           let rec aux () = match Lexer.token lexbuf with
@@ -240,14 +215,8 @@ module Rewrite = struct
     | _ -> path
 
   let is_persistent_value env longident =
-    let rec is_persistent_path = function
-      | Path.Pident id -> Ident.persistent id
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-      | Path.Pdot (p, _) -> is_persistent_path p
-#else
-      | Path.Pdot (p, _, _) -> is_persistent_path p
-#endif
-      | Path.Papply (_, p) -> is_persistent_path p
+    let is_persistent_path p =
+      Ident.persistent (get_id_in_path p)
     in
     try is_persistent_path (fst (Env.lookup_value longident env))
     with Not_found -> false
@@ -256,11 +225,7 @@ module Rewrite = struct
     let rec aux = function
       | []   -> pstr_item
       | h::t ->
-#if OCAML_MAJOR >= 4 && OCAML_MINOR < 4
-        let looked_up_path = Env.lookup_type h.typ env |> fst in
-#else
-        let looked_up_path = Env.lookup_type h.typ env in
-#endif
+        let looked_up_path = lookup_type h.typ env in
         let ty = normalize_type_path env looked_up_path in
         if Path.same ty (normalize_type_path env path) then (
           let loc = pstr_item.Parsetree.pstr_loc in
@@ -300,12 +265,8 @@ module Rewrite = struct
         let snap = Btype.snapshot () in
         let pstr =
           try
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-            let tstr, _tsg, _, env =
-#else
-            let tstr, _tsg, env =
-#endif
-              Typemod.type_structure !Toploop.toplevel_env pstr Location.none
+            let tstr, env =
+              type_structure !Toploop.toplevel_env pstr Location.none
             in
             List.map2 (item ts env) pstr tstr.Typedtree.str_items
           with _ ->
@@ -465,56 +426,15 @@ let eval t cmd =
 
 let all_show_funs = ref []
 
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
-let section_env = "Environment queries"
-#endif
-
-let std_out = lazy (Format.formatter_of_out_channel stdout)
-
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
-let show_prim to_sig ppf lid =
-  let env = !Toploop.toplevel_env in
-  let loc = Location.none in
-  try
-    let s =
-      match lid with
-      | Longident.Lident s -> s
-      | Longident.Ldot (_,s) -> s
-      | Longident.Lapply _ ->
-          Format.fprintf ppf "Invalid path %a@." Printtyp.longident lid;
-          raise Exit
-    in
-    let id = Ident.create_persistent s in
-    let sg = to_sig env loc id lid in
-    Printtyp.wrap_printing_env env (fun () ->
-        Format.fprintf ppf "@[%a@]@." Printtyp.signature sg
-      )
-  with
-  | Not_found -> Format.fprintf ppf "@[Unknown element.@]@."
-  | Exit -> ()
-#endif
-
 let reg_show_prim name to_sig doc =
-  let lazy ppf = std_out in
   all_show_funs := to_sig :: !all_show_funs;
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
-  Toploop.add_directive
-    name
-    (Toploop.Directive_ident (show_prim to_sig ppf))
-    { section = section_env; doc }
-#else
-  ignore (name, doc, ppf)
-#endif
+  add_directive ~name ~doc (`Show_prim to_sig)
 
 let show_val () =
   reg_show_prim "show_val"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_value env loc lid in
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-       [ Types.Sig_value (id, desc, Exported) ]
-#else
-       [ Types.Sig_value (id, desc) ]
-#endif
+       [sig_value id desc]
     )
     "Print the signature of the corresponding value."
 
@@ -522,11 +442,7 @@ let show_type () =
   reg_show_prim "show_type"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_type env loc lid in
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-       [ Sig_type (id, desc, Trec_not, Exported) ]
-#else
-       [ Sig_type (id, desc, Trec_not) ]
-#endif
+       [sig_type id desc]
     )
     "Print the signature of the corresponding type constructor."
 
@@ -541,23 +457,16 @@ let show_exception () =
          else None
        in
        let ext =
-         { ext_type_path = Predef.path_exn;
-           ext_type_params = [];
-#if OCAML_MAJOR >= 4 && OCAML_MINOR < 3
-           ext_args = desc.cstr_args;
-#else
-           ext_args = Cstr_tuple desc.cstr_args;
-#endif
-           ext_ret_type = ret_type;
-           ext_private = Asttypes_.Public;
-           Types.ext_loc = desc.cstr_loc;
-           Types.ext_attributes = desc.cstr_attributes; }
+         extension_constructor
+           ~ext_type_path:Predef.path_exn
+           ~ext_type_params:[]
+           ~ext_args:desc.cstr_args
+           ~ext_ret_type:ret_type
+           ~ext_private:Asttypes_.Public
+           ~ext_loc:desc.cstr_loc
+           ~ext_attributes:desc.cstr_attributes
        in
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-         [Sig_typext (id, ext, Text_exception, Exported)]
-#else
-         [Sig_typext (id, ext, Text_exception)]
-#endif
+       [sig_typext id ext]
     )
     "Print the signature of the corresponding exception."
 
@@ -565,28 +474,14 @@ let show_module () =
   let open Types in
   let trim_signature = function
     | Mty_signature sg ->
-      Mty_signature (List.map (function
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-            Sig_module (id, mp, md, rs, visibility) ->
-            Sig_module (id, mp, {md with md_attributes =
-                                           {attr_name = Location.mknoloc "..."
-                                           ;attr_payload = Parsetree_.PStr []
-                                           ;attr_loc = Location.none}
-                                           :: md.md_attributes},
-                        rs,
-                        visibility)
-#else
-            Sig_module (id, md, rs) ->
-            Sig_module (id, {md with md_attributes =
-                                       (Location.mknoloc "...",
-                                        Parsetree_.PStr [])
-                                        :: md.md_attributes},
-                        rs)
-#endif
-          (*| Sig_modtype (id, Modtype_manifest mty) ->
-              Sig_modtype (id, Modtype_manifest (trim_modtype mty))*)
-          | item -> item)
-          sg)
+      Mty_signature
+        (map_sig_attributes sg
+           ~f:(fun attrs ->
+               attribute
+                 ~name:(Location.mknoloc "...")
+                 ~payload:(Parsetree_.PStr [])
+               :: attrs
+             ))
     | mty -> mty
   in
   reg_show_prim "show_module"
@@ -594,23 +489,14 @@ let show_module () =
        let rec accum_aliases path acc =
          let md = Env.find_module path env in
          let acc =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-           Sig_module (id, Mp_present, {md with md_type = trim_signature md.md_type},
-                       Trec_not, Exported) :: acc in
-#else
-           Sig_module (id, {md with md_type = trim_signature md.md_type},
-                       Trec_not) :: acc in
-#endif
-         match md.md_type with
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-         | Mty_alias(path) -> accum_aliases path acc
-#elif OCAML_MAJOR >= 4 && OCAML_MINOR > 3
-         | Mty_alias(_, path) -> accum_aliases path acc
-#else
-         | Mty_alias path -> accum_aliases path acc
-#endif
-         | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
-           List.rev acc
+           sig_module
+             id
+             {md with md_type = trim_signature md.md_type}
+           :: acc
+         in
+         match mty_path md.md_type with
+         | Some path -> accum_aliases path acc
+         | None -> List.rev acc
        in
        let path, _ = Typetexp.find_module env loc lid in
        accum_aliases path []
@@ -621,11 +507,7 @@ let show_module_type () =
   reg_show_prim "show_module_type"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_modtype env loc lid in
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-       [ Sig_modtype (id, desc, Exported) ]
-#else
-       [ Sig_modtype (id, desc) ]
-#endif
+       [sig_modtype id desc]
     )
     "Print the signature of the corresponding module type."
 
@@ -633,11 +515,7 @@ let show_class () =
   reg_show_prim "show_class"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_class env loc lid in
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-       [ Sig_class (id, desc, Trec_not, Exported) ]
-#else
-       [ Sig_class (id, desc, Trec_not) ]
-#endif
+       [sig_class id desc]
     )
     "Print the signature of the corresponding class."
 
@@ -645,18 +523,12 @@ let show_class_type () =
   reg_show_prim "show_class_type"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_class_type env loc lid in
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-       [ Sig_class_type (id, desc, Trec_not, Exported) ]
-#else
-       [ Sig_class_type (id, desc, Trec_not) ]
-#endif
+       [sig_class_type id desc]
     )
     "Print the signature of the corresponding class type."
 
 let show () =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
-  let lazy pp = std_out in
-  let show env loc id lid =
+  let to_sig env loc id lid =
     let sg =
       List.fold_left
         (fun sg f -> try (f env loc id lid) @ sg with _ -> sg)
@@ -664,42 +536,23 @@ let show () =
     in
     if sg = [] then raise Not_found else sg
   in
-  Toploop.add_directive "show" (Toploop.Directive_ident (show_prim show pp))
-    {
-      section = section_env;
-      doc = "Print the signatures of components \
-             from any of the categories below.";
-    }
-#else
-  ()
-#endif
+  add_directive
+    ~name:"show"
+    ~doc:"Print the signatures of components \
+          from any of the categories below."
+    (`Show_prim to_sig)
 
 let verbose t =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
-  Toploop.add_directive "verbose"
-    (Toploop.Directive_bool (fun x -> t.verbose <- x))
-    { section = section_env ; doc = "Be verbose" }
-#else
-  ignore t
-#endif
+  add_directive
+    ~name:"verbose"
+    ~doc:"Be verbose"
+    (`Bool (fun x -> t.verbose <- x))
 
 let silent t =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
-  Toploop.add_directive "silent"
-    (Toploop.Directive_bool (fun x -> t.silent <- x))
-    { section = section_env; doc = "Be silent" }
-#else
-  ignore t
-#endif
-
-module Linked = struct
-  include (Topdirs : sig end)
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
-  include (Ephemeron : sig end)
-#endif
-  include (Uchar : sig end)
-  include (Condition : sig end)
-end
+  add_directive
+    ~name:"silent"
+    ~doc:"Be silent"
+    (`Bool (fun x -> t.silent <- x))
 
 (* BLACK MAGIC: patch field of a module at runtime *)
 let monkey_patch (type a) (type b) (m: a) (prj: unit -> b) (v : b) =
@@ -756,59 +609,47 @@ module Part = Part
 
 let envs = Hashtbl.create 8
 
-let is_predef_or_global id =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-  Ident.is_predef id || Ident.global id
-#else
-  Ident.binding_time id < 1000
-#endif
-
 let rec save_summary acc s =
-  let open Env in
-  match s with
-  | Env_value (summary, id, _) ->
-     save_summary (Ident.name id :: acc) summary
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-  | Env_module (summary, id, Mp_present, _)
-#else
-  | Env_module (summary, id, _)
-#endif
-    | Env_class (summary, id, _)
-    | Env_functor_arg (summary, id)
-    | Env_open (summary,
-                #if OCAML_MAJOR = 4 && OCAML_MINOR = 7
-                _,
-                #endif
-                Pident id)
-    | Env_extension (summary, id, _) ->
-            let acc =
-        if not (is_predef_or_global id)
-        then Ident.unique_toplevel_name id :: acc
-        else acc
-      in
-      save_summary acc summary
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-  | Env_module (_, _, Mp_absent, _)
-#endif
-  | Env_empty -> acc
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 4
-  | Env_constraints (summary, _)
-#endif
-    | Env_cltype (summary, _, _)
-    | Env_modtype (summary, _, _)
-    | Env_type (summary, _, _)
-    | Env_open (summary,
-                #if OCAML_MAJOR = 4 && OCAML_MINOR = 7
-                _,
-                #endif
-                _)
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 6
-    | Env_copy_types (summary, _)
-#endif
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-    | Env_persistent (summary, _)
-#endif
-    -> save_summary acc summary
+  let default_case summary =
+    save_summary acc summary
+  in
+  let add summary id =
+    save_summary (Ident.name id :: acc) summary
+  in
+  let add_unique summary id =
+    let acc =
+      if not (is_predef_or_global id)
+      then Ident.unique_toplevel_name id :: acc
+      else acc
+    in
+    save_summary acc summary
+  in
+  match_env
+    s
+    ~value:add
+    ~module_:(fun summary id ~present ->
+        match present with
+        | true -> add_unique summary id
+        | false -> acc
+      )
+    ~open_:(fun summary x ->
+        match x with
+        | Pident id ->
+          add_unique summary id
+        | Pdot _
+        | Papply _ ->
+          default_case summary
+      )
+    ~class_:add_unique
+    ~functor_arg:add_unique
+    ~extension:add_unique
+    ~empty:(fun () -> acc)
+    ~constraints:default_case
+    ~cltype:default_case
+    ~modtype:default_case
+    ~type_:default_case
+    ~copy_types:default_case
+    ~persistent:default_case
 
 let default_env = ref (Compmisc.initial_env ())
 let first_call = ref true
