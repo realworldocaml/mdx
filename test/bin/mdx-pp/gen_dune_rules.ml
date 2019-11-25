@@ -20,7 +20,7 @@ let pp_failure_action fmt dir =
     {|
   (with-outputs-to %%{target}
    (chdir %s
-    (system "! ocaml-mdx pp %a%s)))|}
+    (system "! ocaml-mdx pp %a%s")))|}
     dir.dir_name
     pp_options dir.options
     dir.test_file
