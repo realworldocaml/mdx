@@ -89,7 +89,7 @@ module Printtyp = struct
 
   let wrap_printing_env e f =
     wrap_printing_env
-#if (OCAML_MAJOR = 4 && OCAML_MINOR >= 7) || OCAML_MAJOR > 4
+#if OCAML_VERSION >= (4, 7, 0)
       ~error:false
 #endif
       e f

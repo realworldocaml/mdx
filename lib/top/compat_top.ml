@@ -1,13 +1,13 @@
 open Mdx.Migrate_ast
 
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
 let try_finally ~always f = Misc.try_finally f ~always
 #else
 let try_finally ~always f = Misc.try_finally f always
 #endif
 
 let map_error_loc ~f (error : Location.error) =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
   let f_msg (msg : Location.msg) =
     { msg with loc = f msg.loc}
   in
@@ -22,7 +22,7 @@ let map_error_loc ~f (error : Location.error) =
 #endif
 
 let error_of_exn exn =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR > 5
+#if OCAML_VERSION >= (4, 6, 0)
   match Location.error_of_exn exn with
     | None -> None
     | Some `Already_displayed -> None
@@ -33,7 +33,7 @@ let error_of_exn exn =
 
 let rec get_id_in_path = function
   | Path.Pident id -> id
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
   | Path.Pdot (p, _) -> get_id_in_path p
 #else
   | Path.Pdot (p, _, _) -> get_id_in_path p
@@ -41,14 +41,14 @@ let rec get_id_in_path = function
   | Path.Papply (_, p) -> get_id_in_path p
 
 let lookup_type typ env =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR < 4
-  Env.lookup_type typ env |> fst
-#else
+#if OCAML_VERSION >= (4, 4, 0)
   Env.lookup_type typ env
+#else
+  Env.lookup_type typ env |> fst
 #endif
 
 let type_structure env str loc =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
   let tstr, _, _, env =
 #else
   let tstr, _, env =
@@ -58,28 +58,28 @@ let type_structure env str loc =
   tstr, env
 
 let sig_value id desc =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
   Types.Sig_value (id, desc, Exported)
 #else
   Types.Sig_value (id, desc)
 #endif
 
 let sig_type id desc =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
   Types.Sig_type (id, desc, Trec_not, Exported)
 #else
   Types.Sig_type (id, desc, Trec_not)
 #endif
 
 let sig_typext id ext =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
   Types.Sig_typext (id, ext, Text_exception, Exported)
 #else
   Types.Sig_typext (id, ext, Text_exception)
 #endif
 
 let sig_module id md =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
   Types.Sig_module (id, Mp_present, md, Trec_not, Exported)
 #else
   Types.Sig_module (id, md, Trec_not)
@@ -88,10 +88,8 @@ let sig_module id md =
 let mty_path =
   let open Types in
   function
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
-  | Mty_alias(path) -> Some path
-#elif OCAML_MAJOR >= 4 && OCAML_MINOR > 3
-  | Mty_alias(_, path) -> Some path
+#if OCAML_VERSION >= (4, 4, 0) && OCAML_VERSION < (4, 8, 0)
+  | Mty_alias (_, path) -> Some path
 #else
   | Mty_alias path -> Some path
 #endif
@@ -101,28 +99,28 @@ let mty_path =
     None
 
 let sig_modtype id desc =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
   Types.Sig_modtype (id, desc, Exported)
 #else
   Types.Sig_modtype (id, desc)
 #endif
 
 let sig_class id desc =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
   Types.Sig_class (id, desc, Trec_not, Exported)
 #else
   Types.Sig_class (id, desc, Trec_not)
 #endif
 
 let sig_class_type id desc =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
   Types.Sig_class_type (id, desc, Trec_not, Exported)
 #else
   Types.Sig_class_type (id, desc, Trec_not)
 #endif
 
 let add_directive ~name ~doc kind =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
+#if OCAML_VERSION >= (4, 3, 0)
   let directive = match kind with
     | `Bool f -> Toploop.Directive_bool f
     | `Show_prim to_sig -> 
@@ -167,10 +165,10 @@ let extension_constructor
   =
   let open Types in
   let ext_args =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR < 3
-    ext_args
-#else
+#if OCAML_VERSION >= (4, 3, 0)
     Cstr_tuple ext_args
+#else
+    ext_args
 #endif
   in
   { ext_type_path
@@ -183,7 +181,7 @@ let extension_constructor
   }
 
 let is_predef_or_global id =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
   Ident.is_predef id || Ident.global id
 #else
   Ident.binding_time id < 1000
@@ -192,7 +190,7 @@ let is_predef_or_global id =
 let map_sig_attributes ~f =
   let open Types in
   List.map (function
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
     | Sig_module (id, mp, md, rs, visibility) ->
       Sig_module (
         id,
@@ -213,7 +211,7 @@ let map_sig_attributes ~f =
 )
 
 let attribute ~name ~payload =
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
   { Parsetree_.attr_name = name
   ; attr_payload = payload
   ; attr_loc = Location.none
@@ -224,7 +222,7 @@ let attribute ~name ~payload =
 
 module Linked = struct
   include (Topdirs : sig end)
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 3
+#if OCAML_VERSION >= (4, 3, 0)
   include (Ephemeron : sig end)
 #endif
   include (Uchar : sig end)
@@ -251,14 +249,14 @@ let match_env
   | Env.Env_value (summary, id, _) ->
     value summary id
   | Env_empty -> empty ()
-#if OCAML_MAJOR = 4 && OCAML_MINOR = 7
+#if OCAML_VERSION >= (4, 7, 0) && OCAML_VERSION < (4, 8, 0)
   | Env_open (summary, _, pid) ->
 #else
   | Env_open (summary, pid) ->
 #endif
     open_ summary pid
   | Env_functor_arg (summary, id) -> functor_arg summary id
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
   | Env_module (summary, id, presence, _) ->
     let present = match presence with
       | Mp_present -> true
@@ -274,12 +272,12 @@ let match_env
   | Env_cltype (summary, _, _) -> cltype summary
   | Env_class (summary, id, _) -> class_ summary id
   | Env_extension (summary, id, _) -> extension summary id
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 4
+#if OCAML_VERSION >= (4, 4, 0)
   | Env_constraints (summary, _) -> constraints summary
 #endif
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 6
+#if OCAML_VERSION >= (4, 6, 0)
   | Env_copy_types (summary, _) -> copy_types summary
 #endif
-#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 8
+#if OCAML_VERSION >= (4, 8, 0)
   | Env_persistent (summary, _) -> persistent summary
 #endif
