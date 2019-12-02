@@ -58,13 +58,17 @@ module Deps = struct
         "@[<hov 2>{ dir = %S;@ upstream = %S;@ ref = %a;@ provided_packages = %a }@]" dir upstream
         pp_ref ref (list Opam.raw_pp) provided_packages
 
+    let dir_name_from_package { Opam.name; version } =
+      Printf.sprintf "%s.%s" name (match version with None -> "zdev" | Some x -> x)
+
     let from_package { Package.opam; upstream; ref } =
-      { dir = opam.name; upstream; ref; provided_packages = [ opam ] }
+      let dir = dir_name_from_package opam in
+      { dir; upstream; ref; provided_packages = [ opam ] }
 
     let aggregate t package =
       let package_name = package.Package.opam.name in
       let new_dir =
-        match String.compare t.dir package_name with Lt | Eq -> t.dir | Gt -> package_name
+        match String.compare t.dir package_name with Lt | Eq -> t.dir | Gt -> dir_name_from_package package.Package.opam
       in
       let new_ref =
         match Ordering.of_int (OpamVersionCompare.compare t.ref package.ref) with
