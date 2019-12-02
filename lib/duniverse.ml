@@ -7,7 +7,7 @@ type resolved = Git.Ref.resolved [@@deriving sexp]
 
 module Deps = struct
   module Opam = struct
-    type t = { name : string; version : string option [@default None] [@sexp_drop_default] }
+    type t = { name : string; version : string option [@default None] [@sexp_drop_default.sexp] }
     [@@deriving sexp]
 
     let equal t t' = String.equal t.name t'.name && Option.equal String.equal t.version t'.version
@@ -39,7 +39,7 @@ module Deps = struct
       dir : string;
       upstream : string;
       ref : 'ref;
-      provided_packages : Opam.t list [@default []] [@sexp_drop_default]
+      provided_packages : Opam.t list [@default []] [@sexp_drop_default.sexp]
     }
     [@@deriving sexp]
 
