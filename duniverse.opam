@@ -10,8 +10,8 @@ authors: [
   "Anil Madhavapeddy" "Nathan Rebours" "Lucas Pluvinage" "Jules Aguillon"
 ]
 license: "ISC"
-homepage: "https://github.com/avsm/duniverse"
-bug-reports: "https://github.com/avsm/duniverse/issues"
+homepage: "https://github.com/ocamllabs/duniverse"
+bug-reports: "https://github.com/ocamllabs/duniverse/issues"
 depends: [
   "dune" {>= "1.11"}
   "ocaml" {>= "4.05"}
@@ -25,6 +25,7 @@ depends: [
   "uri"
   "sexplib"
   "opam-core"
+  "uri-sexp"
   "alcotest" {with-test}
 ]
 build: [
@@ -41,4 +42,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/avsm/duniverse.git"
+dev-repo: "git+https://github.com/ocamllabs/duniverse.git"
