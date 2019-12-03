@@ -170,9 +170,9 @@ let run_opam_package_deps ~root packages =
   in
   run_and_log_l cmd
 
-let opam_init_bare ~root () =
+let opam_init_bare ~root ~opam_repo () =
   let open Cmd in
-  let cmd = opam_cmd ~root "init" % "--no-setup" % "--bare" in
+  let cmd = opam_cmd ~root "init" % "--no-setup" % "--bare" % (Uri.to_string opam_repo) in
   run_and_log cmd
 
 let opam_switch_create_empty ~root () =
@@ -195,10 +195,10 @@ let opam_add_remote ~root { Types.Opam.Remote.name; url } =
   let cmd = opam_cmd ~root "repository" % "add" % name % url in
   run_and_log cmd
 
-let init_opam_and_remotes ~root ~remotes () =
+let init_opam_and_remotes ~root ~opam_repo ~remotes () =
   Logs.info (fun l ->
-      l "Initialising a fresh temprorary opam with an empty switch in %a." Fpath.pp root );
-  opam_init_bare ~root () >>= fun () ->
+      l "Initialising a fresh temporary opam with an empty switch in %a from %a." Fpath.pp root Uri.pp opam_repo);
+  opam_init_bare ~root ~opam_repo () >>= fun () ->
   opam_switch_create_empty ~root () >>= fun () -> iter (opam_add_remote ~root) remotes
 
 let add_opam_dev_pin ~root { Opam.pin; url; tag } =

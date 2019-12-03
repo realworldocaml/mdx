@@ -1,7 +1,7 @@
 open Duniverse_lib
 open Duniverse_lib.Types
 
-let build_config ~local_packages ~branch ~explicit_root_packages ~excludes ~pins ~remotes ~overlay
+let build_config ~local_packages ~branch ~explicit_root_packages ~excludes ~pins ~remotes ~opam_repo
     =
   let open Rresult.R.Infix in
   Opam_cmd.choose_root_packages ~explicit_root_packages ~local_packages >>= fun root_packages ->
@@ -11,13 +11,12 @@ let build_config ~local_packages ~branch ~explicit_root_packages ~excludes ~pins
   let excludes =
     List.map Opam_cmd.split_opam_name_and_version (local_packages @ excludes) |> Opam.sort_uniq
   in
-  let remotes = overlay :: remotes in
-  Ok { Duniverse.Config.root_packages; excludes; pins; remotes; branch }
+  Ok { Duniverse.Config.root_packages; excludes; pins; opam_repo; remotes; branch }
 
-let init_tmp_opam ~local_packages ~config:{ Duniverse.Config.remotes; pins; _ } =
+let init_tmp_opam ~local_packages ~config:{ Duniverse.Config.remotes; pins; opam_repo; _ } =
   let open Rresult.R.Infix in
   Bos.OS.Dir.tmp ".duniverse-opam-root-%s" >>= fun root ->
-  Opam_cmd.init_opam ~root ~remotes () >>= fun () ->
+  Opam_cmd.init_opam ~root ~opam_repo ~remotes () >>= fun () ->
   Exec.(iter (add_opam_dev_pin ~root) pins) >>= fun () ->
   Exec.(iter (add_opam_local_pin ~root ~kind:"path") local_packages) >>= fun () -> Ok root
 
@@ -35,11 +34,12 @@ let resolve_ref deps =
   Duniverse.Deps.resolve ~resolve_ref deps
 
 let run (`Repo repo) (`Branch branch) (`Explicit_root_packages explicit_root_packages)
-    (`Excludes excludes) (`Pins pins) (`Overlay overlay) (`Remotes remotes) () =
+    (`Excludes excludes) (`Pins pins) (`Opam_repo opam_repo) (`Remotes remotes) () =
   let open Rresult.R.Infix in
+  let opam_repo = Uri.of_string opam_repo in
   Common.Logs.app (fun l -> l "Calculating Duniverse on the %a branch" Styled_pp.branch branch);
   Opam_cmd.find_local_opam_packages repo >>= fun local_packages ->
-  build_config ~local_packages ~branch ~explicit_root_packages ~excludes ~pins ~remotes ~overlay
+  build_config ~local_packages ~branch ~explicit_root_packages ~excludes ~pins ~remotes ~opam_repo
   >>= fun config ->
   Common.Logs.app (fun l -> l "Initializing temporary opam switch");
   init_tmp_opam ~local_packages ~config >>= fun root ->
@@ -91,17 +91,17 @@ let excludes =
     (fun x -> `Excludes x)
     Arg.(value & opt_all string [] & info [ "exclude"; "x" ] ~docv:"EXCLUDE" ~doc)
 
-let overlay =
+let opam_repo =
   let doc =
-    "URL or path to the Duniverse opam overlays remote that has overrides for packages that have \
+    "URL or path to the Duniverse opam-repository that has overrides for packages that have \
      not yet been ported to Dune upstream."
   in
   Common.Arg.named
-    (fun x -> `Overlay x)
+    (fun x -> `Opam_repo x)
     Arg.(
       value
-      & opt string Config.duniverse_overlays_repo
-      & info [ "overlay-remote" ] ~docv:"OPAM_REMOTE" ~doc)
+      & opt string Config.duniverse_opam_repo
+      & info [ "opam-repo" ] ~docv:"OPAM_REPO" ~doc)
 
 let pins =
   let open Types.Opam in
@@ -151,7 +151,7 @@ let info =
 let term =
   let open Term in
   term_result
-    ( const run $ Common.Arg.repo $ branch $ explicit_root_packages $ excludes $ pins $ overlay
+    ( const run $ Common.Arg.repo $ branch $ explicit_root_packages $ excludes $ pins $ opam_repo
     $ remotes $ Common.Arg.setup_logs () )
 
 let cmd = (term, info)

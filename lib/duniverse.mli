@@ -86,6 +86,7 @@ module Config : sig
     root_packages : Types.Opam.package list;
     excludes : Types.Opam.package list;
     pins : Types.Opam.pin list;
+    opam_repo: Uri_sexp.t;
     remotes : string list; [@default []]
     branch : string [@default "master"]
   }
