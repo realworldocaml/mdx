@@ -1,5 +1,4 @@
-opam-version: "1.2"
-version: "2.0.5"
+opam-version: "2.0"
 maintainer: "opam-devel@lists.ocaml.org"
 authors: [
   "Vincent Bernardoff <vb@luminar.eu.org>"
@@ -15,14 +14,26 @@ authors: [
 ]
 homepage: "https://opam.ocaml.org/"
 bug-reports: "https://github.com/ocaml/opam/issues"
-dev-repo: "https://github.com/ocaml/opam.git"
+depends: [
+  "ocaml" {>= "4.02.3"}
+  "opam-format" {=version}
+  "cmdliner" {>= "0.9.8"}
+  "dune" {>= "1.2.1"}
+]
 build: [
   ["./configure" "--disable-checks" "--prefix" prefix]
   [make "%{name}%.install"]
 ]
-depends: [
-  "opam-format" {= "2.0.5"}
-  "cmdliner" {>= "0.9.8"}
-  "dune" {build & >= "1.2.1"}
-]
-available: ocaml-version >= "4.02.3"
+dev-repo: "git+https://github.com/dune-universe/opam.git"
+url {
+  src: "git://github.com/dune-universe/opam.git#duniverse-2.0.5"
+}
+description:"""
+Installation of files to a prefix, following opam conventions
+
+opam-installer is a small tool that can read *.install files, as defined by
+opam [1], and execute them to install or remove package files without going
+through opam.
+
+[1] http://opam.ocaml.org/doc/2.0/Manual.html#lt-pkgname-gt-install
+"""

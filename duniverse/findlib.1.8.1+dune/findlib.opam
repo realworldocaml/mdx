@@ -7,8 +7,9 @@ build: [
   [ "env" "FINDLIB_PREFIX=%{lib}%" "dune" "build" "-p" name "-j" jobs ]
 ]
 depends: [
-  "ocaml" {>= "4.02.3"}
-  "dune" {>= "1.10.0"}
+  "ocaml" {>= "4.06.0"}
+  "dune"
+  "dune-configurator"
 ]
 synopsis: "A library manager for OCaml"
 description: """
@@ -20,5 +21,5 @@ in programs and scripts.
 """
 authors: "Gerd Stolpmann <gerd@gerd-stolpmann.de>"
 url {
-  src: "git+https://github.com/dune-universe/lib-findlib#duniverse-1.8.0"
+  src: "git+https://github.com/dune-universe/lib-findlib#duniverse-1.8.1"
 }

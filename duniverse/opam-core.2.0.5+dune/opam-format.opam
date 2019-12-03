@@ -1,5 +1,4 @@
-opam-version: "1.2"
-version: "2.0.5"
+opam-version: "2.0"
 maintainer: "opam-devel@lists.ocaml.org"
 authors: [
   "Vincent Bernardoff <vb@luminar.eu.org>"
@@ -15,14 +14,22 @@ authors: [
 ]
 homepage: "https://opam.ocaml.org/"
 bug-reports: "https://github.com/ocaml/opam/issues"
-dev-repo: "https://github.com/ocaml/opam.git"
+depends: [
+  "ocaml" {>= "4.02.3"}
+  "opam-core" {=version}
+  "opam-file-format" {>= "2.0.0"}
+  "dune" {>= "1.2.1"}
+]
 build: [
   ["./configure" "--disable-checks" "--prefix" prefix]
   [make "%{name}%.install"]
 ]
-depends: [
-  "opam-core" {= "2.0.5"}
-  "opam-file-format" {>= "2.0.0~rc2"}
-  "dune" {build & >= "1.2.1"}
-]
-available: ocaml-version >= "4.02.3"
+dev-repo: "git+https://github.com/dune-universe/opam.git"
+url {
+  src: "git://github.com/dune-universe/opam.git#duniverse-2.0.5"
+}
+description:"""
+opam 2.0 development libraries
+
+Definition of opam datastructures and its file interface.
+"""

@@ -1,5 +1,4 @@
-opam-version: "1.2"
-version: "2.0.5"
+opam-version: "2.0"
 maintainer: "opam-devel@lists.ocaml.org"
 authors: [
   "Vincent Bernardoff <vb@luminar.eu.org>"
@@ -15,23 +14,33 @@ authors: [
 ]
 homepage: "https://opam.ocaml.org"
 bug-reports: "https://github.com/ocaml/opam/issues"
-dev-repo: "https://github.com/ocaml/opam.git"
+depends: [
+  "ocaml" {>= "4.02.3"}
+  "opam-client" {=version}
+  "cmdliner" {>= "0.9.8"}
+  "dune" {>= "1.2.1"}
+]
 build: [
   ["./configure" "--disable-checks" "--prefix" prefix]
   [make "%{name}%.install"]
+  [make "tests"] {with-test}
 ]
-build-test: [make "tests"]
-depends: [
-  "opam-client" {= "2.0.5"}
-  "cmdliner" {>= "0.9.8"}
-  "dune" {build & >= "1.2.1"}
-]
-post-messages: [
-"The development version of opam has been successfully compiled into %{lib}%/%{name}%. You should not run it from there, please install the binaries to your PATH, e.g. with
+post-messages:
+  """
+The development version of opam has been successfully compiled into %{lib}%/%{name}%. You should not run it from there, please install the binaries to your PATH, e.g. with
     sudo cp %{lib}%/%{name}%/* /usr/local/bin
 
 If you just want to give it a try without altering your current installation, you could use instead:
-    alias opam2=\"OPAMROOT=~/.opam2 %{lib}%/%{name}%/opam\""
-  {success}
-]
-available: ocaml-version >= "4.02.3"
+    alias opam2="OPAMROOT=~/.opam2 %{lib}%/%{name}%/opam\""""
+    {success}
+dev-repo: "git+https://github.com/dune-universe/opam.git"
+url {
+  src: "git://github.com/dune-universe/opam.git#duniverse-2.0.5"
+}
+description:"""
+opam 2.0.0 development version
+
+This package compiles (bootstraps) opam 2.0.0. For consistency and safety of the
+installation, the binaries are not installed into the PATH, but into
+lib/opam-devel, from where the user can manually install them system-wide.
+"""

@@ -1,3 +1,8 @@
+
+
+- Fix default value rendering in manpages. These were not properly
+  escaped. Thanks to David Allsopp for the patch.
+
 v1.0.4 2019-06-14 Zagreb
 ------------------------
 
@@ -6,7 +11,7 @@ v1.0.4 2019-06-14 Zagreb
   it as formatted lines.
 - Fix 4.08 `Pervasives` deprecation.
 - Fix 4.03 String deprecations.
-- Fix boostrap build in absence of dynlink.
+- Fix bootstrap build in absence of dynlink.
 - Make the `Makefile` bootstrap build reproducible.
   Thanks to Thomas Leonard for the patch.
 
