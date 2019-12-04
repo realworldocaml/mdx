@@ -306,7 +306,7 @@ let require_re =
   seq [str "#require \""; group (rep1 any); str "\""]
 
 let require_from_line line =
-  let open Rresult.R.Infix in
+  let open Util.Result.Infix in
   let re = Re.compile require_re in
   match Re.exec_opt re line with
   | None -> Ok Library.Set.empty
@@ -317,7 +317,7 @@ let require_from_line line =
     List.fold_left (fun acc l -> Library.Set.add l acc) Library.Set.empty libs
 
 let require_from_lines lines =
-  let open Rresult.R.Infix in
+  let open Util.Result.Infix in
   Util.Result.List.map ~f:require_from_line lines >>| fun libs ->
   List.fold_left Library.Set.union Library.Set.empty libs
 
@@ -326,7 +326,7 @@ let required_libraries = function
   | { value = (Raw | OCaml | Error _ | Cram _); _ } -> Ok Library.Set.empty
 
 let required_packages t =
-  let open Rresult.R.Infix in
+  let open Util.Result.Infix in
   let explicit = String.Set.of_list (explicit_required_packages t) in
   required_libraries t >>| fun toplevel_required_libs ->
   let toplevel_requires = Library.Set.to_package_set toplevel_required_libs in

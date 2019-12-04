@@ -24,7 +24,6 @@ depends: [
   "cmdliner"
   "re" {>= "1.7.2"}
   "result"
-  "rresult"
   "ocaml-migrate-parsetree" {>= "1.0.6"}
   "ocaml-version" {>= "2.3.0"}
   "lwt" {with-test}

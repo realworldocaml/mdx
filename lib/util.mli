@@ -14,18 +14,26 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+open Result
+
 module Result : sig
+  module Infix : sig
+    val (>>=) : ('a, 'err) result -> ('a -> ('b, 'err) result) -> ('b, 'err) result
+
+    val (>>|) : ('a, 'err) result -> ('a -> 'b) -> ('b, 'err) result
+  end
+
   module List : sig
     val fold :
-      f: ('acc -> 'a -> ('acc, 'err) Result.result) ->
+      f: ('acc -> 'a -> ('acc, 'err) result) ->
       init: 'acc ->
       'a list ->
-      ('acc, 'err) Result.result
+      ('acc, 'err) result
 
     val map :
-      f: ('a -> ('b, 'err) Result.result) ->
+      f: ('a -> ('b, 'err) result) ->
       'a list ->
-      ('b list, 'err) Result.result
+      ('b list, 'err) result
   end
 end
 

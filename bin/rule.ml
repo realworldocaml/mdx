@@ -145,7 +145,7 @@ let pp_prelude_str fmt s = Fmt.pf fmt "--prelude-str %S" s
 let add_opt e s = match e with None -> s | Some e -> String.Set.add e s
 
 let aggregate_requires ~require_from l =
-  let open Rresult.R.Infix in
+  let open Mdx.Util.Result.Infix in
   Mdx.Util.Result.List.fold
     ~f:(fun acc x -> require_from x >>| Mdx.Library.Set.union acc)
     ~init:Mdx.Library.Set.empty
@@ -171,7 +171,7 @@ let requires_from_prelude prelude_list =
 let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direction direction)
     (`Prelude prelude) (`Prelude_str prelude_str) (`Root root)
     (`Duniverse_mode duniverse_mode) (`Locks locks) =
-  let open Rresult.R.Infix in
+  let open Mdx.Util.Result.Infix in
   let active =
     let section = match section with
       | None   -> None

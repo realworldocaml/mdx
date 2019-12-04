@@ -13,7 +13,7 @@ end
 
 let test_require_from_line =
   let make_test ~line ~expected () =
-    let open Rresult.R.Infix in
+    let open Mdx.Util.Result.Infix in
     let test_name = Printf.sprintf "require_from_line: %S" line in
     let expected = expected >>| Mdx.Library.Set.of_list in
     let test_fun () =
