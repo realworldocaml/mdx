@@ -314,7 +314,7 @@ let require_from_line line =
     let matched = Re.Group.get group 1 in
     let libs_str = String.cuts ~sep:"," matched in
     Util.Result.List.map ~f:Library.from_string libs_str >>| fun libs ->
-    List.fold_left (fun acc l -> Library.Set.add l acc) Library.Set.empty libs
+    Library.Set.of_list libs
 
 let require_from_lines lines =
   let open Util.Result.Infix in
