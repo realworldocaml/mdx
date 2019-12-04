@@ -39,14 +39,13 @@ module Deps = struct
       dir : string;
       upstream : string;
       ref : 'ref;
-      provided_packages : Opam.t list [@default []] [@sexp_drop_default.sexp]
+      provided_packages : Opam.t list; [@default []] [@sexp_drop_default.sexp]
     }
     [@@deriving sexp]
 
     let equal equal_ref t t' =
       let { dir; upstream; ref; provided_packages } = t in
-      let { dir = dir'; upstream = upstream'; ref = ref'; provided_packages = provided_packages' }
-          =
+      let { dir = dir'; upstream = upstream'; ref = ref'; provided_packages = provided_packages' } =
         t'
       in
       String.equal dir dir' && String.equal upstream upstream' && equal_ref ref ref'
@@ -68,24 +67,27 @@ module Deps = struct
     let aggregate t package =
       let package_name = package.Package.opam.name in
       let new_dir =
-        match String.compare t.dir package_name with Lt | Eq -> t.dir | Gt -> dir_name_from_package package.Package.opam
+        match String.compare t.dir package_name with
+        | Lt | Eq -> t.dir
+        | Gt -> dir_name_from_package package.Package.opam
       in
       let new_ref =
         match Ordering.of_int (OpamVersionCompare.compare t.ref package.ref) with
         | Gt | Eq -> t.ref
         | Lt -> package.ref
       in
-      { t with
+      {
+        t with
         dir = new_dir;
         ref = new_ref;
-        provided_packages = package.opam :: t.provided_packages
+        provided_packages = package.opam :: t.provided_packages;
       }
 
     let aggregate_packages l =
       let update map ({ Package.upstream; _ } as package) =
         String.Map.update map upstream ~f:(function
           | None -> Some (from_package package)
-          | Some t -> Some (aggregate t package) )
+          | Some t -> Some (aggregate t package))
       in
       let aggregated_map = List.fold_left ~init:String.Map.empty ~f:update l in
       String.Map.values aggregated_map
@@ -115,8 +117,7 @@ module Deps = struct
       match entry with
       | { dev_repo = `Virtual; _ } | { dev_repo = `Error _; _ } -> Ok None
       | { is_dune = false; package = { name; version }; _ } -> Ok (Some (Opam { name; version }))
-      | { is_dune = true; dev_repo = `Git upstream; tag = Some ref; package = { name; version } }
-        ->
+      | { is_dune = true; dev_repo = `Git upstream; tag = Some ref; package = { name; version } } ->
           Ok (Some (Source { opam = { name; version }; upstream; ref }))
       | { is_dune = true; dev_repo = `Git upstream; tag = None; package = { name; version } } ->
           get_default_branch upstream >>= fun ref ->
@@ -165,9 +166,10 @@ module Config = struct
     root_packages : Types.Opam.package list;
     excludes : Types.Opam.package list;
     pins : Types.Opam.pin list;
-    opam_repo: Uri_sexp.t; [@default Uri.of_string Config.duniverse_opam_repo] [@sexp_drop_default.sexp]
+    opam_repo : Uri_sexp.t;
+        [@default Uri.of_string Config.duniverse_opam_repo] [@sexp_drop_default.sexp]
     remotes : string list; [@default []]
-    branch : string [@default "master"]
+    branch : string; [@default "master"]
   }
   [@@deriving sexp]
 end

@@ -10,9 +10,10 @@ module Lang = struct
       in
       (test_name, `Quick, test_fun)
     in
-    [ make_test ~version:"1.6" ~expected:(Ok (1, 6)) ();
+    [
+      make_test ~version:"1.6" ~expected:(Ok (1, 6)) ();
       make_test ~version:"1.x" ~expected:(Error (`Msg "Invalid dune lang version: 1.x")) ();
-      make_test ~version:"ver" ~expected:(Error (`Msg "Invalid dune lang version: ver")) ()
+      make_test ~version:"ver" ~expected:(Error (`Msg "Invalid dune lang version: ver")) ();
     ]
 
   let parse_stanza =
@@ -24,13 +25,14 @@ module Lang = struct
       in
       (test_name, `Quick, test_fun)
     in
-    [ make_test ~stanza:"(lang dune 1.6)" ~expected:(Ok (1, 6)) ();
+    [
+      make_test ~stanza:"(lang dune 1.6)" ~expected:(Ok (1, 6)) ();
       make_test ~stanza:"(lang dune ver)"
         ~expected:(Error (`Msg "Invalid dune lang version: ver"))
         ();
       make_test ~stanza:"(lang something)"
         ~expected:(Error (`Msg "Invalid lang stanza: (lang something)"))
-        ()
+        ();
     ]
 
   let is_stanza =
@@ -42,9 +44,10 @@ module Lang = struct
       in
       (test_name, `Quick, test_fun)
     in
-    [ make_test ~line:"; a comment" ~expected:false ();
+    [
+      make_test ~line:"; a comment" ~expected:false ();
       make_test ~line:"(name project)" ~expected:false ();
-      make_test ~line:"(lang dune 1.6)" ~expected:true ()
+      make_test ~line:"(lang dune 1.6)" ~expected:true ();
     ]
 end
 

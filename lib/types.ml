@@ -35,21 +35,24 @@ module Opam = struct
 
   let pp_repo = pp_sexp sexp_of_repo
 
-  type package = { name : string; version : string option [@default None] [@sexp_drop_default.sexp] }
+  type package = {
+    name : string;
+    version : string option; [@default None] [@sexp_drop_default.sexp]
+  }
   [@@deriving sexp]
 
   type entry = {
     package : package;
     dev_repo : repo;
     tag : string option; [@default None] [@sexp_drop_default.sexp]
-    is_dune : bool [@default true] [@sexp_drop_default.sexp]
+    is_dune : bool; [@default true] [@sexp_drop_default.sexp]
   }
   [@@deriving sexp]
 
   type pin = {
     pin : string;
     url : string option; [@default None] [@sexp_drop_default.sexp]
-    tag : string option [@default None] [@sexp_drop_default.sexp]
+    tag : string option; [@default None] [@sexp_drop_default.sexp]
   }
   [@@deriving sexp]
 

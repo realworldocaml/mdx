@@ -4,8 +4,8 @@ type resolved = Git.Ref.resolved
 
 module Deps : sig
   module Opam : sig
-    (** Type of dependencies to install through opam *)
     type t = { name : string; version : string option }
+    (** Type of dependencies to install through opam *)
 
     val equal : t -> t -> bool
 
@@ -13,8 +13,8 @@ module Deps : sig
   end
 
   module Source : sig
-    (** Type of dependencies to clone in the duniverse *)
     type 'ref t = { dir : string; upstream : string; ref : 'ref; provided_packages : Opam.t list }
+    (** Type of dependencies to clone in the duniverse *)
 
     val equal : ('ref -> 'ref -> bool) -> 'ref t -> 'ref t -> bool
 
@@ -35,10 +35,10 @@ module Deps : sig
     (**/**)
   end
 
+  type 'ref t = { opamverse : Opam.t list; duniverse : 'ref Source.t list }
   (** The type for dependencies of a project. The duniverse and opamverse are complementary,
       that is a dependency either can be installed by pulling the sources and is in the duniverse
       or has to be installed through opam and is in the opamverse. *)
-  type 'ref t = { opamverse : Opam.t list; duniverse : 'ref Source.t list }
 
   val equal : ('ref -> 'ref -> bool) -> 'ref t -> 'ref t -> bool
 
@@ -86,9 +86,9 @@ module Config : sig
     root_packages : Types.Opam.package list;
     excludes : Types.Opam.package list;
     pins : Types.Opam.pin list;
-    opam_repo: Uri_sexp.t;
+    opam_repo : Uri_sexp.t;
     remotes : string list; [@default []]
-    branch : string [@default "master"]
+    branch : string; [@default "master"]
   }
   [@@deriving sexp]
 end

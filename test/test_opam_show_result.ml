@@ -10,7 +10,8 @@ let test_make =
     in
     (test_name, `Quick, test_fun)
   in
-  [ make_test ~name:"empty" ~input:[] ~expected:[];
+  [
+    make_test ~name:"empty" ~input:[] ~expected:[];
     make_test ~name:"1 field"
       ~input:[ "name       test"; "url   bonjour.com" ]
       ~expected:[ ("test", "url", "bonjour.com") ];
@@ -25,7 +26,7 @@ let test_make =
       ~expected:[ ("test", "field2", {|["salut"]|}); ("test", "url:", "bonjour.com") ];
     make_test ~name:"multiple packages"
       ~input:[ "name       test2"; "url:   bonjour.com"; "name   test"; {|field2   ["salut"]|} ]
-      ~expected:[ ("test", "field2", {|["salut"]|}); ("test2", "url:", "bonjour.com") ]
+      ~expected:[ ("test", "field2", {|["salut"]|}); ("test2", "url:", "bonjour.com") ];
   ]
 
 let suite = ("Opam_show_result", test_make)

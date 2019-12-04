@@ -46,7 +46,7 @@ let run (`Repo repo) (`Branch branch) (`Explicit_root_packages explicit_root_pac
   Common.Logs.app (fun l ->
       l "Resolving opam dependencies for %a"
         Fmt.(list ~sep:(unit " ") Styled_pp.package)
-        config.root_packages );
+        config.root_packages);
   Opam_cmd.calculate_opam ~root ~config >>= fun packages ->
   report_stats ~packages;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor");
@@ -59,15 +59,13 @@ let run (`Repo repo) (`Branch branch) (`Explicit_root_packages explicit_root_pac
       l "Wrote duniverse file with %a entries to %a."
         Fmt.(styled `Green int)
         (Duniverse.Deps.count duniverse.deps)
-        Styled_pp.path (Fpath.normalize file) );
+        Styled_pp.path (Fpath.normalize file));
   Ok ()
 
 open Cmdliner
 
 let branch =
-  let doc =
-    "Branch that represents the working tree of the source code. Defaults to $(i,master)"
-  in
+  let doc = "Branch that represents the working tree of the source code. Defaults to $(i,master)" in
   Common.Arg.named
     (fun x -> `Branch x)
     Cmdliner.Arg.(value & opt string "master" & info [ "b" ] ~docv:"BRANCH" ~doc)
@@ -93,15 +91,13 @@ let excludes =
 
 let opam_repo =
   let doc =
-    "URL or path to the Duniverse opam-repository that has overrides for packages that have \
-     not yet been ported to Dune upstream."
+    "URL or path to the Duniverse opam-repository that has overrides for packages that have not \
+     yet been ported to Dune upstream."
   in
   Common.Arg.named
     (fun x -> `Opam_repo x)
     Arg.(
-      value
-      & opt string Config.duniverse_opam_repo
-      & info [ "opam-repo" ] ~docv:"OPAM_REPO" ~doc)
+      value & opt string Config.duniverse_opam_repo & info [ "opam-repo" ] ~docv:"OPAM_REPO" ~doc)
 
 let pins =
   let open Types.Opam in
@@ -109,8 +105,8 @@ let pins =
     "Packages to pin for the latest opam metadata and source. You can separate the package name \
      and a url and a remote branch via commas to specify a manual url (e.g. \
      $(i,mirage,git://github.com/avsm/mirage,fixme)).  If a url is not specified then the \
-     $(i,--dev) pin is used.  If a branch is not specified then the default remote branch is \
-     used. Repeat this flag multiple times for more than one exclusion."
+     $(i,--dev) pin is used.  If a branch is not specified then the default remote branch is used. \
+     Repeat this flag multiple times for more than one exclusion."
   in
   let fin s =
     match Astring.String.cuts ~sep:"," s with

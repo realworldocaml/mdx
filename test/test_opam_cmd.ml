@@ -14,7 +14,8 @@ let test_tag_from_archive =
     in
     (test_name, `Quick, test_fun)
   in
-  [ make_test ~name:"empty" ~archive:"" ~expected:None ();
+  [
+    make_test ~name:"empty" ~archive:"" ~expected:None ();
     make_test ~archive:"malformed" ~expected:None ();
     make_test ~archive:"git+http://a.com/user/repo" ~expected:(Some "master") ();
     make_test ~archive:"git+https://a.com/user/repo" ~expected:(Some "master") ();
@@ -44,7 +45,7 @@ let test_tag_from_archive =
       ~expected:(Some "v1.2.3") ();
     make_test ~archive:"https://erratique.ch/some/path/file-1.2.3.tbz" ~expected:(Some "v1.2.3") ();
     make_test ~archive:"https://other.domain.com/some/path/file-v1.2.3.tbz"
-      ~expected:(Some "v1.2.3") ()
+      ~expected:(Some "v1.2.3") ();
   ]
 
 let test_classify_package =
@@ -56,7 +57,8 @@ let test_classify_package =
     in
     (test_name, `Quick, test_fun)
   in
-  [ make_test ~name:"base package"
+  [
+    make_test ~name:"base package"
       ~package:{ name = "ocaml"; version = None }
       ~expected:(`Virtual, None)
       ();
@@ -100,7 +102,7 @@ let test_classify_package =
       ~dev_repo:"git+https://host.com/some-repo.git"
       ~archive:"https://github.com/user/repo/releases/download/v1.2.3/archive.tbz"
       ~expected:(`Git "https://host.com/some-repo.git", Some "v1.2.3")
-      ()
+      ();
   ]
 
 let suite = ("Opam_cmd", test_tag_from_archive @ test_classify_package)

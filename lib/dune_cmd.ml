@@ -22,5 +22,5 @@ let log_invalid_packages packages =
     (function
       | { dev_repo = `Error msg; package; _ } ->
           Logs.warn (fun l -> l "Do not know how to deal with %a: %s" pp_package package msg)
-      | _ -> () )
+      | _ -> ())
     packages

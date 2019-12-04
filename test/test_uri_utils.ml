@@ -8,8 +8,9 @@ let test_has_git_extension =
     in
     (test_name, `Quick, test_fun)
   in
-  [ make_test ~uri_str:"https://host.com/path/to/repo.git" ~expected:true ();
-    make_test ~uri_str:"https://host.com/path/to/repo" ~expected:false ()
+  [
+    make_test ~uri_str:"https://host.com/path/to/repo.git" ~expected:true ();
+    make_test ~uri_str:"https://host.com/path/to/repo" ~expected:false ();
   ]
 
 let suite = ("Uri_utils", test_has_git_extension)

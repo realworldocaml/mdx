@@ -16,7 +16,7 @@ let add ~package ~field ~value t =
   StrMap.update package
     (function
       | None -> Some (StrMap.singleton field value)
-      | Some fields -> Some (StrMap.add field value fields) )
+      | Some fields -> Some (StrMap.add field value fields))
     t
 
 (** [make lines] builds an Opam_show_result.t from an opam show output.
@@ -25,12 +25,12 @@ let make lines =
   let rec loop cur_name t = function
     | [] -> Ok t
     | line :: next -> (
-      match (cur_name, parse_opam_show_line line) with
-      | _, ("name", pkg_name) -> loop (Some pkg_name) t next
-      | None, _ -> Error (`Msg "")
-      | Some package, (field, value) ->
-          let t = add ~package ~field ~value t in
-          loop cur_name t next )
+        match (cur_name, parse_opam_show_line line) with
+        | _, ("name", pkg_name) -> loop (Some pkg_name) t next
+        | None, _ -> Error (`Msg "")
+        | Some package, (field, value) ->
+            let t = add ~package ~field ~value t in
+            loop cur_name t next )
   in
   loop None empty lines
 

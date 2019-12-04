@@ -9,7 +9,7 @@ let debug_update ~src_dep ~new_ref =
   let new_commit = new_ref.Git.Ref.commit in
   Logs.debug (fun l ->
       l "Updated %a#%a from %a to %a" Styled_pp.package_name repo Styled_pp.branch ref
-        Styled_pp.commit old_commit Styled_pp.commit new_commit )
+        Styled_pp.commit old_commit Styled_pp.commit new_commit)
 
 let should_update ~to_update (src_dep : _ Duniverse.Deps.Source.t) =
   match to_update with [] -> true | _ -> List.mem ~set:to_update src_dep.dir
@@ -29,7 +29,7 @@ let run (`Repo repo) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
   let duniverse_file = Fpath.(repo // Config.duniverse_file) in
   Common.Logs.app (fun l ->
-      l "Updating %a to track the latest commits" Styled_pp.path duniverse_file );
+      l "Updating %a to track the latest commits" Styled_pp.path duniverse_file);
   Duniverse.load ~file:duniverse_file >>= function
   | { deps = { duniverse = []; _ }; _ } ->
       Common.Logs.app (fun l -> l "No source dependencies, nothing to be done here!");
@@ -47,7 +47,7 @@ let run (`Repo repo) (`Duniverse_repos duniverse_repos) () =
             l "%a/%a source repositories tracked branch were updated" (Styled_pp.good Fmt_ext.int)
               !updated
               Fmt_ext.(styled `Blue int)
-              !total );
+              !total);
         let dune_get = { dune_get with deps = { dune_get.deps with duniverse } } in
         Duniverse.save ~file:duniverse_file dune_get )
 
@@ -71,13 +71,14 @@ let info =
   in
   let exits = Term.default_exits in
   let man =
-    [ `S Manpage.s_description;
+    [
+      `S Manpage.s_description;
       `P
         "This command updates your dune-get file with the latest commit hash for each repo's \
          tracked branch or tag.";
       `P
         "Note that it does not update your duniverse and you have to run $(b,duniverse pull)again \
-         to bring it up to speed with these changes."
+         to bring it up to speed with these changes.";
     ]
   in
   Term.info "update" ~doc ~exits ~man

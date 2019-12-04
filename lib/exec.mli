@@ -72,7 +72,11 @@ val run_opam_show :
 (** [run_opam_show ~root ~fields ~packages] runs opam show to get [fields] for each package in [packages].*)
 
 val init_opam_and_remotes :
-  root:Fpath.t -> opam_repo:Uri.t -> remotes:Types.Opam.Remote.t list -> unit -> (unit, [> Rresult.R.msg ]) result
+  root:Fpath.t ->
+  opam_repo:Uri.t ->
+  remotes:Types.Opam.Remote.t list ->
+  unit ->
+  (unit, [> Rresult.R.msg ]) result
 (** [init_opam_and_remotes ~root ~opam_repo ~remotes ()] creates a fresh opam state with a single
     switch using [root] as [OPAMROOT] from the [repo] Uri as the opam-repository location,
     and adds the [remotes] opam repositories to it. *)

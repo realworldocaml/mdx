@@ -27,11 +27,12 @@ module Ls_remote = struct
       in
       (test_name, `Quick, test_fun)
     in
-    [ make_test ~name:"Ok" ~line:"12ab  refs/tags/v1" ~expected:(Ok ("12ab", "refs/tags/v1")) ();
+    [
+      make_test ~name:"Ok" ~line:"12ab  refs/tags/v1" ~expected:(Ok ("12ab", "refs/tags/v1")) ();
       make_test ~name:"Error" ~line:"12ab  refs/tags/v1 something"
         ~expected:
           (Error (`Msg "Invalid git ls-remote output line: \"12ab  refs/tags/v1 something\""))
-        ()
+        ();
     ]
 
   let test_commit_pointed_by =
@@ -43,7 +44,8 @@ module Ls_remote = struct
       in
       (test_name, `Quick, test_fun)
     in
-    [ make_test ~name:"Empty output" ~ref:"v1" ~lines:[] ~expected:(Error `No_such_ref) ();
+    [
+      make_test ~name:"Empty output" ~ref:"v1" ~lines:[] ~expected:(Error `No_such_ref) ();
       make_test ~name:"Not in output" ~ref:"v1" ~lines:[ "0001    refs/heads/master" ]
         ~expected:(Error `No_such_ref)
         ();
@@ -68,10 +70,11 @@ module Ls_remote = struct
         ();
       make_test ~name:"Points to several commits (with packed-refs)" ~ref:"abc"
         ~lines:
-          [ "001   refs/heads/abc";
+          [
+            "001   refs/heads/abc";
             "002   refs/heads/abc^{}";
             "003   refs/tags/abc";
-            "004   refs/tags/abc^{}"
+            "004   refs/tags/abc^{}";
           ]
         ~expected:(Error `Multiple_such_refs)
         ();
@@ -81,7 +84,7 @@ module Ls_remote = struct
         ~expected:(Ok "003") ();
       make_test ~name:"Same suffix" ~ref:"abc" ~lines:[ "001   refs/heads/xabc" ]
         ~expected:(Error `No_such_ref)
-        ()
+        ();
     ]
 end
 

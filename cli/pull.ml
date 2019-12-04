@@ -7,7 +7,7 @@ let min_dune_ver = Dune_file.Lang.duniverse_minimum_version
 
 let update_lang ~content =
   List.map content ~f:(fun line ->
-      if Dune_file.Lang.is_stanza line then Dune_file.Raw.duniverse_minimum_lang else line )
+      if Dune_file.Lang.is_stanza line then Dune_file.Raw.duniverse_minimum_lang else line)
 
 let should_update_lang ~yes () =
   Prompt.confirm ~question:(fun l -> l "Should I update your dune-project?") ~yes
@@ -15,7 +15,7 @@ let should_update_lang ~yes () =
 let log_version_update ~dune_project_path =
   Common.Logs.app (fun l ->
       l "Setting dune language version to %a in %a" Dune_file.Lang.pp_version min_dune_ver
-        Styled_pp.path dune_project_path )
+        Styled_pp.path dune_project_path)
 
 let suggest_updating_version ~yes ~version ~dune_project_path ~content =
   let pp_current = Styled_pp.bad Dune_file.Lang.pp_version in
@@ -60,7 +60,7 @@ let mark_duniverse_content_as_vendored ~duniverse_dir =
   let dune_file = Fpath.(duniverse_dir / "dune") in
   let content = Dune_file.Raw.duniverse_dune_content in
   Logs.debug (fun l ->
-      l "Writing %a:\n %s" Styled_pp.path dune_file (String.concat ~sep:"\n" content) );
+      l "Writing %a:\n %s" Styled_pp.path dune_file (String.concat ~sep:"\n" content));
   Persist.write_lines_hum dune_file content >>= fun () ->
   Logs.debug (fun l -> l "Successfully wrote %a" Styled_pp.path dune_file);
   Ok ()
@@ -75,7 +75,7 @@ let pull ~duniverse_dir ~cache src_dep =
   |> Rresult.R.reword_error (fun (`Msg _) -> `Commit_is_gone dir)
   >>= fun cached ->
   Common.Logs.app (fun l ->
-      l "Pulled sources for %a.%a" Styled_pp.path output_dir Styled_pp.cached cached );
+      l "Pulled sources for %a.%a" Styled_pp.path output_dir Styled_pp.cached cached);
   Bos.OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
   Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
 
@@ -88,9 +88,9 @@ let report_commit_is_gone_repos repos =
   let fmt_repos = Fmt_ext.(list ~sep Styled_pp.package_name) in
   Common.Logs.app (fun l ->
       l "The following repos could not be pulled as the commit we want is gone:%a%a" sep ()
-        fmt_repos repos );
+        fmt_repos repos);
   Common.Logs.app (fun l ->
-      l "You should run 'duniverse update' to fix the commits associated with the tracked refs" )
+      l "You should run 'duniverse update' to fix the commits associated with the tracked refs")
 
 let pull_source_dependencies ~duniverse_dir ~cache src_deps =
   let open Result.O in
@@ -99,13 +99,13 @@ let pull_source_dependencies ~duniverse_dir ~cache src_deps =
          match res with
          | Ok () -> Ok acc
          | Error (`Commit_is_gone dir) -> Ok (dir :: acc)
-         | Error (`Msg _ as err) -> Error (err :> [> `Msg of string ]) )
+         | Error (`Msg _ as err) -> Error (err :> [> `Msg of string ]))
   >>= function
   | [] ->
       let total = List.length src_deps in
       let pp_count = Styled_pp.good Fmt_ext.int in
       Common.Logs.app (fun l ->
-          l "Successfully pulled %a/%a repositories" pp_count total pp_count total );
+          l "Successfully pulled %a/%a repositories" pp_count total pp_count total);
       Ok ()
   | commit_is_gone_repos ->
       report_commit_is_gone_repos commit_is_gone_repos;
@@ -155,18 +155,19 @@ let info =
       ~extra_path:"Local Settings/Cache/duniverse" ~var:"AppData" ()
   in
   let man =
-    [ `S Manpage.s_description;
+    [
+      `S Manpage.s_description;
       `P
         "This command reads the Git metadata calculated with $(i,duniverse lock) and fetches them \
-         from their respective Git remotes and stores them in the $(b,duniverse/) directory in \
-         the repository.";
+         from their respective Git remotes and stores them in the $(b,duniverse/) directory in the \
+         repository.";
       `P
         "This command uses a global duniverse cache to avoid repeated downloads. To determine \
          where the cache should be located it reads a few environment variables. If none of those \
          are set, a warning will be displayed and the cache will be disabled. To learn more about \
-         which variables are used and their priority go to the $(b,ENVIRONMENT) section. Note \
-         that you can also manually disable the cache using the $(b,--no-cache) CLI flag \
-         documented in the $(b,OPTIONS) section below."
+         which variables are used and their priority go to the $(b,ENVIRONMENT) section. Note that \
+         you can also manually disable the cache using the $(b,--no-cache) CLI flag documented in \
+         the $(b,OPTIONS) section below.";
     ]
   in
   Term.info "pull" ~doc ~exits ~man ~envs:[ duniverse_cache; xdg_cache; home_cache; app_data_cache ]

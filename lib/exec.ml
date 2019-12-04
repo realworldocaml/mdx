@@ -29,22 +29,22 @@ let run_and_log_s ?(ignore_error = false) cmd =
   let res = OS.Cmd.(run_out ~err cmd |> out_string) in
   match ignore_error with
   | true -> (
-    match res with
-    | Ok (stdout, _) -> Ok stdout
-    | Error (`Msg _) -> OS.File.read tmp_file >>= fun stderr -> Ok stderr )
+      match res with
+      | Ok (stdout, _) -> Ok stdout
+      | Error (`Msg _) -> OS.File.read tmp_file >>= fun stderr -> Ok stderr )
   | false -> (
-    match res with
-    | Ok (stdout, (_, `Exited 0)) -> Ok stdout
-    | Ok (stdout, _) ->
-        OS.File.read tmp_file >>= fun stderr ->
-        Logs.err (fun l ->
-            l "%a failed. Output was:@.%a%a"
-              Fmt.(styled `Cyan Cmd.pp)
-              cmd
-              Fmt.(styled `Red text)
-              stderr Fmt.text (String.trim stdout) );
-        Error (`Msg "Command execution failed")
-    | Error (`Msg m) -> Error (`Msg m) )
+      match res with
+      | Ok (stdout, (_, `Exited 0)) -> Ok stdout
+      | Ok (stdout, _) ->
+          OS.File.read tmp_file >>= fun stderr ->
+          Logs.err (fun l ->
+              l "%a failed. Output was:@.%a%a"
+                Fmt.(styled `Cyan Cmd.pp)
+                cmd
+                Fmt.(styled `Red text)
+                stderr Fmt.text (String.trim stdout));
+          Error (`Msg "Command execution failed")
+      | Error (`Msg m) -> Error (`Msg m) )
 
 let run_and_log ?ignore_error cmd = run_and_log_s ?ignore_error cmd >>= fun _ -> Ok ()
 
@@ -59,7 +59,7 @@ let map fn l =
          match (acc, b) with
          | Ok acc, Ok v -> Ok (v :: acc)
          | Ok _acc, Error v -> Error v
-         | (Error _ as e), _ -> e )
+         | (Error _ as e), _ -> e)
        (Ok [])
   |> function
   | Ok v -> Ok (List.rev v)
@@ -88,13 +88,12 @@ let git_default_branch ~remote () =
   List.map String.trim l |> fun l ->
   List.filter (String.is_prefix ~affix:"HEAD branch") l |> function
   | [ hd ] -> (
-    match String.cut ~sep:":" hd with
-    | Some (_, branch) -> Ok (String.trim branch)
-    | None -> R.error_msg "unable to find remote branch" )
+      match String.cut ~sep:":" hd with
+      | Some (_, branch) -> Ok (String.trim branch)
+      | None -> R.error_msg "unable to find remote branch" )
   | [] ->
       R.error_msg
-        (Fmt.strf
-           "unable to parse git remote show %s: no HEAD branch lines found (output was:\n%s)"
+        (Fmt.strf "unable to parse git remote show %s: no HEAD branch lines found (output was:\n%s)"
            remote (String.concat ~sep:"-\n" l))
   | _ ->
       R.error_msg
@@ -172,7 +171,7 @@ let run_opam_package_deps ~root packages =
 
 let opam_init_bare ~root ~opam_repo () =
   let open Cmd in
-  let cmd = opam_cmd ~root "init" % "--no-setup" % "--bare" % (Uri.to_string opam_repo) in
+  let cmd = opam_cmd ~root "init" % "--no-setup" % "--bare" % Uri.to_string opam_repo in
   run_and_log cmd
 
 let opam_switch_create_empty ~root () =
@@ -197,7 +196,8 @@ let opam_add_remote ~root { Types.Opam.Remote.name; url } =
 
 let init_opam_and_remotes ~root ~opam_repo ~remotes () =
   Logs.info (fun l ->
-      l "Initialising a fresh temporary opam with an empty switch in %a from %a." Fpath.pp root Uri.pp opam_repo);
+      l "Initialising a fresh temporary opam with an empty switch in %a from %a." Fpath.pp root
+        Uri.pp opam_repo);
   opam_init_bare ~root ~opam_repo () >>= fun () ->
   opam_switch_create_empty ~root () >>= fun () -> iter (opam_add_remote ~root) remotes
 
@@ -217,7 +217,7 @@ let run_opam_install ~yes opam_deps =
   let packages =
     List.map
       (fun (pkg : Duniverse.Deps.Opam.t) ->
-        match pkg.version with Some v -> pkg.name ^ "." ^ v | None -> pkg.name )
+        match pkg.version with Some v -> pkg.name ^ "." ^ v | None -> pkg.name)
       opam_deps
   in
   OS.Cmd.run Cmd.(v "opam" % "install" %% on yes (v "-y") %% of_list packages)

@@ -15,7 +15,7 @@ let r =
     (fun file ->
       OS.File.read Fpath.(v (file ^ ".1")) >>= fun m ->
       printf "## %s\n\n```\n%s\n```\n\n" file m;
-      Ok () )
+      Ok ())
     files
   >>= fun () ->
   printf "%!";

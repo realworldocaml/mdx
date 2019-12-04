@@ -36,43 +36,48 @@ module Deps = struct
         in
         (test_name, `Quick, test_fun)
       in
-      [ make_test ~name:"Picks shortest name"
+      [
+        make_test ~name:"Picks shortest name"
           ~t:{ dir = "a"; upstream = "u"; ref = "v1"; provided_packages = [] }
           ~package:{ opam = { name = "a-lwt"; version = None }; upstream = "u"; ref = "v1" }
           ~expected:
-            { dir = "a";
+            {
+              dir = "a";
               upstream = "u";
               ref = "v1";
-              provided_packages = [ { name = "a-lwt"; version = None } ]
+              provided_packages = [ { name = "a-lwt"; version = None } ];
             }
           ();
         make_test ~name:"Picks latest version according to opam"
           ~t:{ dir = "a"; upstream = "u"; ref = "v1.9.0"; provided_packages = [] }
           ~package:{ opam = { name = "a-lwt"; version = None }; upstream = "u"; ref = "v1.10.0" }
           ~expected:
-            { dir = "a";
+            {
+              dir = "a";
               upstream = "u";
               ref = "v1.10.0";
-              provided_packages = [ { name = "a-lwt"; version = None } ]
+              provided_packages = [ { name = "a-lwt"; version = None } ];
             }
           ();
         make_test ~name:"Adds to provided_packages no matter what"
           ~t:
-            { dir = "a";
+            {
+              dir = "a";
               upstream = "u";
               ref = "v1.9.0";
-              provided_packages = [ { name = "a"; version = Some "1.9.0" } ]
+              provided_packages = [ { name = "a"; version = Some "1.9.0" } ];
             }
           ~package:
             { opam = { name = "a"; version = Some "1.10.0" }; upstream = "u"; ref = "v1.10.0" }
           ~expected:
-            { dir = "a";
+            {
+              dir = "a";
               upstream = "u";
               ref = "v1.10.0";
               provided_packages =
-                [ { name = "a"; version = Some "1.10.0" }; { name = "a"; version = Some "1.9.0" } ]
+                [ { name = "a"; version = Some "1.10.0" }; { name = "a"; version = Some "1.9.0" } ];
             }
-          ()
+          ();
       ]
 
     let test_aggregate_list =
@@ -84,37 +89,44 @@ module Deps = struct
         in
         (test_name, `Quick, test_fun)
       in
-      [ make_test ~name:"Empty" ~l:[] ~expected:[] ();
+      [
+        make_test ~name:"Empty" ~l:[] ~expected:[] ();
         make_test ~name:"One"
           ~l:[ { opam = { name = "d"; version = None }; upstream = "u"; ref = "r" } ]
           ~expected:
-            [ { dir = "d.zdev";
+            [
+              {
+                dir = "d.zdev";
                 upstream = "u";
                 ref = "r";
-                provided_packages = [ { name = "d"; version = None } ]
-              }
+                provided_packages = [ { name = "d"; version = None } ];
+              };
             ]
           ();
         make_test ~name:"Aggregates per upstream"
           ~l:
-            [ { opam = { name = "a-lwt"; version = None }; upstream = "u"; ref = "v1" };
+            [
+              { opam = { name = "a-lwt"; version = None }; upstream = "u"; ref = "v1" };
               { opam = { name = "a"; version = None }; upstream = "u"; ref = "v1" };
-              { opam = { name = "b"; version = None }; upstream = "v"; ref = "v1" }
+              { opam = { name = "b"; version = None }; upstream = "v"; ref = "v1" };
             ]
           ~expected:
-            [ { dir = "a.zdev";
+            [
+              {
+                dir = "a.zdev";
                 upstream = "u";
                 ref = "v1";
                 provided_packages =
-                  [ { name = "a"; version = None }; { name = "a-lwt"; version = None } ]
+                  [ { name = "a"; version = None }; { name = "a-lwt"; version = None } ];
               };
-              { dir = "b.zdev";
+              {
+                dir = "b.zdev";
                 upstream = "v";
                 ref = "v1";
-                provided_packages = [ { name = "b"; version = None } ]
-              }
+                provided_packages = [ { name = "b"; version = None } ];
+              };
             ]
-          ()
+          ();
       ]
   end
 
@@ -130,7 +142,8 @@ module Deps = struct
         in
         (test_name, `Quick, test_fun)
       in
-      [ make_test ~name:"Virtual"
+      [
+        make_test ~name:"Virtual"
           ~entry:(entry_factory ~dev_repo:`Virtual ())
           ~expected:(Ok None) ();
         make_test ~name:"Error"
@@ -148,8 +161,7 @@ module Deps = struct
             (entry_factory ~dev_repo:(`Git "x") ~is_dune:true
                ~package:{ name = "y"; version = None } ~tag:"z" ())
           ~expected:
-            (Ok
-               (Some (Source { opam = { name = "y"; version = None }; upstream = "x"; ref = "z" })))
+            (Ok (Some (Source { opam = { name = "y"; version = None }; upstream = "x"; ref = "z" })))
           ();
         make_test ~name:"Uses default branch when no tag"
           ~get_default_branch:(function "x" -> Ok "z" | _ -> assert false)
@@ -157,9 +169,8 @@ module Deps = struct
             (entry_factory ~dev_repo:(`Git "x") ~is_dune:true
                ~package:{ name = "y"; version = None } ?tag:None ())
           ~expected:
-            (Ok
-               (Some (Source { opam = { name = "y"; version = None }; upstream = "x"; ref = "z" })))
-          ()
+            (Ok (Some (Source { opam = { name = "y"; version = None }; upstream = "x"; ref = "z" })))
+          ();
       ]
   end
 
@@ -172,7 +183,8 @@ module Deps = struct
       in
       (test_name, `Quick, test_fun)
     in
-    [ make_test ~name:"Empty" ~entries:[] ~expected:(Ok { duniverse = []; opamverse = [] }) ();
+    [
+      make_test ~name:"Empty" ~entries:[] ~expected:(Ok { duniverse = []; opamverse = [] }) ();
       make_test ~name:"Filters virtual"
         ~entries:[ entry_factory ~dev_repo:`Virtual () ]
         ~expected:(Ok { duniverse = []; opamverse = [] })
@@ -183,45 +195,53 @@ module Deps = struct
         ();
       make_test ~name:"Splits opam and source"
         ~entries:
-          [ entry_factory
+          [
+            entry_factory
               ~package:{ name = "x"; version = Some "v" }
               ~dev_repo:(`Git "g") ~is_dune:false ();
             entry_factory ~package:{ name = "y"; version = None } ~tag:"w" ~dev_repo:(`Git "h")
-              ~is_dune:true ()
+              ~is_dune:true ();
           ]
         ~expected:
           (Ok
-             { duniverse =
-                 [ { dir = "y.zdev";
+             {
+               duniverse =
+                 [
+                   {
+                     dir = "y.zdev";
                      upstream = "h";
                      ref = "w";
-                     provided_packages = [ { name = "y"; version = None } ]
-                   }
+                     provided_packages = [ { name = "y"; version = None } ];
+                   };
                  ];
-               opamverse = [ { name = "x"; version = Some "v" } ]
+               opamverse = [ { name = "x"; version = Some "v" } ];
              })
         ();
       make_test ~name:"Aggregates repos"
         ~entries:
-          [ entry_factory ~package:{ name = "y"; version = None } ~tag:"w" ~dev_repo:(`Git "h")
+          [
+            entry_factory ~package:{ name = "y"; version = None } ~tag:"w" ~dev_repo:(`Git "h")
               ~is_dune:true ();
             entry_factory
               ~package:{ name = "y-lwt"; version = None }
-              ~tag:"w" ~dev_repo:(`Git "h") ~is_dune:true ()
+              ~tag:"w" ~dev_repo:(`Git "h") ~is_dune:true ();
           ]
         ~expected:
           (Ok
-             { duniverse =
-                 [ { dir = "y-lwt.zdev";
+             {
+               duniverse =
+                 [
+                   {
+                     dir = "y-lwt.zdev";
                      upstream = "h";
                      ref = "w";
                      provided_packages =
-                       [ { name = "y-lwt"; version = None }; { name = "y"; version = None } ]
-                   }
+                       [ { name = "y-lwt"; version = None }; { name = "y"; version = None } ];
+                   };
                  ];
-               opamverse = []
+               opamverse = [];
              })
-        ()
+        ();
     ]
 end
 

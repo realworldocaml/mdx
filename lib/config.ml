@@ -15,7 +15,8 @@
  *)
 
 let base_packages =
-  [ "menhir";
+  [
+    "menhir";
     "jbuilder";
     "dune";
     "ocamlbuild";
@@ -24,7 +25,7 @@ let base_packages =
     "ocamlify";
     "ocaml";
     "ocaml-base-compiler";
-    "ocaml-variants"
+    "ocaml-variants";
   ]
 
 let duniverse_opam_repo = "git://github.com/dune-universe/opam-repository.git#duniverse"

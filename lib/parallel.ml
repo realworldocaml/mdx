@@ -29,9 +29,9 @@ let map ~f l =
   in
   List.init n_threads ~f:(fun _ ->
       let result = ref [] in
-      (Thread.create worker result, result) )
+      (Thread.create worker result, result))
   |> List.fold_left
        ~f:(fun acc (thread, result_ref) ->
          Thread.join thread;
-         !result_ref @ acc )
+         !result_ref @ acc)
        ~init:[]

@@ -7,8 +7,7 @@ module Arg = struct
     let doc = "Path to Git repository to store vendored code in." in
     named
       (fun x -> `Repo x)
-      Cmdliner.Arg.(
-        value & opt fpath (Fpath.v ".") & info [ "r"; "repo" ] ~docv:"TARGET_REPO" ~doc)
+      Cmdliner.Arg.(value & opt fpath (Fpath.v ".") & info [ "r"; "repo" ] ~docv:"TARGET_REPO" ~doc)
 
   let yes =
     let doc = "Do not prompt for confirmation and always assume yes" in
@@ -42,6 +41,5 @@ end
 module Logs = struct
   let app ?src f =
     Logs.app ?src (fun l ->
-        f (fun ?header ?tags fmt -> l ?header ?tags ("%a" ^^ fmt) Duniverse_lib.Styled_pp.header ())
-    )
+        f (fun ?header ?tags fmt -> l ?header ?tags ("%a" ^^ fmt) Duniverse_lib.Styled_pp.header ()))
 end

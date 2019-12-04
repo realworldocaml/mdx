@@ -39,7 +39,7 @@ let get_cache () =
       Logs.warn (fun l ->
           l
             "Coudln't find a cache directory on your system. None of $HOME, $XDG_CACHE_HOME or \
-             $DUNIVERSE_CACHE was set. Duniverse cache is disabled for now." );
+             $DUNIVERSE_CACHE was set. Duniverse cache is disabled for now.");
       Ok { cache_dir = None }
   | Some path ->
       let open Result.O in
@@ -112,8 +112,7 @@ end
 module Uncached = struct
   let warn_about_head_commit ~ref ~commit () =
     Logs.info (fun l ->
-        l "%a is not the HEAD commit for %a anymore" Styled_pp.commit commit Styled_pp.branch ref
-    );
+        l "%a is not the HEAD commit for %a anymore" Styled_pp.commit commit Styled_pp.branch ref);
     Logs.info (fun l -> l "You might want to consider running 'duniverse update'");
     ()
 
@@ -122,8 +121,8 @@ module Uncached = struct
     if String.equal commit head_commit then Ok ()
     else (
       warn_about_head_commit ~ref ~commit ();
-      Exec.git_unshallow ~repo:output_dir () >>= fun () ->
-      Exec.git_checkout ~repo:output_dir commit )
+      Exec.git_unshallow ~repo:output_dir () >>= fun () -> Exec.git_checkout ~repo:output_dir commit
+      )
 
   let clone_to ~output_dir ~remote ~ref ~commit () =
     let open Result.O in

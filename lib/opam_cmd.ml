@@ -56,42 +56,42 @@ let tag_from_archive archive =
   in
   match Uri.scheme uri with
   | Some "git+http" | Some "git+https" | Some "git+ssh" | Some "git" -> (
-    match String.cuts ~empty:false ~sep:"#" archive with
-    | [ _repo; tag ] -> Some tag
-    | _ -> Some "master" )
+      match String.cuts ~empty:false ~sep:"#" archive with
+      | [ _repo; tag ] -> Some tag
+      | _ -> Some "master" )
   | Some "git+file" -> None
   | _ -> (
-    match Uri.host uri with
-    | Some "github.com" -> (
-      match path with
-      | [ _u; _r; "releases"; "download"; v; _archive ] -> Some v
-      | [ _u; _r; "archive"; archive ] -> Some (strip_ext archive)
-      | [ _u; _r; "archive"; tag; _ ] -> Some tag
-      | _ -> if Uri.scheme uri = Some "git+https" then None else parse_err () )
-    | Some "ocaml.janestreet.com" -> (
-      match path with
-      | [ "ocaml-core"; _ver; "files"; f ] -> tag_of_file f
-      | [ "janestreet"; _r; "releases"; "download"; v; _f ] -> Some v
-      | [ "janestreet"; _r; "archive"; f ] -> Some (strip_ext f)
-      | _ -> parse_err () )
-    | Some "gitlab.camlcity.org" | Some "download.camlcity.org" -> tag_of_last_path ()
-    | Some "ocamlgraph.lri.fr" | Some "erratique.ch" -> tag_of_last_path ~prefix:"v" ()
-    | _ ->
-        Logs.info (fun l ->
-            l "Attempting to guess tag for %s from the final part of the URL" archive );
-        tag_of_last_path () )
+      match Uri.host uri with
+      | Some "github.com" -> (
+          match path with
+          | [ _u; _r; "releases"; "download"; v; _archive ] -> Some v
+          | [ _u; _r; "archive"; archive ] -> Some (strip_ext archive)
+          | [ _u; _r; "archive"; tag; _ ] -> Some tag
+          | _ -> if Uri.scheme uri = Some "git+https" then None else parse_err () )
+      | Some "ocaml.janestreet.com" -> (
+          match path with
+          | [ "ocaml-core"; _ver; "files"; f ] -> tag_of_file f
+          | [ "janestreet"; _r; "releases"; "download"; v; _f ] -> Some v
+          | [ "janestreet"; _r; "archive"; f ] -> Some (strip_ext f)
+          | _ -> parse_err () )
+      | Some "gitlab.camlcity.org" | Some "download.camlcity.org" -> tag_of_last_path ()
+      | Some "ocamlgraph.lri.fr" | Some "erratique.ch" -> tag_of_last_path ~prefix:"v" ()
+      | _ ->
+          Logs.info (fun l ->
+              l "Attempting to guess tag for %s from the final part of the URL" archive);
+          tag_of_last_path () )
 
 let classify_from_url_src src =
   let src = match String.cut ~sep:"#" src with None -> src | Some (src, _) -> src in
   match src with
   | "" -> None
   | src -> (
-    match Opam.Dev_repo.from_string src with
-    | { vcs = Some Git; uri = dev_repo_uri } -> (
-      match Uri.host dev_repo_uri with
-      | Some _host -> Some (`Git (Uri.to_string dev_repo_uri))
-      | None -> Some (`Error "url.src without host") )
-    | { vcs = None | Some (Other _); _ } -> None )
+      match Opam.Dev_repo.from_string src with
+      | { vcs = Some Git; uri = dev_repo_uri } -> (
+          match Uri.host dev_repo_uri with
+          | Some _host -> Some (`Git (Uri.to_string dev_repo_uri))
+          | None -> Some (`Error "url.src without host") )
+      | { vcs = None | Some (Other _); _ } -> None )
 
 let classify_from_dev_repo ~name src =
   match src with
@@ -99,12 +99,12 @@ let classify_from_dev_repo ~name src =
       Logs.debug (fun l -> l "Mapped %s to a virtual package as it has a blank dev repo" name);
       `Virtual
   | src -> (
-    match Opam.Dev_repo.from_string src with
-    | { vcs = Some Git; uri = dev_repo_uri } -> (
-      match Uri.host dev_repo_uri with
-      | Some _host -> `Git (Uri.to_string dev_repo_uri)
-      | None -> `Error "dev-repo without host" )
-    | { vcs = None | Some (Other _); _ } -> `Error "dev-repo doesn't use git as a VCS" )
+      match Opam.Dev_repo.from_string src with
+      | { vcs = Some Git; uri = dev_repo_uri } -> (
+          match Uri.host dev_repo_uri with
+          | Some _host -> `Git (Uri.to_string dev_repo_uri)
+          | None -> `Error "dev-repo without host" )
+      | { vcs = None | Some (Other _); _ } -> `Error "dev-repo doesn't use git as a VCS" )
 
 let get_git_url ~src ~dev_repo ~name =
   Logs.debug (fun l -> l "Parsing git url from url.src (%s)" name);
@@ -122,13 +122,13 @@ let classify_package ~package ~dev_repo ~archive () =
         Logs.debug (fun l -> l "Mapped %s to a virtual package as it has no archive" package.name);
         (`Virtual, None)
     | Some archive -> (
-      match get_git_url ~src:archive ~dev_repo ~name:package.name with
-      | `Git _ as kind ->
-          let tag = tag_from_archive archive in
-          Logs.debug (fun l ->
-              l "Mapped %s -> %s" archive (match tag with None -> "??" | Some v -> v) );
-          (kind, tag)
-      | x -> (x, None) )
+        match get_git_url ~src:archive ~dev_repo ~name:package.name with
+        | `Git _ as kind ->
+            let tag = tag_from_archive archive in
+            Logs.debug (fun l ->
+                l "Mapped %s -> %s" archive (match tag with None -> "??" | Some v -> v));
+            (kind, tag)
+        | x -> (x, None) )
 
 (* Fetch and parse an opam field from an Opam_show_result.t*)
 let extract_opam_value ~field ~package data =
@@ -166,8 +166,7 @@ let parse_opam_depends ~package data =
   | Some (Ok (List (_, vs))) ->
       let ss =
         List.fold_left
-          (fun acc -> function Option (_, String (_, v), _) | String (_, v) -> v :: acc | _ -> acc
-            )
+          (fun acc -> function Option (_, String (_, v), _) | String (_, v) -> v :: acc | _ -> acc)
           [] vs
       in
       Logs.debug (fun l -> l "Depends for %s: %s" package (String.concat ~sep:" " ss));
@@ -177,8 +176,7 @@ let parse_opam_depends ~package data =
       R.error_msg
         (Fmt.strf
            "Unable to parse opam depends for %s\n\
-            Try `opam show --normalise -f depends: %s` manually"
-           package package)
+            Try `opam show --normalise -f depends: %s` manually" package package)
 
 let get_opam_info ~root ~pins packages =
   let fields = [ "name"; "dev-repo:"; "url.src:"; "depends:" ] in
@@ -201,22 +199,24 @@ let get_opam_info ~root ~pins packages =
               Fmt.(styled `Yellow pp_package)
               pkg pp_repo dev_repo
               Fmt.(option string)
-              tag );
+              tag);
         let tag =
           match List.find_opt (fun { pin; _ } -> pkg.name = pin) pins with
           | Some { tag; _ } -> tag
           | None -> tag
         in
-        { package = pkg; dev_repo; tag; is_dune } )
+        { package = pkg; dev_repo; tag; is_dune })
       packages
   in
   List.fold_left
-    (fun lst elem -> lst >>= fun lst -> elem >>| fun elem -> elem :: lst)
+    (fun lst elem ->
+      lst >>= fun lst ->
+      elem >>| fun elem -> elem :: lst)
     (Ok []) packages
 
 let filter_duniverse_packages ~excludes pkgs =
   Logs.app (fun l ->
-      l "%aFiltering out packages that are irrelevant to the Duniverse." pp_header header );
+      l "%aFiltering out packages that are irrelevant to the Duniverse." pp_header header);
   let rec fn acc = function
     | hd :: tl ->
         let filter =
@@ -235,20 +235,18 @@ let calculate_opam ~root ~config =
   >>| List.map split_opam_name_and_version
   >>| List.map (fun p ->
           if List.exists (fun { pin; _ } -> p.name = pin) pins then { p with version = Some "dev" }
-          else p )
+          else p)
   >>= fun deps ->
   Logs.app (fun l ->
-      l "%aFound %a opam dependencies." pp_header header Fmt.(styled `Green int) (List.length deps)
-  );
+      l "%aFound %a opam dependencies." pp_header header Fmt.(styled `Green int) (List.length deps));
   Logs.info (fun l ->
       l "The dependencies for %a are: %a"
         Fmt.(list ~sep:(unit ",@ ") pp_package)
         root_packages
         Fmt.(list ~sep:(unit ",@ ") pp_package)
-        deps );
+        deps);
   Logs.app (fun l ->
-      l "%aQuerying local opam switch for their metadata and Dune compatibility." pp_header header
-  );
+      l "%aQuerying local opam switch for their metadata and Dune compatibility." pp_header header);
   get_opam_info ~root ~pins deps >>= filter_duniverse_packages ~excludes
 
 type packages_stats = { total : int; dune : int; not_dune : entry list }
@@ -266,19 +264,18 @@ let report_packages_stats packages_stats =
           "%aThe good news is that %a/%a are Dune compatible.\n\
            The bad news is that you will have to fork these to the Duniverse or port them \
            upstream: %a.\n\
-           In the meantime you can install them using `duniverse opam-install`."
-          pp_header header
+           In the meantime you can install them using `duniverse opam-install`." pp_header header
           Fmt.(styled `Green int)
           packages_stats.dune
           Fmt.(styled `Cyan int)
           packages_stats.total
           Fmt.(list ~sep:(unit ",@ ") Fmt.(styled `Red pp_entry))
-          packages_stats.not_dune )
+          packages_stats.not_dune)
   else
     Logs.app (fun l ->
         l "%aAll %a opam packages are Dune compatible! It's a spicy miracle!" pp_header header
           Fmt.(styled `Green int)
-          packages_stats.total )
+          packages_stats.total)
 
 let init_opam ~root ~remotes () =
   let open Types.Opam.Remote in
@@ -296,13 +293,13 @@ let choose_root_packages ~explicit_root_packages ~local_packages =
       Logs.app (fun l ->
           l "%aUsing locally scanned packages '%a' as the roots." pp_header header
             Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
-            local_packages );
+            local_packages);
       Ok local_packages
   | explicit_root_packages, [] ->
       Logs.app (fun l ->
           l "%aUsing command-line specified packages '%a' as the roots." pp_header header
             Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
-            explicit_root_packages );
+            explicit_root_packages);
       Ok explicit_root_packages
   | explicit_root_packages, local_packages ->
       Logs.app (fun l ->
@@ -314,14 +311,14 @@ let choose_root_packages ~explicit_root_packages ~local_packages =
             Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
             explicit_root_packages
             Fmt.(list ~sep:(unit ",@ ") string)
-            local_packages );
+            local_packages);
       Ok explicit_root_packages
 
 let install_incompatible_packages yes repo =
   Logs.app (fun l ->
       l "%aGathering dune-incompatible packages from %a." pp_header header
         Fmt.(styled `Cyan Fpath.pp)
-        Config.duniverse_file );
+        Config.duniverse_file);
   let file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.load ~file >>= fun { deps = { opamverse; _ }; _ } ->
   match opamverse with
@@ -332,5 +329,5 @@ let install_incompatible_packages yes repo =
       Logs.app (fun l ->
           l "%aInstalling these packages with opam:\n%a" pp_header header
             Fmt.(list ~sep:sp Duniverse.Deps.Opam.pp)
-            opamverse );
+            opamverse);
       Exec.run_opam_install ~yes opamverse

@@ -15,8 +15,9 @@ let test_parallel =
   in
   let input = List.init 50 id in
   let input_plus_1 = List.map (fun x -> x + 1) input in
-  [ make_test ~name:"Identity" ~input ~f:id ~expected:input ();
-    make_test ~name:"Sleep and add 1" ~input ~f:wait_and_sum ~expected:input_plus_1 ()
+  [
+    make_test ~name:"Identity" ~input ~f:id ~expected:input ();
+    make_test ~name:"Sleep and add 1" ~input ~f:wait_and_sum ~expected:input_plus_1 ();
   ]
 
 let suite = ("Parallel", test_parallel)
