@@ -103,9 +103,6 @@ val required_libraries: t -> (Library.Set.t, string) Result.result
     statements in the block [t]. Always returns an empty set if [t] isn't a toplevel
     block. *)
 
-val required_packages: t -> (Astring.String.Set.t, string) Result.result
-(** [required_packages t] returns all packages that the block [t] depends upon. *)
-
 val skip: t -> bool
 (** [skip t] is true iff [skip] is in the labels of [t]. *)
 

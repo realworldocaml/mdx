@@ -325,13 +325,6 @@ let required_libraries = function
   | { value = Toplevel _; contents; _} -> require_from_lines contents
   | { value = (Raw | OCaml | Error _ | Cram _); _ } -> Ok Library.Set.empty
 
-let required_packages t =
-  let open Util.Result.Infix in
-  let explicit = String.Set.of_list (explicit_required_packages t) in
-  required_libraries t >>| fun toplevel_required_libs ->
-  let toplevel_requires = Library.Set.to_package_set toplevel_required_libs in
-  String.Set.union explicit toplevel_requires
-
 let value t = t.value
 let section t = t.section
 let header t = t.header
