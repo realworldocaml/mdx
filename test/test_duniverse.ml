@@ -88,7 +88,7 @@ module Deps = struct
         make_test ~name:"One"
           ~l:[ { opam = { name = "d"; version = None }; upstream = "u"; ref = "r" } ]
           ~expected:
-            [ { dir = "d";
+            [ { dir = "d.zdev";
                 upstream = "u";
                 ref = "r";
                 provided_packages = [ { name = "d"; version = None } ]
@@ -102,13 +102,13 @@ module Deps = struct
               { opam = { name = "b"; version = None }; upstream = "v"; ref = "v1" }
             ]
           ~expected:
-            [ { dir = "a";
+            [ { dir = "a.zdev";
                 upstream = "u";
                 ref = "v1";
                 provided_packages =
                   [ { name = "a"; version = None }; { name = "a-lwt"; version = None } ]
               };
-              { dir = "b";
+              { dir = "b.zdev";
                 upstream = "v";
                 ref = "v1";
                 provided_packages = [ { name = "b"; version = None } ]
@@ -192,7 +192,7 @@ module Deps = struct
         ~expected:
           (Ok
              { duniverse =
-                 [ { dir = "y";
+                 [ { dir = "y.zdev";
                      upstream = "h";
                      ref = "w";
                      provided_packages = [ { name = "y"; version = None } ]
@@ -212,7 +212,7 @@ module Deps = struct
         ~expected:
           (Ok
              { duniverse =
-                 [ { dir = "y";
+                 [ { dir = "y-lwt.zdev";
                      upstream = "h";
                      ref = "w";
                      provided_packages =
