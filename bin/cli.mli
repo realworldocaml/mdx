@@ -1,5 +1,7 @@
 open Cmdliner.Term
 
+val named: ('a -> 'b) -> 'a t -> 'b t
+
 val non_deterministic: [> `Non_deterministic of bool ] t
 
 val syntax: [> `Syntax of Mdx.syntax option ] t

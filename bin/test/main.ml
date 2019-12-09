@@ -24,22 +24,6 @@ module Log = (val Logs.src_log src : Logs.LOG)
 
 let (/) = Filename.concat
 
-let prelude_env_and_file f =
-  match String.cut ~sep:":" f with
-  | None        -> None, f
-  | Some (e, f) ->
-    if String.exists ((=) ' ') e
-    then None  , f
-    else Some e, f
-
-let read_lines file =
-  let ic = open_in file in
-  let r = ref [] in
-  try while true do r := input_line ic :: !r done; assert false
-  with End_of_file ->
-    close_in ic;
-    List.rev !r
-
 (* From jbuilder's stdlib *)
 let ansi_color_strip str =
   let len = String.length str in
@@ -120,7 +104,7 @@ let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
       let root = root_dir ?root t in
       let blacklist = Block.unset_variables t in
       let n = run_test ?root blacklist temp_file test in
-      let lines = read_lines temp_file in
+      let lines = Mdx.Util.File.read_lines temp_file in
       let output =
         let output = List.map output_from_line lines in
         if Output.equal output test.output then test.output
@@ -283,7 +267,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     | [], [] -> ()
     | [], fs ->
       List.iter (fun p ->
-          let env, f = prelude_env_and_file p in
+          let env, f = Mdx.Prelude.env_and_file p in
           let eval () = eval_raw Block.empty ?root c ~line:0 [f] in
           match env with
           | None   -> eval ()
@@ -291,8 +275,8 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
         ) fs
     | fs, [] ->
       List.iter (fun p ->
-          let env, f = prelude_env_and_file p in
-          let eval () = eval_raw Block.empty ?root c ~line:0 (read_lines f) in
+          let env, f = Mdx.Prelude.env_and_file p in
+          let eval () = eval_raw Block.empty ?root c ~line:0 (Mdx.Util.File.read_lines f) in
           match env with
           | None   -> eval ()
           | Some e -> Mdx_top.in_env e eval

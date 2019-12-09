@@ -15,6 +15,7 @@
  *)
 
 open Astring
+open Result
 
 let src = Logs.Src.create "cram.rule"
 
@@ -39,7 +40,13 @@ let pp_action fmt = function
   | `Diff_corrected var -> Fmt.pf fmt "(diff? %%{%s} %%{%s}.corrected)" var var
   | `Run args -> Fmt.pf fmt "(run @[<hov 2>%a@])" Fmt.(list ~sep:sp string) args
 
-let pp_rules ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires
+let pp_locks_field fmt dirs_and_files =
+  match dirs_and_files with
+  | [] -> ()
+  | locks ->
+    Fmt.pf fmt " (locks @[%a@])\n" Fmt.(list ~sep:(unit "@\n") string) locks
+
+let pp_rules ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~packages ~locks
     fmt options =
   let ml_files = List.map (prepend_root root) (String.Set.elements ml_files) in
   let dirs = match root with
@@ -61,7 +68,7 @@ let pp_rules ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires
   let root = match root with None -> [] | Some r -> ["--root=" ^ r] in
   let deps =
     let packages =
-      List.map (fun p -> `Package p) (String.Set.elements requires)
+      List.map (fun p -> `Package p) (String.Set.elements packages)
     and ml_files =
       List.map2 (fun name p -> `Named (name, p)) var_names ml_files
     and dirs = List.map (fun p -> `Source_tree p) dirs
@@ -83,10 +90,11 @@ let pp_rules ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~requires
       "\
 (alias@\n\
 \ (name   %s)@\n\
-\ (deps   @[<v>%a@])@\n\
+\ (deps   @[<v>%a@])@\n%a\
 \ (action @[<hv 2>(progn@ %a)@]))@\n"
       name
       Fmt.(list ~sep:sp pp_dep) deps
+      pp_locks_field locks
       Fmt.(list ~sep:cut pp_action) (actions arg)
   in
   pp fmt "runtest" [];
@@ -136,8 +144,34 @@ let pp_prelude_str fmt s = Fmt.pf fmt "--prelude-str %S" s
 
 let add_opt e s = match e with None -> s | Some e -> String.Set.add e s
 
+let aggregate_requires ~require_from l =
+  let open Mdx.Util.Result.Infix in
+  Mdx.Util.Result.List.fold
+    ~f:(fun acc x -> require_from x >>| Mdx.Library.Set.union acc)
+    ~init:Mdx.Library.Set.empty
+    l
+  >>| Mdx.Library.Set.to_package_set
+
+let requires_from_prelude_str prelude_str_list =
+  let require_from prelude_str =
+    let (_, prelude) = Mdx.Prelude.env_and_file prelude_str in
+    let lines = String.fields ~is_sep:(function '\n' | '\r' -> true | _ -> false) prelude in
+    Mdx.Block.require_from_lines lines
+  in
+  aggregate_requires ~require_from prelude_str_list
+
+let requires_from_prelude prelude_list =
+  let require_from prelude =
+    let (_, prelude) = Mdx.Prelude.env_and_file prelude in
+    let lines = Mdx.Util.File.read_lines prelude in
+    Mdx.Block.require_from_lines lines
+  in
+  aggregate_requires ~require_from prelude_list
+
 let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direction direction)
-    (`Prelude prelude) (`Prelude_str prelude_str) (`Root root) =
+    (`Prelude prelude) (`Prelude_str prelude_str) (`Root root)
+    (`Duniverse_mode duniverse_mode) (`Locks locks) =
+  let open Mdx.Util.Result.Infix in
   let active =
     let section = match section with
       | None   -> None
@@ -150,13 +184,9 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direct
       | Some re, Some s -> Re.execp re (snd s)
   in
   let on_item acc = function
-    | Mdx.Section _ | Text _ -> acc
+    | Mdx.Section _ | Text _ -> Ok acc
     | Block b when active b ->
-      let files, dirs, nd, requires = acc in
-      let requires =
-        Mdx.Block.required_packages b
-        |> List.fold_left (fun s e -> String.Set.add e s) requires
-      in
+      let files, dirs, nd, packages = acc in
       let nd = nd || match Mdx.Block.mode b with
         | `Non_det _ -> true
         | _          -> false
@@ -168,35 +198,74 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direct
         |> String.Set.union source_trees
       in
       let files = add_opt (Mdx.Block.file b) files in
-      files, dirs, nd, requires
-    | Block _ -> acc
+      let explicit_requires = String.Set.of_list (Mdx.Block.explicit_required_packages b) in
+      let requires_from_statement =
+        if duniverse_mode then
+          Mdx.Block.required_libraries b >>| Mdx.Library.Set.to_package_set
+        else
+          Ok String.Set.empty
+      in
+      requires_from_statement >>| fun requires_from_statement ->
+      let (++) = String.Set.union in
+      let packages = packages ++ explicit_requires ++ requires_from_statement in
+      files, dirs, nd, packages
+    | Block _ -> Ok acc
   in
   let on_file file_contents items =
-    let ml_files, dirs, nd, requires =
-      let empty = String.Set.empty in
-      List.fold_left on_item (empty, empty, false, empty) items
+    let empty = String.Set.empty in
+    let req_res =
+      let packages =
+        if duniverse_mode then
+          requires_from_prelude prelude >>= fun prelude_requires ->
+          requires_from_prelude_str prelude_str >>= fun prelude_str_requires ->
+          Ok (String.Set.union prelude_requires prelude_str_requires)
+        else
+          Ok String.Set.empty
+      in
+      packages >>= fun packages ->
+      Mdx.Util.Result.List.fold ~f:on_item ~init:(empty, empty, false, packages) items
     in
-    let options =
-      List.map (Fmt.to_to_string pp_prelude) prelude @
-      List.map (Fmt.to_to_string pp_prelude_str) prelude_str @
-      [Fmt.to_to_string pp_direction direction] @
-      options_of_syntax syntax @
-      options_of_section section
-    in
-    let pp_rules fmt () =
-      pp_rules ~md_file ~prelude ~nd ~ml_files ~dirs ~root ~requires fmt options
-    in
-    print_format_dune_rules pp_rules;
-    file_contents
+    match req_res with
+    | Error s ->
+      Printf.eprintf "Fatal error while parsing block: %s" s;
+      exit 1
+    | Ok (ml_files, dirs, nd, packages) ->
+      let packages = if duniverse_mode then String.Set.add "mdx" packages else packages in
+      let options =
+        List.map (Fmt.to_to_string pp_prelude) prelude @
+        List.map (Fmt.to_to_string pp_prelude_str) prelude_str @
+        [Fmt.to_to_string pp_direction direction] @
+        options_of_syntax syntax @
+        options_of_section section
+      in
+      let pp_rules fmt () =
+        pp_rules ~md_file ~prelude ~nd ~ml_files ~dirs ~root ~packages ~locks fmt options
+      in
+      print_format_dune_rules pp_rules;
+      file_contents
   in
   Mdx.run md_file ~f:on_file;
   0
 
 open Cmdliner
 
+let duniverse_mode =
+  let doc =
+    "Run mdx in a duniverse-compatible mode. \
+     Expect all toplevel dependencies to be available in your duniverse folder."
+  in
+  Cli.named (fun x -> `Duniverse_mode x)
+    Arg.(value & flag & info ["duniverse-mode"] ~doc)
+
+let locks =
+  let docv = "LOCK[,LOCKS]" in
+  let doc = "Explicitly specify a list of locks to add to the generated dune rule" in
+  Cli.named (fun x -> `Locks x)
+    Arg.(value & opt (list ~sep:',' string) [] & info ["locks"] ~doc ~docv)
+
 let cmd =
   let doc = "Produce dune rules to synchronize markdown and OCaml files." in
   Term.(pure run
         $ Cli.setup $ Cli.file $ Cli.section $ Cli.syntax $ Cli.direction
-        $ Cli.prelude $ Cli.prelude_str $ Cli.root),
+        $ Cli.prelude $ Cli.prelude_str $ Cli.root $ duniverse_mode $ locks),
   Term.info "rule" ~doc

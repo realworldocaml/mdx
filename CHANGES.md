@@ -1,3 +1,10 @@
+### unreleased
+
+#### Added
+
+- Add a `--duniverse-mode` to `ocaml-mdx rule` so that the generated rules work
+  within a duniverse
+
 ### 1.5.0 (2019-11-29)
 
 #### Added
