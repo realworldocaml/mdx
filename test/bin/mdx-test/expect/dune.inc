@@ -1,5 +1,17 @@
 
 (rule
+ (target casual-file-inc.actual)
+ (deps (package mdx) (source_tree casual-file-inc))
+ (action
+  (with-stdout-to %{target}
+   (chdir casual-file-inc
+    (run ocaml-mdx test --output - --direction=to-md test-case.md)))))
+
+(alias
+ (name runtest)
+ (action (diff casual-file-inc/test-case.md.expected casual-file-inc.actual)))
+
+(rule
  (target code.actual)
  (deps (package mdx) (source_tree code))
  (action
