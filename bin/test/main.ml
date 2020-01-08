@@ -93,6 +93,10 @@ let root_dir ?root t =
   | Some r, Some d -> Some (r / d)
   | Some d, None   -> Some d
 
+let resolve_root file dir root = match root with
+    | None   -> dir / file
+    | Some r -> r / dir / file
+
 let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
   Block.pp_header ?syntax ppf t;
   let pad =
@@ -234,10 +238,7 @@ let update_file_with_block ppf t file part =
 let update_file_or_block ?root ppf md_file ml_file block direction =
   let root = root_dir ?root block in
   let dir = Filename.dirname md_file in
-  let ml_file = match root with
-    | None   -> dir / ml_file
-    | Some r -> r / dir / ml_file
-  in
+  let ml_file = resolve_root ml_file dir root in
   match direction with
   | `To_md ->
      update_block_with_file ppf block ml_file (Block.part block)
