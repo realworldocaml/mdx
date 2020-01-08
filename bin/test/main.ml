@@ -194,6 +194,18 @@ let read_parts file =
       Hashtbl.add files file f;
       f
 
+let read_part file part =
+  let parts = read_parts file in
+  match Mdx_top.Part.find parts.current ~part with
+  | None       ->
+    Fmt.failwith "Cannot find part %S in %s"
+      (match part with None -> "" | Some p -> p)
+      file
+  | Some lines ->
+    let contents = String.concat ~sep:"\n" lines in
+    String.trim contents
+
+
 let write_parts ~force_output file parts =
   let output_file = file ^ ".corrected" in
   match has_changed ~force_output parts with
@@ -204,19 +216,13 @@ let write_parts ~force_output file parts =
     flush oc;
     close_out oc
 
-let update_block_with_file ppf t file part =
+let update_block_content ppf t content =
   Block.pp_header ppf t;
-  let parts = read_parts file in
-  match Mdx_top.Part.find parts.current ~part with
-  | None       ->
-    Fmt.failwith "Cannot find part %S in %s"
-      (match part with None -> "" | Some p -> p)
-      file
-  | Some lines ->
-    let contents = String.concat ~sep:"\n" lines in
-    let contents = String.trim contents in
-    Output.pp ppf (`Output contents);
-    Block.pp_footer ppf ()
+  Output.pp ppf (`Output content);
+  Block.pp_footer ppf ()
+
+let update_block_with_file ppf t file part =
+  update_block_content ppf t (read_part file part)
 
 let update_file_with_block ppf t file part =
   let parts = read_parts file in
@@ -298,7 +304,8 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
       | None -> 
         (match Block.file t with
           | Some file -> 
-            update_block_with_file ppf t file (Block.part t)
+            let new_content = (read_part file (Block.part t)) in
+            update_block_content ppf t new_content
           | None -> Block.pp ?syntax ppf t )
       | Some _ -> Fmt.failwith "Parts are not supported in non-OCaml files.")
     (* The command is not active, skip it. *)
