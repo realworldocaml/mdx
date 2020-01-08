@@ -292,8 +292,15 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     match active, non_deterministic, Block.mode t, Block.value t with
     (* Print errors *)
     | _, _, _, Error _ -> Block.pp ?syntax ppf t
-    (* Skip raw blocks. *)
-    | true, _, _, Raw -> Block.pp ?syntax ppf t
+    (* Skip or copy raw blocks. Without parts support *)
+    | true, _, _, Raw -> 
+    (match Block.part t with
+      | None -> 
+        (match Block.file t with
+          | Some file -> 
+            update_block_with_file ppf t file (Block.part t)
+          | None -> Block.pp ?syntax ppf t )
+      | Some _ -> Fmt.failwith "Parts are not supported in non-OCaml files.")
     (* The command is not active, skip it. *)
     | false, _, _, _ -> Block.pp ?syntax ppf t
     (* the command is active but non-deterministic so skip everything *)
