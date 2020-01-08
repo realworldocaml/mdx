@@ -1,6 +1,6 @@
 (library
  (name duniverse_lib)
- (libraries stdune bos fmt threads logs opam-core opam-file-format rresult
-   sexplib uri uri-sexp)
+ (libraries stdune bos fmt threads logs opam-core
+   opam-file-format rresult sexplib uri uri-sexp)
  (preprocess
   (pps ppx_sexp_conv)))
