@@ -1,5 +1,4 @@
-(lang dune 1.11)
-(using fmt 1.1)
+(lang dune 2.0)
 (generate_opam_files true)
 (name duniverse)
 
@@ -17,6 +16,7 @@ code required to build a project using the dune build tool.")
  (depends
   (ocaml (>= 4.05))
   (ppx_sexp_conv (>= v0.13.0))
+  dune-private-libs
   bos
   cmdliner
   fmt
