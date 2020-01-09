@@ -98,7 +98,7 @@ Here is an examples of toplevel OCaml code:
 ### File sync
 `mdx` is also capable of two-way synchronization of fenced code blocks with
 OCaml files using
-the labels `file`. When an OCaml file is included it can be automaticcaly sliced
+the label `file`. When an OCaml file is included it can be automatically sliced
 if it contains
 annotations such as `[@@@part "partName"]` and if the block has the label `part=partName`:
 
