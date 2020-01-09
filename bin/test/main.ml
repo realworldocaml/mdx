@@ -307,7 +307,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
             let new_content = (read_part file (Block.part t)) in
             update_block_content ppf t new_content
           | None -> Block.pp ?syntax ppf t )
-      | Some _ -> Fmt.failwith "Parts are not supported in non-OCaml files.")
+      | Some _ -> Fmt.failwith "Parts are not supported for non-OCaml code blocks.")
     (* The command is not active, skip it. *)
     | false, _, _, _ -> Block.pp ?syntax ppf t
     (* the command is active but non-deterministic so skip everything *)
