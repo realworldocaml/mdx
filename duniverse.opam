@@ -13,9 +13,10 @@ license: "ISC"
 homepage: "https://github.com/ocamllabs/duniverse"
 bug-reports: "https://github.com/ocamllabs/duniverse/issues"
 depends: [
-  "dune" {>= "1.11"}
+  "dune" {>= "2.0"}
   "ocaml" {>= "4.05"}
   "ppx_sexp_conv" {>= "v0.13.0"}
+  "dune-private-libs"
   "bos"
   "cmdliner"
   "fmt"
