@@ -46,13 +46,14 @@ rule text section = parse
                 | _ -> `Output x) e
         in
         let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
+        let column = lexbuf.Lexing.lex_start_p.Lexing.pos_cnum in
         newline lexbuf;
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
         newline lexbuf;
         let block =
           match
-            Block.mk ~file ~line ~section ~header ~contents ~labels
+            Block.mk ~file ~line ~column ~section ~header ~contents ~labels
               ~legacy_labels ~errors
           with
           | Ok block -> block
@@ -89,12 +90,13 @@ and cram_text section = parse
         let labels = [] in
         let legacy_labels = false in
         let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
+        let column = lexbuf.Lexing.lex_start_p.Lexing.pos_cnum in
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
         let block =
           match
-            Block.mk ~file ~line ~section ~header ~contents ~labels
+            Block.mk ~file ~line ~column ~section ~header ~contents ~labels
               ~legacy_labels ~errors:[]
           with
           | Ok block -> block
@@ -112,13 +114,14 @@ and cram_text section = parse
         in
         let legacy_labels = false in
         let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
+        let column = lexbuf.Lexing.lex_start_p.Lexing.pos_cnum in
         newline lexbuf;
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
         let block =
           match
-            Block.mk ~file ~line ~section ~header ~contents ~labels
+            Block.mk ~file ~line ~column ~section ~header ~contents ~labels
               ~legacy_labels ~errors:[]
           with
           | Ok block -> block
@@ -138,10 +141,13 @@ and cram_block = parse
         requires_empty_line, str :: lst }
 
 {
-let token syntax lexbuf =
-  try
-    match syntax with
-    | Syntax.Normal -> text      None lexbuf
-    | Syntax.Cram   -> cram_text None lexbuf
-  with Failure e -> Misc.err lexbuf "invalid code block: %s" e
+  let markdown_token lexbuf =
+    try
+      text None lexbuf
+    with Failure e -> Misc.err lexbuf "invalid code block: %s" e
+
+let cram_token lexbuf =
+    try
+      cram_text None lexbuf
+    with Failure e -> Misc.err lexbuf "invalid code block: %s" e
 }

@@ -82,6 +82,7 @@ type section = int * string
 
 type t = {
   line : int;
+  column : int;
   file : string;
   section : section option;
   dir : string option;
@@ -102,6 +103,7 @@ type t = {
 val mk :
   line:int ->
   file:string ->
+  column:int ->
   section:section option ->
   labels:Label.t list ->
   legacy_labels:bool ->
@@ -121,7 +123,7 @@ val pp_header : ?syntax:Syntax.t -> t Fmt.t
 val pp_contents : ?syntax:Syntax.t -> t Fmt.t
 (** [pp_contents] pretty-prints block contents. *)
 
-val pp_footer : ?syntax:Syntax.t -> unit Fmt.t
+val pp_footer : ?syntax:Syntax.t -> t Fmt.t
 (** [pp_footer] pretty-prints block footer. *)
 
 val pp : ?syntax:Syntax.t -> t Fmt.t
@@ -170,7 +172,7 @@ val value : t -> value
 val section : t -> section option
 (** [section t] is [t]'s section. *)
 
-val executable_contents : t -> string list
+val executable_contents : syntax:Syntax.t -> t -> string list
 (** [executable_contents t] is either [t]'s contents if [t] is a raw
    or a cram block, or [t]'s commands if [t] is a toplevel fragments
    (e.g. the phrase result is discarded). *)

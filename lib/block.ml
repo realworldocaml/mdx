@@ -73,6 +73,7 @@ type value =
 
 type t = {
   line : int;
+  column : int;
   file : string;
   section : section option;
   dir : string option;
@@ -108,10 +109,12 @@ let dump_value ppf = function
   | Toplevel _ -> Fmt.string ppf "Toplevel"
   | Include _ -> Fmt.string ppf "Include"
 
-let dump ppf ({ file; line; section; labels; contents; value; _ } as b) =
+let dump ppf ({ file; line; column; section; labels; contents; value; _ } as b)
+    =
   Fmt.pf ppf
-    "{@[file: %s;@ line: %d;@ section: %a;@ labels: %a;@ header: %a;@\n\
-    \        contents: %a;@ value: %a@]}" file line
+    "{@[file: %s;@ line: %d;@ column: %d;@ section: %a;@ labels: %a;@ header: \
+     %a;@\n\
+    \        contents: %a;@ value: %a@]}" file line column
     Fmt.(Dump.option dump_section)
     section
     Fmt.Dump.(list Label.pp)
@@ -121,13 +124,34 @@ let dump ppf ({ file; line; section; labels; contents; value; _ } as b) =
     Fmt.(Dump.list dump_string)
     contents dump_value value
 
-let pp_lines syntax =
+let pp_lines syntax t =
   let pp =
-    match syntax with Some Syntax.Cram -> Fmt.fmt "  %s" | _ -> Fmt.string
+    match syntax with
+    | Some Syntax.Cram -> Fmt.fmt "  %s"
+    | Some Syntax.Mli ->
+        let i = ref (t.column + 2) in
+        let s = ref Fmt.string in
+        while !i > 0 do
+          s := Fmt.prefix (Fmt.unit " ") !s;
+          i := !i - 1
+        done;
+        !s
+    | _ -> Fmt.string
   in
   Fmt.(list ~sep:(unit "\n") pp)
 
-let pp_contents ?syntax ppf t = Fmt.pf ppf "%a\n" (pp_lines syntax) t.contents
+let lstrip string =
+  let hpad = Misc.hpad_of_lines [ string ] in
+  Astring.String.with_index_range string ~first:hpad
+
+let pp_contents ?syntax ppf t =
+  match syntax with
+  | Some Syntax.Mli ->
+      if List.length t.contents = 1 then
+        Fmt.pf ppf "%s" (String.concat "\n" t.contents)
+      else Fmt.pf ppf "\n%a" (pp_lines syntax t) (List.map lstrip t.contents)
+  | Some Cram | Some Normal | None ->
+      Fmt.pf ppf "%a\n" (pp_lines syntax t) t.contents
 
 let pp_errors ppf t =
   match t.value with
@@ -137,8 +161,12 @@ let pp_errors ppf t =
       Fmt.string ppf "```\n"
   | _ -> ()
 
-let pp_footer ?syntax ppf () =
-  match syntax with Some Syntax.Cram -> () | _ -> Fmt.string ppf "```\n"
+let pp_footer ?syntax ppf t =
+  match syntax with
+  | Some Syntax.Mli ->
+      if List.length t.contents = 1 then Fmt.pf ppf "" else Fmt.pf ppf "\n"
+  | Some Syntax.Cram -> ()
+  | _ -> Fmt.string ppf "```\n"
 
 let pp_legacy_labels ppf = function
   | [] -> ()
@@ -159,6 +187,7 @@ let pp_header ?syntax ppf t =
       | [ Non_det (Some Nd_command) ] ->
           Fmt.pf ppf "<-- non-deterministic command\n"
       | _ -> failwith "cannot happen: checked during parsing" )
+  | Some Syntax.Mli -> ()
   | _ ->
       if t.legacy_labels then
         Fmt.pf ppf "```%a%a\n"
@@ -172,7 +201,7 @@ let pp_header ?syntax ppf t =
 let pp ?syntax ppf b =
   pp_header ?syntax ppf b;
   pp_contents ?syntax ppf b;
-  pp_footer ?syntax ppf ();
+  pp_footer ?syntax ppf b;
   pp_errors ppf b
 
 let directory t = t.dir
@@ -246,13 +275,16 @@ let pp_line_directive ppf (file, line) = Fmt.pf ppf "#%d %S" line file
 
 let line_directive = Fmt.to_to_string pp_line_directive
 
-let executable_contents b =
+let executable_contents ~syntax b =
   let contents =
     match b.value with
     | OCaml _ -> b.contents
     | Raw _ | Cram _ | Include _ -> []
     | Toplevel _ ->
-        let phrases = Toplevel.of_lines ~file:b.file ~line:b.line b.contents in
+        let phrases =
+          Toplevel.of_lines ~syntax ~file:b.file ~line:b.line ~column:b.column
+            b.contents
+        in
         List.flatten
           (List.map
              (fun t ->
@@ -285,7 +317,8 @@ let check_no_errors = function
   | _ :: _ ->
       Util.Result.errorf "error block cannot be attached to a non-OCaml block"
 
-let mk ~line ~file ~section ~labels ~legacy_labels ~header ~contents ~errors =
+let mk ~line ~file ~column ~section ~labels ~legacy_labels ~header ~contents
+    ~errors =
   let non_det =
     get_label
       (function
@@ -360,6 +393,7 @@ let mk ~line ~file ~section ~labels ~legacy_labels ~header ~contents ~errors =
     {
       line;
       file;
+      column;
       section;
       dir;
       source_trees;

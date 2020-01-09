@@ -396,6 +396,18 @@
  (action (diff shell-file-inc/test-case.md.expected shell-file-inc.actual)))
 
 (rule
+ (target simple-mli.actual)
+ (deps (package mdx) (source_tree simple-mli))
+ (action
+  (with-stdout-to %{target}
+   (chdir simple-mli
+    (run ocaml-mdx test --output - --syntax=mli test-case.mli)))))
+
+(rule
+ (alias runtest)
+ (action (diff simple-mli/test-case.mli simple-mli.actual)))
+
+(rule
  (target spaces.actual)
  (deps (package mdx) (source_tree spaces))
  (action

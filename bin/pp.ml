@@ -37,7 +37,7 @@ let run (`Setup ()) (`File file) (`Section section) =
               if not (Mdx.Block.skip b) then (
                 Log.debug (fun l -> l "pp: %a" Mdx.Block.dump b);
                 let pp_lines = Fmt.(list ~sep:(unit "\n") string) in
-                let contents = Mdx.Block.executable_contents b in
+                let contents = Mdx.Block.executable_contents ~syntax:Normal b in
                 match b.value with
                 | Toplevel _ -> Fmt.pr "%a\n" pp_lines contents
                 | OCaml _ ->
