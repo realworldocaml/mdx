@@ -96,20 +96,19 @@ Here is an examples of toplevel OCaml code:
     ```
 
 ### File sync
-`mdx` is also capable of two-way synchronization of fenced code blocks with
-OCaml files using
-the label `file`. When an OCaml file is included it can be automatically sliced
-if it contains
-annotations such as `[@@@part "partName"]` and if the block has the label `part=partName`:
+`mdx` is also capable of including content from files in fenced code blocks
+using the label `file`. When an OCaml file is included it can be automatically
+sliced if it contains annotations such as `[@@@part "partName"]` and if the
+block has the label `part=partName`:
 
     ```ocaml file=sync_to_md.ml,part=partName
     ```
 
-Non-OCaml files can also be read and included (file to md sync only) in a block:
+Non-OCaml files can also be read and included in a block:
 
     ``` file=any_file.txt
     ```
-Part splitting is only supported for OCaml files.
+However, part splitting is only supported for OCaml files.
 
 ### Pre-processing
 
