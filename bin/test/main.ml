@@ -294,44 +294,6 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     let active =
       active t && Block.version_enabled t && (not (Block.skip t))
     in
-    (*
-    match active, non_deterministic, Block.mode t, Block.value t with
-    | _, _, _, Error _ -> Block.pp ?syntax ppf t
-    | true, _, _, Raw -> 
-      match Block.part t with
-      | None -> 
-        match Block.file t with
-        ...
-    | false, _, _, _ -> Block.pp ?syntax ppf t
-    | true, false, `Non_det `Command, _ -> Block.pp ?syntax ppf t
-    | true, false, `Non_det `Output, Cram { tests; _ } ->
-    | true, false, `Non_det `Output, Toplevel tests ->
-    | true, _, _, OCaml ->
-      match Block.file t with
-      ...
-    | true, _, _, Cram { tests; pad } ->
-      match Block.part t with
-      | None -> 
-        match Block.file t with
-        ...
-    | true, _, _, Toplevel tests ->
-      match Block.file t with
-      ...
-
-
-    match active, non_deterministic, Block.mode t, Block.value t with
-    | _, _, _, Error _ -> Block.pp ?syntax ppf t
-    | true, _, _, kind -> 
-      match Some
-    | false, _, _, _ -> Block.pp ?syntax ppf t
-    | true, false, `Non_det `Command, _ -> Block.pp ?syntax ppf t
-    | true, false, `Non_det `Output, Cram { tests; _ } ->
-    | true, false, `Non_det `Output, Toplevel tests ->
-    | true, _, _, OCaml ->
-    | true, _, _, Cram { tests; pad } ->
-    | true, _, _, Toplevel tests ->
-
-    *)
     match active, non_deterministic, Block.mode t, Block.value t with
     (* Print errors *)
     | _, _, _, Error _ -> Block.pp ?syntax ppf t
@@ -357,46 +319,34 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
             let output = List.map (fun l -> `Output l) e in
             if Output.equal test.output output then ()
             else err_eval ~cmd:test.command e
-        ) tests
-    (* Skip or copy raw blocks. Without parts support *)
-    | true, _, _, Raw -> 
-    (match Block.part t with
-      | None -> 
-        (match Block.file t with
-          | Some file -> 
-            let new_content = (read_part file (Block.part t)) in
-            update_block_content ppf t new_content
-          | None -> Block.pp ?syntax ppf t )
-      | Some _ -> Fmt.failwith "Parts are not supported for non-OCaml code blocks.")
-    (* Run raw OCaml code *)
-    | true, _, _, OCaml ->
-      assert (syntax <> Some Cram);
-      (match Block.file t with
-       | Some ml_file ->
-         update_file_or_block ?root ppf file ml_file t direction
-       | None ->
-         eval_raw t ?root c ~line:t.line t.contents;
-         Block.pp ppf t )
-    (* Cram tests. *)
-    | true, _, _, Cram { tests; pad } ->
-      (match Block.part t with
-        | None -> 
-          (match Block.file t with
-            | Some file ->
-              let new_content = (read_part file (Block.part t)) in
-              update_block_content ppf t new_content
-            | None ->
-              run_cram_tests ?syntax t ?root ppf temp_file pad tests)
-        | Some _ -> 
-          Fmt.failwith "Parts are not supported for non-OCaml code blocks.")
-    (* Top-level tests. *)
-    | true, _, _, Toplevel tests ->
-      assert (syntax <> Some Cram);
+        ) tests     
+
+    | true, _, _, kind ->
       match Block.file t with
-      | Some ml_file ->
-        update_file_or_block ?root ppf file ml_file t direction
-      | None ->
-        run_toplevel_tests ?root c ppf tests t
+      | Some file ->
+        (match kind with
+        | OCaml | Toplevel _ ->
+          assert (syntax <> Some Cram);
+          update_file_or_block ?root ppf file file t direction
+        | _ when Util.Option.is_some (Block.part t) -> 
+          Fmt.failwith 
+            "Parts are not supported for non-OCaml code blocks."
+        | Cram _ | Raw ->
+          let new_content = (read_part file (Block.part t)) in
+          update_block_content ppf t new_content
+        | _ -> Block.pp ?syntax ppf t)
+      | None -> 
+        (match kind with
+        | OCaml -> 
+          assert (syntax <> Some Cram);
+          eval_raw t ?root c ~line:t.line t.contents;
+          Block.pp ppf t
+        | Cram { tests; pad } -> 
+          run_cram_tests ?syntax t ?root ppf temp_file pad tests
+        | Toplevel tests -> 
+          assert (syntax <> Some Cram);
+          run_toplevel_tests ?root c ppf tests t
+        | Raw | _ -> Block.pp ?syntax ppf t)
   in
   let gen_corrected file_contents items =
     let temp_file = Filename.temp_file "ocaml-mdx" ".output" in

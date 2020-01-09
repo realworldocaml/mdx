@@ -55,3 +55,9 @@ module File = struct
       close_in ic;
       List.rev !r
 end
+
+module Option = struct
+  let is_some = function
+  | Some _ -> true
+  | None -> false
+end
