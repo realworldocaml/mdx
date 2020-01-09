@@ -33,7 +33,7 @@ let run (`Setup ()) (`File file) (`Section section) =
     List.iter (function
         | Mdx.Section _ | Text _ -> ()
         | Block b ->
-          let b = Mdx.Block.eval b in
+          let b = Mdx.Block.eval Mdx.Syntax.Normal b in
           if not (Mdx.Block.skip b) then (
             Log.debug (fun l -> l "pp: %a" Mdx.Block.dump b);
             let pp_lines = Fmt.(list ~sep:(unit "\n") string) in

@@ -84,12 +84,15 @@ let vpad_of_lines t =
   in
   aux 0 t
 
-let of_lines ~file ~line t =
+let of_lines ~syntax ~file ~line t =
   let hpad = hpad_of_lines t in
   let unpad line =
-    if String.is_empty line then line
-    else if String.length line < hpad then Fmt.failwith "invalide padding: %S" line
-    else String.with_index_range line ~first:hpad
+    match syntax with
+    | Syntax.Mli -> String.trim line
+    | Syntax.Normal | Syntax.Cram ->
+      if String.is_empty line then line
+      else if String.length line < hpad then Fmt.failwith "invalid padding: %S" line
+      else String.with_index_range line ~first:hpad
   in
   let lines = List.map unpad t in
   let lines = String.concat ~sep:"\n" lines in

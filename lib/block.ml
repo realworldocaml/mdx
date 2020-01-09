@@ -91,10 +91,15 @@ let pp_lines syntax =
     | _ -> Fmt.string
   in
   Fmt.(list ~sep:(unit "\n") pp)
-let pp_contents ?syntax ppf t = Fmt.pf ppf "%a\n" (pp_lines syntax) t.contents
+let pp_contents ?syntax ppf t =
+  match syntax with
+  | Some Syntax.Mli -> Fmt.pf ppf "%a" (pp_lines syntax) t.contents
+  | Some Cram | Some Normal -> None ->
+    Fmt.pf ppf "%a\n" (pp_lines syntax) t.contents
+
 let pp_footer ?syntax ppf () =
   match syntax with
-  | Some Syntax.Cram -> ()
+  | Some Syntax.Cram | Some Syntax.Mli -> ()
   | _ -> Fmt.string ppf "```\n"
 
 let pp_cmp ppf = function
@@ -127,6 +132,7 @@ let pp_header ?syntax ppf t =
       in
       invalid_arg err
     end
+  | Some Syntax.Mli -> ()
   | _ ->
     Fmt.pf ppf "```%a%a\n" Fmt.(option string) t.header pp_labels t.labels
 
@@ -346,9 +352,9 @@ let guess_ocaml_kind b =
   | Some "ocaml", t -> `OCaml (aux t)
   | _ -> `Other
 
-let toplevel ~file ~line lines = Toplevel (Toplevel.of_lines ~line ~file lines)
+let toplevel ~syntax ~file ~line lines = Toplevel (Toplevel.of_lines ~syntax ~line ~file lines)
 
-let eval t =
+let eval syntax t =
   match check_labels t with
   | Error e -> { t with value = Error e }
   | Ok ()   ->
@@ -360,7 +366,7 @@ let eval t =
       (match guess_ocaml_kind t with
        | `OCaml `Code -> { t with value = OCaml }
        | `OCaml `Toplevel ->
-         let value = toplevel ~file:t.file ~line:t.line t.contents in
+         let value = toplevel ~syntax ~file:t.file ~line:t.line t.contents in
          { t with value }
        | `Other -> Fmt.failwith "Dead code. todo: remove"
        )

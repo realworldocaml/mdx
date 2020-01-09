@@ -126,7 +126,7 @@ val version_enabled: t -> bool
 
 (** {2 Evaluation} *)
 
-val eval: t -> t
+val eval: Syntax.t -> t -> t
 (** [eval t] is the same as [t] but with it's value replaced by either
    [Cram] or [Toplevel] blocks, depending on [t]'s header. *)
 

@@ -23,6 +23,7 @@
     Cram tests and toplevel phrases are sequences of commands and
    {{!Output}outputs}.  *)
 
+module Lexer = Lexer
 module Output = Output
 module Cram = Cram
 module Toplevel = Toplevel
@@ -32,12 +33,14 @@ module Migrate_ast = Migrate_ast
 module Compat = Compat
 module Util = Util
 module Prelude = Prelude
+module Syntax = Syntax
 
 (** {2 Lines} *)
 
 type syntax = Syntax.t =
   | Normal
   | Cram
+  | Mli
 
 (** The type for the lines of a markdown or cram file. *)
 type line =
@@ -67,8 +70,11 @@ val of_string: syntax -> string -> t
 val parse_file: syntax -> string ->  t
 (** [parse_file s] is {!of_string} of [s]'s contents. *)
 
-val parse_lexbuf: syntax -> Lexing.lexbuf -> t
+val parse_lexbuf: string -> syntax -> Lexing.lexbuf -> t
 (** [parse_lexbuf l] is {!of_string} of [l]'s contents. *)
+
+val parse_mli: string -> t
+(** Slice an mli file into its [Text] and [Block] parts. *)
 
 (** {2 Evaluation} *)
 

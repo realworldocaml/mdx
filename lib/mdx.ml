@@ -15,6 +15,7 @@
  *)
 
 let src = Logs.Src.create "ocaml-mdx"
+module Lexer = Lexer
 module Log = (val Logs.src_log src : Logs.LOG)
 
 module Output = Output
@@ -26,6 +27,7 @@ module Migrate_ast = Migrate_ast
 module Compat = Compat
 module Util = Util
 module Prelude = Prelude
+module Syntax = Syntax
 
 type line =
   | Section of (int * string)
@@ -44,7 +46,10 @@ let dump = Fmt.Dump.list dump_line
 let pp_line ?syntax ppf (l: line) = match l with
   | Block b        -> Fmt.pf ppf "%a\n" (Block.pp ?syntax) b
   | Section (d, s) -> Fmt.pf ppf "%s %s\n" (String.make d '#') s
-  | Text s         -> Fmt.pf ppf "%s\n" s
+  | Text s         ->
+    match syntax with
+    | Some Mli -> Fmt.pf ppf "%s" s
+    | _ -> Fmt.pf ppf "%s\n" s
 
 let pp ?syntax ppf t =
   Fmt.pf ppf "%a\n" Fmt.(list ~sep:(unit "\n") (pp_line ?syntax)) t
@@ -73,30 +78,101 @@ let parse l =
       | `Block b   -> Block b
     ) l
 
+let parse_mli file_contents =
+  (* Find the locations of the code blocks within [file_contents], then slice it up into
+     [Text] and [Block] parts by using the starts and ends of those blocks as
+     boundaries. *)
+  let code_blocks = Mli_parser.docstring_code_blocks file_contents in
+  let cursor = ref { Odoc_model.Location_.line = 1; column = 0 } in
+  let tokens =
+    List.map
+      (fun (code_block : Mli_parser.Code_block.t) ->
+         let pre_text =
+           Text
+             (Mli_parser.slice
+                file_contents
+                ~start:!cursor
+                ~end_:code_block.location.start)
+         in
+         let block =
+           Block
+             { Block.line = code_block.location.start.line
+             ; file = ""
+             ; section = None
+             ; labels = []
+             ; header = Some "ocaml"
+             ; contents = String.split_on_char '\n' code_block.contents
+             ; value = Raw
+             }
+         in
+         cursor := code_block.location.end_;
+         [ pre_text; Text "{["; block; Text "]}" ])
+      code_blocks
+    |> List.concat
+  in
+  let eof =
+    let lines = String.split_on_char '\n' file_contents in
+    { Odoc_model.Location_.line = List.length lines
+    ; column = String.length (List.rev lines |> List.hd)
+    }
+  in
+  let eof_is_beyond_location (loc : Odoc_model.Location_.point) =
+    eof.line > loc.line || (eof.line = loc.line && eof.column > loc.column)
+  in
+  if eof_is_beyond_location !cursor
+  then (
+    let remainder = Mli_parser.slice file_contents ~start:!cursor ~end_:eof in
+    if not (String.equal remainder "") then tokens @ [ Text remainder ] else tokens)
+  else tokens
+
 type syntax = Syntax.t =
   | Normal
   | Cram
+  | Mli
 
-let parse_lexbuf syntax l = parse (Lexer.token syntax l)
+let parse_lexbuf file_contents syntax l =
+  match syntax with
+  | Syntax.Mli -> parse_mli file_contents
+  | Syntax.Normal | Syntax.Cram -> parse (Lexer.token syntax l)
+
 let parse_file syntax f = parse (Lexer.token syntax (snd (Misc.init f)))
-let of_string syntax s = parse_lexbuf syntax (Lexing.from_string s)
 
-let eval = function
+let of_string syntax s =
+  match syntax with
+  | Syntax.Mli -> parse_mli s
+  | Syntax.Normal | Syntax.Cram -> parse_lexbuf s syntax (Lexing.from_string s)
+
+let eval syntax = function
   | Section _ | Text _ as x -> x
   | Block t as x ->
-    let t' = Block.eval t in
+    let t' = Block.eval syntax t in
     if t == t' then x else Block t'
 
 type expect_result =
   | Identical
   | Differs
 
+let remove_whitespace str =
+  List.fold_right (fun s acc ->
+    String.cuts ~sep:s acc |> String.concat ~sep:""
+  ) [ " "; "\n"; "\t" ] str
+
 let run_str ~syntax ~f file =
   let file_contents, lexbuf = Misc.init file in
-  let items = parse_lexbuf syntax lexbuf in
-  let items = List.map eval items in
+  let items = parse_lexbuf file_contents syntax lexbuf in
+  let items = List.map (fun i -> eval syntax i) items in
   Log.debug (fun l -> l "run @[%a@]" dump items);
   let corrected = f file_contents items in
+  (* The code blocks in mli syntax are often formatted by a tool like ocp-indent or
+     ocamlformat, and it would be impossible to match this formatting exactly down to
+     every space and newline.
+
+     Instead, for this syntax only, we make the diff whitespace-invariant.
+  *)
+  let has_changed = match syntax with
+    | Syntax.Cram | Syntax.Normal -> corrected <> file_contents
+    | Syntax.Mli -> remove_whitespace corrected <> remove_whitespace file_contents
+  in
   let result = if corrected <> file_contents then Differs else Identical in
   (result, corrected)
 

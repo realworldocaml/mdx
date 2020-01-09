@@ -153,8 +153,8 @@ let split_lines lines =
   in
   List.fold_left aux [] (List.rev lines)
 
-let run_toplevel_tests ?root c ppf tests t =
-  Block.pp_header ppf t;
+let run_toplevel_tests ?syntax ?root c ppf tests t =
+  Block.pp_header ?syntax ppf t;
   List.iter (fun test ->
       let lines = lines (eval_test ?root t c test) in
       let lines = split_lines lines in
@@ -172,7 +172,7 @@ let run_toplevel_tests ?root c ppf tests t =
             Output.pp ~pad ppf (`Output line)
         ) output;
     ) tests;
-  Block.pp_footer ppf ()
+  Block.pp_footer ?syntax ppf ()
 
 type file = { first: Mdx_top.Part.file; current: Mdx_top.Part.file }
 

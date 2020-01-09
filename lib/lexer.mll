@@ -85,5 +85,6 @@ let token syntax lexbuf =
     match syntax with
     | Syntax.Normal -> text      None lexbuf
     | Syntax.Cram   -> cram_text None lexbuf
+    | Syntax.Mli    -> failwith "No lexer here for mli"
   with Failure _ -> Misc.err lexbuf "incomplete code block"
 }

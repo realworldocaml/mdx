@@ -14,16 +14,19 @@ let syntax =
   let parse = function
     | "normal" -> `Ok Mdx.Normal
     | "cram" -> `Ok Mdx.Cram
+    | "mli" -> `Ok Mdx.Mli
     | s -> `Error (Format.sprintf "unrecognized syntax %S" s)
   in
   let print fmt syn =
     Format.fprintf fmt "%s"
       (match syn with
        | Mdx.Normal -> "normal"
-       | Mdx.Cram -> "cram")
+       | Mdx.Cram -> "cram"
+       | Mdx.Mli -> "mli"
+      )
   in
   let syntax = parse, print in
-  let doc = "Which syntax to use. Either 'normal' or 'cram'." in
+  let doc = "Which syntax to use. Either 'normal', 'cram', or 'mli'." in
   named (fun x -> `Syntax x)
     Arg.(value & opt (some syntax) None & info ["syntax"] ~doc ~docv:"SYNTAX")
 
