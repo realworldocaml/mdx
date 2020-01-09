@@ -5,7 +5,7 @@
  (action
   (with-stdout-to %{target}
    (chdir casual-file-inc
-    (run ocaml-mdx test --output - --direction=to-md test-case.md)))))
+    (run ocaml-mdx test --output - test-case.md)))))
 
 (alias
  (name runtest)
