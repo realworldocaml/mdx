@@ -319,12 +319,12 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
       | OCaml ->
         assert (syntax <> Some Cram);
         eval_raw t ?root c ~line:t.line t.contents;
-        Block.pp ppf t
+        Block.pp ?syntax ppf t
       | Cram { tests; pad } ->
         run_cram_tests ?syntax t ?root ppf temp_file pad tests
       | Toplevel tests ->
         assert (syntax <> Some Cram);
-        run_toplevel_tests ?root c ppf tests t
+        run_toplevel_tests ?syntax ?root c ppf tests t
       | Raw | _ -> print_block ())
   in
   let gen_corrected file_contents items =
