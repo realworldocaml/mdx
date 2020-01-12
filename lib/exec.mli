@@ -60,6 +60,18 @@ val git_resolve : remote:string -> ref:Git.Ref.t -> (Git.Ref.resolved, Rresult.R
 val git_branch :
   repo:Fpath.t -> ref:Git.Ref.t -> branch_name:string -> (unit, [> Rresult.R.msg ]) result
 
+val git_submodule_add :
+  repo:Fpath.t -> remote_name:string ->  ref:Git.Ref.t -> branch:string ->
+  target_path:string -> ?force:bool -> unit -> (unit, [> Rresult.R.msg ]) result
+(** [git_submodule_add] will run [git submodule] for [remote_name] and initialise
+   it into [target_path] for commit [ref] and on the remote [branch]. *)
+
+val git_update_index :
+  repo:Fpath.t -> ?add:bool -> cacheinfo:int * string * Fpath.t ->
+  unit -> (unit, [> Rresult.R.msg ]) result
+(** [git_update_index] will add the [cacheinfo] (a tuple of mode, hash and target path)
+  to the index, and append it to the cache if [add] is [true]. *)
+
 val run_opam_package_deps : root:Fpath.t -> string list -> (string list, [> Rresult.R.msg ]) result
 (** [run_opam_packages_deps ~root packages] returns a list of versioned constrained packages that
     resolves the transitive dependencies of [packages]. *)

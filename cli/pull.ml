@@ -65,19 +65,20 @@ let mark_duniverse_content_as_vendored ~duniverse_dir =
   Logs.debug (fun l -> l "Successfully wrote %a" Styled_pp.path dune_file);
   Ok ()
 
-let pull ~duniverse_dir ~cache src_dep =
+let pull ?(trim_clone=false) ~duniverse_dir ~cache src_dep =
   let open Result.O in
   let open Duniverse.Deps.Source in
   let { dir; upstream; ref = { Git.Ref.t = ref; commit }; _ } = src_dep in
   let output_dir = Fpath.(duniverse_dir / dir) in
-  Bos.OS.Dir.delete ~recurse:true output_dir >>= fun () ->
   Cloner.clone_to ~output_dir ~remote:upstream ~ref ~commit cache
   |> Rresult.R.reword_error (fun (`Msg _) -> `Commit_is_gone dir)
   >>= fun cached ->
   Common.Logs.app (fun l ->
       l "Pulled sources for %a.%a" Styled_pp.path output_dir Styled_pp.cached cached);
-  Bos.OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
-  Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
+  if trim_clone then begin
+    Bos.OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
+    Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
+  end else Ok ()
 
 let report_commit_is_gone_repos repos =
   let sep fmt () =
@@ -92,9 +93,41 @@ let report_commit_is_gone_repos repos =
   Common.Logs.app (fun l ->
       l "You should run 'duniverse update' to fix the commits associated with the tracked refs")
 
-let pull_source_dependencies ~duniverse_dir ~cache src_deps =
+let submodule_add ~repo ~duniverse_dir src_dep =
   let open Result.O in
-  Parallel.map ~f:(pull ~duniverse_dir ~cache) src_deps
+  let open Duniverse.Deps.Source in
+  let { dir; upstream; ref = { Git.Ref.t = _ref; commit }; _ } = src_dep in
+  let remote_name =
+    match Astring.String.cut ~sep:"." dir with
+    | Some (p,_) -> p
+    | None -> dir in
+  let target_path = Fpath.(normalize (duniverse_dir / dir)) in
+  let frag =
+    Printf.sprintf "[submodule %S]\n  path=%s\n  url=%s"
+      remote_name (Fpath.to_string target_path) upstream
+  in
+  let cacheinfo = 160000, commit, target_path in
+  Exec.git_update_index ~repo ~add:true ~cacheinfo ()
+  >>= fun () ->
+  Common.Logs.app (fun l -> l "Added submodule for %s." dir);
+  Ok frag
+
+let set_git_submodules ~repo ~duniverse_dir src_deps =
+  let open Result.O in
+  List.map ~f:(submodule_add ~repo ~duniverse_dir) src_deps
+  |> Result.List.fold_left ~init:[] ~f:(fun acc res ->
+         match res with
+         | Ok frag -> Ok (frag::acc)
+         | Error (`Msg _ as err) -> Error (err :> [> `Msg of string ]))
+  >>= fun git_sm_frags ->
+  let git_sm = String.concat ~sep:"\n" git_sm_frags in
+  Bos.OS.File.write Fpath.(repo / ".gitmodules") git_sm >>= fun () ->
+  Common.Logs.app (fun l -> l "Successfully wrote gitmodules.");
+  Ok ()
+
+let pull_source_dependencies ?trim_clone ~duniverse_dir ~cache src_deps =
+  let open Result.O in
+  List.map ~f:(pull ?trim_clone ~duniverse_dir ~cache) src_deps
   |> Result.List.fold_left ~init:[] ~f:(fun acc res ->
          match res with
          | Ok () -> Ok acc
@@ -113,7 +146,7 @@ let pull_source_dependencies ~duniverse_dir ~cache src_deps =
 
 let get_cache ~no_cache = if no_cache then Ok Cloner.no_cache else Cloner.get_cache ()
 
-let run (`Yes yes) (`No_cache no_cache) (`Repo repo) () =
+let run (`Yes yes) (`No_cache no_cache) (`No_submodules no_sm) (`Repo repo) () =
   let open Result.O in
   let duniverse_file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.load ~file:duniverse_file >>= function
@@ -125,11 +158,17 @@ let run (`Yes yes) (`No_cache no_cache) (`Repo repo) () =
       let duniverse_dir = Fpath.(repo // Config.vendor_dir) in
       Bos.OS.Dir.create duniverse_dir >>= fun _created ->
       mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
-      get_cache ~no_cache >>= fun cache -> pull_source_dependencies ~duniverse_dir ~cache duniverse
+      get_cache ~no_cache >>= fun cache ->
+      pull_source_dependencies ~trim_clone:(not no_sm) ~duniverse_dir ~cache duniverse >>= fun () ->
+      if no_sm then Ok () else set_git_submodules ~repo ~duniverse_dir duniverse
 
 let no_cache =
   let doc = "Run without using the duniverse global cache" in
   Common.Arg.named (fun x -> `No_cache x) Cmdliner.Arg.(value & flag & info ~doc [ "no-cache" ])
+
+let no_submodules =
+  let doc = "Run without adding the source as submodules" in
+  Common.Arg.named (fun x -> `No_submodules x) Cmdliner.Arg.(value & flag & info ~doc [ "no-submodules" ])
 
 let cache_env_var ?(windows_only = false) ~priority ~extra_path ~var () =
   let windows_only = if windows_only then " (only on windows" else "" in
@@ -174,6 +213,6 @@ let info =
 
 let term =
   Cmdliner.Term.(
-    term_result (const run $ Common.Arg.yes $ no_cache $ Common.Arg.repo $ Common.Arg.setup_logs ()))
+    term_result (const run $ Common.Arg.yes $ no_cache $ no_submodules $ Common.Arg.repo $ Common.Arg.setup_logs ()))
 
 let cmd = (term, info)

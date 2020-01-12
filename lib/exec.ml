@@ -138,6 +138,15 @@ let git_fetch_to ~repo ~remote_name ~ref ~branch ?(force = false) () =
   run_git ~repo Cmd.(v "fetch" % remote_name % ref) >>= fun () ->
   run_git ~repo Cmd.(v "branch" %% on force (v "-f") % branch % "FETCH_HEAD")
 
+let git_submodule_add ~repo ~remote_name ~ref ~branch ~target_path ?(force = false) () =
+  run_git ~repo Cmd.(v "submodule" % "add" %% on force (v "-f") % "-b" %
+    branch % "--name" % remote_name % "--" % ref % target_path)
+
+let git_update_index ~repo ?(add=false) ~cacheinfo () =
+  let mode, hash, path = cacheinfo in
+  run_git ~repo Cmd.(v "update-index" %% on add (v "--add") %
+    "--cacheinfo" % (string_of_int mode) % hash % p path)
+
 let git_init_bare ~repo = run_and_log Cmd.(v "git" % "init" % "--bare" % p repo)
 
 let git_clone ~branch ~remote ~output_dir =
