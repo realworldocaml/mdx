@@ -4,6 +4,16 @@
 
 - Add a `--duniverse-mode` to `ocaml-mdx rule` so that the generated rules work
   within a duniverse
+- Allow to import arbitrary files (not only .ml/.mli ones) into code blocks using
+  the `file` label. (#203, #207, @voodoos)
+- Allow to set the `--non-deterministic` option through the `MDX_RUN_NON_DETERMINISTIC`
+  env variables (#208, @NathanReb)
+- Add support for OCaml 4.10 (#204, @kit-ty-kate)
+
+#### Fixed
+
+- Fix a bug that could cause `ocaml-mdx test` to crash on some `include` in toplevel code blocks
+  (#202, @trefis)
 
 ### 1.5.0 (2019-11-29)
 
