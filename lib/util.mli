@@ -40,3 +40,7 @@ end
 module File : sig
   val read_lines : string -> string list
 end
+
+module Option : sig
+  val is_some : 'a option -> bool
+end
