@@ -45,7 +45,7 @@ let ansi_color_strip str =
   in
   loop 0
 
-let output_from_line s = 
+let output_from_line s =
   `Output (String.drop ~rev:true ~sat:Char.Ascii.is_blank s)
 
 let with_dir root f =
@@ -295,16 +295,16 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
       active t && Block.version_enabled t && (not (Block.skip t))
     in
     let print_block () = Block.pp ?syntax ppf t in
-    match active, 
-          non_deterministic, 
-          Block.file t, 
-          Block.mode t, 
-          Block.value t 
+    match active,
+          non_deterministic,
+          Block.file t,
+          Block.mode t,
+          Block.value t
     with
     (* Print errors *)
-    | _, _, _, _, Error _ 
+    | _, _, _, _, Error _
     (* The command is not active, skip it. *)
-    | false, _, _, _, _ 
+    | false, _, _, _, _
     (* the command is active but non-deterministic so skip everything *)
     | true, false, _, `Non_det `Command, _ -> print_block ()
     (* the command is active but it's output is
@@ -325,15 +325,14 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
             let output = List.map (fun l -> `Output l) e in
             if Output.equal test.output output then ()
             else err_eval ~cmd:test.command e
-        ) tests     
-
+        ) tests
     | true, _, Some file, _, kind ->
         (match kind with
         | OCaml | Toplevel _ ->
           assert (syntax <> Some Cram);
           update_file_or_block ?root ppf file file t direction
-        | _ when Util.Option.is_some (Block.part t) -> 
-          Fmt.failwith 
+        | _ when Util.Option.is_some (Block.part t) ->
+          Fmt.failwith
             "Parts are not supported for non-OCaml code blocks."
         | Cram _ | Raw ->
           let new_content = (read_part file (Block.part t)) in
@@ -341,13 +340,13 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
         | _ -> print_block ())
     | true, _, None, _, kind ->
       (match kind with
-      | OCaml -> 
+      | OCaml ->
         assert (syntax <> Some Cram);
         eval_raw t ?root c ~line:t.line t.contents;
         Block.pp ppf t
-      | Cram { tests; pad } -> 
+      | Cram { tests; pad } ->
         run_cram_tests ?syntax t ?root ppf temp_file pad tests
-      | Toplevel tests -> 
+      | Toplevel tests ->
         assert (syntax <> Some Cram);
         run_toplevel_tests ?root c ppf tests t
       | Raw | _ -> print_block ())
