@@ -228,18 +228,6 @@
  (action (diff mlt/test-case.md mlt.actual)))
 
 (rule
- (target module-alias.actual)
- (deps (package mdx) (source_tree module-alias))
- (action
-  (with-stdout-to %{target}
-   (chdir module-alias
-    (run ocaml-mdx test --output - test-case.md)))))
-
-(alias
- (name runtest)
- (action (diff module-alias/test-case.md module-alias.actual)))
-
-(rule
  (target multilines.actual)
  (deps (package mdx) (source_tree multilines))
  (action
@@ -370,6 +358,18 @@
 (alias
  (name runtest)
  (action (diff sync-to-md/test-case.md.expected sync-to-md.actual)))
+
+(rule
+ (target toploop-getvalue.actual)
+ (deps (package mdx) (source_tree toploop-getvalue))
+ (action
+  (with-stdout-to %{target}
+   (chdir toploop-getvalue
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(alias
+ (name runtest)
+ (action (diff toploop-getvalue/test-case.md toploop-getvalue.actual)))
 
 (rule
  (target trailing-whitespaces.actual)

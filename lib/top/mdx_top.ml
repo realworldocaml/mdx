@@ -614,13 +614,12 @@ let rec save_summary acc s =
     save_summary acc summary
   in
   let add summary id =
-    save_summary (Ident.name id :: acc) summary
-  in
-  let add_unique summary id =
     let acc =
-      if not (is_predef_or_global id)
-      then Ident.unique_toplevel_name id :: acc
-      else acc
+      if not (is_predef_or_global id) then
+        let name = Translmod.toplevel_name id in
+        name :: acc
+      else
+        acc
     in
     save_summary acc summary
   in
@@ -629,20 +628,19 @@ let rec save_summary acc s =
     ~value:add
     ~module_:(fun summary id ~present ->
         match present with
-        | true -> add_unique summary id
+        | true -> add summary id
         | false -> acc
       )
     ~open_:(fun summary x ->
         match x with
-        | Pident id ->
-          add_unique summary id
+        | Pident id -> add summary id
         | Pdot _
         | Papply _ ->
           default_case summary
       )
-    ~class_:add_unique
-    ~functor_arg:add_unique
-    ~extension:add_unique
+    ~class_:add
+    ~functor_arg:add
+    ~extension:add
     ~empty:(fun () -> acc)
     ~constraints:default_case
     ~cltype:default_case
