@@ -146,29 +146,27 @@ let pull_source_dependencies ?trim_clone ~duniverse_dir ~cache src_deps =
 
 let get_cache ~no_cache = if no_cache then Ok Cloner.no_cache else Cloner.get_cache ()
 
-let run (`Yes yes) (`No_cache no_cache) (`No_submodules no_sm) (`Repo repo) () =
+let run (`Yes yes) (`No_cache no_cache) (`Repo repo) () =
   let open Result.O in
   let duniverse_file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.load ~file:duniverse_file >>= function
   | { deps = { duniverse = []; _ }; _ } ->
       Common.Logs.app (fun l -> l "No dependencies to pull, there's nothing to be done here!");
       Ok ()
-  | { deps = { duniverse; _ }; _ } ->
+  | { deps = { duniverse; _ }; config } ->
+      let sm = Duniverse.Config.(config.pull_mode = Submodules) in
+      Common.Logs.app (fun l -> l "Using pull mode %s" (Sexplib.Sexp.to_string_hum (Duniverse.Config.(sexp_of_pull_mode config.pull_mode))));
       check_dune_lang_version ~yes ~repo >>= fun () ->
       let duniverse_dir = Fpath.(repo // Config.vendor_dir) in
       Bos.OS.Dir.create duniverse_dir >>= fun _created ->
       mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
       get_cache ~no_cache >>= fun cache ->
-      pull_source_dependencies ~trim_clone:(not no_sm) ~duniverse_dir ~cache duniverse >>= fun () ->
-      if no_sm then Ok () else set_git_submodules ~repo ~duniverse_dir duniverse
+      pull_source_dependencies ~trim_clone:sm ~duniverse_dir ~cache duniverse >>= fun () ->
+      if sm then set_git_submodules ~repo ~duniverse_dir duniverse else Ok ()
 
 let no_cache =
   let doc = "Run without using the duniverse global cache" in
   Common.Arg.named (fun x -> `No_cache x) Cmdliner.Arg.(value & flag & info ~doc [ "no-cache" ])
-
-let no_submodules =
-  let doc = "Run without adding the source as submodules" in
-  Common.Arg.named (fun x -> `No_submodules x) Cmdliner.Arg.(value & flag & info ~doc [ "no-submodules" ])
 
 let cache_env_var ?(windows_only = false) ~priority ~extra_path ~var () =
   let windows_only = if windows_only then " (only on windows" else "" in
@@ -213,6 +211,6 @@ let info =
 
 let term =
   Cmdliner.Term.(
-    term_result (const run $ Common.Arg.yes $ no_cache $ no_submodules $ Common.Arg.repo $ Common.Arg.setup_logs ()))
+    term_result (const run $ Common.Arg.yes $ no_cache $ Common.Arg.repo $ Common.Arg.setup_logs ()))
 
 let cmd = (term, info)

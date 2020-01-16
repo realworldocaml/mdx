@@ -1,7 +1,7 @@
 open Duniverse_lib
 open Duniverse_lib.Types
 
-let build_config ~local_packages ~branch ~explicit_root_packages ~excludes ~pins ~remotes ~opam_repo
+let build_config ~local_packages ~branch ~explicit_root_packages ~pull_mode ~excludes ~pins ~remotes ~opam_repo
     =
   let open Rresult.R.Infix in
   Opam_cmd.choose_root_packages ~explicit_root_packages ~local_packages >>= fun root_packages ->
@@ -11,7 +11,7 @@ let build_config ~local_packages ~branch ~explicit_root_packages ~excludes ~pins
   let excludes =
     List.map Opam_cmd.split_opam_name_and_version (local_packages @ excludes) |> Opam.sort_uniq
   in
-  Ok { Duniverse.Config.root_packages; excludes; pins; opam_repo; remotes; branch }
+  Ok { Duniverse.Config.root_packages; excludes; pins; opam_repo; pull_mode; remotes; branch }
 
 let init_tmp_opam ~local_packages ~config:{ Duniverse.Config.remotes; pins; opam_repo; _ } =
   let open Rresult.R.Infix in
@@ -34,12 +34,12 @@ let resolve_ref deps =
   Duniverse.Deps.resolve ~resolve_ref deps
 
 let run (`Repo repo) (`Branch branch) (`Explicit_root_packages explicit_root_packages)
-    (`Excludes excludes) (`Pins pins) (`Opam_repo opam_repo) (`Remotes remotes) () =
+    (`Excludes excludes) (`Pins pins) (`Opam_repo opam_repo) (`Remotes remotes) (`Pull_mode pull_mode) () =
   let open Rresult.R.Infix in
   let opam_repo = Uri.of_string opam_repo in
   Common.Logs.app (fun l -> l "Calculating Duniverse on the %a branch" Styled_pp.branch branch);
   Opam_cmd.find_local_opam_packages repo >>= fun local_packages ->
-  build_config ~local_packages ~branch ~explicit_root_packages ~excludes ~pins ~remotes ~opam_repo
+  build_config ~local_packages ~branch ~explicit_root_packages ~pull_mode ~excludes ~pins ~remotes ~opam_repo
   >>= fun config ->
   Common.Logs.app (fun l -> l "Initializing temporary opam switch");
   init_tmp_opam ~local_packages ~config >>= fun root ->
@@ -99,6 +99,15 @@ let opam_repo =
     Arg.(
       value & opt string Config.duniverse_opam_repo & info [ "opam-repo" ] ~docv:"OPAM_REPO" ~doc)
 
+let pull_mode =
+  let doc =
+    "How to pull the sources. If $(i,submodules) (the default), the pull command will initialise them \
+     as git submodules.  If $(i,source) then the source code will directly be cloned to the source tree."
+  in
+  Common.Arg.named (fun x -> `Pull_mode x)
+  Arg.(
+    value & opt (enum ["submodule",Duniverse.Config.Submodules;"source", Duniverse.Config.Source]) Duniverse.Config.Submodules & info ["pull-mode"] ~docv:"PULL_MODE" ~doc)
+
 let pins =
   let open Types.Opam in
   let doc =
@@ -148,6 +157,6 @@ let term =
   let open Term in
   term_result
     ( const run $ Common.Arg.repo $ branch $ explicit_root_packages $ excludes $ pins $ opam_repo
-    $ remotes $ Common.Arg.setup_logs () )
+    $ remotes $ pull_mode $ Common.Arg.setup_logs () )
 
 let cmd = (term, info)
