@@ -23,7 +23,7 @@
     Cram tests and toplevel phrases are sequences of commands and
    {{!Output}outputs}.  *)
 
-module Lexer = Lexer
+module Lexer_mdx = Lexer_mdx
 module Output = Output
 module Cram = Cram
 module Toplevel = Toplevel

@@ -4,7 +4,7 @@ Prelude can also be in a file
 
 ```ocaml env=toto
 # raise Not_found
-Exception: Not_found
+Exception: Not_found.
 ```
 
 ```ocaml

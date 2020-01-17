@@ -113,9 +113,9 @@ let extract_code_blocks ~(location : Lexing.position) ~docstring =
 
 let docstrings lexbuf =
   let rec loop list =
-    match Ppxlib.Lexer.token_with_comments lexbuf with
-    | Ppxlib.Parser.EOF -> list
-    | Ppxlib.Parser.DOCSTRING docstring ->
+    match Lexer.token_with_comments lexbuf with
+    | Parser.EOF -> list
+    | Parser.DOCSTRING docstring ->
       let docstring =
         ( Docstrings.docstring_body docstring
         , Docstrings.docstring_loc docstring )
@@ -127,8 +127,8 @@ let docstrings lexbuf =
 ;;
 
 let docstring_code_blocks str =
-  Ppxlib.Lexer.handle_docstrings := true;
-  Ppxlib.Lexer.init ();
+  Lexer.handle_docstrings := true;
+  Lexer.init ();
   List.map
     (fun (docstring, (location : Warnings.loc)) ->
        extract_code_blocks ~location:location.loc_start ~docstring)

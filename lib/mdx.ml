@@ -15,7 +15,7 @@
  *)
 
 let src = Logs.Src.create "ocaml-mdx"
-module Lexer = Lexer
+module Lexer_mdx = Lexer_mdx
 module Log = (val Logs.src_log src : Logs.LOG)
 
 module Output = Output
@@ -133,9 +133,9 @@ type syntax = Syntax.t =
 let parse_lexbuf file_contents syntax l =
   match syntax with
   | Syntax.Mli -> parse_mli file_contents
-  | Syntax.Normal | Syntax.Cram -> parse (Lexer.token syntax l)
+  | Syntax.Normal | Syntax.Cram -> parse (Lexer_mdx.token syntax l)
 
-let parse_file syntax f = parse (Lexer.token syntax (snd (Misc.init f)))
+let parse_file syntax f = parse (Lexer_mdx.token syntax (snd (Misc.init f)))
 
 let of_string syntax s =
   match syntax with
