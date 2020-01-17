@@ -153,6 +153,7 @@ type expect_result =
   | Differs
 
 let remove_whitespace str =
+  let open Astring in
   List.fold_right (fun s acc ->
     String.cuts ~sep:s acc |> String.concat ~sep:""
   ) [ " "; "\n"; "\t" ] str
@@ -173,7 +174,7 @@ let run_str ~syntax ~f file =
     | Syntax.Cram | Syntax.Normal -> corrected <> file_contents
     | Syntax.Mli -> remove_whitespace corrected <> remove_whitespace file_contents
   in
-  let result = if corrected <> file_contents then Differs else Identical in
+  let result = if has_changed then Differs else Identical in
   (result, corrected)
 
 let write_file ~outfile content =

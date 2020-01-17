@@ -129,6 +129,7 @@ let print_format_dune_rules pp_rules =
 let options_of_syntax = function
   | Some Mdx.Normal -> [ "--syntax=normal" ]
   | Some Mdx.Cram -> [ "--syntax=cram" ]
+  | Some Mdx.Mli -> [ "--syntax=mli" ]
   | None -> []
 
 let options_of_section = function

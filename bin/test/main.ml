@@ -369,6 +369,7 @@ let report_error_in_block block msg =
 let run setup non_deterministic not_verbose syntax silent verbose_findlib
     prelude prelude_str file section root force_output output : int =
     try
+      Printexc.record_backtrace false;
     run_exn setup non_deterministic not_verbose syntax silent verbose_findlib
       prelude prelude_str file section root force_output output
     with

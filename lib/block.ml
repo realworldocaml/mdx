@@ -94,7 +94,7 @@ let pp_lines syntax =
 let pp_contents ?syntax ppf t =
   match syntax with
   | Some Syntax.Mli -> Fmt.pf ppf "%a" (pp_lines syntax) t.contents
-  | Some Cram | Some Normal -> None ->
+  | Some Cram | Some Normal | None ->
     Fmt.pf ppf "%a\n" (pp_lines syntax) t.contents
 
 let pp_footer ?syntax ppf () =
