@@ -20,6 +20,9 @@ can be installed using opam:
 $ opam install mdx
 ```
 
+If you want to contribute or hack on the project, please see the
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
 ### Supported Extensions
 
 #### Shell Scripts

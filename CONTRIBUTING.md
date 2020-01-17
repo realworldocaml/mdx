@@ -1,3 +1,24 @@
+## Setting up your working environment
+
+If you want to contribute to the project you'll first need to install the dependencies.
+You can do it via opam:
+```
+$ git clone git@github.com:realworldocaml/mdx.git
+$ cd mdx
+$ opam install -t --deps-only .
+```
+
+This will install both regular and test dependencies to your active opam switch.
+
+From there you can build mdx by simply running:
+```
+$ dune build
+```
+and run the test suite with:
+```
+$ dune runtest
+```
+
 ## Tests
 
 In a effort to cover as much of the codebase with tests as possible, new contributions
