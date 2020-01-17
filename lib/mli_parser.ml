@@ -113,12 +113,12 @@ let extract_code_blocks ~(location : Lexing.position) ~docstring =
 
 let docstrings lexbuf =
   let rec loop list =
-    match Ppxlib_ast.Lexer.token_with_comments lexbuf with
-    | Ppxlib_ast.Parser.EOF -> list
-    | Ppxlib_ast.Parser.DOCSTRING docstring ->
+    match Ppxlib.Lexer.token_with_comments lexbuf with
+    | Ppxlib.Parser.EOF -> list
+    | Ppxlib.Parser.DOCSTRING docstring ->
       let docstring =
-        ( Ocaml_common.Docstrings.docstring_body docstring
-        , Ocaml_common.Docstrings.docstring_loc docstring )
+        ( Docstrings.docstring_body docstring
+        , Docstrings.docstring_loc docstring )
       in
       loop (docstring :: list)
     | _ -> loop list
@@ -127,8 +127,8 @@ let docstrings lexbuf =
 ;;
 
 let docstring_code_blocks str =
-  Ppxlib_ast.Lexer.handle_docstrings := true;
-  Ppxlib_ast.Lexer.init ();
+  Ppxlib.Lexer.handle_docstrings := true;
+  Ppxlib.Lexer.init ();
   List.map
     (fun (docstring, (location : Warnings.loc)) ->
        extract_code_blocks ~location:location.loc_start ~docstring)
