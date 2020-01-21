@@ -32,3 +32,19 @@ val replace: file -> part:string option -> lines:string list -> file
 (** [replace ~file ~part ~lines] returns the lines of the file [file] where
     the lines of part [part] have been replaced by [lines].
     If [part] does not occur in the file, a new part is added at the end. *)
+
+
+(**/**)
+(* Exposed for test purposes only *)
+
+module Parse_parts : sig
+  type part_decl =
+    | Normal of string
+    | Compat_attr of string * string
+    (* ^^^^ This is for compat with the [[@@@part name]] delimiters *)
+    | Part_begin of string * string
+    | Part_end
+    | File_end
+  val parse_line : (string, [< `End_of_file ]) Result.result -> part_decl
+end
+(**/**)

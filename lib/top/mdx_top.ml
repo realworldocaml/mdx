@@ -605,8 +605,6 @@ let init ~verbose:v ~silent:s ~verbose_findlib () =
   silent t;
   t
 
-module Part = Part
-
 let envs = Hashtbl.create 8
 
 let rec save_summary acc s =
