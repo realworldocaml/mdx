@@ -60,6 +60,18 @@
  (action (diff ml-file-not-found/test-case.md.expected ml-file-not-found.actual)))
 
 (rule
+ (target part-not-ended.actual)
+ (deps (package mdx) (source_tree part-not-ended))
+ (action
+  (with-outputs-to %{target}
+   (chdir part-not-ended
+    (system "! ocaml-mdx test test-case.md")))))
+
+(alias
+ (name runtest)
+ (action (diff part-not-ended/test-case.md.expected part-not-ended.actual)))
+
+(rule
  (target part-not-found.actual)
  (deps (package mdx) (source_tree part-not-found))
  (action
@@ -70,6 +82,18 @@
 (alias
  (name runtest)
  (action (diff part-not-found/test-case.md.expected part-not-found.actual)))
+
+(rule
+ (target part-not-opened.actual)
+ (deps (package mdx) (source_tree part-not-opened))
+ (action
+  (with-outputs-to %{target}
+   (chdir part-not-opened
+    (system "! ocaml-mdx test test-case.md")))))
+
+(alias
+ (name runtest)
+ (action (diff part-not-opened/test-case.md.expected part-not-opened.actual)))
 
 (rule
  (target part-unsupported.actual)
