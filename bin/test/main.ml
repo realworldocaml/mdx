@@ -326,16 +326,16 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
             if Output.equal test.output output then ()
             else err_eval ~cmd:test.command e
         ) tests
-    | true, _, Some file, _, kind ->
+    | true, _, Some ext_file, _, kind ->
         (match kind with
         | OCaml | Toplevel _ ->
           assert (syntax <> Some Cram);
-          update_file_or_block ?root ppf file file t direction
+          update_file_or_block ?root ppf file ext_file t direction
         | _ when Util.Option.is_some (Block.part t) ->
           Fmt.failwith
             "Parts are not supported for non-OCaml code blocks."
         | Cram _ | Raw ->
-          let new_content = (read_part file (Block.part t)) in
+          let new_content = (read_part ext_file (Block.part t)) in
           update_block_content ppf t new_content
         | _ -> print_block ())
     | true, _, None, _, kind ->
