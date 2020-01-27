@@ -360,6 +360,18 @@
  (action (diff spaces/test-case.md spaces.actual)))
 
 (rule
+ (target sync-from-subdir.actual)
+ (deps (package mdx) (source_tree sync-from-subdir))
+ (action
+  (with-stdout-to %{target}
+   (chdir sync-from-subdir
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(alias
+ (name runtest)
+ (action (diff sync-from-subdir/test-case.md.expected sync-from-subdir.actual)))
+
+(rule
  (target sync-to-md.actual)
  (deps (package mdx) (source_tree sync-to-md))
  (action
