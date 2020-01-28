@@ -15,6 +15,10 @@
 - Fix a bug that could cause `ocaml-mdx test` to crash on some `include` in toplevel code blocks
   (#202, @trefis)
 
+#### Removed
+
+- Remove the `direction` option, only synchronize from .ml to .md files (#214, @gpetiot)
+
 ### 1.5.0 (2019-11-29)
 
 #### Added

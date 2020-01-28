@@ -12,18 +12,6 @@
  (action (diff casual-file-inc/test-case.md.expected casual-file-inc.actual)))
 
 (rule
- (target casual-file-inc-to-ml.actual)
- (deps (package mdx) (source_tree casual-file-inc-to-ml))
- (action
-  (with-stdout-to %{target}
-   (chdir casual-file-inc-to-ml
-    (run ocaml-mdx test --output - --direction=to-ml test-case.md)))))
-
-(alias
- (name runtest)
- (action (diff casual-file-inc-to-ml/test-case.md.expected casual-file-inc-to-ml.actual)))
-
-(rule
  (target code.actual)
  (deps (package mdx) (source_tree code))
  (action
@@ -377,7 +365,7 @@
  (action
   (with-stdout-to %{target}
    (chdir sync-to-md
-    (run ocaml-mdx test --output - --direction=to-md test-case.md)))))
+    (run ocaml-mdx test --output - test-case.md)))))
 
 (alias
  (name runtest)
