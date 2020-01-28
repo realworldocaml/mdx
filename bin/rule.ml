@@ -135,10 +135,6 @@ let options_of_section = function
   | Some s -> [ Fmt.to_to_string (Fmt.fmt "--section %S") s ]
   | None -> []
 
-let pp_direction fmt = function
-  | `To_md -> Fmt.pf fmt "--direction=to-md"
-  | `To_ml -> Fmt.pf fmt "--direction=to-ml"
-
 let pp_prelude fmt s = Fmt.pf fmt "--prelude=%s" s
 let pp_prelude_str fmt s = Fmt.pf fmt "--prelude-str %S" s
 
@@ -168,7 +164,7 @@ let requires_from_prelude prelude_list =
   in
   aggregate_requires ~require_from prelude_list
 
-let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direction direction)
+let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax)
     (`Prelude prelude) (`Prelude_str prelude_str) (`Root root)
     (`Duniverse_mode duniverse_mode) (`Locks locks) =
   let open Mdx.Util.Result.Infix in
@@ -234,7 +230,6 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax) (`Direct
       let options =
         List.map (Fmt.to_to_string pp_prelude) prelude @
         List.map (Fmt.to_to_string pp_prelude_str) prelude_str @
-        [Fmt.to_to_string pp_direction direction] @
         options_of_syntax syntax @
         options_of_section section
       in
@@ -266,6 +261,6 @@ let locks =
 let cmd =
   let doc = "Produce dune rules to synchronize markdown and OCaml files." in
   Term.(pure run
-        $ Cli.setup $ Cli.file $ Cli.section $ Cli.syntax $ Cli.direction
+        $ Cli.setup $ Cli.file $ Cli.section $ Cli.syntax
         $ Cli.prelude $ Cli.prelude_str $ Cli.root $ duniverse_mode $ locks),
   Term.info "rule" ~doc

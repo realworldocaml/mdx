@@ -41,7 +41,7 @@
  (action
   (with-outputs-to %{target}
    (chdir part-not-found
-    (system "! ocaml-mdx test --direction=to-md test-case.md")))))
+    (system "! ocaml-mdx test test-case.md")))))
 
 (alias
  (name runtest)

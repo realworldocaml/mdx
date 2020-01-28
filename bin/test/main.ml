@@ -220,35 +220,11 @@ let update_block_content ppf t content =
   Output.pp ppf (`Output content);
   Block.pp_footer ppf ()
 
-let update_block_with_file ppf t file part =
-  update_block_content ppf t (read_part file part)
-
-let update_file_with_block ppf t file part =
-  let parts = read_parts file in
-  let lines =
-    match Block.value t with
-    | Raw | OCaml | Error _ -> t.Block.contents
-    | Cram _ ->
-      Fmt.failwith "Promoting Cram tests is unsupported for now."
-    | Toplevel tests ->
-      let f t =
-        t.Toplevel.command |> String.concat ~sep:"\n\n" in
-      List.map f tests
-  in
-  let current = Mdx_top.Part.replace parts.current ~part ~lines in
-  let parts = { parts with current } in
-  Hashtbl.replace files file parts;
-  Block.pp ppf t
-
-let update_file_or_block ?root ppf md_file ml_file block direction =
+let update_file_or_block ?root ppf md_file ml_file block =
   let root = root_dir ?root block in
   let dir = Filename.dirname md_file in
   let ml_file = resolve_root ml_file dir root in
-  match direction with
-  | `To_md ->
-     update_block_with_file ppf block ml_file (Block.part block)
-  | `To_ml ->
-     update_file_with_block ppf block ml_file (Block.part block)
+  update_block_content ppf block (read_part ml_file (Block.part block))
 
 exception Test_block_failure of Block.t * string
 
@@ -256,7 +232,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     (`Not_verbose not_verbose) (`Syntax syntax) (`Silent silent)
     (`Verbose_findlib verbose_findlib) (`Prelude prelude)
     (`Prelude_str prelude_str) (`File file) (`Section section) (`Root root)
-    (`Direction direction) (`Force_output force_output) (`Output output) =
+    (`Force_output force_output) (`Output output) =
   let c =
     Mdx_top.init ~verbose:(not not_verbose) ~silent ~verbose_findlib ()
   in
@@ -330,7 +306,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
         (match kind with
         | OCaml | Toplevel _ ->
           assert (syntax <> Some Cram);
-          update_file_or_block ?root ppf file ext_file t direction
+          update_file_or_block ?root ppf file ext_file t
         | _ when Util.Option.is_some (Block.part t) ->
           Fmt.failwith
             "Parts are not supported for non-OCaml code blocks."
@@ -391,10 +367,10 @@ let report_error_in_block block msg =
     kind block.file block.line msg
 
 let run setup non_deterministic not_verbose syntax silent verbose_findlib
-    prelude prelude_str file section root direction force_output output : int =
+    prelude prelude_str file section root force_output output : int =
     try
     run_exn setup non_deterministic not_verbose syntax silent verbose_findlib
-      prelude prelude_str file section root direction force_output output
+      prelude prelude_str file section root force_output output
     with
     | Failure f ->
       prerr_endline f;
@@ -414,8 +390,7 @@ let cmd =
   Term.(pure run
         $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose $ Cli.syntax
         $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
-        $ Cli.file $ Cli.section $ Cli.root $ Cli.direction $ Cli.force_output
-        $ Cli.output),
+        $ Cli.file $ Cli.section $ Cli.root $ Cli.force_output $ Cli.output),
   Term.info "ocaml-mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man
 
 let main () = Term.(exit_status @@ eval cmd)

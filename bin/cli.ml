@@ -83,22 +83,6 @@ let root =
   named (fun x -> `Root x)
     Arg.(value & opt (some string) None & info ["root"] ~doc ~docv:"DIR")
 
-let direction =
-  let doc = "Direction of file synchronization. $(b,to-ml) assumes \
-             the .md file is the reference and updates the .ml and \
-             the .md files accordingly. $(b,to-md) assumes the .ml \
-             file is the reference and updates the .md file \
-             accordingly. The default is $(b,to-md)." in
-  let opt_names =
-    [ "to-md", `To_md
-    ; "to-ml", `To_ml ]
-  in
-  let names = ["direction"] in
-  let docv = String.concat "|" (List.map fst opt_names) in
-  let docv = "{" ^ docv ^ "}" in
-  named (fun x -> `Direction x)
-    Arg.(value & opt (enum opt_names) `To_md & info names ~doc ~docv)
-
 let force_output =
   let doc = "Force generation of corrected file (even if there was no diff)" in
   named (fun x -> `Force_output x)
