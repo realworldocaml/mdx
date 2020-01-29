@@ -29,6 +29,8 @@ module Util = Util
 module Prelude = Prelude
 module Syntax = Syntax
 
+open Compat
+
 type line =
   | Section of (int * string)
   | Text    of string
