@@ -1,3 +1,5 @@
+open Compat
+
 module Code_block = struct
   type t =
     { location : Odoc_model.Location_.span
