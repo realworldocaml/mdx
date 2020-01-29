@@ -110,3 +110,11 @@ let init_path () = Compmisc.init_path ()
 #else
 let init_path () = Compmisc.init_path true
 #endif
+
+module Lexer = struct
+  include Lexer
+
+#if OCAML_VERSION < (4, 3, 0)
+  let handle_docstrings = ref true
+#endif
+end
