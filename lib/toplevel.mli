@@ -42,7 +42,7 @@ val pp_command: t Fmt.t
 (** {2 Parser} *)
 
 val of_lines: syntax:Syntax.t -> file:string -> line:int -> string list -> t list
-(** [of_lines ~file ~line lines] is the list of toplevel blocks from
+(** [of_lines ~syntax ~file ~line lines] is the list of toplevel blocks from
    file [file] starting at line [line]. Return the vertical and
    horizontal whitespace padding as well.*)
 
