@@ -132,7 +132,7 @@ let docstring_code_blocks str =
   Lexer.handle_docstrings := true;
   Lexer.init ();
   List.map
-    (fun (docstring, (location : Warnings.loc)) ->
+    (fun (docstring, (location : Location.t)) ->
        extract_code_blocks ~location:location.loc_start ~docstring)
     (docstrings (Lexing.from_string str))
   |> List.concat
