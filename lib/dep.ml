@@ -21,7 +21,8 @@ let of_block block =
   match directory block, file block, skip block with
   | Some d, None, false -> Some (Dir d)
   | None, Some f, false -> Some (File f)
-  | None, None, _ -> None
+  | None, None, false -> None
+  | _, _, true -> None
   | _ -> assert false
 
 let of_lines =
