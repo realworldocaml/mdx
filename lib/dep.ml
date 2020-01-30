@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2018 Thomas Gazagnaire <thomas@gazagnaire.org>
+ * Copyright (c) 2018 Ulysse Gérard <ulysse@gtarides.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,26 +14,22 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Cmdliner
+type t = File of string | Dir of string
 
-let cmds = [Test.cmd; Pp.cmd; Rule.cmd; Deps.cmd]
-let main (`Setup ()) = `Help (`Pager, None)
+let of_block block =
+    match Block.directory block, Block.file block with
+    | Some d, None -> Some (Dir d)
+    | None, Some f -> Some (File f)
+    | None, None -> None
+    | _ -> assert false
 
-let main =
-  let doc = "Execute markdown files." in
-  let exits = Term.default_exits in
-  let man = [] in
-  Term.(ret (const main $ Cli.setup)),
-  Term.info "ocaml-mdx" ~version:"%%VERSION%%" ~doc ~exits ~man
+let of_lines =
+  let open Document in
+    List.filter_map
+    (function
+        | Section _ | Text _ -> None
+        | Block b -> of_block b)
 
-let main () = Term.(exit_status @@ eval_choice main cmds)
-
-let main () =
-  if String.compare (Sys.argv).(0) "mdx" == 0
-  then
-    Format.eprintf
-    "\x1b[0;1mWarning\x1b[0m: 'mdx' is deprecated and will one day be removed.
-    Use 'ocaml-mdx' instead\n%!";
-  main ()
-
-let () = main ()
+let pp fmt = function
+| File f -> Fmt.pf fmt "file:%s" f
+| Dir d -> Fmt.pf fmt "dir:%s" d

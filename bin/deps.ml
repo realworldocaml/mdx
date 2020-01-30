@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2018 Thomas Gazagnaire <thomas@gazagnaire.org>
+ * Copyright (c) 2018 Ulysse Gérard <ulysse@gtarides.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,26 +14,26 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+let run files =
+  List.iter (fun f ->
+    let doc = Mdx.parse_file
+      Mdx.Normal (* todo infer syntax, works only with md for now *)
+      f
+    in
+    let deps = Mdx.Dep.of_lines doc in
+    let sep = Fmt.sp in
+    Fmt.pr "%s: %a\n" f (Fmt.list ~sep Mdx.Dep.pp) deps) files;
+  0
+
+
 open Cmdliner
 
-let cmds = [Test.cmd; Pp.cmd; Rule.cmd; Deps.cmd]
-let main (`Setup ()) = `Help (`Pager, None)
+let arg_files =
+  let doc = "The files of which the dependencies will be listed." in
+  let docv = "FILES" in
+  Arg.(non_empty & pos_all file [] & info [] ~doc ~docv)
 
-let main =
-  let doc = "Execute markdown files." in
-  let exits = Term.default_exits in
-  let man = [] in
-  Term.(ret (const main $ Cli.setup)),
-  Term.info "ocaml-mdx" ~version:"%%VERSION%%" ~doc ~exits ~man
-
-let main () = Term.(exit_status @@ eval_choice main cmds)
-
-let main () =
-  if String.compare (Sys.argv).(0) "mdx" == 0
-  then
-    Format.eprintf
-    "\x1b[0;1mWarning\x1b[0m: 'mdx' is deprecated and will one day be removed.
-    Use 'ocaml-mdx' instead\n%!";
-  main ()
-
-let () = main ()
+let cmd =
+  let doc = "List the dependencies of the input files." in
+  Term.(pure run $ arg_files),
+  Term.info "deps" ~doc

@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2018 Thomas Gazagnaire <thomas@gazagnaire.org>
+ * Copyright (c) 2018 Ulysse Gérard <ulysse@gtarides.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,26 +14,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Cmdliner
+ type t = File of string | Dir of string
 
-let cmds = [Test.cmd; Pp.cmd; Rule.cmd; Deps.cmd]
-let main (`Setup ()) = `Help (`Pager, None)
+val of_block : Block.t -> t option
 
-let main =
-  let doc = "Execute markdown files." in
-  let exits = Term.default_exits in
-  let man = [] in
-  Term.(ret (const main $ Cli.setup)),
-  Term.info "ocaml-mdx" ~version:"%%VERSION%%" ~doc ~exits ~man
+val of_lines : Document.line list -> t list
 
-let main () = Term.(exit_status @@ eval_choice main cmds)
-
-let main () =
-  if String.compare (Sys.argv).(0) "mdx" == 0
-  then
-    Format.eprintf
-    "\x1b[0;1mWarning\x1b[0m: 'mdx' is deprecated and will one day be removed.
-    Use 'ocaml-mdx' instead\n%!";
-  main ()
-
-let () = main ()
+val pp : t Fmt.t

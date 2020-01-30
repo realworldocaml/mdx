@@ -14,26 +14,23 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Cmdliner
+ type syntax = Syntax.t =
+  | Normal
+  | Cram
 
-let cmds = [Test.cmd; Pp.cmd; Rule.cmd; Deps.cmd]
-let main (`Setup ()) = `Help (`Pager, None)
+type line =
+  | Section of (int * string)
+  | Text    of string
+  | Block   of Block.t
 
-let main =
-  let doc = "Execute markdown files." in
-  let exits = Term.default_exits in
-  let man = [] in
-  Term.(ret (const main $ Cli.setup)),
-  Term.info "ocaml-mdx" ~version:"%%VERSION%%" ~doc ~exits ~man
+type t = line list
 
-let main () = Term.(exit_status @@ eval_choice main cmds)
+let pp_line ?syntax ppf (l: line) = match l with
+  | Block b        -> Fmt.pf ppf "%a\n" (Block.pp ?syntax) b
+  | Section (d, s) -> Fmt.pf ppf "%s %s\n" (String.make d '#') s
+  | Text s         -> Fmt.pf ppf "%s\n" s
 
-let main () =
-  if String.compare (Sys.argv).(0) "mdx" == 0
-  then
-    Format.eprintf
-    "\x1b[0;1mWarning\x1b[0m: 'mdx' is deprecated and will one day be removed.
-    Use 'ocaml-mdx' instead\n%!";
-  main ()
+let pp ?syntax ppf t =
+  Fmt.pf ppf "%a\n" Fmt.(list ~sep:(unit "\n") (pp_line ?syntax)) t
 
-let () = main ()
+let to_string = Fmt.to_to_string pp
