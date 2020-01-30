@@ -17,11 +17,12 @@
 type t = File of string | Dir of string
 
 let of_block block =
-    match Block.directory block, Block.file block with
-    | Some d, None -> Some (Dir d)
-    | None, Some f -> Some (File f)
-    | None, None -> None
-    | _ -> assert false
+  let open Block in
+  match directory block, file block, skip block with
+  | Some d, None, false -> Some (Dir d)
+  | None, Some f, false -> Some (File f)
+  | None, None, _ -> None
+  | _ -> assert false
 
 let of_lines =
   let open Document in
@@ -31,5 +32,5 @@ let of_lines =
         | Block b -> of_block b)
 
 let pp fmt = function
-| File f -> Fmt.pf fmt "file:%s" f
-| Dir d -> Fmt.pf fmt "dir:%s" d
+  | File f -> Fmt.pf fmt "file:%s" f
+  | Dir d -> Fmt.pf fmt "dir:%s" d
