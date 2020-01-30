@@ -21,3 +21,5 @@ val of_block : Block.t -> t option
 val of_lines : Document.line list -> t list
 
 val pp : t Fmt.t
+
+val to_string : t -> string

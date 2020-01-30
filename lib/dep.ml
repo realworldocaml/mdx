@@ -35,3 +35,7 @@ let of_lines =
 let pp fmt = function
   | File f -> Fmt.pf fmt "file:%s" f
   | Dir d -> Fmt.pf fmt "dir:%s" d
+
+let to_string = function
+  | File f -> Printf.sprintf "file:%s" f
+  | Dir d -> Printf.sprintf "dir:%s" d

@@ -21,8 +21,9 @@ let run files =
       f
     in
     let deps = Mdx.Dep.of_lines doc in
-    let sep = Fmt.sp in
-    Fmt.pr "%s: %a\n" f (Fmt.list ~sep Mdx.Dep.pp) deps) files;
+    let deps = List.map Mdx.Dep.to_string deps in
+    let deps = String.concat " " deps in
+    Printf.printf "%s: %s\n" f deps) files;
   0
 
 
