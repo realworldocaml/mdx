@@ -14,6 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+ open Compat
+
 type t = File of string | Dir of string
 
 let of_block block =
