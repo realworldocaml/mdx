@@ -41,9 +41,9 @@ let section =
   named (fun x -> `Section x)
     Arg.(value & opt (some string) None & info ["section"; "s"] ~doc ~docv:"PAT")
 
-let not_verbose =
+let silent_eval =
   let doc = "Do not show the result of evaluating toplevel phrases." in
-  named (fun x -> `Not_verbose x)
+  named (fun x -> `Silent_eval x)
     Arg.(value & flag & info ["silent-eval"] ~doc)
 
 let silent =

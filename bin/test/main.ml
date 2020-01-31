@@ -229,13 +229,11 @@ let update_file_or_block ?root ppf md_file ml_file block =
 exception Test_block_failure of Block.t * string
 
 let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
-    (`Not_verbose not_verbose) (`Syntax syntax) (`Silent silent)
+    (`Silent_eval silent_eval) (`Syntax syntax) (`Silent silent)
     (`Verbose_findlib verbose_findlib) (`Prelude prelude)
     (`Prelude_str prelude_str) (`File file) (`Section section) (`Root root)
     (`Force_output force_output) (`Output output) =
-  let c =
-    Mdx_top.init ~verbose:(not not_verbose) ~silent ~verbose_findlib ()
-  in
+  let c = Mdx_top.init ~verbose:(not silent_eval) ~silent ~verbose_findlib () in
   let section = match section with
     | None   -> None
     | Some p -> Some (Re.Perl.compile_pat p)
@@ -366,10 +364,10 @@ let report_error_in_block block msg =
   Fmt.epr "Error in the %scode block in %s at line %d:@]\n%s\n"
     kind block.file block.line msg
 
-let run setup non_deterministic not_verbose syntax silent verbose_findlib
+let run setup non_deterministic silent_eval syntax silent verbose_findlib
     prelude prelude_str file section root force_output output : int =
     try
-    run_exn setup non_deterministic not_verbose syntax silent verbose_findlib
+    run_exn setup non_deterministic silent_eval syntax silent verbose_findlib
       prelude prelude_str file section root force_output output
     with
     | Failure f ->
@@ -388,7 +386,7 @@ let cmd =
   let man = [] in
   let doc = "Test markdown files." in
   Term.(pure run
-        $ Cli.setup $ Cli.non_deterministic $ Cli.not_verbose $ Cli.syntax
+        $ Cli.setup $ Cli.non_deterministic $ Cli.silent_eval $ Cli.syntax
         $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
         $ Cli.file $ Cli.section $ Cli.root $ Cli.force_output $ Cli.output),
   Term.info "ocaml-mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man
