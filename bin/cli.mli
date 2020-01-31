@@ -10,7 +10,7 @@ val file: [> `File of string ] t
 
 val section: [> `Section of string option ] t
 
-val not_verbose: [> `Not_verbose of bool ] t
+val silent_eval: [> `Silent_eval of bool ] t
 
 val silent: [> `Silent of bool ] t
 
