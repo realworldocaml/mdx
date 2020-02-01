@@ -12,7 +12,7 @@ let non_deterministic =
 
 let syntax =
   let parse = function
-    | "normal" -> `Ok Mdx.Normal
+    | "markdown" | "normal" -> `Ok Mdx.Normal
     | "cram" -> `Ok Mdx.Cram
     | s -> `Error (Format.sprintf "unrecognized syntax %S" s)
   in
@@ -23,7 +23,9 @@ let syntax =
        | Mdx.Cram -> "cram")
   in
   let syntax = parse, print in
-  let doc = "Which syntax to use. Either 'normal' or 'cram'." in
+  let doc =
+    "Which syntax to use. Either 'markdown' (also 'normal') or 'cram'."
+  in
   named (fun x -> `Syntax x)
     Arg.(value & opt (some syntax) None & info ["syntax"] ~doc ~docv:"SYNTAX")
 
