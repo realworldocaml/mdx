@@ -233,6 +233,11 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     (`Verbose_findlib verbose_findlib) (`Prelude prelude)
     (`Prelude_str prelude_str) (`File file) (`Section section) (`Root root)
     (`Force_output force_output) (`Output output) =
+  let syntax =
+    match syntax with
+    | Some syntax -> Some syntax
+    | None -> Syntax.infer ~file
+  in
   let c = Mdx_top.init ~verbose:(not silent_eval) ~silent ~verbose_findlib () in
   let section = match section with
     | None   -> None

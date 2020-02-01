@@ -9,6 +9,7 @@
 - Allow to set the `--non-deterministic` option through the `MDX_RUN_NON_DETERMINISTIC`
   env variables (#208, @NathanReb)
 - Add support for OCaml 4.10 (#204, @kit-ty-kate)
+- Infer syntax kind when `--syntax` is not set, and add 'markdown' as an alias to 'normal' (#222, @gpetiot)
 
 #### Fixed
 
