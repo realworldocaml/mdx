@@ -13,6 +13,9 @@ Tata
 ```sh dir=ping/pong
 ```
 
+``` dir=foo,file=bar.txt
+```
+
 ```cram file=burn.sh
 ```
 
