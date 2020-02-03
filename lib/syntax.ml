@@ -15,3 +15,8 @@ let infer ~file =
   | ".t" -> Some Cram
   | ".md" -> Some Normal
   | _ -> None
+
+let of_string = function
+  | "markdown" | "normal" -> Some Normal
+  | "cram" -> Some Cram
+  | _ -> None
