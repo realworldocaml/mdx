@@ -15,15 +15,19 @@
  *)
 
 let run files =
-  List.iter (fun f ->
+  List.iter (fun file ->
+    let syntax = match Mdx.Syntax.infer ~file with
+    | Some s -> s
+    | None -> Mdx.Normal
+    in
     let doc = Mdx.parse_file
-      Mdx.Normal (* todo infer syntax, works only with md for now *)
-      f
+      syntax
+      file
     in
     let deps = Mdx.Dep.of_lines doc in
     let deps = List.map Mdx.Dep.to_string deps in
     let deps = String.concat " " deps in
-    Printf.printf "%s: %s\n" f deps) files;
+    Printf.printf "%s: %s\n" file deps) files;
   0
 
 
