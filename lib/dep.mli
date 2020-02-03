@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2018 Ulysse Gérard <ulysse@gtarides.com>
+ * Copyright (c) 2020 Ulysse Gérard <ulysse@tarides.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
