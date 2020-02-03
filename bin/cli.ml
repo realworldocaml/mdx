@@ -11,19 +11,15 @@ let non_deterministic =
     Arg.(value & flag & info ["non-deterministic"; "n"] ~env ~doc)
 
 let syntax =
-  let parse = function
-    | "normal" -> `Ok Mdx.Normal
-    | "cram" -> `Ok Mdx.Cram
-    | s -> `Error (Format.sprintf "unrecognized syntax %S" s)
+  let parse s =
+    match Mdx.Syntax.of_string s with
+    | Some syntax -> `Ok syntax
+    | None -> `Error (Format.sprintf "unrecognized syntax %S" s)
   in
-  let print fmt syn =
-    Format.fprintf fmt "%s"
-      (match syn with
-       | Mdx.Normal -> "normal"
-       | Mdx.Cram -> "cram")
+  let syntax = parse, Mdx.Syntax.pp in
+  let doc =
+    "Which syntax to use. Either 'markdown' (also 'normal') or 'cram'."
   in
-  let syntax = parse, print in
-  let doc = "Which syntax to use. Either 'normal' or 'cram'." in
   named (fun x -> `Syntax x)
     Arg.(value & opt (some syntax) None & info ["syntax"] ~doc ~docv:"SYNTAX")
 

@@ -10,5 +10,5 @@
  (action
   (progn
    (run ocaml-mdx test --prelude=prelude.ml --prelude-str
-     "#require \"prelude-str\"" %{x})
+     "#require \"prelude-str\"" --syntax=normal %{x})
    (diff? %{x} %{x}.corrected))))

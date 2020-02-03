@@ -32,6 +32,7 @@ module Migrate_ast = Migrate_ast
 module Compat = Compat
 module Util = Util
 module Prelude = Prelude
+module Syntax = Syntax
 
 (** {2 Lines} *)
 
