@@ -63,6 +63,18 @@ end
 module List = struct
   include List
 
+#if OCAML_VERSION < (4, 8, 0)
+  let filter_map f =
+    let rec aux accu = function
+      | [] -> rev accu
+      | x :: l ->
+        match f x with
+        | None -> aux accu l
+        | Some v -> aux (v :: accu) l
+    in
+    aux []
+#endif
+
 #if OCAML_VERSION < (4, 6, 0)
   let rec init_aux i n f =
     if i >= n then []

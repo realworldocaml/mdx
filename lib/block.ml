@@ -17,6 +17,8 @@
 open Astring
 open Result
 
+module List = Compat.List
+
 type section = int * string
 
 type cram_value = { pad: int; tests: Cram.t list }
