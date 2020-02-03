@@ -21,11 +21,11 @@ type t = File of string | Dir of string
 let of_block block =
   let open Block in
   match directory block, file block, skip block with
+  | Some d, Some f, false -> Some (File (Filename.concat d f))
   | Some d, None, false -> Some (Dir d)
   | None, Some f, false -> Some (File f)
   | None, None, false -> None
   | _, _, true -> None
-  | _ -> assert false
 
 let of_lines =
   let open Document in
