@@ -14,11 +14,12 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-let run files =
+let run (`Syntax syntax) files =
   List.iter (fun file ->
-    let syntax = match Mdx.Syntax.infer ~file with
-    | Some s -> s
-    | None -> Mdx.Normal
+    let syntax = match syntax, Mdx.Syntax.infer ~file with
+    | Some s, _
+    | None, Some s -> s
+    | None, None -> Fmt.failwith "arrg"
     in
     let doc = Mdx.parse_file
       syntax
@@ -30,7 +31,6 @@ let run files =
     Printf.printf "%s: %s\n" file deps) files;
   0
 
-
 open Cmdliner
 
 let arg_files =
@@ -40,5 +40,5 @@ let arg_files =
 
 let cmd =
   let doc = "List the dependencies of the input files." in
-  Term.(pure run $ arg_files),
+  Term.(pure run $ Cli.syntax $ arg_files),
   Term.info "deps" ~doc
