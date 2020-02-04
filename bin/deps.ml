@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-let run (`Syntax syntax) (`Files files) =
+let run (`Setup ()) (`Syntax syntax) (`Files files) =
   List.iter (fun file ->
     let syntax = match syntax, Mdx.Syntax.infer ~file with
     | Some s, _
@@ -43,5 +43,5 @@ let arg_files =
 
 let cmd =
   let doc = "List the dependencies of the input files." in
-  Term.(pure run $ Cli.syntax $ arg_files),
+  Term.(pure run $ Cli.setup $ Cli.syntax $ arg_files),
   Term.info "deps" ~doc
