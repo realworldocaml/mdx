@@ -14,9 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-let run (`Setup ()) (`Syntax syntax) (`Files files) =
-  List.iter (fun file ->
-    let syntax = match syntax, Mdx.Syntax.infer ~file with
+let run (`Setup ()) (`Syntax syntax) (`File file) =
+  let syntax = match syntax, Mdx.Syntax.infer ~file with
     | Some s, _
     | None, Some s -> s
     | None, None -> Printf.eprintf
@@ -30,18 +29,12 @@ let run (`Setup ()) (`Syntax syntax) (`Files files) =
     let deps = Mdx.Dep.of_lines doc in
     let deps = List.map Mdx.Dep.to_string deps in
     let deps = String.concat " " deps in
-    Printf.printf "%s: %s\n" file deps) files;
+    Printf.printf "%s: %s\n" file deps;
   0
 
-open Cmdliner
-
-let arg_files =
-  let doc = "The files of which the dependencies will be listed." in
-  let docv = "FILES" in
-  Cli.named (fun x -> `Files x)
-    Arg.(non_empty & pos_all file [] & info [] ~doc ~docv)
 
 let cmd =
+  let open Cmdliner in
   let doc = "List the dependencies of the input files." in
-  Term.(pure run $ Cli.setup $ Cli.syntax $ arg_files),
+  Term.(pure run $ Cli.setup $ Cli.syntax $ Cli.file),
   Term.info "deps" ~doc
