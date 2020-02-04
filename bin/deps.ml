@@ -19,7 +19,9 @@ let run (`Syntax syntax) files =
     let syntax = match syntax, Mdx.Syntax.infer ~file with
     | Some s, _
     | None, Some s -> s
-    | None, None -> Fmt.failwith "arrg"
+    | None, None -> Fmt.failwith
+      "Could not infer syntax from filename %s, use the --syntax \
+      option to specify a syntax." file
     in
     let doc = Mdx.parse_file
       syntax
