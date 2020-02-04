@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-let run (`Syntax syntax) files =
+let run (`Syntax syntax) (`Files files) =
   List.iter (fun file ->
     let syntax = match syntax, Mdx.Syntax.infer ~file with
     | Some s, _
@@ -38,7 +38,8 @@ open Cmdliner
 let arg_files =
   let doc = "The files of which the dependencies will be listed." in
   let docv = "FILES" in
-  Arg.(non_empty & pos_all file [] & info [] ~doc ~docv)
+  Cli.named (fun x -> `Files x)
+    Arg.(non_empty & pos_all file [] & info [] ~doc ~docv)
 
 let cmd =
   let doc = "List the dependencies of the input files." in
