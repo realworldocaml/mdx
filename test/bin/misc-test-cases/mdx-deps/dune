@@ -1,17 +1,11 @@
 (rule
- (targets deps.txt)
- (deps
-  (:x deps.md deps2.md)
-  (package mdx))
+ (target deps.txt)
+ (deps (package mdx))
  (action
   (with-stdout-to
-   %{targets}
-   (run ocaml-mdx deps %{x}))))
+   %{target}
+   (run ocaml-mdx deps %{dep:deps.md}))))
 
 (alias
  (name runtest)
- (deps
-  (:x deps.txt)
-  (:y deps.txt.expected))
- (action
-  (diff? %{y} %{x})))
+ (action (diff %{dep:deps.txt.expected} %{dep:deps.txt})))

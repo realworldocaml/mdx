@@ -1,2 +1,1 @@
 deps.md: file:tikitaka.ml file:burn.sh dir:ping/
-deps2.md: file:tikitakabis.ml dir:ping/pong file:foo/bar.txt file:burn.sh
