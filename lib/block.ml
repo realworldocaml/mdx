@@ -254,6 +254,6 @@ let version_enabled t =
   | Ok curr_version -> (
       match version t with
       | Some (op, v) ->
-        Label.relation_compare op (Ocaml_version.compare curr_version v) 0
+        Label.Relation.compare op (Ocaml_version.compare curr_version v) 0
       | None -> true )
   | Error (`Msg e) -> Fmt.failwith "invalid OCaml version: %s" e

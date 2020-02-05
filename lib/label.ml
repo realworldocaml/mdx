@@ -14,7 +14,56 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-type relation = Eq | Neq | Le | Lt | Ge | Gt
+module Relation = struct
+  type t = Eq | Neq | Le | Lt | Ge | Gt
+
+  let pp ppf = function
+    | Eq -> Fmt.string ppf "="
+    | Neq -> Fmt.string ppf "<>"
+    | Gt -> Fmt.string ppf ">"
+    | Ge -> Fmt.string ppf ">="
+    | Lt -> Fmt.string ppf "<"
+    | Le -> Fmt.string ppf "<="
+
+  let compare = function
+    | Eq -> ( = )
+    | Neq -> ( <> )
+    | Lt -> ( < )
+    | Le -> ( <= )
+    | Gt -> ( > )
+    | Ge -> ( >= )
+
+  let raw_parse_1_char op op_char s =
+    match String.index_opt s op_char with
+    | Some i ->
+      let before = String.sub s 0 i in
+      let after = String.sub s (i+1) (String.length s - i - 1) in
+      (before, Some (op, after))
+    | None -> (s, None)
+
+  let raw_parse_2_chars op op_char_1 op_char_2 s =
+    match String.index_opt s op_char_1 with
+    | Some i
+      when String.length s >= i + 2
+        && Char.equal (String.get s (i+1)) op_char_2 ->
+      let before = String.sub s 0 i in
+      let after = String.sub s (i+2) (String.length s - i - 2) in
+      (before, Some (op, after))
+    | _ -> (s, None)
+
+  let ( ||| ) x y =
+    match x with
+    | _, None -> y
+    | x -> x
+
+  let raw_parse s =
+    raw_parse_2_chars Neq '<' '>' s |||
+    raw_parse_2_chars Ge '>' '=' s |||
+    raw_parse_1_char Gt '>' s |||
+    raw_parse_2_chars Le '<' '=' s |||
+    raw_parse_1_char Lt '<' s |||
+    raw_parse_1_char Eq '=' s
+end
 
 type t =
   | Dir of string
@@ -24,18 +73,10 @@ type t =
   | Env of string
   | Skip
   | Non_det of [`Output | `Command]
-  | Version of relation * Ocaml_version.t
+  | Version of Relation.t * Ocaml_version.t
   | Require_package of string
   | Set of string * string
   | Unset of string
-
-let pp_relation ppf = function
-  | Eq -> Fmt.string ppf "="
-  | Neq -> Fmt.string ppf "<>"
-  | Gt -> Fmt.string ppf ">"
-  | Ge -> Fmt.string ppf ">="
-  | Lt -> Fmt.string ppf "<"
-  | Le -> Fmt.string ppf "<="
 
 let pp ppf = function
   | Dir d -> Fmt.pf ppf "dir=%s" d
@@ -47,15 +88,10 @@ let pp ppf = function
   | Non_det `Output -> Fmt.string ppf "non-deterministic=output"
   | Non_det `Command -> Fmt.string ppf "non-deterministic=command"
   | Version (op, v) ->
-    Fmt.pf ppf "version%a%a" pp_relation op Ocaml_version.pp v
+    Fmt.pf ppf "version%a%a" Relation.pp op Ocaml_version.pp v
   | Require_package p -> Fmt.pf ppf "require-package=%s" p
   | Set (v, x) -> Fmt.pf ppf "set-%s=%s" v x
   | Unset x -> Fmt.pf ppf "unset-%s" x
-
-let ( ||| ) x y =
-  match x with
-  | _, None -> y
-  | x -> x
 
 let is_prefix ~prefix s =
   let len_prefix = String.length prefix in
@@ -80,38 +116,13 @@ let requires_value ~label ~value f =
 
 let requires_eq_value ~label ~value f =
   match value with
-  | Some (Eq, v) -> f v
+  | Some (Relation.Eq, v) -> f v
   | Some (_, _) ->
     Fmt.failwith "label `%s` requires assignment using the `=` operator" label
   | None -> Fmt.failwith "label `%s` requires a value" label
 
-let raw_parse_1_char op op_char s =
-  match String.index_opt s op_char with
-  | Some i ->
-    let before = String.sub s 0 i in
-    let after = String.sub s (i+1) (String.length s - i - 1) in
-    (before, Some (op, after))
-  | None -> (s, None)
-
-let raw_parse_2_chars op op_char_1 op_char_2 s =
-  match String.index_opt s op_char_1 with
-  | Some i
-    when String.length s > i + 2 && Char.equal (String.get s (i+1)) op_char_2 ->
-    let before = String.sub s 0 i in
-    let after = String.sub s (i+2) (String.length s - i - 2) in
-    (before, Some (op, after))
-  | _ -> (s, None)
-
-let raw_parse s =
-  raw_parse_2_chars Neq '<' '>' s |||
-  raw_parse_2_chars Ge '>' '=' s |||
-  raw_parse_1_char Gt '>' s |||
-  raw_parse_2_chars Le '<' '=' s |||
-  raw_parse_1_char Lt '<' s |||
-  raw_parse_1_char Eq '=' s
-
 let of_string s =
-  let label, value = raw_parse s in
+  let label, value = Relation.raw_parse s in
   match label with
   (* flags: labels without value *)
   | "skip" ->
@@ -128,9 +139,9 @@ let of_string s =
   (* non-deterministic accepts any value *)
   | "non-deterministic" -> (
       match value with
-      | Some (Eq, "output") -> Non_det `Output
-      | Some (Eq, "command") -> Non_det `Command
-      | Some (Eq, v) ->
+      | Some (Relation.Eq, "output") -> Non_det `Output
+      | Some (Relation.Eq, "command") -> Non_det `Command
+      | Some (Relation.Eq, v) ->
         Fmt.failwith
           "%S is not a valid value for label `%s`. Valid values are <none>,\
           \ %S and %S."
@@ -155,11 +166,3 @@ let of_string s =
 let of_string = function
   | "" -> []
   | s -> List.map of_string (String.split_on_char ',' s)
-
-let relation_compare = function
-  | Eq -> ( = )
-  | Neq -> ( <> )
-  | Lt -> ( < )
-  | Le -> ( <= )
-  | Gt -> ( > )
-  | Ge -> ( >= )

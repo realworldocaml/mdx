@@ -14,9 +14,17 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-type relation
+module Relation : sig
+  type t = Eq | Neq | Le | Lt | Ge | Gt
 
-val relation_compare : relation -> int -> int -> bool
+  val pp : Format.formatter -> t -> unit
+
+  val compare : t -> int -> int -> bool
+
+  val raw_parse : string -> string * (t * string) option
+  (** [raw_parse s] splits [s] into a label, and optionally the relation and
+      the associated value. *)
+end
 
 type t =
   | Dir of string
@@ -26,7 +34,7 @@ type t =
   | Env of string
   | Skip
   | Non_det of [`Output | `Command]
-  | Version of relation * Ocaml_version.t
+  | Version of Relation.t * Ocaml_version.t
   | Require_package of string
   | Set of string * string
   | Unset of string
