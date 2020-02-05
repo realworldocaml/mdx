@@ -119,31 +119,45 @@ let pp ?syntax ppf b =
   pp_contents ?syntax ppf b;
   pp_footer ?syntax ppf ()
 
-let get_label t f = List.fold_left f None t.labels
+let get_label f t =
+  let rec aux = function
+    | [] -> None
+    | h :: t ->
+      match f h with
+      | Some x -> Some x
+      | None -> aux t
+  in
+  aux t.labels
 
-let directory t = get_label t (fun acc -> function Dir x -> Some x | _ -> acc)
+let get_label_or f ~default t =
+  let rec aux = function
+    | [] -> default
+    | h :: t ->
+      match f h with
+      | Some x -> x
+      | None -> aux t
+  in
+  aux t.labels
 
-let file t = get_label t (fun acc -> function File x -> Some x | _ -> acc)
+let directory t = get_label (function Dir x -> Some x | _ -> None) t
 
-let part t = get_label t (fun acc -> function Part x -> Some x | _ -> acc)
+let file t = get_label (function File x -> Some x | _ -> None) t
 
-let version t =
-  get_label t (fun acc -> function Version (op, v) -> Some (op, v) | _ -> acc)
+let part t = get_label (function Part x -> Some x | _ -> None) t
+
+let version t = get_label (function Version (x, y) -> Some (x, y) | _ -> None) t
 
 let source_trees t =
   List.filter_map (function Label.Source_tree x -> Some x | _ -> None) t.labels
 
 let mode t =
-  List.fold_left
-    (fun acc -> function Label.Non_det mode -> `Non_det mode | _ -> acc)
-    `Normal t.labels
+  get_label_or (function Label.Non_det mode -> Some (`Non_det mode) | _ -> None)
+    ~default:`Normal t
 
 let skip t = List.exists (function Label.Skip -> true | _ -> false) t.labels
 
 let environment t =
-  List.fold_left
-    (fun acc -> function Label.Env e -> e | _ -> acc)
-    "default" t.labels
+  get_label_or (function Label.Env e -> Some e | _ -> None) ~default:"default" t
 
 let set_variables t =
   List.filter_map
