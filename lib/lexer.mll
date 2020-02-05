@@ -25,7 +25,13 @@ rule text section = parse
   | "```" ([^' ' '\n']* as h) ws* ([^'\n']* as l) eol
       { let header = if h = "" then None else Some h in
         let contents = block lexbuf in
-        let labels = Label.of_string l in
+        let labels = match Label.of_string l with
+          | Ok labels -> labels
+          | Error msgs ->
+            let msgs = List.map (fun (`Msg (x : string)) -> x) msgs in
+            let msg = String.concat ~sep:" " msgs in
+            failwith msg
+        in
         let value = Block.Raw in
         let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
         newline lexbuf;

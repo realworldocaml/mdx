@@ -108,20 +108,25 @@ let split_prefix ~prefix s =
 
 let doesnt_accept_value ~label ~value res =
   match value with
-  | Some _ -> Fmt.failwith "label `%s` does not allow a value" label
-  | None -> res
+  | Some _ ->
+    Error (`Msg (Format.sprintf "Label `%s` does not allow a value." label))
+  | None -> Ok res
 
 let requires_value ~label ~value f =
   match value with
   | Some (op, v) -> f op v
-  | None -> Fmt.failwith "label `%s` requires a value" label
+  | None -> Error (`Msg (Format.sprintf "Label `%s` requires a value." label))
 
 let requires_eq_value ~label ~value f =
   match value with
-  | Some (Relation.Eq, v) -> f v
-  | Some (_, _) ->
-    Fmt.failwith "label `%s` requires assignment using the `=` operator" label
-  | None -> Fmt.failwith "label `%s` requires a value" label
+  | Some (Relation.Eq, v) -> Ok (f v)
+  | Some _ ->
+    let msg =
+      Format.sprintf
+        "Label `%s` requires assignment using the `=` operator." label
+    in
+    Error (`Msg msg)
+  | None -> Error (`Msg (Format.sprintf "Label `%s` requires a value." label))
 
 let of_string s =
   let label, value = Relation.raw_parse s in
@@ -135,23 +140,30 @@ let of_string s =
   | "version" -> (
       requires_value ~label ~value (fun op v ->
           match Ocaml_version.of_string v with
-          | Ok v -> Version (op, v)
+          | Ok v -> Ok (Version (op, v))
           | Error (`Msg e) ->
-            Fmt.failwith "invalid `version` label value: %s" e ) )
+            let msg = Format.sprintf "Invalid `version` label value: %s." e in
+            Error (`Msg msg) ) )
   (* non-deterministic accepts any value *)
   | "non-deterministic" -> (
       match value with
-      | Some (Relation.Eq, "output") -> Non_det `Output
-      | Some (Relation.Eq, "command") -> Non_det `Command
+      | Some (Relation.Eq, "output") -> Ok (Non_det `Output)
+      | Some (Relation.Eq, "command") -> Ok (Non_det `Command)
       | Some (Relation.Eq, v) ->
-        Fmt.failwith
-          "%S is not a valid value for label `%s`. Valid values are <none>,\
-          \ %S and %S."
-          v label "command" "output"
+        let msg =
+          Format.sprintf
+            "%S is not a valid value for label `%s`. Valid values are <none>,\
+            \ %S and %S."
+            v label "command" "output"
+        in
+        Error (`Msg msg)
       | Some _ ->
-        Fmt.failwith
-          "label `%s` requires assignment using the `=` operator" label
-      | None -> Non_det `Output )
+        let msg =
+          Format.sprintf
+            "label `%s` requires assignment using the `=` operator" label
+        in
+        Error (`Msg msg)
+      | None -> Ok (Non_det `Output) )
   (* labels requiring a value and '=' operator *)
   | "dir" -> requires_eq_value ~label ~value (fun x -> Dir x)
   | "source-tree" -> requires_eq_value ~label ~value (fun x -> Source_tree x)
@@ -163,8 +175,27 @@ let of_string s =
   | l when is_prefix ~prefix:"set-" l ->
     requires_eq_value ~label ~value
       (fun x -> Set (split_prefix ~prefix:"set-" l, x))
-  | l -> Fmt.failwith "`%s` is not a valid label" l
+  | l -> Error (`Msg (Format.sprintf "`%s` is not a valid label" l))
 
 let of_string = function
-  | "" -> []
-  | s -> List.map of_string (String.split_on_char ',' s)
+  | "" -> Ok []
+  | s ->
+    let single_of_string x =
+      match of_string x with
+      | Ok label -> Ok [label]
+      | Error msg -> Error [msg]
+    in
+    match String.split_on_char ',' s with
+    | [] -> Error [`Msg "split_on_char should not return an empty list"]
+    | [h] -> single_of_string h
+    | h :: t ->
+      let f acc s =
+        match acc, of_string s with
+        | Ok labels, Ok label -> Ok (label :: labels)
+        | Error msgs, Ok _ -> Error msgs
+        | Ok _, Error msg -> Error [msg]
+        | Error msgs, Error msg -> Error (msg :: msgs)
+      in
+      match List.fold_left f (single_of_string h) t with
+      | Ok labels -> Ok (List.rev labels)
+      | Error msgs -> Error (List.rev msgs)

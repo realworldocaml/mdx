@@ -41,7 +41,5 @@ type t =
 
 val pp : Format.formatter -> t -> unit
 
-val of_string: string -> t list
-(** [of_string s] cuts [s] into a list of labels.
-
-    @raise a [Failure] exception when [s] does not represent valid labels. *)
+val of_string: string -> (t list, [`Msg of string] list) Result.result
+(** [of_string s] cuts [s] into a list of labels. *)
