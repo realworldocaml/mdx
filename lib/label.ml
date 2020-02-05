@@ -15,6 +15,7 @@
  *)
 
 open Compat
+open Result
 
 module Relation = struct
   type t = Eq | Neq | Le | Lt | Ge | Gt
