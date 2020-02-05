@@ -29,7 +29,7 @@ let run (`Setup ()) (`Syntax syntax) (`File file) =
     let deps = Mdx.Dep.of_lines doc in
     let deps = List.map Mdx.Dep.to_string deps in
     let deps = String.concat " " deps in
-    Printf.printf "%s: %s\n" file deps;
+    Printf.printf "%s\n" deps;
   0
 
 

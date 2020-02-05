@@ -1,1 +1,1 @@
-deps.md: file:tikitaka.ml file:burn.sh dir:ping/
+file:tikitaka.ml file:burn.sh dir:ping/
