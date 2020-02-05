@@ -14,6 +14,14 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+module Char = struct
+  include Char
+
+#if OCAML_VERSION < (4, 3, 0)
+  let equal x y = Char.compare x y = 0
+#endif
+end
+
 module String = struct
   include String
 
