@@ -249,18 +249,11 @@ let executable_contents b =
   if contents = [] || ends_by_semi_semi contents then contents
   else contents @ [";;"]
 
-let compare = function
-  | `Eq -> ( = )
-  | `Neq -> ( <> )
-  | `Lt -> ( < )
-  | `Le -> ( <= )
-  | `Gt -> ( > )
-  | `Ge -> ( >= )
-
 let version_enabled t =
   match Ocaml_version.of_string Sys.ocaml_version with
   | Ok curr_version -> (
       match version t with
-      | Some (op, v) -> (compare op) (Ocaml_version.compare curr_version v) 0
+      | Some (op, v) ->
+        Label.relation_compare op (Ocaml_version.compare curr_version v) 0
       | None -> true )
   | Error (`Msg e) -> Fmt.failwith "invalid OCaml version: %s" e

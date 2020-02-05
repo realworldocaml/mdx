@@ -14,6 +14,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+type relation
+
+val relation_compare : relation -> int -> int -> bool
+
 type t =
   | Dir of string
   | Source_tree of string
@@ -22,7 +26,7 @@ type t =
   | Env of string
   | Skip
   | Non_det of [`Output | `Command]
-  | Version of [`Eq | `Neq | `Le | `Lt | `Ge | `Gt] * Ocaml_version.t
+  | Version of relation * Ocaml_version.t
   | Require_package of string
   | Set of string * string
   | Unset of string

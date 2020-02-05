@@ -16,6 +16,8 @@
 
 open Astring
 
+type relation = Eq | Neq | Le | Lt | Ge | Gt
+
 type t =
   | Dir of string
   | Source_tree of string
@@ -24,18 +26,18 @@ type t =
   | Env of string
   | Skip
   | Non_det of [`Output | `Command]
-  | Version of [`Eq | `Neq | `Le | `Lt | `Ge | `Gt] * Ocaml_version.t
+  | Version of relation * Ocaml_version.t
   | Require_package of string
   | Set of string * string
   | Unset of string
 
 let pp_relation ppf = function
-  | `Eq -> Fmt.string ppf "="
-  | `Neq -> Fmt.string ppf "<>"
-  | `Gt -> Fmt.string ppf ">"
-  | `Ge -> Fmt.string ppf ">="
-  | `Lt -> Fmt.string ppf "<"
-  | `Le -> Fmt.string ppf "<="
+  | Eq -> Fmt.string ppf "="
+  | Neq -> Fmt.string ppf "<>"
+  | Gt -> Fmt.string ppf ">"
+  | Ge -> Fmt.string ppf ">="
+  | Lt -> Fmt.string ppf "<"
+  | Le -> Fmt.string ppf "<="
 
 let pp ppf = function
   | Dir d -> Fmt.pf ppf "dir=%s" d
@@ -79,19 +81,19 @@ let requires_value ~label ~value f =
 
 let requires_eq_value ~label ~value f =
   match value with
-  | Some (`Eq, v) -> f v
+  | Some (Eq, v) -> f v
   | Some (_, _) ->
     Fmt.failwith "label `%s` requires assignment using the `=` operator" label
   | None -> Fmt.failwith "label `%s` requires a value" label
 
 let of_string s =
   let label, value =
-    split "<>" s `Neq |||
-    split ">=" s `Ge |||
-    split ">"  s `Gt |||
-    split "<=" s `Le |||
-    split "<"  s `Lt |||
-    split "="  s `Eq
+    split "<>" s Neq |||
+    split ">=" s Ge |||
+    split ">"  s Gt |||
+    split "<=" s Le |||
+    split "<"  s Lt |||
+    split "="  s Eq
   in
   match label with
   (* flags: labels without value *)
@@ -109,9 +111,9 @@ let of_string s =
   (* non-deterministic accepts any value *)
   | "non-deterministic" -> (
       match value with
-      | Some (`Eq, "output") -> Non_det `Output
-      | Some (`Eq, "command") -> Non_det `Command
-      | Some (`Eq, v) ->
+      | Some (Eq, "output") -> Non_det `Output
+      | Some (Eq, "command") -> Non_det `Command
+      | Some (Eq, v) ->
         Fmt.failwith
           "%S is not a valid value for label `%s`. Valid values are <none>,\
           \ %S and %S."
@@ -138,3 +140,11 @@ let of_string s =
   else
     let labels = String.cuts ~empty:false ~sep:"," s in
     List.map of_string labels
+
+let relation_compare = function
+  | Eq -> ( = )
+  | Neq -> ( <> )
+  | Lt -> ( < )
+  | Le -> ( <= )
+  | Gt -> ( > )
+  | Ge -> ( >= )
