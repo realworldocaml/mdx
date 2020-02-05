@@ -14,6 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+open Compat
+
 module Relation = struct
   type t = Eq | Neq | Le | Lt | Ge | Gt
 

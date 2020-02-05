@@ -33,6 +33,14 @@ module String = struct
     done;
     String.sub s 0 !j :: !r
 #endif
+
+#if OCAML_VERSION < (4, 5, 0)
+  let rec index_rec_opt s lim i c =
+    if i >= lim then None else
+    if unsafe_get s i = c then Some i else index_rec_opt s lim (i + 1) c
+
+  let index_opt s c = index_rec_opt s (length s) 0 c
+#endif
 end
 
 module Filename = struct
