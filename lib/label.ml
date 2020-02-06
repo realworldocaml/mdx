@@ -181,25 +181,16 @@ let of_string s =
       (fun x -> Set (split_prefix ~prefix:"set-" l, x))
   | l -> Error (`Msg (Format.sprintf "`%s` is not a valid label" l))
 
-let of_string = function
-  | "" -> Ok []
-  | s ->
-    let single_of_string x =
-      match of_string x with
-      | Ok label -> Ok [label]
-      | Error msg -> Error [msg]
-    in
-    match String.split_on_char ',' s with
-    | [] -> Error [`Msg "split_on_char should not return an empty list"]
-    | [h] -> single_of_string h
-    | h :: t ->
-      let f acc s =
-        match acc, of_string s with
-        | Ok labels, Ok label -> Ok (label :: labels)
-        | Error msgs, Ok _ -> Error msgs
-        | Ok _, Error msg -> Error [msg]
-        | Error msgs, Error msg -> Error (msg :: msgs)
-      in
-      match List.fold_left f (single_of_string h) t with
-      | Ok labels -> Ok (List.rev labels)
-      | Error msgs -> Error (List.rev msgs)
+let of_string s =
+  let f acc s =
+    match acc, of_string s with
+    | Ok labels, Ok label -> Ok (label :: labels)
+    | Error msgs, Ok _ -> Error msgs
+    | Ok _, Error msg -> Error [msg]
+    | Error msgs, Error msg -> Error (msg :: msgs)
+  in
+  let not_empty = function "" -> false | _ -> true in
+  let split = String.split_on_char ',' s |> List.filter not_empty in
+  match List.fold_left f (Ok []) split with
+  | Ok labels -> Ok (List.rev labels)
+  | Error msgs -> Error (List.rev msgs)
