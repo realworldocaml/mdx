@@ -118,16 +118,19 @@ let requires_value ~label ~value f =
   | Some (op, v) -> f op v
   | None -> Error (`Msg (Format.sprintf "Label `%s` requires a value." label))
 
-let requires_eq_value ~label ~value f =
-  match value with
-  | Some (Relation.Eq, v) -> Ok (f v)
-  | Some _ ->
+let requires_eq ~label ~op ~value f =
+  match op with
+  | Relation.Eq -> Ok (f value)
+  | _ ->
     let msg =
       Format.sprintf
         "Label `%s` requires assignment using the `=` operator." label
     in
     Error (`Msg msg)
-  | None -> Error (`Msg (Format.sprintf "Label `%s` requires a value." label))
+
+let requires_eq_value ~label ~value f =
+  requires_value ~label ~value (fun op value ->
+      requires_eq ~label ~op ~value f)
 
 let of_string s =
   let label, value = Relation.raw_parse s in
