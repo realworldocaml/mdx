@@ -18,6 +18,21 @@ open Astring
 open Result
 module List = Compat.List
 
+module Header = struct
+  type t = Shell | OCaml | Other of string
+
+  let pp ppf = function
+    | Shell -> Fmt.string ppf "sh"
+    | OCaml -> Fmt.string ppf "ocaml"
+    | Other s -> Fmt.string ppf s
+
+  let of_string = function
+    | "" -> None
+    | "sh" | "bash" -> Some Shell
+    | "ocaml" -> Some OCaml
+    | s -> Some (Other s)
+end
+
 type section = int * string
 
 type cram_value = { pad : int; tests : Cram.t list }
@@ -34,7 +49,7 @@ type t = {
   file : string;
   section : section option;
   labels : Label.t list;
-  header : string option;
+  header : Header.t option;
   contents : string list;
   value : value;
 }
@@ -73,7 +88,7 @@ let dump ppf { file; line; section; labels; header; contents; value } =
     section
     Fmt.Dump.(list Label.pp)
     labels
-    Fmt.(Dump.option string)
+    Fmt.(Dump.option Header.pp)
     header
     Fmt.(Dump.list dump_string)
     contents dump_value value
@@ -96,18 +111,16 @@ let pp_labels ppf = function
 let pp_header ?syntax ppf t =
   match syntax with
   | Some Syntax.Cram -> (
-      assert (t.header = Syntax.cram_default_header);
       match t.labels with
       | [] -> ()
-      | [ Non_det None ] -> Fmt.pf ppf "<-- non-deterministic\n"
-      | [ Non_det (Some Nd_output) ] ->
-          Fmt.pf ppf "<-- non-deterministic output\n"
-      | [ Non_det (Some Nd_command) ] ->
-          Fmt.pf ppf "<-- non-deterministic command\n"
-      | _ ->
-          let err = Fmt.strf "Block.pp_header: [ %a ]" pp_labels t.labels in
-          invalid_arg err )
-  | _ -> Fmt.pf ppf "```%a%a\n" Fmt.(option string) t.header pp_labels t.labels
+      | [Non_det None] -> Fmt.pf ppf "<-- non-deterministic\n"
+      | [Non_det (Some Nd_output)] ->
+        Fmt.pf ppf "<-- non-deterministic output\n"
+      | [Non_det (Some Nd_command)] ->
+        Fmt.pf ppf "<-- non-deterministic command\n"
+      | _ -> failwith "cannot happen: checked during parsing" )
+  | _ ->
+    Fmt.pf ppf "```%a%a\n" Fmt.(option Header.pp) t.header pp_labels t.labels
 
 let pp_error ppf b =
   match b.value with
@@ -195,8 +208,6 @@ let value t = t.value
 
 let section t = t.section
 
-let header t = t.header
-
 let cram lines =
   let pad, tests = Cram.of_lines lines in
   Cram { pad; tests }
@@ -211,17 +222,17 @@ let guess_ocaml_kind b =
         else `Code
   in
   match (b.header, b.contents) with
-  | Some "ocaml", t -> `OCaml (aux t)
+  | Some OCaml, t -> `OCaml (aux t)
   | _ -> `Other
 
 let toplevel ~file ~line lines = Toplevel (Toplevel.of_lines ~line ~file lines)
 
 let eval t =
   match t.header with
-  | Some ("sh" | "bash") ->
+  | Some Shell ->
       let value = cram t.contents in
       { t with value }
-  | Some "ocaml" -> (
+  | Some OCaml -> (
       match guess_ocaml_kind t with
       | `OCaml `Code -> { t with value = OCaml }
       | `OCaml `Toplevel ->
