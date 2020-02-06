@@ -7,11 +7,6 @@ let line_ref = ref 1
 let newline lexbuf =
   Lexing.new_line lexbuf;
   incr line_ref
-
-let non_det_mode = function
-  | "command" -> `Command
-  | "output" -> `Output
-  | _ -> failwith "cannot happen, already checked in previous match"
 }
 
 let eol = '\n' | eof
@@ -68,10 +63,14 @@ and cram_text section = parse
         let rest = cram_text section lexbuf in
         `Block { Block.file; line; section; header; contents; labels; value }
         :: (if requires_empty_line then `Text "" :: rest else rest) }
-  | "<-- non-deterministic" ws* (("command"|"output") as choice) eol
+  | "<-- non-deterministic" ws* ([^'\n']* as choice) eol
       { let header = Syntax.cram_default_header in
         let requires_empty_line, contents = cram_block lexbuf in
-        let labels = [ Label.Non_det (non_det_mode choice) ] in
+        let labels =
+          match Label.interpret "non-deterministic" (Some (Eq, choice)) with
+          | Ok label -> [label]
+          | Error (`Msg msg) -> failwith msg
+        in
         let value = Block.Raw in
         let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
         newline lexbuf;

@@ -132,8 +132,7 @@ let requires_eq_value ~label ~value f =
   requires_value ~label ~value (fun op value ->
       requires_eq ~label ~op ~value f)
 
-let of_string s =
-  let label, value = Relation.raw_parse s in
+let interpret label value =
   match label with
   (* flags: labels without value *)
   | "skip" ->
@@ -183,7 +182,8 @@ let of_string s =
 
 let of_string s =
   let f acc s =
-    match acc, of_string s with
+    let label, value = Relation.raw_parse s in
+    match acc, interpret label value with
     | Ok labels, Ok label -> Ok (label :: labels)
     | Error msgs, Ok _ -> Error msgs
     | Ok _, Error msg -> Error [msg]
