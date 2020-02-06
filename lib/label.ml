@@ -36,36 +36,35 @@ module Relation = struct
     | Gt -> ( > )
     | Ge -> ( >= )
 
-  let raw_parse_1_char op op_char s =
-    match String.index_opt s op_char with
-    | Some i ->
-      let before = String.sub s 0 i in
-      let after = String.sub s (i+1) (String.length s - i - 1) in
-      (before, Some (op, after))
-    | None -> (s, None)
+  let of_string = function
+    | "<>" -> Neq
+    | ">=" -> Ge
+    | ">" -> Gt
+    | "<=" -> Le
+    | "<" -> Lt
+    | "=" -> Eq
+    | _ -> raise Not_found (* can not happen, filtered by the regexp *)
 
-  let raw_parse_2_chars op op_char_1 op_char_2 s =
-    match String.index_opt s op_char_1 with
-    | Some i
-      when String.length s >= i + 2
-        && Char.equal (String.get s (i+1)) op_char_2 ->
-      let before = String.sub s 0 i in
-      let after = String.sub s (i+2) (String.length s - i - 2) in
-      (before, Some (op, after))
-    | _ -> (s, None)
-
-  let ( ||| ) x y =
-    match x with
-    | _, None -> y
-    | x -> x
+  let re =
+    let open Re in
+    compile
+    @@ seq
+      [ bos
+      ; group (rep (alt [alnum; char '-']))
+      ; group (alt [str "<="; str ">="; str "<>"; str "<"; str ">"; str "="])
+      ; group (rep any)
+      ; eos ]
 
   let raw_parse s =
-    raw_parse_2_chars Neq '<' '>' s |||
-    raw_parse_2_chars Ge '>' '=' s |||
-    raw_parse_1_char Gt '>' s |||
-    raw_parse_2_chars Le '<' '=' s |||
-    raw_parse_1_char Lt '<' s |||
-    raw_parse_1_char Eq '=' s
+    match Re.exec_opt re s with
+    | None -> (s, None)
+    | Some g ->
+      try
+        let label = Re.Group.get g 1 in
+        let op = of_string (Re.Group.get g 2) in
+        let value = Re.Group.get g 3 in
+        (label, Some (op, value))
+      with Not_found -> (s, None)
 end
 
 type t =
