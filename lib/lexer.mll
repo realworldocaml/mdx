@@ -19,7 +19,7 @@ rule text section = parse
         newline lexbuf;
         `Section section :: text (Some section) lexbuf }
   | "```" ([^' ' '\n']* as h) ws* ([^'\n']* as l) eol
-      { let header = if h = "" then None else Some h in
+      { let header = Block.Header.of_string h in
         let contents = block lexbuf in
         let labels = match Label.of_string l with
           | Ok labels -> labels
@@ -52,7 +52,7 @@ and cram_text section = parse
         newline lexbuf;
         `Section section :: cram_text (Some section) lexbuf }
   | "  " ([^'\n']* as first_line) eol
-      { let header = Syntax.cram_default_header in
+      { let header = Some Block.Header.Shell in
         let requires_empty_line, contents = cram_block lexbuf in
         let contents = first_line :: contents in
         let labels = [] in
@@ -64,7 +64,7 @@ and cram_text section = parse
         `Block { Block.file; line; section; header; contents; labels; value }
         :: (if requires_empty_line then `Text "" :: rest else rest) }
   | "<-- non-deterministic" ws* ([^'\n']* as choice) eol
-      { let header = Syntax.cram_default_header in
+      { let header = Some Block.Header.Shell in
         let requires_empty_line, contents = cram_block lexbuf in
         let labels =
           match Label.interpret "non-deterministic" (Some (Eq, choice)) with

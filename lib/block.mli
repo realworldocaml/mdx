@@ -14,6 +14,16 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+(** Code blocks headers. *)
+
+module Header : sig
+  type t = Shell | OCaml | Other of string
+
+  val pp : Format.formatter -> t -> unit
+
+  val of_string : string -> t option
+end
+
 (** Code blocks. *)
 
 type cram_value = { pad: int; tests: Cram.t list }
@@ -35,7 +45,7 @@ type t = {
   file    : string;
   section : section option;
   labels  : Label.t list;
-  header  : string option;
+  header  : Header.t option;
   contents: string list;
   value   : value;
 }
@@ -49,7 +59,7 @@ val dump: t Fmt.t
 (** [dump] is the printer for dumping code blocks. Useful for debugging. *)
 
 val pp_header: ?syntax:Syntax.t -> t Fmt.t
-(** [pp_header] pretty-prints block headers. *)
+(** [pp_header] pretty-prints full block headers with the labels. *)
 
 val pp_contents: ?syntax:Syntax.t -> t Fmt.t
 (** [pp_contents] pretty-prints block contents. *)
@@ -110,9 +120,6 @@ val value: t -> value
 
 val section: t -> section option
 (** [section t] is [t]'s section. *)
-
-val header: t -> string option
-(** [header t] is [t]'s header. *)
 
 val executable_contents: t -> string list
 (** [executable_contents t] is either [t]'s contents if [t] is a raw
