@@ -221,24 +221,17 @@ let guess_ocaml_kind b =
         else if String.length h > 1 && h.[0] = '#' then `Toplevel
         else `Code
   in
-  match (b.header, b.contents) with
-  | Some OCaml, t -> `OCaml (aux t)
-  | _ -> `Other
-
-let toplevel ~file ~line lines = Toplevel (Toplevel.of_lines ~line ~file lines)
+  aux b.contents
 
 let eval t =
   match t.header with
-  | Some Shell ->
-      let value = cram t.contents in
-      { t with value }
+  | Some Shell -> { t with value= cram t.contents }
   | Some OCaml -> (
       match guess_ocaml_kind t with
-      | `OCaml `Code -> { t with value = OCaml }
-      | `OCaml `Toplevel ->
-          let value = toplevel ~file:t.file ~line:t.line t.contents in
-          { t with value }
-      | `Other -> Fmt.failwith "Dead code. todo: remove" )
+      | `Code -> { t with value = OCaml }
+      | `Toplevel ->
+          let file = t.file and line = t.line in
+          { t with value= Toplevel (Toplevel.of_lines ~file ~line t.contents) } )
   | _ -> t
 
 let ends_by_semi_semi c =
@@ -253,25 +246,29 @@ let pp_line_directive ppf (file, line) = Fmt.pf ppf "#%d %S" line file
 let line_directive = Fmt.to_to_string pp_line_directive
 
 let executable_contents b =
+  let whole_content =
+    match b.header with
+    | Some OCaml -> (
+        match guess_ocaml_kind b with
+        | `Code -> true
+        | `Toplevel -> false )
+    | _ -> false
+  in
   let contents =
-    match guess_ocaml_kind b with
-    | `OCaml `Code -> b.contents
-    | `OCaml `Toplevel | `Other -> (
-        match b.value with
-        | Error _ | Raw | Cram _ -> []
-        | OCaml -> line_directive (b.file, b.line) :: b.contents
-        | Toplevel tests ->
-            List.flatten
-              (List.map
-                 (fun t ->
-                   match Toplevel.command t with
-                   | [] -> []
-                   | cs ->
-                       let mk s =
-                         String.v ~len:(t.hpad + 2) (fun _ -> ' ') ^ s
-                       in
-                       line_directive (b.file, t.line) :: List.map mk cs)
-                 tests) )
+    if whole_content then b.contents
+    else
+      match b.value with
+      | Error _ | Raw | Cram _ -> []
+      | OCaml -> line_directive (b.file, b.line) :: b.contents
+      | Toplevel tests ->
+          List.flatten (
+            List.map (fun t ->
+              match Toplevel.command t with
+              | [] -> []
+              | cs ->
+                let mk s = String.v ~len:(t.hpad+2) (fun _ -> ' ') ^ s in
+                line_directive (b.file, t.line) :: List.map mk cs)
+              tests)
   in
   if contents = [] || ends_by_semi_semi contents then contents
   else contents @ [ ";;" ]
