@@ -119,7 +119,7 @@ let requires_value ~label ~value f =
 
 let requires_eq ~label ~op ~value f =
   match op with
-  | Relation.Eq -> Ok (f value)
+  | Relation.Eq -> f value
   | _ ->
     let msg =
       Format.sprintf
@@ -129,7 +129,7 @@ let requires_eq ~label ~op ~value f =
 
 let requires_eq_value ~label ~value f =
   requires_value ~label ~value (fun op value ->
-      requires_eq ~label ~op ~value f)
+      requires_eq ~label ~op ~value (fun x -> Ok (f x)))
 
 let interpret label value =
   match label with
@@ -149,22 +149,18 @@ let interpret label value =
   (* non-deterministic accepts any value *)
   | "non-deterministic" -> (
       match value with
-      | Some (Relation.Eq, "output") -> Ok (Non_det `Output)
-      | Some (Relation.Eq, "command") -> Ok (Non_det `Command)
-      | Some (Relation.Eq, v) ->
-        let msg =
-          Format.sprintf
-            "%S is not a valid value for label `%s`. Valid values are <none>,\
-            \ %S and %S."
-            v label "command" "output"
-        in
-        Error (`Msg msg)
-      | Some _ ->
-        let msg =
-          Format.sprintf
-            "label `%s` requires assignment using the `=` operator." label
-        in
-        Error (`Msg msg)
+      | Some (op, value) ->
+        requires_eq ~label ~op ~value (function
+            | "output" -> Ok (Non_det `Output)
+            | "command" -> Ok (Non_det `Command)
+            | v ->
+              let msg =
+                Format.sprintf
+                  "%S is not a valid value for label `%s`. Valid values are\
+                   \ <none>, %S and %S."
+                  v label "command" "output"
+              in
+              Error (`Msg msg) )
       | None -> Ok (Non_det `Output) )
   (* labels requiring a value and '=' operator *)
   | "dir" -> requires_eq_value ~label ~value (fun x -> Dir x)
