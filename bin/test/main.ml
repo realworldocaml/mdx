@@ -63,7 +63,6 @@ let with_dir root f =
       raise e
 
 let get_env blacklist =
-  let blacklist = "INSIDE_DUNE"::blacklist in
   let env = Array.to_list (Unix.environment ()) in
   let env = List.map (String.cuts ~sep:"=") env in
   let f env var =
