@@ -162,7 +162,7 @@ let interpret label value =
       | Some _ ->
         let msg =
           Format.sprintf
-            "label `%s` requires assignment using the `=` operator" label
+            "label `%s` requires assignment using the `=` operator." label
         in
         Error (`Msg msg)
       | None -> Ok (Non_det `Output) )
@@ -177,7 +177,7 @@ let interpret label value =
   | l when is_prefix ~prefix:"set-" l ->
     requires_eq_value ~label ~value
       (fun x -> Set (split_prefix ~prefix:"set-" l, x))
-  | l -> Error (`Msg (Format.sprintf "`%s` is not a valid label" l))
+  | l -> Error (`Msg (Format.sprintf "`%s` is not a valid label." l))
 
 let of_string s =
   let f acc s =
