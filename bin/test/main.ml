@@ -252,22 +252,15 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     match syntax with Some syntax -> Some syntax | None -> Syntax.infer ~file
   in
   let c = Mdx_top.init ~verbose:(not silent_eval) ~silent ~verbose_findlib () in
-  let section =
-    match section with None -> None | Some p -> Some (Re.Perl.compile_pat p)
-  in
-  let active b =
-    match (section, Block.section b) with
-    | None, _ -> true
-    | Some re, None -> Re.execp re ""
-    | Some re, Some s -> Re.execp re (snd s)
-  in
   eval_prelude ?root c prelude prelude_str;
 
   let test_block ~ppf ~temp_file t =
-    let active = active t && Block.version_enabled t && not (Block.skip t) in
     let print_block () = Block.pp ?syntax ppf t in
-    match
-      (active, non_deterministic, Block.file t, Block.mode t, Block.value t)
+    match Block.is_active ?section t,
+          non_deterministic,
+          Block.file t,
+          Block.mode t,
+          Block.value t
     with
     (* Print errors *)
     | _, _, _, _, Error _

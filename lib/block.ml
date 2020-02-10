@@ -274,3 +274,14 @@ let version_enabled t =
 
 let mk ~line ~file ~section ~labels ~header ~contents ~value =
   { line; file; section; labels; header; contents; value }
+
+let is_active ?section:s t =
+  let active =
+    match s with
+    | Some p -> (
+        match section t with
+        | Some s -> Re.execp (Re.Perl.compile_pat p) (snd s)
+        | None -> Re.execp (Re.Perl.compile_pat p) "" )
+    | None -> true
+  in
+  active && version_enabled t && not (skip t)
