@@ -54,17 +54,6 @@ type t = {
   value : value;
 }
 
-let empty =
-  {
-    line = 0;
-    file = "";
-    section = None;
-    labels = [];
-    header = None;
-    contents = [];
-    value = Raw;
-  }
-
 let line t = t.line
 let filename t = t.file
 let section t = t.section

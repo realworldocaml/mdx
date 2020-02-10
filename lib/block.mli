@@ -52,9 +52,6 @@ val mk:
   -> value:value
   -> t
 
-val empty : t
-(** [empty] is the empty block. *)
-
 (** {2 Printers} *)
 
 val dump : t Fmt.t
