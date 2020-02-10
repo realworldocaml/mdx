@@ -229,6 +229,20 @@ let update_file_or_block ?root ppf md_file ml_file block =
 
 exception Test_block_failure of Block.t * string
 
+let eval_prelude ?root top prelude prelude_str =
+  let aux to_lines p =
+    let env, f = Mdx.Prelude.env_and_file p in
+    let eval () = eval_raw ?root top ~line:0 (to_lines f) in
+    match env with
+    | None   -> eval ()
+    | Some e -> Mdx_top.in_env e eval
+  in
+  match prelude, prelude_str with
+  | [], [] -> ()
+  | [], fs -> List.iter (aux (fun x -> [x])) fs
+  | fs, [] -> List.iter (aux Mdx.Util.File.read_lines) fs
+  | _ -> Fmt.failwith "only one of --prelude or --prelude-str shoud be used"
+
 let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     (`Silent_eval silent_eval) (`Syntax syntax) (`Silent silent)
     (`Verbose_findlib verbose_findlib) (`Prelude prelude)
@@ -247,27 +261,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     | Some re, None -> Re.execp re ""
     | Some re, Some s -> Re.execp re (snd s)
   in
-  let () =
-    match (prelude, prelude_str) with
-    | [], [] -> ()
-    | [], fs ->
-      List.iter (fun p ->
-          let env, f = Mdx.Prelude.env_and_file p in
-          let eval () = eval_raw ?root c ~line:0 [f] in
-          match env with
-          | None   -> eval ()
-          | Some e -> Mdx_top.in_env e eval
-        ) fs
-    | fs, [] ->
-      List.iter (fun p ->
-          let env, f = Mdx.Prelude.env_and_file p in
-          let eval () = eval_raw ?root c ~line:0 (Mdx.Util.File.read_lines f) in
-          match env with
-          | None   -> eval ()
-          | Some e -> Mdx_top.in_env e eval
-        ) fs
-    | _ -> Fmt.failwith "only one of --prelude or --prelude-str shoud be used"
-  in
+  eval_prelude ?root c prelude prelude_str;
 
   let test_block ~ppf ~temp_file t =
     let active = active t && Block.version_enabled t && not (Block.skip t) in
