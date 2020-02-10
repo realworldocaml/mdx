@@ -14,9 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Astring
 open Result
-module List = Compat.List
+open Compat
 
 module Header = struct
   type t = Shell | OCaml | Other of string
@@ -186,7 +185,7 @@ let require_from_line line =
   | None -> Ok Library.Set.empty
   | Some group ->
       let matched = Re.Group.get group 1 in
-      let libs_str = String.cuts ~sep:"," matched in
+      let libs_str = String.split_on_char ',' matched in
       Util.Result.List.map ~f:Library.from_string libs_str >>| fun libs ->
       Library.Set.of_list libs
 
@@ -257,9 +256,9 @@ let executable_contents b =
               match Toplevel.command t with
               | [] -> []
               | cs ->
-                let mk s = String.v ~len:(t.hpad+2) (fun _ -> ' ') ^ s in
-                line_directive (b.file, t.line) :: List.map mk cs)
-              tests)
+                let mk s = String.make (t.hpad+2) ' ' ^ s in
+                line_directive (b.file, t.line) :: List.map mk cs
+            ) tests )
   in
   if contents = [] || ends_by_semi_semi contents then contents
   else contents @ [ ";;" ]
