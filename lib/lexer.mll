@@ -34,7 +34,7 @@ rule text section = parse
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
         newline lexbuf;
-        `Block { Block.file; line; section; header; contents; labels; value }
+        `Block (Block.mk ~file ~line ~section ~header ~contents ~labels ~value)
         :: text section lexbuf }
   | ([^'\n']* as str) eol
       { newline lexbuf;
@@ -61,7 +61,7 @@ and cram_text section = parse
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
-        `Block { Block.file; line; section; header; contents; labels; value }
+        `Block (Block.mk ~file ~line ~section ~header ~contents ~labels ~value)
         :: (if requires_empty_line then `Text "" :: rest else rest) }
   | "<-- non-deterministic" ws* ([^'\n']* as choice) eol
       { let header = Some Block.Header.Shell in
@@ -77,7 +77,7 @@ and cram_text section = parse
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
-        `Block { Block.file; line; section; header; contents; labels; value }
+        `Block (Block.mk ~file ~line ~section ~header ~contents ~labels ~value)
         :: (if requires_empty_line then `Text "" :: rest else rest) }
   | ([^'\n']* as str) eol
       { newline lexbuf;

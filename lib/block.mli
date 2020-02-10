@@ -39,16 +39,18 @@ type value =
 type section = int * string
 (** The type for sections. *)
 
-type t = {
-  line : int;
-  file : string;
-  section : section option;
-  labels : Label.t list;
-  header : Header.t option;
-  contents : string list;
-  value : value;
-}
+type t
 (** The type for supported code blocks. *)
+
+val mk:
+  line:int
+  -> file:string
+  -> section:section option
+  -> labels:Label.t list
+  -> header:Header.t option
+  -> contents:string list
+  -> value:value
+  -> t
 
 val empty : t
 (** [empty] is the empty block. *)
@@ -75,6 +77,18 @@ val pp_line_directive : (string * int) Fmt.t
    filename and line number. *)
 
 (** {2 Accessors} *)
+
+val line: t -> int
+
+val filename : t -> string
+
+val section : t -> section option
+(** [section t] is [t]'s section. *)
+
+val contents : t -> string list
+
+val value : t -> value
+(** [value t] is [t]'s value. *)
 
 val mode : t -> [ `Non_det of Label.non_det | `Normal ]
 (** [mode t] is [t]'s mode. *)
@@ -114,12 +128,6 @@ val required_libraries : t -> (Library.Set.t, string) Result.result
 
 val skip : t -> bool
 (** [skip t] is true iff [skip] is in the labels of [t]. *)
-
-val value : t -> value
-(** [value t] is [t]'s value. *)
-
-val section : t -> section option
-(** [section t] is [t]'s section. *)
 
 val executable_contents : t -> string list
 (** [executable_contents t] is either [t]'s contents if [t] is a raw

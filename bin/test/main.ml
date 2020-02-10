@@ -85,7 +85,7 @@ let run_test ?root blacklist temp_file t =
 let root_dir ?root t =
   match (root, Mdx.Block.directory t) with
   | None, None -> None
-  | None, Some d -> Some (Filename.dirname t.file / d)
+  | None, Some d -> Some (Filename.dirname (Block.filename t) / d)
   | Some r, Some d -> Some (r / d)
   | Some d, None -> Some d
 
@@ -315,7 +315,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
         match kind with
         | OCaml ->
             assert (syntax <> Some Cram);
-            eval_raw t ?root c ~line:t.line t.contents;
+            eval_raw t ?root c ~line:(Block.line t) (Block.contents t);
             Block.pp ppf t
         | Cram { tests; pad } ->
             run_cram_tests ?syntax t ?root ppf temp_file pad tests
@@ -352,14 +352,14 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
 
 let report_error_in_block block msg =
   let kind =
-    match block.Block.value with
+    match Block.value block with
     | Raw | Error _ -> ""
     | OCaml -> "OCaml "
     | Cram _ -> "cram "
     | Toplevel _ -> "toplevel "
   in
-  Fmt.epr "Error in the %scode block in %s at line %d:@]\n%s\n" kind block.file
-    block.line msg
+  Fmt.epr "Error in the %scode block in %s at line %d:@]\n%s\n"
+    kind (Block.filename block) (Block.line block) msg
 
 let run setup non_deterministic silent_eval syntax silent verbose_findlib
     prelude prelude_str file section root force_output output : int =

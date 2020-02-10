@@ -65,6 +65,12 @@ let empty =
     value = Raw;
   }
 
+let line t = t.line
+let filename t = t.file
+let section t = t.section
+let contents t = t.contents
+let value t = t.value
+
 let dump_string ppf s = Fmt.pf ppf "%S" s
 
 let dump_section = Fmt.(Dump.pair int string)
@@ -204,10 +210,6 @@ let required_libraries = function
   | { value = Toplevel _; contents; _ } -> require_from_lines contents
   | { value = Raw | OCaml | Error _ | Cram _; _ } -> Ok Library.Set.empty
 
-let value t = t.value
-
-let section t = t.section
-
 let cram lines =
   let pad, tests = Cram.of_lines lines in
   Cram { pad; tests }
@@ -281,3 +283,6 @@ let version_enabled t =
           Label.Relation.compare op (Ocaml_version.compare curr_version v) 0
       | None -> true )
   | Error (`Msg e) -> Fmt.failwith "invalid OCaml version: %s" e
+
+let mk ~line ~file ~section ~labels ~header ~contents ~value =
+  { line; file; section; labels; header; contents; value }
