@@ -53,25 +53,65 @@ type raw = {
   value : value;
 }
 
+type include_block = {
+  line : int;
+  file : string;
+  section : section option;
+  labels : Label.t list;
+  header : Header.t option;
+  contents : string list;
+  value : value;
+  file_included : string;
+  part_included : string option;
+}
+
 type t =
   | Toplevel of raw
   | Shell of raw
-  | Include of raw
+  | Include of include_block
   | OCaml of raw
 
-let apply_raw f = function
-  | Toplevel r -> f r
-  | Shell r -> f r
-  | Include r -> f r
-  | OCaml r -> f r
+let line = function
+  | Toplevel t -> t.line
+  | Shell t -> t.line
+  | Include t -> t.line
+  | OCaml t -> t.line
 
-let line = apply_raw (fun t -> t.line)
-let filename = apply_raw (fun t -> t.file)
-let section = apply_raw (fun t -> t.section)
-let labels = apply_raw (fun t -> t.labels)
-let header = apply_raw (fun t -> t.header)
-let contents = apply_raw (fun t -> t.contents)
-let value = apply_raw (fun t -> t.value)
+let filename = function
+  | Toplevel t -> t.file
+  | Shell t -> t.file
+  | Include t -> t.file
+  | OCaml t -> t.file
+
+let section = function
+  | Toplevel t -> t.section
+  | Shell t -> t.section
+  | Include t -> t.section
+  | OCaml t -> t.section
+
+let labels = function
+  | Toplevel t -> t.labels
+  | Shell t -> t.labels
+  | Include t -> t.labels
+  | OCaml t -> t.labels
+
+let header = function
+  | Toplevel t -> t.header
+  | Shell t -> t.header
+  | Include t -> t.header
+  | OCaml t -> t.header
+
+let contents = function
+  | Toplevel t -> t.contents
+  | Shell t -> t.contents
+  | Include t -> t.contents
+  | OCaml t -> t.contents
+
+let value = function
+  | Toplevel t -> t.value
+  | Shell t -> t.value
+  | Include t -> t.value
+  | OCaml t -> t.value
 
 let dump_string ppf s = Fmt.pf ppf "%S" s
 
@@ -149,9 +189,9 @@ let get_label_or f ~default t =
 
 let directory t = get_label (function Dir x -> Some x | _ -> None) t
 
-let file t = get_label (function File x -> Some x | _ -> None) t
+let file = function Include t -> Some t.file_included | _ -> None
 
-let part t = get_label (function Part x -> Some x | _ -> None) t
+let part = function Include t -> t.part_included | _ -> None
 
 let version t =
   get_label (function Version (x, y) -> Some (x, y) | _ -> None) t
@@ -209,17 +249,16 @@ let require_from_lines lines =
   Util.Result.List.map ~f:require_from_line lines >>| fun libs ->
   List.fold_left Library.Set.union Library.Set.empty libs
 
-let required_libraries = function
-  | { value = Toplevel _; contents; _ } -> require_from_lines contents
-  | { value = Raw | OCaml | Error _ | Cram _; _ } -> Ok Library.Set.empty
-
-let required_libraries = apply_raw required_libraries
+let required_libraries t =
+  match value t with
+  | Toplevel _ -> require_from_lines (contents t)
+  | Raw | OCaml | Error _ | Cram _ -> Ok Library.Set.empty
 
 let cram lines =
   let pad, tests = Cram.of_lines lines in
   Cram { pad; tests }
 
-let guess_ocaml_kind b =
+let guess_ocaml_kind contents =
   let rec aux = function
     | [] -> `Code
     | h :: t ->
@@ -228,24 +267,28 @@ let guess_ocaml_kind b =
         else if String.length h > 1 && h.[0] = '#' then `Toplevel
         else `Code
   in
-  aux b.contents
+  aux contents
+
+let update_value t value =
+  match t with
+  | Toplevel b -> Toplevel { b with value }
+  | Shell b -> Shell { b with value }
+  | Include b -> Include { b with value }
+  | OCaml b -> OCaml { b with value }
 
 let eval t =
-  match t.header with
-  | Some Shell -> { t with value= cram t.contents }
-  | Some OCaml -> (
-      match guess_ocaml_kind t with
-      | `Code -> { t with value = OCaml }
-      | `Toplevel ->
-          let file = t.file and line = t.line in
-          { t with value= Toplevel (Toplevel.of_lines ~file ~line t.contents) } )
-  | _ -> t
-
-let eval = function
-  | Toplevel r -> Toplevel (eval r)
-  | Shell r -> Shell (eval r)
-  | Include r -> Include (eval r)
-  | OCaml r -> OCaml (eval r)
+  let value =
+    match header t with
+    | Some Shell -> cram (contents t)
+    | Some OCaml -> (
+        match guess_ocaml_kind (contents t) with
+        | `Code -> OCaml
+        | `Toplevel ->
+          let file = filename t and line = line t in
+          Toplevel (Toplevel.of_lines ~file ~line (contents t)) )
+    | _ -> value t
+  in
+  update_value t value
 
 let ends_by_semi_semi c =
    match List.rev c with
@@ -288,15 +331,31 @@ let version_enabled t =
       | None -> true )
   | Error (`Msg e) -> Fmt.failwith "invalid OCaml version: %s" e
 
+let get_label f (labels : Label.t list) =
+  let rec aux = function
+    | [] -> None
+    | h :: t ->
+      match f h with
+      | Some x -> Some x
+      | None -> aux t
+  in
+  aux labels
+
 let mk ~line ~file ~section ~labels ~header ~contents ~value =
   let raw = { line; file; section; labels; header; contents; value } in
-  if List.exists (function Label.File _ -> true | _ -> false) labels then
-    Include raw
-  else
+  match get_label (function File x -> Some x | _ -> None) labels with
+  | Some file_included ->
+    let part_included =
+      get_label (function Part x -> Some x | _ -> None) labels
+    in
+    Include
+      { line; file; section; labels; header; contents; value; file_included;
+        part_included }
+  | None ->
     match header with
     | Some Shell -> Shell raw
     | _ ->
-      match guess_ocaml_kind raw with
+      match guess_ocaml_kind contents with
       | `Toplevel -> Toplevel raw
       | `Code -> OCaml raw
 
