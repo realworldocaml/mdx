@@ -84,6 +84,18 @@
  (action (diff empty-lines/test-case.md.expected empty-lines.actual)))
 
 (rule
+ (target env-and-prelude.actual)
+ (deps (package mdx) (source_tree env-and-prelude))
+ (action
+  (with-stdout-to %{target}
+   (chdir env-and-prelude
+    (run ocaml-mdx test --output - --prelude default.ml --prelude a:a.ml --prelude b:b.ml test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff env-and-prelude/test-case.md env-and-prelude.actual)))
+
+(rule
  (target environment-variable.actual)
  (deps (package mdx) (source_tree environment-variable))
  (action
