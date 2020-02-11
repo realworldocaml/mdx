@@ -256,30 +256,20 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
 
   let test_block ~ppf ~temp_file t =
     let print_block () = Block.pp ?syntax ppf t in
-    match Block.is_active ?section t,
-          non_deterministic,
-          Block.file t,
-          Block.mode t,
-          Block.value t
-    with
+    if Block.is_active ?section t then
+    match non_deterministic, Block.file t, Block.mode t, Block.value t with
     (* Print errors *)
-    | _, _, _, _, Error _
-    (* The command is not active, skip it. *)
-    | false, _, _, _, _
-    (* the command is active but non-deterministic so skip everything *)
-    | true, false, _, `Non_det Nd_command, _ ->
-        print_block ()
-    (* the command is active but it's output is
-       non-deterministic; run it but keep the old output. *)
-    | true, false, _, `Non_det Nd_output, Cram { tests; _ } ->
-        print_block ();
-        let blacklist = Block.unset_variables t in
-        List.iter
-          (fun t ->
-            let (_ : int) = run_test ?root blacklist temp_file t in
-            ())
-          tests
-    | true, false, _, `Non_det Nd_output, Toplevel tests ->
+    | _, _, _, Error _
+    (* the command is non-deterministic so skip everything *)
+    | false, _, `Non_det Nd_command, _ -> print_block ()
+    (* its output is non-deterministic; run it but keep the old output. *)
+    | false, _, `Non_det Nd_output, Cram { tests; _ } ->
+      print_block ();
+      let blacklist = Block.unset_variables t in
+      List.iter (fun t ->
+          let _: int = run_test ?root blacklist temp_file t in ()
+        ) tests
+    | false, _, `Non_det Nd_output, Toplevel tests ->
       assert (syntax <> Some Cram);
       print_block ();
       List.iter (fun test ->
@@ -290,7 +280,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
             if Output.equal test.output output then ()
             else err_eval ~cmd:test.command e
         ) tests
-    | true, _, Some ext_file, _, kind ->
+    | _, Some ext_file, _, kind ->
         (match kind with
         | OCaml | Toplevel _ ->
             assert (syntax <> Some Cram);
@@ -301,7 +291,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
           let new_content = (read_part ext_file (Block.part t)) in
           update_block_content ppf t new_content
         | _ -> print_block ())
-    | true, _, None, _, kind ->
+    | _, None, _, kind ->
       (match kind with
       | OCaml ->
         assert (syntax <> Some Cram);
@@ -313,6 +303,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
         assert (syntax <> Some Cram);
         run_toplevel_tests ?root c ppf tests t
       | Raw | _ -> print_block ())
+    else print_block ()
   in
   let gen_corrected file_contents items =
     let temp_file = Filename.temp_file "ocaml-mdx" ".output" in
