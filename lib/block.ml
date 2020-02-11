@@ -43,7 +43,7 @@ type value =
   | Cram of cram_value
   | Toplevel of Toplevel.t list
 
-type t = {
+type raw = {
   line : int;
   file : string;
   section : section option;
@@ -53,11 +53,25 @@ type t = {
   value : value;
 }
 
-let line t = t.line
-let filename t = t.file
-let section t = t.section
-let contents t = t.contents
-let value t = t.value
+type t =
+  | Toplevel of raw
+  | Shell of raw
+  | Include of raw
+  | OCaml of raw
+
+let apply_raw f = function
+  | Toplevel r -> f r
+  | Shell r -> f r
+  | Include r -> f r
+  | OCaml r -> f r
+
+let line = apply_raw (fun t -> t.line)
+let filename = apply_raw (fun t -> t.file)
+let section = apply_raw (fun t -> t.section)
+let labels = apply_raw (fun t -> t.labels)
+let header = apply_raw (fun t -> t.header)
+let contents = apply_raw (fun t -> t.contents)
+let value = apply_raw (fun t -> t.value)
 
 let dump_string ppf s = Fmt.pf ppf "%S" s
 
@@ -74,18 +88,18 @@ let dump_value ppf = function
   | Toplevel tests ->
       Fmt.pf ppf "@[Toplevel %a@]" Fmt.(Dump.list Toplevel.dump) tests
 
-let dump ppf { file; line; section; labels; header; contents; value } =
+let dump ppf t =
   Fmt.pf ppf
     "{@[file: %s;@ line: %d;@ section: %a;@ labels: %a;@ header: %a;@\n\
-    \        contents: %a;@ value: %a@]}" file line
+    \        contents: %a;@ value: %a@]}" (filename t) (line t)
     Fmt.(Dump.option dump_section)
-    section
+    (section t)
     Fmt.Dump.(list Label.pp)
-    labels
+    (labels t)
     Fmt.(Dump.option Header.pp)
-    header
+    (header t)
     Fmt.(Dump.list dump_string)
-    contents dump_value value
+    (contents t) dump_value (value t)
 
 let pp_lines syntax =
   let pp =
@@ -93,7 +107,7 @@ let pp_lines syntax =
   in
   Fmt.(list ~sep:(unit "\n") pp)
 
-let pp_contents ?syntax ppf t = Fmt.pf ppf "%a\n" (pp_lines syntax) t.contents
+let pp_contents ?syntax ppf t = Fmt.pf ppf "%a\n" (pp_lines syntax) (contents t)
 
 let pp_footer ?syntax ppf () =
   match syntax with Some Syntax.Cram -> () | _ -> Fmt.string ppf "```\n"
@@ -105,7 +119,7 @@ let pp_labels ppf = function
 let pp_header ?syntax ppf t =
   match syntax with
   | Some Syntax.Cram -> (
-      match t.labels with
+      match labels t with
       | [] -> ()
       | [Non_det None] -> Fmt.pf ppf "<-- non-deterministic\n"
       | [Non_det (Some Nd_output)] ->
@@ -114,10 +128,11 @@ let pp_header ?syntax ppf t =
         Fmt.pf ppf "<-- non-deterministic command\n"
       | _ -> failwith "cannot happen: checked during parsing" )
   | _ ->
-    Fmt.pf ppf "```%a%a\n" Fmt.(option Header.pp) t.header pp_labels t.labels
+    Fmt.pf ppf "```%a%a\n" Fmt.(option Header.pp) (header t) pp_labels
+      (labels t)
 
 let pp_error ppf b =
-  match b.value with
+  match value b with
   | Error e -> List.iter (fun e -> Fmt.pf ppf ">> @[<h>%a@]@." Fmt.words e) e
   | _ -> ()
 
@@ -127,10 +142,10 @@ let pp ?syntax ppf b =
   pp_contents ?syntax ppf b;
   pp_footer ?syntax ppf ()
 
-let get_label f t = Util.List.find_map f t.labels
+let get_label f t = Util.List.find_map f (labels t)
 
 let get_label_or f ~default t =
-  Util.Option.value ~default (Util.List.find_map f t.labels)
+  Util.Option.value ~default (Util.List.find_map f (labels t))
 
 let directory t = get_label (function Dir x -> Some x | _ -> None) t
 
@@ -144,7 +159,7 @@ let version t =
 let source_trees t =
   List.filter_map
     (function Label.Source_tree x -> Some x | _ -> None)
-    t.labels
+    (labels t)
 
 let mode t =
   get_label_or
@@ -154,7 +169,7 @@ let mode t =
       | _ -> None)
     ~default:`Normal t
 
-let skip t = List.exists (function Label.Skip -> true | _ -> false) t.labels
+let skip t = List.exists (function Label.Skip -> true | _ -> false) (labels t)
 
 let environment t =
   get_label_or
@@ -164,15 +179,15 @@ let environment t =
 let set_variables t =
   List.filter_map
     (function Label.Set (v, x) -> Some (v, x) | _ -> None)
-    t.labels
+    (labels t)
 
 let unset_variables t =
-  List.filter_map (function Label.Unset x -> Some x | _ -> None) t.labels
+  List.filter_map (function Label.Unset x -> Some x | _ -> None) (labels t)
 
 let explicit_required_packages t =
   List.filter_map
     (function Label.Require_package x -> Some x | _ -> None)
-    t.labels
+    (labels t)
 
 let require_re =
   let open Re in
@@ -197,6 +212,8 @@ let require_from_lines lines =
 let required_libraries = function
   | { value = Toplevel _; contents; _ } -> require_from_lines contents
   | { value = Raw | OCaml | Error _ | Cram _; _ } -> Ok Library.Set.empty
+
+let required_libraries = apply_raw required_libraries
 
 let cram lines =
   let pad, tests = Cram.of_lines lines in
@@ -224,8 +241,14 @@ let eval t =
           { t with value= Toplevel (Toplevel.of_lines ~file ~line t.contents) } )
   | _ -> t
 
+let eval = function
+  | Toplevel r -> Toplevel (eval r)
+  | Shell r -> Shell (eval r)
+  | Include r -> Include (eval r)
+  | OCaml r -> OCaml (eval r)
+
 let ends_by_semi_semi c =
-  match List.rev c with
+   match List.rev c with
   | h :: _ ->
       let len = String.length h in
       len > 2 && h.[len - 1] = ';' && h.[len - 2] = ';'
@@ -236,20 +259,13 @@ let pp_line_directive ppf (file, line) = Fmt.pf ppf "#%d %S" line file
 let line_directive = Fmt.to_to_string pp_line_directive
 
 let executable_contents b =
-  let whole_content =
-    match b.header with
-    | Some OCaml -> (
-        match guess_ocaml_kind b with
-        | `Code -> true
-        | `Toplevel -> false )
-    | _ -> false
-  in
   let contents =
-    if whole_content then b.contents
-    else
-      match b.value with
+    match b with
+    | OCaml _ -> contents b
+    | _ ->
+      match value b with
       | Error _ | Raw | Cram _ -> []
-      | OCaml -> line_directive (b.file, b.line) :: b.contents
+      | OCaml -> line_directive (filename b, line b) :: (contents b)
       | Toplevel tests ->
           List.flatten (
             List.map (fun t ->
@@ -257,7 +273,7 @@ let executable_contents b =
               | [] -> []
               | cs ->
                 let mk s = String.make (t.hpad+2) ' ' ^ s in
-                line_directive (b.file, t.line) :: List.map mk cs
+                line_directive (filename b, t.line) :: List.map mk cs
             ) tests )
   in
   if contents = [] || ends_by_semi_semi contents then contents
@@ -273,7 +289,16 @@ let version_enabled t =
   | Error (`Msg e) -> Fmt.failwith "invalid OCaml version: %s" e
 
 let mk ~line ~file ~section ~labels ~header ~contents ~value =
-  { line; file; section; labels; header; contents; value }
+  let raw = { line; file; section; labels; header; contents; value } in
+  if List.exists (function Label.File _ -> true | _ -> false) labels then
+    Include raw
+  else
+    match header with
+    | Some Shell -> Shell raw
+    | _ ->
+      match guess_ocaml_kind raw with
+      | `Toplevel -> Toplevel raw
+      | `Code -> OCaml raw
 
 let is_active ?section:s t =
   let active =
