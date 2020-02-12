@@ -340,9 +340,10 @@ let get_label f (labels : Label.t list) =
 
 let mk ~line ~file ~section ~labels ~header ~contents ~value =
   let raw = { line; file; section; labels; header; contents; value } in
+  let part = get_label (function Part x -> Some x | _ -> None) labels in
   match get_label (function File x -> Some x | _ -> None) labels with
   | Some file_included -> (
-      match get_label (function Part x -> Some x | _ -> None) labels with
+      match part with
       | Some part -> (
           match header with
           | Some OCaml ->
@@ -357,12 +358,15 @@ let mk ~line ~file ~section ~labels ~header ~contents ~value =
           { line; file; section; labels; header; contents; value; file_included;
             part_included= None } )
   | None ->
-    match header with
-    | Some Shell -> Shell raw
-    | _ ->
-      match guess_ocaml_kind contents with
-      | `Toplevel -> Toplevel raw
-      | `Code -> OCaml raw
+    match part with
+    | Some _ -> Fmt.failwith "Part label requires a File label."
+    | None ->
+      match header with
+      | Some Shell -> Shell raw
+      | _ ->
+        match guess_ocaml_kind contents with
+        | `Toplevel -> Toplevel raw
+        | `Code -> OCaml raw
 
 let is_active ?section:s t =
   let active =
