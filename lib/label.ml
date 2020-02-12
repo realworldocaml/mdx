@@ -106,30 +106,29 @@ let split_prefix ~prefix s =
   let len_prefix = String.length prefix in
   String.sub s len_prefix (String.length s - len_prefix)
 
+let non_eq_op ~label =
+  Util.Result.errorf "Label `%s` requires assignment using the `=` operator." label
+
+let invalid_value ~label ~allowed_values value =
+  Util.Result.errorf
+      "%S is not a valid value for label `%s`. Valid values are %s."
+      value label (Util.String.english_conjonction allowed_values)
+
 let doesnt_accept_value ~label ~value res =
   match value with
-  | Some _ ->
-    Error (`Msg (Format.sprintf "Label `%s` does not allow a value." label))
+  | Some _ -> Util.Result.errorf "Label `%s` does not allow a value." label
   | None -> Ok res
 
 let requires_value ~label ~value f =
   match value with
   | Some (op, v) -> f op v
-  | None -> Error (`Msg (Format.sprintf "Label `%s` requires a value." label))
-
-let requires_eq ~label ~op ~value f =
-  match op with
-  | Relation.Eq -> Ok (f value)
-  | _ ->
-    let msg =
-      Format.sprintf
-        "Label `%s` requires assignment using the `=` operator." label
-    in
-    Error (`Msg msg)
+  | None -> Util.Result.errorf "Label `%s` requires a value." label
 
 let requires_eq_value ~label ~value f =
   requires_value ~label ~value (fun op value ->
-      requires_eq ~label ~op ~value f)
+      match op with
+      | Relation.Eq -> Ok (f value)
+      | _ -> non_eq_op ~label)
 
 let interpret label value =
   match label with
@@ -142,27 +141,16 @@ let interpret label value =
           match Ocaml_version.of_string v with
           | Ok v -> Ok (Version (op, v))
           | Error (`Msg e) ->
-            let msg = Format.sprintf "Invalid `version` label value: %s." e in
-            Error (`Msg msg) ) )
+            Util.Result.errorf "Invalid `version` label value: %s." e))
   | "non-deterministic" -> (
       match value with
+      | None -> Ok (Non_det `Output)
       | Some (Relation.Eq, "output") -> Ok (Non_det `Output)
       | Some (Relation.Eq, "command") -> Ok (Non_det `Command)
       | Some (Relation.Eq, v) ->
-        let msg =
-          Format.sprintf
-            "%S is not a valid value for label `%s`. Valid values are <none>,\
-            \ %S and %S."
-            v label "command" "output"
-        in
-        Error (`Msg msg)
-      | Some _ ->
-        let msg =
-          Format.sprintf
-            "label `%s` requires assignment using the `=` operator." label
-        in
-        Error (`Msg msg)
-      | None -> Ok (Non_det `Output) )
+        let allowed_values = ["<none>"; {|"command"|}; {|"output"|}] in
+        invalid_value ~label ~allowed_values v
+      | Some _ -> non_eq_op ~label)
   | "dir" -> requires_eq_value ~label ~value (fun x -> Dir x)
   | "source-tree" -> requires_eq_value ~label ~value (fun x -> Source_tree x)
   | "file" -> requires_eq_value ~label ~value (fun x -> File x)

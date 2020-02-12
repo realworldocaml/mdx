@@ -23,6 +23,8 @@ module Result : sig
     val (>>|) : ('a, 'err) result -> ('a -> 'b) -> ('b, 'err) result
   end
 
+  val errorf : ('a, unit, string, ('b, [> `Msg of string ]) result) format4 -> 'a
+
   module List : sig
     val fold :
       f: ('acc -> 'a -> ('acc, 'err) result) ->
@@ -49,4 +51,10 @@ end
 
 module List : sig
   val find_map : ('a -> 'b option) -> 'a list -> 'b option
+end
+
+module String : sig
+  val english_conjonction : string list -> string
+  (** [english_conjonction ["a"; "b"; "c"]] returns ["a, b and c"].
+      @raise Invalid_argument when called on the empty list. *)
 end

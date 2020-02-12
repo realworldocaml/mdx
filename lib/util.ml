@@ -29,6 +29,9 @@ module Result = struct
       | Error _ as e -> e
   end
 
+  let errorf fmt =
+    Format.ksprintf (fun s -> Error (`Msg s)) fmt
+
   module List = struct
     open Infix
 
@@ -78,3 +81,17 @@ module List = struct
     aux l
 end
 
+module String = struct
+  let english_concat ~last_sep words =
+    let pf = Printf.sprintf in
+    let rec aux acc = function
+      | [] -> acc
+      | [last] -> pf "%s %s %s" acc last_sep last
+      | hd::tl -> aux (pf "%s, %s" acc hd) tl
+    in
+    match words with
+    | [] -> invalid_arg "Util.String.english_concat"
+    | hd::tl -> aux hd tl
+
+  let english_conjonction words = english_concat ~last_sep:"and" words
+end
