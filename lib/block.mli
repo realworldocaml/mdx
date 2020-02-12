@@ -39,8 +39,37 @@ type value =
 type section = int * string
 (** The type for sections. *)
 
-type t
 (** The type for supported code blocks. *)
+type raw = {
+  line    : int;
+  file    : string;
+  section : section option;
+  labels  : Label.t list;
+  header  : Header.t option;
+  contents: string list;
+  value   : value;
+}
+
+type include_block = {
+  line : int;
+  file : string;
+  section : section option;
+  labels : Label.t list;
+  header : Header.t option;
+  contents : string list;
+  value : value;
+  file_included : string;
+  (** [file_included] is the name of the file to synchronize with. *)
+  part_included : string option;
+  (** [part_included] is the part of the file to synchronize with.
+      If lines is not specified synchronize the whole file. *)
+}
+
+type t =
+  | Toplevel of raw
+  | Shell of raw
+  | Include of include_block
+  | OCaml of raw
 
 val mk:
   line:int
@@ -99,10 +128,6 @@ val source_trees : t -> string list
 
 val file : t -> string option
 (** [file t] is the name of the file to synchronize [t] with. *)
-
-val part : t -> string option
-(** [part t] is the part of the file to synchronize [t] with.
-    If lines is not specified synchronize the whole file. *)
 
 val environment : t -> string
 (** [environment t] is the name given to the environment where [t] tests

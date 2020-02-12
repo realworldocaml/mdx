@@ -221,11 +221,11 @@ let update_block_content ppf t content =
   Output.pp ppf (`Output content);
   Block.pp_footer ppf ()
 
-let update_file_or_block ?root ppf md_file ml_file block =
+let update_file_or_block ?root ppf md_file ml_file block part =
   let root = root_dir ?root ~block () in
   let dir = Filename.dirname md_file in
   let ml_file = resolve_root ml_file dir root in
-  update_block_content ppf block (read_part ml_file (Block.part block))
+  update_block_content ppf block (read_part ml_file part)
 
 exception Test_block_failure of Block.t * string
 
@@ -257,52 +257,53 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
   let test_block ~ppf ~temp_file t =
     let print_block () = Block.pp ?syntax ppf t in
     if Block.is_active ?section t then
-    match non_deterministic, Block.file t, Block.mode t, Block.value t with
-    (* Print errors *)
-    | _, _, _, Error _
-    (* the command is non-deterministic so skip everything *)
-    | false, _, `Non_det Nd_command, _ -> print_block ()
-    (* its output is non-deterministic; run it but keep the old output. *)
-    | false, _, `Non_det Nd_output, Cram { tests; _ } ->
-      print_block ();
-      let blacklist = Block.unset_variables t in
-      List.iter (fun t ->
-          let _: int = run_test ?root blacklist temp_file t in ()
-        ) tests
-    | false, _, `Non_det Nd_output, Toplevel tests ->
-      assert (syntax <> Some Cram);
-      print_block ();
-      List.iter (fun test ->
-          match eval_test ~block:t ?root c test with
-          | Ok _    -> ()
-          | Error e ->
-            let output = List.map (fun l -> `Output l) e in
-            if Output.equal test.output output then ()
-            else err_eval ~cmd:test.command e
-        ) tests
-    | _, Some ext_file, _, kind ->
-        (match kind with
-        | OCaml | Toplevel _ ->
+      match t with
+      | Include b -> (
+          match b.value with
+          | OCaml | Toplevel _ ->
             assert (syntax <> Some Cram);
-            update_file_or_block ?root ppf file ext_file t
-        | _ when Util.Option.is_some (Block.part t) ->
-            Fmt.failwith "Parts are not supported for non-OCaml code blocks."
-        | Cram _ | Raw ->
-          let new_content = (read_part ext_file (Block.part t)) in
-          update_block_content ppf t new_content
-        | _ -> print_block ())
-    | _, None, _, kind ->
-      (match kind with
-      | OCaml ->
-        assert (syntax <> Some Cram);
-        eval_raw ~block:t ?root c ~line:(Block.line t) (Block.contents t);
-        Block.pp ppf t
-      | Cram { tests; pad } ->
-        run_cram_tests ?syntax t ?root ppf temp_file pad tests
-      | Toplevel tests ->
-        assert (syntax <> Some Cram);
-        run_toplevel_tests ?root c ppf tests t
-      | Raw | _ -> print_block ())
+            update_file_or_block ?root ppf file b.file_included t
+              b.part_included
+          | Cram _ | Raw ->
+            let new_content = (read_part b.file_included b.part_included) in
+            update_block_content ppf t new_content
+          | Error _ -> print_block () )
+      | _ ->
+        match non_deterministic, Block.mode t, Block.value t with
+        (* Print errors *)
+        | _, _, Error _
+        (* the command is non-deterministic so skip everything *)
+        | false, `Non_det Nd_command, _ -> print_block ()
+        (* its output is non-deterministic; run it but keep the old output. *)
+        | false, `Non_det Nd_output, Cram { tests; _ } ->
+          print_block ();
+          let blacklist = Block.unset_variables t in
+          List.iter (fun t ->
+              let _: int = run_test ?root blacklist temp_file t in ()
+            ) tests
+        | false, `Non_det Nd_output, Toplevel tests ->
+          assert (syntax <> Some Cram);
+          print_block ();
+          List.iter (fun test ->
+              match eval_test ~block:t ?root c test with
+              | Ok _    -> ()
+              | Error e ->
+                let output = List.map (fun l -> `Output l) e in
+                if Output.equal test.output output then ()
+                else err_eval ~cmd:test.command e
+            ) tests
+        | _, _, kind ->
+          (match kind with
+           | OCaml ->
+             assert (syntax <> Some Cram);
+             eval_raw ~block:t ?root c ~line:(Block.line t) (Block.contents t);
+             Block.pp ppf t
+           | Cram { tests; pad } ->
+             run_cram_tests ?syntax t ?root ppf temp_file pad tests
+           | Toplevel tests ->
+             assert (syntax <> Some Cram);
+             run_toplevel_tests ?root c ppf tests t
+           | Raw | _ -> print_block ())
     else print_block ()
   in
   let gen_corrected file_contents items =

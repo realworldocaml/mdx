@@ -191,10 +191,7 @@ let directory t = get_label (function Dir x -> Some x | _ -> None) t
 
 let file = function Include t -> Some t.file_included | _ -> None
 
-let part = function Include t -> t.part_included | _ -> None
-
-let version t =
-  get_label (function Version (x, y) -> Some (x, y) | _ -> None) t
+let version t = get_label (function Version (x, y) -> Some (x, y) | _ -> None) t
 
 let source_trees t =
   List.filter_map
@@ -344,13 +341,21 @@ let get_label f (labels : Label.t list) =
 let mk ~line ~file ~section ~labels ~header ~contents ~value =
   let raw = { line; file; section; labels; header; contents; value } in
   match get_label (function File x -> Some x | _ -> None) labels with
-  | Some file_included ->
-    let part_included =
-      get_label (function Part x -> Some x | _ -> None) labels
-    in
-    Include
-      { line; file; section; labels; header; contents; value; file_included;
-        part_included }
+  | Some file_included -> (
+      match get_label (function Part x -> Some x | _ -> None) labels with
+      | Some part -> (
+          match header with
+          | Some OCaml ->
+            Include
+              { line; file; section; labels; header; contents; value;
+                file_included; part_included= Some part }
+          | _ ->
+            Fmt.failwith
+              "Parts are not supported for non-OCaml code blocks." )
+      | None ->
+        Include
+          { line; file; section; labels; header; contents; value; file_included;
+            part_included= None } )
   | None ->
     match header with
     | Some Shell -> Shell raw
