@@ -184,8 +184,10 @@ let of_string s =
     | Ok _, Error msg -> Error [msg]
     | Error msgs, Error msg -> Error (msg :: msgs)
   in
-  let not_empty = function "" -> false | _ -> true in
-  let split = String.split_on_char ',' s |> List.filter not_empty in
-  match List.fold_left f (Ok []) split with
-  | Ok labels -> Ok (List.rev labels)
-  | Error msgs -> Error (List.rev msgs)
+  match s with
+  | "" -> Ok []
+  | s ->
+    let split = String.split_on_char ',' s in
+    match List.fold_left f (Ok []) split with
+    | Ok labels -> Ok (List.rev labels)
+    | Error msgs -> Error (List.rev msgs)
