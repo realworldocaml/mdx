@@ -119,25 +119,10 @@ let pp ?syntax ppf b =
   pp_contents ?syntax ppf b;
   pp_footer ?syntax ppf ()
 
-let get_label f t =
-  let rec aux = function
-    | [] -> None
-    | h :: t ->
-      match f h with
-      | Some x -> Some x
-      | None -> aux t
-  in
-  aux t.labels
+let get_label f t = Util.List.find_map f t.labels
 
 let get_label_or f ~default t =
-  let rec aux = function
-    | [] -> default
-    | h :: t ->
-      match f h with
-      | Some x -> x
-      | None -> aux t
-  in
-  aux t.labels
+  Util.Option.value ~default (Util.List.find_map f t.labels)
 
 let directory t = get_label (function Dir x -> Some x | _ -> None) t
 

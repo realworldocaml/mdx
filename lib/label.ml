@@ -43,7 +43,7 @@ module Relation = struct
     | "<=" -> Le
     | "<" -> Lt
     | "=" -> Eq
-    | _ -> raise Not_found (* can not happen, filtered by the regexp *)
+    | _ -> assert false (* can not happen, filtered by the regexp *)
 
   let re =
     let open Re in
@@ -133,12 +133,10 @@ let requires_eq_value ~label ~value f =
 
 let interpret label value =
   match label with
-  (* flags: labels without value *)
   | "skip" ->
     doesnt_accept_value ~label ~value Skip
   | v when is_prefix ~prefix:"unset-" v ->
     doesnt_accept_value ~label ~value (Unset (split_prefix ~prefix:"unset-" v))
-  (* labels requiring a value and any comparison operator *)
   | "version" -> (
       requires_value ~label ~value (fun op v ->
           match Ocaml_version.of_string v with
@@ -146,7 +144,6 @@ let interpret label value =
           | Error (`Msg e) ->
             let msg = Format.sprintf "Invalid `version` label value: %s." e in
             Error (`Msg msg) ) )
-  (* non-deterministic accepts any value *)
   | "non-deterministic" -> (
       match value with
       | Some (op, value) ->
@@ -162,7 +159,6 @@ let interpret label value =
               in
               Error (`Msg msg) )
       | None -> Ok (Non_det `Output) )
-  (* labels requiring a value and '=' operator *)
   | "dir" -> requires_eq_value ~label ~value (fun x -> Dir x)
   | "source-tree" -> requires_eq_value ~label ~value (fun x -> Source_tree x)
   | "file" -> requires_eq_value ~label ~value (fun x -> File x)
