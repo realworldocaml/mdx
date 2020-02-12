@@ -124,14 +124,11 @@ let requires_value ~label ~value f =
   | Some (op, v) -> f op v
   | None -> Util.Result.errorf "Label `%s` requires a value." label
 
-let requires_eq ~label ~op ~value f =
-  match op with
-  | Relation.Eq -> Ok (f value)
-  | _ -> non_eq_op ~label
-
 let requires_eq_value ~label ~value f =
   requires_value ~label ~value (fun op value ->
-      requires_eq ~label ~op ~value f)
+      match op with
+      | Relation.Eq -> Ok (f value)
+      | _ -> non_eq_op ~label)
 
 let interpret label value =
   match label with
