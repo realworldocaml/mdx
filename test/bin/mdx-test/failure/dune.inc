@@ -24,6 +24,30 @@
  (action (diff in-toplevel/test-case.md.expected in-toplevel.actual)))
 
 (rule
+ (target invalid-label.actual)
+ (deps (package mdx) (source_tree invalid-label))
+ (action
+  (with-outputs-to %{target}
+   (chdir invalid-label
+    (system "! ocaml-mdx test test-case.md")))))
+
+(alias
+ (name runtest)
+ (action (diff invalid-label/test-case.md.expected invalid-label.actual)))
+
+(rule
+ (target invalid-label-value.actual)
+ (deps (package mdx) (source_tree invalid-label-value))
+ (action
+  (with-outputs-to %{target}
+   (chdir invalid-label-value
+    (system "! ocaml-mdx test test-case.md")))))
+
+(alias
+ (name runtest)
+ (action (diff invalid-label-value/test-case.md.expected invalid-label-value.actual)))
+
+(rule
  (target ml-file-not-found.actual)
  (deps (package mdx) (source_tree ml-file-not-found))
  (action

@@ -60,4 +60,21 @@ module Option = struct
   let is_some = function
   | Some _ -> true
   | None -> false
+
+  let value ~default = function
+    | Some v -> v
+    | None -> default
 end
+
+module List = struct
+  let find_map f l =
+    let rec aux = function
+      | [] -> None
+      | h :: t ->
+        match f h with
+        | Some x -> Some x
+        | None -> aux t
+    in
+    aux l
+end
+

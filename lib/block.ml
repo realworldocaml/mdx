@@ -17,6 +17,8 @@
 open Astring
 open Result
 
+module List = Compat.List
+
 type section = int * string
 
 type cram_value = { pad: int; tests: Cram.t list }
@@ -32,8 +34,7 @@ type t = {
   line    : int;
   file    : string;
   section : section option;
-  labels  :
-    (string * ([`Eq | `Neq | `Le | `Lt | `Ge | `Gt] * string) option) list;
+  labels  : Label.t list;
   header  : string option;
   contents: string list;
   value   : value;
@@ -62,24 +63,13 @@ let dump_value ppf = function
   | Toplevel tests ->
     Fmt.pf ppf "@[Toplevel %a@]" Fmt.(Dump.list Toplevel.dump) tests
 
-let dump_relation ppf = function
-  | `Eq -> Fmt.string ppf "="
-  | `Neq -> Fmt.string ppf "<>"
-  | `Gt -> Fmt.string ppf ">"
-  | `Ge -> Fmt.string ppf ">="
-  | `Lt -> Fmt.string ppf "<"
-  | `Le -> Fmt.string ppf "<="
-
-let dump_labels =
-  Fmt.(Dump.(list (pair dump_string (option (pair dump_relation dump_string)))))
-
 let dump ppf { file; line; section; labels; header; contents; value } =
   Fmt.pf ppf
     "{@[file: %s;@ line: %d;@ section: %a;@ labels: %a;@ header: %a;@
         contents: %a;@ value: %a@]}"
     file line
     Fmt.(Dump.option dump_section) section
-    dump_labels labels
+    Fmt.Dump.(list Label.pp) labels
     Fmt.(Dump.option string) header
     Fmt.(Dump.list dump_string) contents
     dump_value value
@@ -97,21 +87,9 @@ let pp_footer ?syntax ppf () =
   | Some Syntax.Cram -> ()
   | _ -> Fmt.string ppf "```\n"
 
-let pp_cmp ppf = function
-  | `Eq -> Fmt.pf ppf "="
-  | `Neq -> Fmt.pf ppf "<>"
-  | `Lt -> Fmt.pf ppf "<"
-  | `Le -> Fmt.pf ppf "<="
-  | `Gt -> Fmt.pf ppf ">"
-  | `Ge -> Fmt.pf ppf ">="
-
-let pp_label ppf (k, v) = match v with
-  | None   -> Fmt.string ppf k
-  | Some (o, v) -> Fmt.pf ppf "%s%a%s" k pp_cmp o v
-
 let pp_labels ppf = function
   | [] -> ()
-  | l  -> Fmt.pf ppf " %a" Fmt.(list ~sep:(unit ",") pp_label) l
+  | l  -> Fmt.pf ppf " %a" Fmt.(list ~sep:(unit ",") Label.pp) l
 
 let pp_header ?syntax ppf t =
   match syntax with
@@ -119,8 +97,8 @@ let pp_header ?syntax ppf t =
     assert (t.header = Syntax.cram_default_header);
     begin match t.labels with
     | [] -> ()
-    | ["non-deterministic", Some (`Eq, choice)] ->
-      Fmt.pf ppf "<-- non-deterministic %s\n" choice
+    | [Non_det `Output] -> Fmt.pf ppf "<-- non-deterministic output\n"
+    | [Non_det `Command] -> Fmt.pf ppf "<-- non-deterministic command\n"
     | _ ->
       let err =
         Fmt.strf "Block.pp_header: [ %a ]" pp_labels t.labels
@@ -141,165 +119,42 @@ let pp ?syntax ppf b =
   pp_contents ?syntax ppf b;
   pp_footer ?syntax ppf ()
 
-let labels = [
-  `Label "dir"              , [`Any];
-  `Label "source-tree"      , [`Any];
-  `Label "file"             , [`Any];
-  `Label "part"             , [`Any];
-  `Label "env"              , [`Any];
-  `Label "skip"             , [`None];
-  `Label "non-deterministic", [`None; `Some "command"; `Some "output"];
-  `Label "version"          , [`Any];
-  `Label "require-package"  , [`Any];
-  `Prefix "set-"            , [`Any];
-  `Prefix "unset-"          , [`None];
-]
+let get_label f t = Util.List.find_map f t.labels
 
-let pp_value ppf = function
-  | `Any   -> Fmt.string ppf "*"
-  | `None   -> Fmt.string ppf "<none>"
-  | `Some v -> dump_string ppf v
+let get_label_or f ~default t =
+  Util.Option.value ~default (Util.List.find_map f t.labels)
 
-let match_label l p = match p, l with
-  | `Any   , Some _ -> true
-  | `None  , None   -> true
-  | `Some p, Some (_, l) -> String.equal p l
-  | _ -> false
+let directory t = get_label (function Dir x -> Some x | _ -> None) t
 
-let pp_v ppf = function
-  | None   -> Fmt.string ppf "<none>"
-  | Some (_, v) -> Fmt.string ppf v
+let file t = get_label (function File x -> Some x | _ -> None) t
 
-let rec pp_list pp ppf = function
-  | []    -> ()
-  | [x]   -> pp ppf x
-  | [x;y] -> Fmt.pf ppf "%a and %a" pp x pp y
-  | h::t  -> Fmt.pf ppf "%a, %a" pp h (pp_list pp) t
+let part t = get_label (function Part x -> Some x | _ -> None) t
 
-let check_labels t =
-  List.fold_left (fun acc (k, v) ->
-      try
-        let f = function
-        | `Label s, _ -> s = k
-        | `Prefix s, _ -> String.equal (String.with_range ~len:(String.length s) k) s in
-        let _, vs = List.find f labels in
-        if List.exists (match_label v) vs then acc
-        else
-          Fmt.strf "%a is not a valid value for label %S. \
-                    Valid values are %a."
-            pp_v v k (pp_list pp_value) vs
-          :: acc
-      with Not_found ->
-        let f = function
-        | `Label _, _ -> true
-        | _ -> false in
-        let g = function `Label s, _ | `Prefix s, _ -> s in
-        let ls, ps = List.partition f labels in
-        Fmt.strf "%S is not a valid label or prefix. \
-                  Valid labels are %a and valid prefixes are %a."
-          k (pp_list dump_string) (List.map g ls)
-          (pp_list dump_string) (List.map g ps)
-        :: acc
-    ) [] t.labels
-  |> function
-  | [] -> Result.Ok ()
-  | es -> Result.Error es
-
-let get_label t label =
-  try Some (List.assoc label t.labels)
-  with Not_found -> None
-
-let get_labels t label =
-  List.fold_left (fun acc (k, v) ->
-      if String.equal k label then match v with
-        | None   -> assert false
-        | Some v -> v ::acc
-      else acc
-    ) [] t.labels
-
-let get_prefixed_labels t prefix =
-  List.fold_left (fun acc (k, v) ->
-      if String.equal (String.with_range ~len:(String.length prefix) k) prefix then match v with
-        | None   -> (String.with_range ~first:(String.length prefix) k, None)::acc
-        | Some (e, s) -> (String.with_range ~first:(String.length prefix) k, Some (e, s))::acc
-      else acc
-    ) [] t.labels
-
-let directory t = match get_label t "dir" with
-  | None   -> None
-  | Some None -> None
-  | Some (Some (`Eq, d)) -> Some d
-  | Some (Some _) -> Fmt.failwith "invalid `dir` label value"
-
-let file t = match get_label t "file" with
-  | None   -> None
-  | Some None -> None
-  | Some (Some (`Eq, f)) -> Some f
-  | Some (Some _) -> Fmt.failwith "invalid `file` label value"
-
-let part t = match get_label t "part" with
-  | None   -> None
-  | Some None -> None
-  | Some (Some (`Eq, l)) -> Some l
-  | Some (Some _) -> Fmt.failwith "invalid `part` label value"
-
-let version t = match get_label t "version" with
-  | None -> None
-  | Some None -> None
-  | Some (Some (op, v)) ->
-    match Ocaml_version.of_string v with
-    | Ok v -> Some (op, v)
-    | Error (`Msg e) -> Fmt.failwith "invalid `version` label value: %s" e
+let version t = get_label (function Version (x, y) -> Some (x, y) | _ -> None) t
 
 let source_trees t =
-  let f = function
-    | `Eq, x -> x
-    | _ -> Fmt.failwith "invalid `source-tree` label value"
-  in
-  List.map f (get_labels t "source-tree")
+  List.filter_map (function Label.Source_tree x -> Some x | _ -> None) t.labels
 
-let mode t = match get_label t "non-deterministic" with
-  | None                  -> `Normal
-  | Some None
-  | Some (Some (`Eq, "output"))  -> `Non_det `Output
-  | Some (Some (`Eq, "command")) -> `Non_det `Command
-  | Some (Some (`Eq, _))         -> `Normal
-  | Some (Some _) -> Fmt.failwith "invalid `non-deterministic` label value"
+let mode t =
+  get_label_or (function Label.Non_det mode -> Some (`Non_det mode) | _ -> None)
+    ~default:`Normal t
 
-let skip t = match get_label t "skip" with
-  | Some None -> true
-  | _ -> false
+let skip t = List.exists (function Label.Skip -> true | _ -> false) t.labels
 
-let environment t = match get_label t "env" with
-  | None
-  | Some None
-  | Some (Some (`Eq, "default")) -> "default"
-  | Some (Some (`Eq, s)) -> s
-  | Some (Some _) -> Fmt.failwith "invalid `env` label value"
+let environment t =
+  get_label_or (function Label.Env e -> Some e | _ -> None) ~default:"default" t
 
 let set_variables t =
-  let f = function
-    | _, None -> Fmt.failwith "invalid env variable value (use '=' followed by the value)"
-    | variable, Some (`Eq, value) -> variable, value
-    | _ -> Fmt.failwith "invalid env variable operator (use '=' only)"
-  in
-  List.map f (get_prefixed_labels t "set-")
+  List.filter_map
+    (function Label.Set (v, x) -> Some (v, x) | _ -> None)
+    t.labels
 
 let unset_variables t =
-  let f = function
-    | variable, None -> variable
-    | _ -> Fmt.failwith "invalid env variable operator (no operator allowed)"
-  in
-  List.map f (get_prefixed_labels t "unset-")
+  List.filter_map (function Label.Unset x -> Some x | _ -> None) t.labels
 
 let explicit_required_packages t =
-  let f = function
-    | `Eq, "" ->
-      Fmt.failwith "invalid `require-package` label value: requires a value"
-    | `Eq, pkg -> pkg
-    | _ -> Fmt.failwith "invalid `require-package` label value"
-  in
-  List.map f (get_labels t "require-package")
+  List.filter_map
+    (function Label.Require_package x -> Some x | _ -> None) t.labels
 
 let require_re =
   let open Re in
@@ -349,22 +204,19 @@ let guess_ocaml_kind b =
 let toplevel ~file ~line lines = Toplevel (Toplevel.of_lines ~line ~file lines)
 
 let eval t =
-  match check_labels t with
-  | Error e -> { t with value = Error e }
-  | Ok ()   ->
-    match t.header with
-    | Some ("sh" | "bash") ->
-      let value = cram t.contents in
-      { t with value }
-    | Some "ocaml" ->
-      (match guess_ocaml_kind t with
-       | `OCaml `Code -> { t with value = OCaml }
-       | `OCaml `Toplevel ->
-         let value = toplevel ~file:t.file ~line:t.line t.contents in
-         { t with value }
-       | `Other -> Fmt.failwith "Dead code. todo: remove"
-       )
-    | _ -> t
+  match t.header with
+  | Some ("sh" | "bash") ->
+    let value = cram t.contents in
+    { t with value }
+  | Some "ocaml" ->
+    (match guess_ocaml_kind t with
+     | `OCaml `Code -> { t with value = OCaml }
+     | `OCaml `Toplevel ->
+       let value = toplevel ~file:t.file ~line:t.line t.contents in
+       { t with value }
+     | `Other -> Fmt.failwith "Dead code. todo: remove"
+    )
+  | _ -> t
 
 let ends_by_semi_semi c = match List.rev c with
   | h::_ ->
@@ -396,39 +248,11 @@ let executable_contents b =
   if contents = [] || ends_by_semi_semi contents then contents
   else contents @ [";;"]
 
-let split sep s op =
-  match String.cut ~sep s with
-  | None -> s, None (* operator does not matter here *)
-  | Some (k, v) -> k, Some (op, v)
-
-let ( ||| ) x y =
-  match x with
-  | _, None -> y
-  | x -> x
-
-let labels_of_string s =
-  let labels = String.cuts ~empty:false ~sep:"," s in
-  List.map (fun s ->
-      split "<>" s `Neq |||
-      split ">=" s `Ge |||
-      split ">"  s `Gt |||
-      split "<=" s `Le |||
-      split "<"  s `Lt |||
-      split "="  s `Eq
-    ) labels
-
-let compare = function
-  | `Eq -> ( = )
-  | `Neq -> ( <> )
-  | `Lt -> ( < )
-  | `Le -> ( <= )
-  | `Gt -> ( > )
-  | `Ge -> ( >= )
-
 let version_enabled t =
   match Ocaml_version.of_string Sys.ocaml_version with
   | Ok curr_version -> (
       match version t with
-      | Some (op, v) -> (compare op) (Ocaml_version.compare curr_version v) 0
+      | Some (op, v) ->
+        Label.Relation.compare op (Ocaml_version.compare curr_version v) 0
       | None -> true )
   | Error (`Msg e) -> Fmt.failwith "invalid OCaml version: %s" e

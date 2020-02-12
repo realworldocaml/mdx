@@ -27,6 +27,7 @@ module Compat = Compat
 module Util = Util
 module Prelude = Prelude
 module Syntax = Syntax
+module Label = Label
 
 type line =
   | Section of (int * string)

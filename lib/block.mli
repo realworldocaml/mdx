@@ -34,8 +34,7 @@ type t = {
   line    : int;
   file    : string;
   section : section option;
-  labels  :
-    (string * ([`Eq | `Neq | `Le | `Lt | `Ge | `Gt] * string) option) list;
+  labels  : Label.t list;
   header  : string option;
   contents: string list;
   value   : value;
@@ -131,11 +130,6 @@ val eval: t -> t
    [Cram] or [Toplevel] blocks, depending on [t]'s header. *)
 
 (** {2 Parsers} *)
-
-val labels_of_string:
-  string ->
-  (string * ([`Eq | `Neq | `Gt | `Ge | `Lt | `Le] * string) option) list
-(** [labels_of_string s] cuts [s] into a list of labels. *)
 
 val require_from_line : string -> (Library.Set.t, string) Result.result
 (** [require_from_line line] returns the set of libraries imported by the

@@ -43,4 +43,10 @@ end
 
 module Option : sig
   val is_some : 'a option -> bool
+
+  val value : default:'a -> 'a option -> 'a
+end
+
+module List : sig
+  val find_map : ('a -> 'b option) -> 'a list -> 'b option
 end
