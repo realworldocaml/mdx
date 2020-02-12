@@ -53,4 +53,23 @@ let test_interpret =
       ~expected:(Ok (Set ("foo", "bar")))
   ]
 
-let suite = ("Label", test_raw_parse @ test_interpret)
+let test_of_string =
+  let ty = Alcotest.(result (list Testable.label) (list Testable.msg)) in
+  let make_test ~input ~expected =
+    let test_name = Printf.sprintf "of_string: %S" input in
+    let test_fun () =
+      Alcotest.check ty test_name expected (Mdx.Label.of_string input)
+    in
+    (test_name, `Quick, test_fun)
+  in
+  [ make_test ~input:"" ~expected:(Ok [])
+  ; make_test ~input:","
+      ~expected:
+        (Error
+           [`Msg "`` is not a valid label."; `Msg "`` is not a valid label."])
+  ; make_test ~input:"skip,"
+      ~expected:(Error [`Msg "`` is not a valid label."])
+  ; make_test ~input:"skip,file=foo.ml" ~expected:(Ok [Skip; File "foo.ml"])
+  ]
+
+let suite = ("Label", test_raw_parse @ test_interpret @ test_of_string)
