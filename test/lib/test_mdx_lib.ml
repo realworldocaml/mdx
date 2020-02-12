@@ -4,4 +4,5 @@ let () =
     ; Test_label.suite
     ; Test_library.suite
     ; Test_syntax.suite
+    ; Test_util.suite
     ]
