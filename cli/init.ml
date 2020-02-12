@@ -103,9 +103,8 @@ let opam_repo =
 
 let pull_mode =
   let doc =
-    "How to pull the sources. If $(i,submodules), the pull command will initialise \
-     them as git submodules.  If $(i,source) then the source code will directly be cloned to the \
-     source tree."
+    "How to pull the sources. If $(i,submodules), the pull command will initialise them as git \
+     submodules.  If $(i,source) then the source code will directly be cloned to the source tree."
   in
   Common.Arg.named
     (fun x -> `Pull_mode x)

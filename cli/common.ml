@@ -13,6 +13,19 @@ module Arg = struct
     let doc = "Do not prompt for confirmation and always assume yes" in
     named (fun x -> `Yes x) Cmdliner.Arg.(value & flag & info [ "y"; "yes" ] ~doc)
 
+  let non_empty_list_opt = Cmdliner.Term.pure (function [] -> None | l -> Some l)
+
+  let duniverse_repos =
+    let open Cmdliner in
+    let docv = "REPOSITORIES" in
+    let doc =
+      "The list of $(docv) from your duniverse to process. If none is provided, all will be \
+       processed."
+    in
+    named
+      (fun x -> `Duniverse_repos x)
+      Term.(non_empty_list_opt $ Arg.(value & pos_all string [] & info ~doc ~docv []))
+
   let thread_safe_reporter reporter =
     let lock = Mutex.create () in
     let { Logs.report } = reporter in

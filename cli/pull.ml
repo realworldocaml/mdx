@@ -121,6 +121,9 @@ let set_git_submodules ~repo ~duniverse_dir src_deps =
   Common.Logs.app (fun l -> l "Successfully wrote gitmodules.");
   Ok ()
 
+let should_pull ~to_pull (src_dep : _ Duniverse.Deps.Source.t) =
+  match to_pull with None -> true | Some set -> List.mem ~set src_dep.dir
+
 let pull_source_dependencies ?trim_clone ~duniverse_dir ~cache src_deps =
   let open Result.O in
   List.map ~f:(pull ?trim_clone ~duniverse_dir ~cache) src_deps
@@ -142,7 +145,7 @@ let pull_source_dependencies ?trim_clone ~duniverse_dir ~cache src_deps =
 
 let get_cache ~no_cache = if no_cache then Ok Cloner.no_cache else Cloner.get_cache ()
 
-let run (`Yes yes) (`No_cache no_cache) (`Repo repo) () =
+let run (`Yes yes) (`No_cache no_cache) (`Repo repo) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
   let duniverse_file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.load ~file:duniverse_file >>= function
@@ -150,6 +153,7 @@ let run (`Yes yes) (`No_cache no_cache) (`Repo repo) () =
       Common.Logs.app (fun l -> l "No dependencies to pull, there's nothing to be done here!");
       Ok ()
   | { deps = { duniverse; _ }; config } ->
+      let duniverse = List.filter duniverse ~f:(should_pull ~to_pull:duniverse_repos) in
       let sm = Duniverse.Config.(config.pull_mode = Submodules) in
       Common.Logs.app (fun l ->
           l "Using pull mode %s"
@@ -209,6 +213,8 @@ let info =
 
 let term =
   Cmdliner.Term.(
-    term_result (const run $ Common.Arg.yes $ no_cache $ Common.Arg.repo $ Common.Arg.setup_logs ()))
+    term_result
+      ( const run $ Common.Arg.yes $ no_cache $ Common.Arg.repo $ Common.Arg.duniverse_repos
+      $ Common.Arg.setup_logs () ))
 
 let cmd = (term, info)
