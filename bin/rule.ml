@@ -168,11 +168,6 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax)
     (`Prelude prelude) (`Prelude_str prelude_str) (`Root root)
     (`Duniverse_mode duniverse_mode) (`Locks locks) =
   let open Mdx.Util.Result.Infix in
-  let syntax =
-    match syntax with
-    | Some syntax -> Some syntax
-    | None -> Mdx.Syntax.infer ~file:md_file
-  in
   let active =
     let section = match section with
       | None   -> None
@@ -244,7 +239,7 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax)
       print_format_dune_rules pp_rules;
       file_contents
   in
-  Mdx.run md_file ~f:on_file;
+  Mdx.run ?syntax md_file ~f:on_file;
   0
 
 open Cmdliner
