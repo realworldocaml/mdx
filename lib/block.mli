@@ -130,8 +130,8 @@ val contents : t -> string list
 val value : t -> value
 (** [value t] is [t]'s value. *)
 
-val mode : t -> Label.non_det option
-(** [mode t] is [t]'s mode. *)
+val non_det : t -> Label.non_det option
+(** Whether a block's command or output is non-deterministic. *)
 
 val directory : t -> string option
 (** [directory t] is the directory where [t] tests should be run. *)

@@ -180,7 +180,7 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax)
     | Mdx.Section _ | Text _ -> Ok acc
     | Block b when active b ->
       let files, dirs, nd, packages = acc in
-      let nd = nd || match Mdx.Block.mode b with
+      let nd = nd || match Mdx.Block.non_det b with
         | Some _ -> true
         | None -> false
       in

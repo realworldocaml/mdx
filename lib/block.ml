@@ -208,7 +208,7 @@ let source_trees t =
     (function Label.Source_tree x -> Some x | _ -> None)
     (labels t)
 
-let mode = function
+let non_det = function
   | OCaml b -> b.non_det
   | Shell b -> b.non_det
   | Toplevel b -> b.non_det

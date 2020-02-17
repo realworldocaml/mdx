@@ -274,7 +274,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
         | Error _ -> print_block ()
         | Raw -> print_block ()
         | OCaml -> (
-            match Block.mode t with
+            match Block.non_det t with
             (* the command is non-deterministic so skip everything *)
             | Some Nd_command when not non_deterministic -> print_block ()
             | _ ->
@@ -284,7 +284,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
               Block.pp ppf t
           )
         | Cram  { tests; pad } -> (
-            match Block.mode t with
+            match Block.non_det t with
             (* the command is non-deterministic so skip everything *)
             | Some Nd_command when not non_deterministic -> print_block ()
             (* its output is non-deterministic; run it but keep the old output. *)
@@ -297,7 +297,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
             | _ -> run_cram_tests ?syntax t ?root ppf temp_file pad tests
           )
         | Toplevel tests ->
-          match Block.mode t with
+          match Block.non_det t with
           (* the command is non-deterministic so skip everything *)
           | Some Nd_command when not non_deterministic -> print_block ()
           (* its output is non-deterministic; run it but keep the old output. *)
