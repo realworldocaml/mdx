@@ -14,12 +14,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
- type t = File of string | Dir of string
+type t = File of string | Dir of string
 
 val of_block : Block.t -> t option
 
 val of_lines : Document.line list -> t list
 
-val pp : t Fmt.t
-
-val to_string : t -> string
+val to_sexp : t -> Util.Sexp.t

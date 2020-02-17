@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
- open Compat
+open Compat
 
 type t = File of string | Dir of string
 
@@ -34,10 +34,7 @@ let of_lines =
         | Section _ | Text _ -> None
         | Block b -> of_block b)
 
-let pp fmt = function
-  | File f -> Fmt.pf fmt "file:%s" f
-  | Dir d -> Fmt.pf fmt "dir:%s" d
-
-let to_string = function
-  | File f -> Printf.sprintf "file:%s" f
-  | Dir d -> Printf.sprintf "dir:%s" d
+let to_sexp t : Util.Sexp.t =
+  match t with
+  | Dir dir -> List [Atom "dir"; Atom dir]
+  | File file -> List [Atom "file"; Atom file]

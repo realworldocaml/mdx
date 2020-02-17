@@ -18,18 +18,16 @@ let run (`Setup ()) (`Syntax syntax) (`File file) =
   let syntax = match syntax, Mdx.Syntax.infer ~file with
     | Some s, _
     | None, Some s -> s
-    | None, None -> Printf.eprintf
-      "Fatal error: could not infer syntax from filename %s, use the --syntax \
-      option to specify a syntax.\n" file; exit 1
-    in
-    let doc = Mdx.parse_file
-      syntax
-      file
-    in
-    let deps = Mdx.Dep.of_lines doc in
-    let deps = List.map Mdx.Dep.to_string deps in
-    let deps = String.concat " " deps in
-    Printf.printf "%s\n" deps;
+    | None, None ->
+      Printf.eprintf
+        "Fatal error: could not infer syntax from filename %s, use the \
+         --syntax option to specify a syntax.\n" file;
+      exit 1
+  in
+  let doc = Mdx.parse_file syntax file in
+  let deps = Mdx.Dep.of_lines doc in
+  let deps = List.map Mdx.Dep.to_sexp deps in
+  Printf.printf "%s" (Mdx.Util.Sexp.Canonical.to_string (List deps));
   0
 
 

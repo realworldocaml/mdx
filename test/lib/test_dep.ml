@@ -1,7 +1,13 @@
-
 module Testable = struct
+  include Testable
+
   let dep =
-    Alcotest.testable (Mdx.Dep.pp) (=)
+    let pp fmt dep =
+      match (dep : Mdx.Dep.t) with
+      | File f -> Fmt.pf fmt "File %S" f
+      | Dir d -> Fmt.pf fmt "Dir %S" d
+    in
+    Alcotest.testable pp (=)
 end
 
 let test_of_block =
@@ -70,4 +76,25 @@ Tata
       ~expected:[File "burn.sh"; Dir "ping/"] ()
   ]
 
-let suite = ("Dep", test_of_block @ test_of_line)
+let test_to_sexp =
+  let make_test ~name ~input ~expected () =
+    let test_name = Printf.sprintf "to_sexp: %s" name in
+    let test_fun () =
+      let actual = Mdx.Dep.to_sexp input in
+      Alcotest.(check Testable.sexp test_name expected actual)
+    in
+    (test_name, `Quick, test_fun)
+  in
+  [ make_test
+      ~name:"file"
+      ~input:(File "a.ml")
+      ~expected:(List [Atom "file"; Atom "a.ml"])
+      ()
+  ; make_test
+      ~name:"dir"
+      ~input:(Dir "./a/b")
+      ~expected:(List [Atom "dir"; Atom "./a/b"])
+      ()
+  ]
+
+let suite = ("Dep", test_of_block @ test_of_line @ test_to_sexp)
