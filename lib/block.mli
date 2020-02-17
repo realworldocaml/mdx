@@ -40,7 +40,20 @@ type section = int * string
 (** The type for sections. *)
 
 (** The type for supported code blocks. *)
-type raw = {
+type ocaml_block = {
+  line    : int;
+  file    : string;
+  section : section option;
+  labels  : Label.t list;
+  header  : Header.t option;
+  contents: string list;
+  value   : value;
+  non_det : [`Output | `Command] option;
+  env     : string;
+  (** [env] is the name given to the environment where tests are run. *)
+}
+
+type shell_block = {
   line    : int;
   file    : string;
   section : section option;
@@ -67,10 +80,10 @@ type include_block = {
 }
 
 type t =
-  | Toplevel of raw
-  | Shell of raw
+  | Toplevel of ocaml_block
+  | Shell of shell_block
   | Include of include_block
-  | OCaml of raw
+  | OCaml of ocaml_block
 
 val mk:
   line:int

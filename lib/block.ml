@@ -43,9 +43,21 @@ type value =
   | Cram of cram_value
   | Toplevel of Toplevel.t list
 
-type raw = {
-  line : int;
-  file : string;
+type ocaml_block = {
+  line    : int;
+  file    : string;
+  section : section option;
+  labels  : Label.t list;
+  header  : Header.t option;
+  contents: string list;
+  value   : value;
+  non_det : [`Output | `Command] option;
+  env     : string;
+}
+
+type shell_block = {
+  line    : int;
+  file    : string;
   section : section option;
   labels  : Label.t list;
   header  : Header.t option;
@@ -67,10 +79,10 @@ type include_block = {
 }
 
 type t =
-  | Toplevel of raw
-  | Shell of raw
+  | Toplevel of ocaml_block
+  | Shell of shell_block
   | Include of include_block
-  | OCaml of raw
+  | OCaml of ocaml_block
 
 let line = function
   | Toplevel t -> t.line
@@ -340,11 +352,14 @@ let check_not_set msg = function
 let mk ~line ~file ~section ~labels ~header ~contents ~value =
   let non_det = get_label (function Non_det x -> x | _ -> None) labels in
   let part = get_label (function Part x -> Some x | _ -> None) labels in
+  let env = get_label (function Env x -> Some x | _ -> None) labels in
   let open Util.Result.Infix in
   match get_label (function File x -> Some x | _ -> None) labels with
   | Some file_included -> (
       check_not_set
         "`non-deterministic` label cannot be used with a `file` label." non_det
+      >>= fun () ->
+      check_not_set "`env` label cannot be used with a `file` label." env
       >>= fun () ->
       match part with
       | Some part -> (
@@ -364,15 +379,21 @@ let mk ~line ~file ~section ~labels ~header ~contents ~value =
                file_included; part_included= None } ) )
   | None ->
     check_not_set "`part` label requires a `file` label." part >>= fun () ->
-    let raw =
-      { line; file; section; labels; header; contents; value; non_det }
-    in
     match header with
-    | Some Shell -> Ok (Shell raw)
+    | Some Shell ->
+      check_not_set "`env` label cannot be used with a `shell` header." env
+      >>= fun () ->
+      Ok
+        (Shell
+           { line; file; section; labels; header; contents; value; non_det } )
     | _ ->
+      let env = match env with Some e -> e | None -> "default" in
+      let block =
+        { line; file; section; labels; header; contents; value; non_det; env }
+      in
       match guess_ocaml_kind contents with
-      | `Toplevel -> Ok (Toplevel raw)
-      | `Code -> Ok (OCaml raw)
+      | `Toplevel -> Ok (Toplevel block)
+      | `Code -> Ok (OCaml block)
 
 let is_active ?section:s t =
   let active =
