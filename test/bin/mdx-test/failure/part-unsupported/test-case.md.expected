@@ -1,1 +1,1 @@
-File "test-case.md", line 5, character 0: invalid code block: Parts are not supported for non-OCaml code blocks.
+File "test-case.md", line 3, character 36: invalid code block: `part` is not supported for non-OCaml code blocks.

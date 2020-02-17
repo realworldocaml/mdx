@@ -47,10 +47,11 @@ type raw = {
   line : int;
   file : string;
   section : section option;
-  labels : Label.t list;
-  header : Header.t option;
-  contents : string list;
-  value : value;
+  labels  : Label.t list;
+  header  : Header.t option;
+  contents: string list;
+  value   : value;
+  non_det : Label.non_det option;
 }
 
 type include_block = {
@@ -198,13 +199,7 @@ let source_trees t =
     (function Label.Source_tree x -> Some x | _ -> None)
     (labels t)
 
-let mode t =
-  get_label_or
-    (function
-      | Non_det (Some mode) -> Some (`Non_det mode)
-      | Non_det None -> Some (`Non_det Label.default_non_det)
-      | _ -> None)
-    ~default:`Normal t
+let mode t = get_label (function Label.Non_det mode -> mode | _ -> None) t
 
 let skip t = List.exists (function Label.Skip -> true | _ -> false) (labels t)
 
@@ -338,35 +333,46 @@ let get_label f (labels : Label.t list) =
   in
   aux labels
 
+let check_not_set msg = function
+  | Some _ -> Util.Result.errorf msg
+  | None -> Ok ()
+
 let mk ~line ~file ~section ~labels ~header ~contents ~value =
-  let raw = { line; file; section; labels; header; contents; value } in
+  let non_det = get_label (function Non_det x -> x | _ -> None) labels in
   let part = get_label (function Part x -> Some x | _ -> None) labels in
+  let open Util.Result.Infix in
   match get_label (function File x -> Some x | _ -> None) labels with
   | Some file_included -> (
+      check_not_set
+        "`non-deterministic` label cannot be used with a `file` label." non_det
+      >>= fun () ->
       match part with
       | Some part -> (
           match header with
-          | Some OCaml ->
-            Include
-              { line; file; section; labels; header; contents; value;
-                file_included; part_included= Some part }
+          | Some Header.OCaml ->
+            Ok
+              (Include
+                 { line; file; section; labels; header; contents; value;
+                   file_included; part_included= Some part } )
           | _ ->
-            Fmt.failwith
-              "Parts are not supported for non-OCaml code blocks." )
+            Util.Result.errorf
+              "`part` is not supported for non-OCaml code blocks." )
       | None ->
-        Include
-          { line; file; section; labels; header; contents; value; file_included;
-            part_included= None } )
+        Ok
+          (Include
+             { line; file; section; labels; header; contents; value;
+               file_included; part_included= None } ) )
   | None ->
-    match part with
-    | Some _ -> Fmt.failwith "Part label requires a File label."
-    | None ->
-      match header with
-      | Some Shell -> Shell raw
-      | _ ->
-        match guess_ocaml_kind contents with
-        | `Toplevel -> Toplevel raw
-        | `Code -> OCaml raw
+    check_not_set "`part` label requires a `file` label." part >>= fun () ->
+    let raw =
+      { line; file; section; labels; header; contents; value; non_det }
+    in
+    match header with
+    | Some Shell -> Ok (Shell raw)
+    | _ ->
+      match guess_ocaml_kind contents with
+      | `Toplevel -> Ok (Toplevel raw)
+      | `Code -> Ok (OCaml raw)
 
 let is_active ?section:s t =
   let active =

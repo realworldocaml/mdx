@@ -48,6 +48,7 @@ type raw = {
   header  : Header.t option;
   contents: string list;
   value   : value;
+  non_det : Label.non_det option;
 }
 
 type include_block = {
@@ -79,7 +80,7 @@ val mk:
   -> header:Header.t option
   -> contents:string list
   -> value:value
-  -> t
+  -> (t, [`Msg of string]) Result.result
 
 (** {2 Printers} *)
 
@@ -116,7 +117,7 @@ val contents : t -> string list
 val value : t -> value
 (** [value t] is [t]'s value. *)
 
-val mode : t -> [ `Non_det of Label.non_det | `Normal ]
+val mode : t -> Label.non_det option
 (** [mode t] is [t]'s mode. *)
 
 val directory : t -> string option

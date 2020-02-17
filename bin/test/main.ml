@@ -276,7 +276,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
         | OCaml -> (
             match Block.mode t with
             (* the command is non-deterministic so skip everything *)
-            | `Non_det Nd_command when not non_deterministic -> print_block ()
+            | Some Nd_command when not non_deterministic -> print_block ()
             | _ ->
               assert (syntax <> Some Cram);
               eval_raw
@@ -286,9 +286,9 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
         | Cram  { tests; pad } -> (
             match Block.mode t with
             (* the command is non-deterministic so skip everything *)
-            | `Non_det Nd_command when not non_deterministic -> print_block ()
+            | Some Nd_command when not non_deterministic -> print_block ()
             (* its output is non-deterministic; run it but keep the old output. *)
-            | `Non_det Nd_output when not non_deterministic ->
+            | Some Nd_output when not non_deterministic ->
               print_block ();
               let blacklist = Block.unset_variables t in
               List.iter
@@ -299,9 +299,9 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
         | Toplevel tests ->
           match Block.mode t with
           (* the command is non-deterministic so skip everything *)
-          | `Non_det Nd_command when not non_deterministic -> print_block ()
+          | Some Nd_command when not non_deterministic -> print_block ()
           (* its output is non-deterministic; run it but keep the old output. *)
-          | `Non_det Nd_output when not non_deterministic ->
+          | Some Nd_output when not non_deterministic ->
             assert (syntax <> Some Cram);
             print_block ();
             List.iter (fun test ->

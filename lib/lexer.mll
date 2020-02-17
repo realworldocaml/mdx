@@ -34,8 +34,14 @@ rule text section = parse
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
         newline lexbuf;
-        `Block (Block.mk ~file ~line ~section ~header ~contents ~labels ~value)
-        :: text section lexbuf }
+        let block =
+          match
+            Block.mk ~file ~line ~section ~header ~contents ~labels ~value
+          with
+          | Ok block -> block
+          | Error (`Msg msg) -> failwith msg
+        in
+        `Block block :: text section lexbuf }
   | ([^'\n']* as str) eol
       { newline lexbuf;
         `Text str :: text section lexbuf }
@@ -61,7 +67,14 @@ and cram_text section = parse
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
-        `Block (Block.mk ~file ~line ~section ~header ~contents ~labels ~value)
+        let block =
+          match
+            Block.mk ~file ~line ~section ~header ~contents ~labels ~value
+          with
+          | Ok block -> block
+          | Error (`Msg msg) -> failwith msg
+        in
+        `Block block
         :: (if requires_empty_line then `Text "" :: rest else rest) }
   | "<-- non-deterministic" ws* ([^'\n']* as choice) eol
       { let header = Some Block.Header.Shell in
@@ -77,7 +90,14 @@ and cram_text section = parse
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
-        `Block (Block.mk ~file ~line ~section ~header ~contents ~labels ~value)
+        let block =
+          match
+            Block.mk ~file ~line ~section ~header ~contents ~labels ~value
+          with
+          | Ok block -> block
+          | Error (`Msg msg) -> failwith msg
+        in
+        `Block block
         :: (if requires_empty_line then `Text "" :: rest else rest) }
   | ([^'\n']* as str) eol
       { newline lexbuf;
