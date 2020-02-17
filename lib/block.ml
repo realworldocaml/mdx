@@ -51,7 +51,7 @@ type ocaml_block = {
   header  : Header.t option;
   contents: string list;
   value   : value;
-  non_det : [`Output | `Command] option;
+  non_det : Label.non_det option;
   env     : string;
 }
 
@@ -197,9 +197,6 @@ let pp ?syntax ppf b =
 
 let get_label f t = Util.List.find_map f (labels t)
 
-let get_label_or f ~default t =
-  Util.Option.value ~default (Util.List.find_map f (labels t))
-
 let directory t = get_label (function Dir x -> Some x | _ -> None) t
 
 let file = function Include t -> Some t.file_included | _ -> None
@@ -211,14 +208,19 @@ let source_trees t =
     (function Label.Source_tree x -> Some x | _ -> None)
     (labels t)
 
-let mode t = get_label (function Label.Non_det mode -> mode | _ -> None) t
+let mode = function
+  | OCaml b -> b.non_det
+  | Shell b -> b.non_det
+  | Toplevel b -> b.non_det
+  | Include _ -> None
 
 let skip t = List.exists (function Label.Skip -> true | _ -> false) (labels t)
 
-let environment t =
-  get_label_or
-    (function Label.Env e -> Some e | _ -> None)
-    ~default:"default" t
+let environment = function
+  | OCaml b -> b.env
+  | Toplevel b -> b.env
+  | Shell _
+  | Include _ -> "default"
 
 let set_variables t =
   List.filter_map

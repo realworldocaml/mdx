@@ -48,7 +48,7 @@ type ocaml_block = {
   header  : Header.t option;
   contents: string list;
   value   : value;
-  non_det : [`Output | `Command] option;
+  non_det : Label.non_det option;
   env     : string;
   (** [env] is the name given to the environment where tests are run. *)
 }
