@@ -261,14 +261,12 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
       (* Print errors *)
       | Error _ -> print_block ()
       | Raw _ -> print_block ()
-      | Include { file_included; part_included; header } -> (
-          match header with
-          | Some Block.Header.OCaml ->
-            assert (syntax <> Some Cram);
-            update_file_or_block ?root ppf file file_included t part_included
-          | _ ->
-            let new_content = (read_part file_included part_included) in
-            update_block_content ppf t new_content )
+      | Include (Include_OCaml { file_included; part_included }) ->
+        assert (syntax <> Some Cram);
+        update_file_or_block ?root ppf file file_included t part_included
+      | Include (Include_other { file_included; _ }) ->
+        let new_content = (read_part file_included None) in
+        update_block_content ppf t new_content
       | OCaml { non_det; _ } -> (
           match non_det with
           (* the command is non-deterministic so skip everything *)
