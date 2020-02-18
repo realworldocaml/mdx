@@ -11,6 +11,10 @@
 - Add support for OCaml 4.10 (#204, @kit-ty-kate)
 - Infer syntax kind when `--syntax` is not set, and add 'markdown' as an alias to 'normal' (#222, @gpetiot)
 
+#### Changed
+
+- Do not unset `INSIDE_DUNE` when executing shell commands by default (#224, @NathanReb)
+
 #### Fixed
 
 - Fix a bug that could cause `ocaml-mdx test` to crash on some `include` in toplevel code blocks
