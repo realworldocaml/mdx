@@ -39,7 +39,7 @@ let run (`Setup ()) (`File file) (`Section section) =
             let contents = Mdx.Block.executable_contents b in
             match Mdx.Block.value b with
             | Toplevel _ -> Fmt.pr "%a\n" pp_lines contents
-            | OCaml      ->
+            | OCaml _    ->
               Fmt.pr "%a\n%a\n"
                 Mdx.Block.pp_line_directive (file, Mdx.Block.line b)
                 pp_lines contents

@@ -26,52 +26,26 @@ end
 
 (** Code blocks. *)
 
-type cram_value = { pad : int; tests : Cram.t list }
-
-(** The type for block values. *)
-type value =
-  | Raw
-  | OCaml
-  | Error of string list
-  | Cram of cram_value
-  | Toplevel of Toplevel.t list
-
-type section = int * string
-(** The type for sections. *)
-
-(** The type for supported code blocks. *)
-type ocaml_block = {
-  line    : int;
-  file    : string;
-  section : section option;
-  labels  : Label.t list;
-  header  : Header.t option;
-  contents: string list;
-  value   : value;
+type cram_value = {
+  pad : int;
+  tests : Cram.t list;
   non_det : Label.non_det option;
-  env     : string;
+}
+
+type ocaml_value = {
+  env : string;
   (** [env] is the name given to the environment where tests are run. *)
-}
-
-type shell_block = {
-  line    : int;
-  file    : string;
-  section : section option;
-  labels  : Label.t list;
-  header  : Header.t option;
-  contents: string list;
-  value   : value;
   non_det : Label.non_det option;
 }
 
-type include_block = {
-  line : int;
-  file : string;
-  section : section option;
-  labels : Label.t list;
-  header : Header.t option;
-  contents : string list;
-  value : value;
+type toplevel_value = {
+  phrases : Toplevel.t list;
+  env : string;
+  (** [env] is the name given to the environment where tests are run. *)
+  non_det : Label.non_det option;
+}
+
+type include_value = {
   file_included : string;
   (** [file_included] is the name of the file to synchronize with. *)
   part_included : string option;
@@ -79,11 +53,28 @@ type include_block = {
       If lines is not specified synchronize the whole file. *)
 }
 
-type t =
-  | Toplevel of ocaml_block
-  | Shell of shell_block
-  | Include of include_block
-  | OCaml of ocaml_block
+(** The type for block values. *)
+type value =
+  | Raw
+  | OCaml of ocaml_value
+  | Error of string list
+  | Cram of cram_value
+  | Toplevel of toplevel_value
+  | Include of include_value
+
+type section = int * string
+(** The type for sections. *)
+
+(** The type for supported code blocks. *)
+type t = {
+  line : int;
+  file : string;
+  section : section option;
+  labels : Label.t list;
+  header : Header.t option;
+  contents : string list;
+  value : value;
+}
 
 val mk:
   line:int
@@ -163,6 +154,9 @@ val required_libraries : t -> (Library.Set.t, string) Result.result
 
 val skip : t -> bool
 (** [skip t] is true iff [skip] is in the labels of [t]. *)
+
+val header : t -> Header.t option
+(** [header t] is [t]'s header. *)
 
 val executable_contents : t -> string list
 (** [executable_contents t] is either [t]'s contents if [t] is a raw
