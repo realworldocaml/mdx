@@ -72,6 +72,7 @@ type t = {
   section : section option;
   dir : string option;
   source_trees : string list;
+  required_packages : string list;
   labels : Label.t list;
   header : Header.t option;
   contents : string list;
