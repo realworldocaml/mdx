@@ -70,6 +70,7 @@ type t = {
   line : int;
   file : string;
   section : section option;
+  dir : string option;
   labels : Label.t list;
   header : Header.t option;
   contents : string list;

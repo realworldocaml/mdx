@@ -68,6 +68,7 @@ type t = {
   line : int;
   file : string;
   section : section option;
+  dir : string option;
   labels : Label.t list;
   header : Header.t option;
   contents : string list;
@@ -159,7 +160,7 @@ let pp ?syntax ppf b =
 
 let get_label f t = Util.List.find_map f (labels t)
 
-let directory t = get_label (function Dir x -> Some x | _ -> None) t
+let directory t = t.dir
 
 let file t = match value t with Include t -> Some t.file_included | _ -> None
 
@@ -289,6 +290,7 @@ let mk ~line ~file ~section ~labels ~header ~contents =
   let non_det = get_label (function Non_det x -> x | _ -> None) labels in
   let part = get_label (function Part x -> Some x | _ -> None) labels in
   let env = get_label (function Env x -> Some x | _ -> None) labels in
+  let dir = get_label (function Dir x -> Some x | _ -> None) labels in
   let open Util.Result.Infix in
   (match get_label (function File x -> Some x | _ -> None) labels with
   | Some file_included -> (
@@ -323,7 +325,7 @@ let mk ~line ~file ~section ~labels ~header ~contents =
           Ok (Toplevel { phrases; env; non_det }) )
     | _ -> Ok Raw)
   >>= fun value ->
-  Ok { line; file; section; labels; header; contents; value }
+  Ok { line; file; section; dir; labels; header; contents; value }
 
 let is_active ?section:s t =
   let active =
