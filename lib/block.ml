@@ -85,8 +85,6 @@ let section t = t.section
 
 let header t = t.header
 
-let contents t = t.contents
-
 let value t = t.value
 
 let dump_string ppf s = Fmt.pf ppf "%S" s

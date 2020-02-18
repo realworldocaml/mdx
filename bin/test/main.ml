@@ -275,7 +275,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
           | Some Nd_command when not non_deterministic -> print_block ()
           | _ ->
             assert (syntax <> Some Cram);
-            eval_raw ~block:t ?root c ~line:t.line (Block.contents t);
+            eval_raw ~block:t ?root c ~line:t.line t.contents;
             Block.pp ppf t
         )
       | Cram { tests; pad; non_det } -> (

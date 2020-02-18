@@ -115,14 +115,6 @@ val pp_line_directive : (string * int) Fmt.t
 
 (** {2 Accessors} *)
 
-val section : t -> section option
-(** [section t] is [t]'s section. *)
-
-val contents : t -> string list
-
-val value : t -> value
-(** [value t] is [t]'s value. *)
-
 val non_det : t -> Label.non_det option
 (** Whether a block's command or output is non-deterministic. *)
 
@@ -157,6 +149,12 @@ val required_libraries : t -> (Library.Set.t, string) Result.result
 
 val skip : t -> bool
 (** [skip t] is true iff [skip] is in the labels of [t]. *)
+
+val value : t -> value
+(** [value t] is [t]'s value. *)
+
+val section : t -> section option
+(** [section t] is [t]'s section. *)
 
 val header : t -> Header.t option
 (** [header t] is [t]'s header. *)
