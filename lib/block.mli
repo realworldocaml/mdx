@@ -74,6 +74,7 @@ type t = {
   labels : Label.t list;
   header : Header.t option;
   contents : string list;
+  skip : bool;
   value : value;
 }
 

@@ -72,6 +72,7 @@ type t = {
   labels : Label.t list;
   header : Header.t option;
   contents : string list;
+  skip : bool;
   value : value;
 }
 
@@ -178,7 +179,7 @@ let non_det t =
   | Toplevel b -> b.non_det
   | Error _ | Include _ | Raw -> None
 
-let skip t = List.exists (function Label.Skip -> true | _ -> false) (labels t)
+let skip t = t.skip
 
 let environment t =
   match value t with
@@ -291,6 +292,7 @@ let mk ~line ~file ~section ~labels ~header ~contents =
   let part = get_label (function Part x -> Some x | _ -> None) labels in
   let env = get_label (function Env x -> Some x | _ -> None) labels in
   let dir = get_label (function Dir x -> Some x | _ -> None) labels in
+  let skip = List.exists (function Label.Skip -> true | _ -> false) labels in
   let open Util.Result.Infix in
   (match get_label (function File x -> Some x | _ -> None) labels with
   | Some file_included -> (
@@ -325,7 +327,7 @@ let mk ~line ~file ~section ~labels ~header ~contents =
           Ok (Toplevel { phrases; env; non_det }) )
     | _ -> Ok Raw)
   >>= fun value ->
-  Ok { line; file; section; dir; labels; header; contents; value }
+  Ok { line; file; section; dir; labels; header; contents; skip; value }
 
 let is_active ?section:s t =
   let active =
