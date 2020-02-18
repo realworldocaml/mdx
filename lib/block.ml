@@ -241,18 +241,18 @@ let line_directive = Fmt.to_to_string pp_line_directive
 
 let executable_contents b =
   let contents =
-      match value b with
-      | OCaml _ -> contents b
-      | Error _ | Raw | Cram _ | Include _ -> []
-      | Toplevel { phrases; _ } ->
-        List.flatten (
-          List.map (fun t ->
-              match Toplevel.command t with
-              | [] -> []
-              | cs ->
-                let mk s = String.make (t.hpad+2) ' ' ^ s in
-                line_directive (filename b, t.line) :: List.map mk cs
-            ) phrases )
+    match value b with
+    | OCaml _ -> contents b
+    | Error _ | Raw | Cram _ | Include _ -> []
+    | Toplevel { phrases; _ } ->
+      List.flatten (
+        List.map (fun t ->
+            match Toplevel.command t with
+            | [] -> []
+            | cs ->
+              let mk s = String.make (t.hpad+2) ' ' ^ s in
+              line_directive (filename b, t.line) :: List.map mk cs
+          ) phrases)
   in
   if contents = [] || ends_by_semi_semi contents then contents
   else contents @ [ ";;" ]
