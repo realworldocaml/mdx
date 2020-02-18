@@ -92,7 +92,6 @@ val mk:
   -> labels:Label.t list
   -> header:Header.t option
   -> contents:string list
-  -> value:value
   -> (t, [`Msg of string]) Result.result
 
 (** {2 Printers} *)
@@ -171,12 +170,6 @@ val executable_contents : t -> string list
    (e.g. the phrase result is discarded). *)
 
 val is_active : ?section:string -> t -> bool
-
-(** {2 Evaluation} *)
-
-val eval : t -> t
-(** [eval t] is the same as [t] but with it's value replaced by either
-   [Cram] or [Toplevel] blocks, depending on [t]'s header. *)
 
 (** {2 Parsers} *)
 

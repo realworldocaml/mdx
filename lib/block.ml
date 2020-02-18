@@ -275,32 +275,10 @@ let guess_ocaml_kind contents =
   in
   aux contents
 
-let update_value t value =
-  match t with
-  | Toplevel b -> Toplevel { b with value }
-  | Shell b -> Shell { b with value }
-  | Include b -> Include { b with value }
-  | OCaml b -> OCaml { b with value }
-
-let eval t =
-  let value =
-    match header t with
-    | Some Shell -> cram (contents t)
-    | Some OCaml -> (
-        match guess_ocaml_kind (contents t) with
-        | `Code -> OCaml
-        | `Toplevel ->
-          let file = filename t and line = line t in
-          Toplevel (Toplevel.of_lines ~file ~line (contents t)) )
-    | _ -> value t
-  in
-  update_value t value
-
-let ends_by_semi_semi c =
-   match List.rev c with
-  | h :: _ ->
+let ends_by_semi_semi c = match List.rev c with
+  | h::_ ->
       let len = String.length h in
-      len > 2 && h.[len - 1] = ';' && h.[len - 2] = ';'
+      len > 2 && h.[len-1] = ';' && h.[len-2] = ';'
   | _ -> false
 
 let pp_line_directive ppf (file, line) = Fmt.pf ppf "#%d %S" line file
@@ -351,7 +329,16 @@ let check_not_set msg = function
   | Some _ -> Util.Result.errorf msg
   | None -> Ok ()
 
-let mk ~line ~file ~section ~labels ~header ~contents ~value =
+let mk ~line ~file ~section ~labels ~header ~contents =
+  let value =
+    match header with
+    | Some Header.Shell -> cram contents
+    | Some Header.OCaml -> (
+        match guess_ocaml_kind contents with
+        | `Code -> OCaml
+        | `Toplevel -> Toplevel (Toplevel.of_lines ~file ~line contents) )
+    | _ -> Raw
+  in
   let non_det = get_label (function Non_det x -> x | _ -> None) labels in
   let part = get_label (function Part x -> Some x | _ -> None) labels in
   let env = get_label (function Env x -> Some x | _ -> None) labels in

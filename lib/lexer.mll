@@ -28,16 +28,13 @@ rule text section = parse
             let msg = String.concat ~sep:" " msgs in
             failwith msg
         in
-        let value = Block.Raw in
         let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
         newline lexbuf;
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
         newline lexbuf;
         let block =
-          match
-            Block.mk ~file ~line ~section ~header ~contents ~labels ~value
-          with
+          match Block.mk ~file ~line ~section ~header ~contents ~labels with
           | Ok block -> block
           | Error (`Msg msg) -> failwith msg
         in
@@ -62,15 +59,12 @@ and cram_text section = parse
         let requires_empty_line, contents = cram_block lexbuf in
         let contents = first_line :: contents in
         let labels = [] in
-        let value = Block.Raw in
         let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
         let block =
-          match
-            Block.mk ~file ~line ~section ~header ~contents ~labels ~value
-          with
+          match Block.mk ~file ~line ~section ~header ~contents ~labels with
           | Ok block -> block
           | Error (`Msg msg) -> failwith msg
         in
@@ -84,16 +78,13 @@ and cram_text section = parse
           | Ok label -> [label]
           | Error (`Msg msg) -> failwith msg
         in
-        let value = Block.Raw in
         let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
         newline lexbuf;
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
         let block =
-          match
-            Block.mk ~file ~line ~section ~header ~contents ~labels ~value
-          with
+          match Block.mk ~file ~line ~section ~header ~contents ~labels with
           | Ok block -> block
           | Error (`Msg msg) -> failwith msg
         in

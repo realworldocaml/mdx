@@ -70,18 +70,11 @@ let dump_line ppf (l : line) =
 
 let dump = Fmt.Dump.list dump_line
 
-let eval = function
-  | (Section _ | Text _) as x -> x
-  | Block t as x ->
-      let t' = Block.eval t in
-      if t == t' then x else Block t'
-
 type expect_result = Identical | Differs
 
 let run_str ~syntax ~f file =
   let file_contents, lexbuf = Misc.init file in
   let items = parse_lexbuf syntax lexbuf in
-  let items = List.map eval items in
   Log.debug (fun l -> l "run @[%a@]" dump items);
   let corrected = f file_contents items in
   let result = if corrected <> file_contents then Differs else Identical in
