@@ -307,15 +307,13 @@ let mk ~line ~file ~section ~labels ~header ~contents =
       >>= fun () ->
       check_not_set "`env` label cannot be used with a `file` label." env
       >>= fun () ->
-      match part with
-      | Some part -> (
-          match header with
-          | Some Header.OCaml ->
-            Ok (Include { file_included; part_included= Some part; header })
-          | _ ->
-            Util.Result.errorf
-              "`part` is not supported for non-OCaml code blocks." )
-      | None -> Ok (Include { file_included; part_included= None; header }) )
+      match header with
+      | Some Header.OCaml ->
+        Ok (Include { file_included; part_included= part; header })
+      | _ ->
+        check_not_set "`part` is not supported for non-OCaml code blocks." part
+        >>= fun () ->
+        Ok (Include { file_included; part_included= None; header }) )
   | None ->
     check_not_set "`part` label requires a `file` label." part >>= fun () ->
     match header with
