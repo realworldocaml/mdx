@@ -28,30 +28,9 @@ module Util = Util
 module Prelude = Prelude
 module Syntax = Syntax
 module Label = Label
+module Dep = Dep
 
-type line =
-  | Section of (int * string)
-  | Text    of string
-  | Block   of Block.t
-
-type t = line list
-
-let dump_line ppf (l: line) = match l with
-  | Block b        -> Fmt.pf ppf "Block %a" Block.dump b
-  | Section (d, s) -> Fmt.pf ppf "Section (%d, %S)" d s
-  | Text s         -> Fmt.pf ppf "Text %S" s
-
-let dump = Fmt.Dump.list dump_line
-
-let pp_line ?syntax ppf (l: line) = match l with
-  | Block b        -> Fmt.pf ppf "%a\n" (Block.pp ?syntax) b
-  | Section (d, s) -> Fmt.pf ppf "%s %s\n" (String.make d '#') s
-  | Text s         -> Fmt.pf ppf "%s\n" s
-
-let pp ?syntax ppf t =
-  Fmt.pf ppf "%a\n" Fmt.(list ~sep:(unit "\n") (pp_line ?syntax)) t
-
-let to_string = Fmt.to_to_string pp
+include Document
 
 let section_of_line = function
   | Section s -> Some s
@@ -75,13 +54,16 @@ let parse l =
       | `Block b   -> Block b
     ) l
 
-type syntax = Syntax.t =
-  | Normal
-  | Cram
-
 let parse_lexbuf syntax l = parse (Lexer.token syntax l)
 let parse_file syntax f = parse (Lexer.token syntax (snd (Misc.init f)))
 let of_string syntax s = parse_lexbuf syntax (Lexing.from_string s)
+
+let dump_line ppf (l: line) = match l with
+  | Block b        -> Fmt.pf ppf "Block %a" Block.dump b
+  | Section (d, s) -> Fmt.pf ppf "Section (%d, %S)" d s
+  | Text s         -> Fmt.pf ppf "Text %S" s
+
+let dump = Fmt.Dump.list dump_line
 
 let eval = function
   | Section _ | Text _ as x -> x

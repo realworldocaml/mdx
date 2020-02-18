@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2018 Thomas Gazagnaire <thomas@gazagnaire.org>
+ * Copyright (c) 2020 Ulysse Gérard <ulysse@tarides.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,26 +14,27 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Cmdliner
+open Compat
 
-let cmds = [Test.cmd; Pp.cmd; Rule.cmd; Deps.cmd]
-let main (`Setup ()) = `Help (`Pager, None)
+type t = File of string | Dir of string
 
-let main =
-  let doc = "Execute markdown files." in
-  let exits = Term.default_exits in
-  let man = [] in
-  Term.(ret (const main $ Cli.setup)),
-  Term.info "ocaml-mdx" ~version:"%%VERSION%%" ~doc ~exits ~man
+let of_block block =
+  let open Block in
+  match directory block, file block, skip block with
+  | Some d, Some f, false -> Some (File (Filename.concat d f))
+  | Some d, None, false -> Some (Dir d)
+  | None, Some f, false -> Some (File f)
+  | None, None, false -> None
+  | _, _, true -> None
 
-let main () = Term.(exit_status @@ eval_choice main cmds)
+let of_lines =
+  let open Document in
+    List.filter_map
+    (function
+        | Section _ | Text _ -> None
+        | Block b -> of_block b)
 
-let main () =
-  if String.compare (Sys.argv).(0) "mdx" == 0
-  then
-    Format.eprintf
-    "\x1b[0;1mWarning\x1b[0m: 'mdx' is deprecated and will one day be removed.
-    Use 'ocaml-mdx' instead\n%!";
-  main ()
-
-let () = main ()
+let to_sexp t : Util.Sexp.t =
+  match t with
+  | Dir dir -> List [Atom "dir"; Atom dir]
+  | File file -> List [Atom "file"; Atom file]

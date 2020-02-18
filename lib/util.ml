@@ -14,6 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+open Compat
 open Result
 
 module Result = struct
@@ -69,16 +70,41 @@ module Option = struct
     | None -> default
 end
 
-module List = struct
-  let find_map f l =
-    let rec aux = function
-      | [] -> None
-      | h :: t ->
-        match f h with
-        | Some x -> Some x
-        | None -> aux t
-    in
-    aux l
+module Sexp = struct
+  type t =
+    | Atom of string
+    | List of t list
+
+  let rec equal t t' =
+    match t, t' with
+    | Atom s, Atom s' -> String.equal s s'
+    | List l, List l' -> equal_list l l'
+    | _, _ -> false
+  and equal_list l l' =
+    match l, l' with
+    | [], [] -> true
+    | hd::tl, hd'::tl' -> equal hd hd' && equal_list tl tl'
+    | _, _ -> false
+
+  module Canonical = struct
+    let to_buffer ~buf sexp =
+      let rec loop = function
+        | Atom str ->
+          Buffer.add_string buf (string_of_int (String.length str));
+          Buffer.add_string buf ":";
+          Buffer.add_string buf str
+        | List e ->
+          Buffer.add_char buf '(';
+          ignore (List.map loop e);
+          Buffer.add_char buf ')'
+      in
+      ignore (loop sexp)
+
+    let to_string sexp =
+      let buf = Buffer.create 1024 in
+      to_buffer ~buf sexp;
+      Buffer.contents buf
+  end
 end
 
 module String = struct
@@ -94,4 +120,16 @@ module String = struct
     | hd::tl -> aux hd tl
 
   let english_conjonction words = english_concat ~last_sep:"and" words
+end
+
+module List = struct
+  let find_map f l =
+    let rec aux = function
+      | [] -> None
+      | h :: t ->
+        match f h with
+        | Some x -> Some x
+        | None -> aux t
+    in
+    aux l
 end

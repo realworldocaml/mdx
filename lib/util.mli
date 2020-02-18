@@ -58,3 +58,17 @@ module String : sig
   (** [english_conjonction ["a"; "b"; "c"]] returns ["a, b and c"].
       @raise Invalid_argument when called on the empty list. *)
 end
+
+module Sexp : sig
+  type t =
+    | Atom of string
+    | List of t list
+
+  val equal : t -> t -> bool
+
+  module Canonical : sig
+    val to_buffer : buf: Buffer.t -> t -> unit
+
+    val to_string : t -> string
+  end
+end

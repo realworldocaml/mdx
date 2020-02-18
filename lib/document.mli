@@ -14,26 +14,29 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Cmdliner
+ (** {2 Lines} *)
 
-let cmds = [Test.cmd; Pp.cmd; Rule.cmd; Deps.cmd]
-let main (`Setup ()) = `Help (`Pager, None)
+type syntax = Syntax.t =
+  | Normal
+  | Cram
 
-let main =
-  let doc = "Execute markdown files." in
-  let exits = Term.default_exits in
-  let man = [] in
-  Term.(ret (const main $ Cli.setup)),
-  Term.info "ocaml-mdx" ~version:"%%VERSION%%" ~doc ~exits ~man
+    (** The type for the lines of a markdown or cram file. *)
+type line =
+  | Section of (int * string)
+  | Text    of string
+  | Block   of Block.t
 
-let main () = Term.(exit_status @@ eval_choice main cmds)
+val pp_line: ?syntax:syntax -> line Fmt.t
+(** [pp_line] is the pretty-printer for markdown or cram lines. *)
 
-let main () =
-  if String.compare (Sys.argv).(0) "mdx" == 0
-  then
-    Format.eprintf
-    "\x1b[0;1mWarning\x1b[0m: 'mdx' is deprecated and will one day be removed.
-    Use 'ocaml-mdx' instead\n%!";
-  main ()
+(** {2 Document} *)
 
-let () = main ()
+type t = line list
+(** The type for mdx documents. *)
+
+val pp: ?syntax:syntax -> t Fmt.t
+(** [pp] is the pretty printer for mdx documents. Should be idempotent
+   with {!of_string}. *)
+
+val to_string: t -> string
+(** [to_string t] converts the document [t] to a string. *)
