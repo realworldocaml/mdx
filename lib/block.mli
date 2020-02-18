@@ -78,6 +78,7 @@ type t = {
   contents : string list;
   skip : bool;
   version : (Label.Relation.t * Ocaml_version.t) option;
+  set_variables : (string * string) list;
   value : value;
 }
 

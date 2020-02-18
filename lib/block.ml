@@ -76,6 +76,7 @@ type t = {
   contents : string list;
   skip : bool;
   version : (Label.Relation.t * Ocaml_version.t) option;
+  set_variables : (string * string) list;
   value : value;
 }
 
@@ -185,10 +186,7 @@ let environment t =
   | Toplevel b -> b.env
   | Cram _ | Error _ | Include _ | Raw -> "default"
 
-let set_variables t =
-  List.filter_map
-    (function Label.Set (v, x) -> Some (v, x) | _ -> None)
-    (labels t)
+let set_variables t = t.set_variables
 
 let unset_variables t =
   List.filter_map (function Label.Unset x -> Some x | _ -> None) (labels t)
@@ -290,6 +288,10 @@ let mk ~line ~file ~section ~labels ~header ~contents =
     List.filter_map
       (function Label.Require_package x -> Some x | _ -> None) labels
   in
+  let set_variables =
+    List.filter_map
+      (function Label.Set (v, x) -> Some (v, x) | _ -> None) labels
+  in
   let open Util.Result.Infix in
   (match get_label (function File x -> Some x | _ -> None) labels with
   | Some file_included -> (
@@ -326,7 +328,7 @@ let mk ~line ~file ~section ~labels ~header ~contents =
   >>= fun value ->
   Ok
     { line; file; section; dir; source_trees; required_packages; labels; header;
-      contents; skip; version; value }
+      contents; skip; version; set_variables; value }
 
 let is_active ?section:s t =
   let active =
