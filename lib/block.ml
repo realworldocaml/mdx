@@ -73,6 +73,7 @@ type t = {
   header : Header.t option;
   contents : string list;
   skip : bool;
+  version : (Label.Relation.t * Ocaml_version.t) option;
   value : value;
 }
 
@@ -159,13 +160,11 @@ let pp ?syntax ppf b =
   pp_contents ?syntax ppf b;
   pp_footer ?syntax ppf ()
 
-let get_label f t = Util.List.find_map f (labels t)
-
 let directory t = t.dir
 
 let file t = match value t with Include t -> Some t.file_included | _ -> None
 
-let version t = get_label (function Version (x, y) -> Some (x, y) | _ -> None) t
+let version t = t.version
 
 let source_trees t =
   List.filter_map
@@ -273,15 +272,7 @@ let version_enabled t =
       | None -> true )
   | Error (`Msg e) -> Fmt.failwith "invalid OCaml version: %s" e
 
-let get_label f (labels : Label.t list) =
-  let rec aux = function
-    | [] -> None
-    | h :: t ->
-      match f h with
-      | Some x -> Some x
-      | None -> aux t
-  in
-  aux labels
+let get_label f (labels : Label.t list) = Util.List.find_map f labels
 
 let check_not_set msg = function
   | Some _ -> Util.Result.errorf msg
@@ -293,6 +284,9 @@ let mk ~line ~file ~section ~labels ~header ~contents =
   let env = get_label (function Env x -> Some x | _ -> None) labels in
   let dir = get_label (function Dir x -> Some x | _ -> None) labels in
   let skip = List.exists (function Label.Skip -> true | _ -> false) labels in
+  let version =
+    get_label (function Version (x, y) -> Some (x, y) | _ -> None) labels
+  in
   let open Util.Result.Infix in
   (match get_label (function File x -> Some x | _ -> None) labels with
   | Some file_included -> (
@@ -327,7 +321,8 @@ let mk ~line ~file ~section ~labels ~header ~contents =
           Ok (Toplevel { phrases; env; non_det }) )
     | _ -> Ok Raw)
   >>= fun value ->
-  Ok { line; file; section; dir; labels; header; contents; skip; value }
+  Ok
+    { line; file; section; dir; labels; header; contents; skip; version; value }
 
 let is_active ?section:s t =
   let active =

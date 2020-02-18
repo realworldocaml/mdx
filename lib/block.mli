@@ -75,6 +75,7 @@ type t = {
   header : Header.t option;
   contents : string list;
   skip : bool;
+  version : (Label.Relation.t * Ocaml_version.t) option;
   value : value;
 }
 
