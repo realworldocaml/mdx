@@ -19,22 +19,26 @@ let test_of_block =
     in
     (test_name, `Quick, test_fun)
   in
-
-  let block_1 = { Mdx.Block.empty with
-      labels = Mdx.Block.labels_of_string "file=toto.ml"
-    }
-    and block_2 = { Mdx.Block.empty with
-      labels = Mdx.Block.labels_of_string "dir=tata/"
-    }
-    and block_3 = { Mdx.Block.empty with
-      labels = Mdx.Block.labels_of_string "dir=tata/,skip"
-    }
+  let block_with_labels s =
+    match Mdx.Label.of_string s with
+    | Ok labels -> {Mdx.Block.empty with labels}
+    | Error _ -> assert false
   in
-  [
-    make_test ~block_des:"Empty" ~block:Mdx.Block.empty ~expected:None ()
-  ; make_test ~block_des:"file:toto.ml" ~block:block_1 ~expected:(Some (File "toto.ml")) ()
-  ; make_test ~block_des:"dir:tata/" ~block:block_2 ~expected:(Some (Dir "tata/")) ()
-  ; make_test ~block_des:"dir=tata/,skip" ~block:block_3 ~expected:None ()
+  [ make_test ~block_des:"Empty" ~block:Mdx.Block.empty ~expected:None ()
+  ; make_test
+      ~block_des:"file:toto.ml"
+      ~block:(block_with_labels "file=toto.ml")
+      ~expected:(Some (File "toto.ml"))
+      ()
+  ; make_test
+      ~block_des:"dir:tata/"
+      ~block:(block_with_labels "dir=tata/")
+      ~expected:(Some (Dir "tata/"))
+      ()
+  ; make_test
+      ~block_des:"dir=tata/,skip"
+      ~block:(block_with_labels "dir=tata/,skip")
+      ~expected:None ()
   ]
 
 let test_of_line =
