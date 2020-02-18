@@ -33,6 +33,10 @@ let run (`Setup ()) (`Syntax syntax) (`File file) =
 
 let cmd =
   let open Cmdliner in
-  let doc = "List the dependencies of the input files." in
+  let doc =
+    "List the dependencies of the input file. \
+     This command is meant to be used by dune only. There are no stability \
+     guarantees."
+  in
   Term.(pure run $ Cli.setup $ Cli.syntax $ Cli.file),
   Term.info "deps" ~doc
