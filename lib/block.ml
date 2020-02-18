@@ -52,14 +52,24 @@ type toplevel_value = {
 }
 
 type include_value = {
+  header : Header.t option;
   file_included : string;
   part_included : string option;
 }
 
+type raw_value = {
+  header : Header.t option;
+}
+
+type error_value = {
+  header : Header.t option;
+  errors: string list;
+}
+
 type value =
-  | Raw
+  | Raw of raw_value
   | OCaml of ocaml_value
-  | Error of string list
+  | Error of error_value
   | Cram of cram_value
   | Toplevel of toplevel_value
   | Include of include_value
@@ -72,7 +82,6 @@ type t = {
   source_trees : string list;
   required_packages : string list;
   labels : Label.t list;
-  header : Header.t option;
   contents : string list;
   skip : bool;
   version : (Label.Relation.t * Ocaml_version.t) option;
@@ -85,10 +94,19 @@ let dump_string ppf s = Fmt.pf ppf "%S" s
 
 let dump_section = Fmt.(Dump.pair int string)
 
+let header t =
+  match t.value with
+  | Raw b -> b.header
+  | OCaml _ -> Some Header.OCaml
+  | Error b -> b.header
+  | Cram _ -> Some Header.Shell
+  | Toplevel _ -> Some Header.OCaml
+  | Include b -> b.header
+
 let dump_value ppf = function
-  | Raw -> Fmt.string ppf "Raw"
+  | Raw _ -> Fmt.string ppf "Raw"
   | OCaml _ -> Fmt.string ppf "OCaml"
-  | Error e -> Fmt.pf ppf "Error %a" Fmt.(Dump.list dump_string) e
+  | Error e -> Fmt.pf ppf "Error %a" Fmt.(Dump.list dump_string) e.errors
   | Cram { pad; tests; _ } ->
     Fmt.pf ppf "@[Cram@ {pad=%d;@ tests=%a}@]"
       pad Fmt.(Dump.list Cram.dump) tests
@@ -96,7 +114,7 @@ let dump_value ppf = function
     Fmt.pf ppf "@[Toplevel %a@]" Fmt.(Dump.list Toplevel.dump) tests
   | Include _ -> Fmt.string ppf "Include"
 
-let dump ppf { file; line; section; labels; header; contents; value; _ } =
+let dump ppf ({ file; line; section; labels; contents; value; _ } as b) =
   Fmt.pf ppf
     "{@[file: %s;@ line: %d;@ section: %a;@ labels: %a;@ header: %a;@\n\
     \        contents: %a;@ value: %a@]}" file line
@@ -105,7 +123,7 @@ let dump ppf { file; line; section; labels; header; contents; value; _ } =
     Fmt.Dump.(list Label.pp)
     labels
     Fmt.(Dump.option Header.pp)
-    header
+    (header b)
     Fmt.(Dump.list dump_string)
     contents dump_value value
 
@@ -136,11 +154,12 @@ let pp_header ?syntax ppf t =
         Fmt.pf ppf "<-- non-deterministic command\n"
       | _ -> failwith "cannot happen: checked during parsing" )
   | _ ->
-    Fmt.pf ppf "```%a%a\n" Fmt.(option Header.pp) t.header pp_labels t.labels
+    Fmt.pf ppf "```%a%a\n" Fmt.(option Header.pp) (header t) pp_labels t.labels
 
 let pp_error ppf b =
   match b.value with
-  | Error e -> List.iter (fun e -> Fmt.pf ppf ">> @[<h>%a@]@." Fmt.words e) e
+  | Error e ->
+    List.iter (fun e -> Fmt.pf ppf ">> @[<h>%a@]@." Fmt.words e) e.errors
   | _ -> ()
 
 let pp ?syntax ppf b =
@@ -160,7 +179,7 @@ let non_det t =
   | OCaml b -> b.non_det
   | Cram b -> b.non_det
   | Toplevel b -> b.non_det
-  | Error _ | Include _ | Raw -> None
+  | Error _ | Include _ | Raw _ -> None
 
 let skip t = t.skip
 
@@ -168,7 +187,7 @@ let environment t =
   match t.value with
   | OCaml b -> b.env
   | Toplevel b -> b.env
-  | Cram _ | Error _ | Include _ | Raw -> "default"
+  | Cram _ | Error _ | Include _ | Raw _ -> "default"
 
 let set_variables t = t.set_variables
 
@@ -202,7 +221,6 @@ let required_libraries = function
 
 let value t = t.value
 let section t = t.section
-let header t = t.header
 
 let guess_ocaml_kind contents =
   let rec aux = function
@@ -229,7 +247,7 @@ let executable_contents b =
   let contents =
     match b.value with
     | OCaml _ -> b.contents
-    | Error _ | Raw | Cram _ | Include _ -> []
+    | Error _ | Raw _ | Cram _ | Include _ -> []
     | Toplevel { phrases; _ } ->
       List.flatten (
         List.map (fun t ->
@@ -293,11 +311,11 @@ let mk ~line ~file ~section ~labels ~header ~contents =
       | Some part -> (
           match header with
           | Some Header.OCaml ->
-            Ok (Include { file_included; part_included= Some part })
+            Ok (Include { file_included; part_included= Some part; header })
           | _ ->
             Util.Result.errorf
               "`part` is not supported for non-OCaml code blocks." )
-      | None -> Ok (Include { file_included; part_included= None }) )
+      | None -> Ok (Include { file_included; part_included= None; header }) )
   | None ->
     check_not_set "`part` label requires a `file` label." part >>= fun () ->
     match header with
@@ -313,10 +331,10 @@ let mk ~line ~file ~section ~labels ~header ~contents =
         | `Toplevel ->
           let phrases = Toplevel.of_lines ~file ~line contents in
           Ok (Toplevel { phrases; env; non_det }) )
-    | _ -> Ok Raw)
+    | _ -> Ok (Raw { header }) )
   >>= fun value ->
   Ok
-    { line; file; section; dir; source_trees; required_packages; labels; header;
+    { line; file; section; dir; source_trees; required_packages; labels;
       contents; skip; version; set_variables; unset_variables; value }
 
 let is_active ?section:s t =

@@ -46,6 +46,7 @@ type toplevel_value = {
 }
 
 type include_value = {
+  header : Header.t option;
   file_included : string;
   (** [file_included] is the name of the file to synchronize with. *)
   part_included : string option;
@@ -53,11 +54,20 @@ type include_value = {
       If lines is not specified synchronize the whole file. *)
 }
 
+type raw_value = {
+  header : Header.t option;
+}
+
+type error_value = {
+  header : Header.t option;
+  errors : string list;
+}
+
 (** The type for block values. *)
 type value =
-  | Raw
+  | Raw of raw_value
   | OCaml of ocaml_value
-  | Error of string list
+  | Error of error_value
   | Cram of cram_value
   | Toplevel of toplevel_value
   | Include of include_value
@@ -74,7 +84,6 @@ type t = {
   source_trees : string list;
   required_packages : string list;
   labels : Label.t list;
-  header : Header.t option;
   contents : string list;
   skip : bool;
   version : (Label.Relation.t * Ocaml_version.t) option;

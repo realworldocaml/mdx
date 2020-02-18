@@ -260,9 +260,9 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
       match Block.value t with
       (* Print errors *)
       | Error _ -> print_block ()
-      | Raw -> print_block ()
-      | Include { file_included; part_included } -> (
-          match Block.header t with
+      | Raw _ -> print_block ()
+      | Include { file_included; part_included; header } -> (
+          match header with
           | Some Block.Header.OCaml ->
             assert (syntax <> Some Cram);
             update_file_or_block ?root ppf file file_included t part_included
@@ -341,7 +341,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
 let report_error_in_block block msg =
   let kind =
     match block.Block.value with
-    | Raw | Error _ | Include _ -> ""
+    | Raw _ | Error _ | Include _ -> ""
     | OCaml _ -> "OCaml "
     | Cram _ -> "cram "
     | Toplevel _ -> "toplevel "
