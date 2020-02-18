@@ -36,7 +36,7 @@ include Document
 let section_of_line = function
   | Section s -> Some s
   | Text _ -> None
-  | Block b -> Block.section b
+  | Block b -> b.section
 
 let filter_section re (t : t) =
   match

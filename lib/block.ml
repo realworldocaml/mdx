@@ -81,12 +81,6 @@ type t = {
   value : value;
 }
 
-let section t = t.section
-
-let header t = t.header
-
-let value t = t.value
-
 let dump_string ppf s = Fmt.pf ppf "%S" s
 
 let dump_section = Fmt.(Dump.pair int string)
@@ -159,8 +153,6 @@ let directory t = t.dir
 
 let file t = match t.value with Include t -> Some t.file_included | _ -> None
 
-let version t = t.version
-
 let source_trees t = t.source_trees
 
 let non_det t =
@@ -208,6 +200,10 @@ let required_libraries = function
   | { value = Toplevel _; contents; _} -> require_from_lines contents
   | _ -> Ok Library.Set.empty
 
+let value t = t.value
+let section t = t.section
+let header t = t.header
+
 let guess_ocaml_kind contents =
   let rec aux = function
     | [] -> `Code
@@ -250,7 +246,7 @@ let executable_contents b =
 let version_enabled t =
   match Ocaml_version.of_string Sys.ocaml_version with
   | Ok curr_version -> (
-      match version t with
+      match t.version with
       | Some (op, v) ->
           Label.Relation.compare op (Ocaml_version.compare curr_version v) 0
       | None -> true )
