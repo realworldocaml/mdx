@@ -89,7 +89,7 @@ let root_dir ?root ?block () =
       | Some d -> (
           match root with
           | Some r -> Some (r / d)
-          | None -> Some (Filename.dirname (Block.filename t) / d) )
+          | None -> Some (Filename.dirname t.file / d) )
       | None -> root )
   | None -> root
 
@@ -275,7 +275,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
           | Some Nd_command when not non_deterministic -> print_block ()
           | _ ->
             assert (syntax <> Some Cram);
-            eval_raw ~block:t ?root c ~line:(Block.line t) (Block.contents t);
+            eval_raw ~block:t ?root c ~line:t.line (Block.contents t);
             Block.pp ppf t
         )
       | Cram { tests; pad; non_det } -> (
@@ -340,14 +340,14 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
 
 let report_error_in_block block msg =
   let kind =
-    match Block.value block with
+    match block.Block.value with
     | Raw | Error _ | Include _ -> ""
     | OCaml _ -> "OCaml "
     | Cram _ -> "cram "
     | Toplevel _ -> "toplevel "
   in
   Fmt.epr "Error in the %scode block in %s at line %d:@]\n%s\n"
-    kind (Block.filename block) (Block.line block) msg
+    kind block.file block.line msg
 
 let run setup non_deterministic silent_eval syntax silent verbose_findlib
     prelude prelude_str file section root force_output output : int =

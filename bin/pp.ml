@@ -37,11 +37,11 @@ let run (`Setup ()) (`File file) (`Section section) =
             Log.debug (fun l -> l "pp: %a" Mdx.Block.dump b);
             let pp_lines = Fmt.(list ~sep:(unit "\n") string) in
             let contents = Mdx.Block.executable_contents b in
-            match Mdx.Block.value b with
+            match b.value with
             | Toplevel _ -> Fmt.pr "%a\n" pp_lines contents
             | OCaml _    ->
               Fmt.pr "%a\n%a\n"
-                Mdx.Block.pp_line_directive (file, Mdx.Block.line b)
+                Mdx.Block.pp_line_directive (file, b.line)
                 pp_lines contents
             | _          -> ()
           )

@@ -115,10 +115,6 @@ val pp_line_directive : (string * int) Fmt.t
 
 (** {2 Accessors} *)
 
-val line: t -> int
-
-val filename : t -> string
-
 val section : t -> section option
 (** [section t] is [t]'s section. *)
 

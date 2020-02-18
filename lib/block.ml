@@ -81,13 +81,7 @@ type t = {
   value : value;
 }
 
-let line t = t.line
-
-let filename t = t.file
-
 let section t = t.section
-
-let labels t = t.labels
 
 let header t = t.header
 
@@ -110,18 +104,18 @@ let dump_value ppf = function
     Fmt.pf ppf "@[Toplevel %a@]" Fmt.(Dump.list Toplevel.dump) tests
   | Include _ -> Fmt.string ppf "Include"
 
-let dump ppf t =
+let dump ppf { file; line; section; labels; header; contents; value; _ } =
   Fmt.pf ppf
     "{@[file: %s;@ line: %d;@ section: %a;@ labels: %a;@ header: %a;@\n\
-    \        contents: %a;@ value: %a@]}" (filename t) (line t)
+    \        contents: %a;@ value: %a@]}" file line
     Fmt.(Dump.option dump_section)
-    (section t)
+    section
     Fmt.Dump.(list Label.pp)
-    (labels t)
+    labels
     Fmt.(Dump.option Header.pp)
-    (header t)
+    header
     Fmt.(Dump.list dump_string)
-    (contents t) dump_value (value t)
+    contents dump_value value
 
 let pp_lines syntax =
   let pp =
@@ -129,7 +123,7 @@ let pp_lines syntax =
   in
   Fmt.(list ~sep:(unit "\n") pp)
 
-let pp_contents ?syntax ppf t = Fmt.pf ppf "%a\n" (pp_lines syntax) (contents t)
+let pp_contents ?syntax ppf t = Fmt.pf ppf "%a\n" (pp_lines syntax) t.contents
 
 let pp_footer ?syntax ppf () =
   match syntax with Some Syntax.Cram -> () | _ -> Fmt.string ppf "```\n"
@@ -141,7 +135,7 @@ let pp_labels ppf = function
 let pp_header ?syntax ppf t =
   match syntax with
   | Some Syntax.Cram -> (
-      match labels t with
+      match t.labels with
       | [] -> ()
       | [Non_det None] -> Fmt.pf ppf "<-- non-deterministic\n"
       | [Non_det (Some Nd_output)] ->
@@ -150,11 +144,10 @@ let pp_header ?syntax ppf t =
         Fmt.pf ppf "<-- non-deterministic command\n"
       | _ -> failwith "cannot happen: checked during parsing" )
   | _ ->
-    Fmt.pf ppf "```%a%a\n" Fmt.(option Header.pp) (header t) pp_labels
-      (labels t)
+    Fmt.pf ppf "```%a%a\n" Fmt.(option Header.pp) t.header pp_labels t.labels
 
 let pp_error ppf b =
-  match value b with
+  match b.value with
   | Error e -> List.iter (fun e -> Fmt.pf ppf ">> @[<h>%a@]@." Fmt.words e) e
   | _ -> ()
 
@@ -166,14 +159,14 @@ let pp ?syntax ppf b =
 
 let directory t = t.dir
 
-let file t = match value t with Include t -> Some t.file_included | _ -> None
+let file t = match t.value with Include t -> Some t.file_included | _ -> None
 
 let version t = t.version
 
 let source_trees t = t.source_trees
 
 let non_det t =
-  match value t with
+  match t.value with
   | OCaml b -> b.non_det
   | Cram b -> b.non_det
   | Toplevel b -> b.non_det
@@ -182,7 +175,7 @@ let non_det t =
 let skip t = t.skip
 
 let environment t =
-  match value t with
+  match t.value with
   | OCaml b -> b.env
   | Toplevel b -> b.env
   | Cram _ | Error _ | Include _ | Raw -> "default"
@@ -213,10 +206,9 @@ let require_from_lines lines =
   Util.Result.List.map ~f:require_from_line lines >>| fun libs ->
   List.fold_left Library.Set.union Library.Set.empty libs
 
-let required_libraries t =
-  match value t with
-  | Toplevel _ -> require_from_lines (contents t)
-  | Raw | OCaml _ | Error _ | Cram _ | Include _ -> Ok Library.Set.empty
+let required_libraries = function
+  | { value = Toplevel _; contents; _} -> require_from_lines contents
+  | _ -> Ok Library.Set.empty
 
 let guess_ocaml_kind contents =
   let rec aux = function
@@ -241,8 +233,8 @@ let line_directive = Fmt.to_to_string pp_line_directive
 
 let executable_contents b =
   let contents =
-    match value b with
-    | OCaml _ -> contents b
+    match b.value with
+    | OCaml _ -> b.contents
     | Error _ | Raw | Cram _ | Include _ -> []
     | Toplevel { phrases; _ } ->
       List.flatten (
@@ -251,7 +243,7 @@ let executable_contents b =
             | [] -> []
             | cs ->
               let mk s = String.make (t.hpad+2) ' ' ^ s in
-              line_directive (filename b, t.line) :: List.map mk cs
+              line_directive (b.file, t.line) :: List.map mk cs
           ) phrases)
   in
   if contents = [] || ends_by_semi_semi contents then contents
@@ -337,9 +329,9 @@ let is_active ?section:s t =
   let active =
     match s with
     | Some p -> (
-        match section t with
+        match t.section with
         | Some s -> Re.execp (Re.Perl.compile_pat p) (snd s)
         | None -> Re.execp (Re.Perl.compile_pat p) "" )
     | None -> true
   in
-  active && version_enabled t && not (skip t)
+  active && version_enabled t && not t.skip
