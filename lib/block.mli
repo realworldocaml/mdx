@@ -45,20 +45,14 @@ type toplevel_value = {
   non_det : Label.non_det option;
 }
 
-type include_value =
-  | Include_OCaml of {
-      file_included : string;
-      (** [file_included] is the name of the file to synchronize with. *)
-      part_included : string option;
-      (** [part_included] is the part of the file to synchronize with.
-          If lines is not specified synchronize the whole file. *)
-    }
-  | Include_other of {
-      header : Header.t option;
-      (** [header] cannot be equal to [OCaml] here. *)
-      file_included : string;
-      (** [file_included] is the name of the file to synchronize with. *)
-    }
+type include_value = {
+  header : Header.t option;
+  file_included : string;
+  (** [file_included] is the name of the file to synchronize with. *)
+  part_included : string option;
+  (** [part_included] is the part of the file to synchronize with.
+      If lines is not specified synchronize the whole file. *)
+}
 
 type raw_value = {
   header : Header.t option;

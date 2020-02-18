@@ -51,15 +51,11 @@ type toplevel_value = {
   non_det : Label.non_det option;
 }
 
-type include_value =
-  | Include_OCaml of {
-      file_included : string;
-      part_included : string option;
-    }
-  | Include_other of {
-      header : Header.t option;
-      file_included : string;
-    }
+type include_value = {
+  header : Header.t option;
+  file_included : string;
+  part_included : string option;
+}
 
 type raw_value = {
   header : Header.t option;
@@ -105,8 +101,7 @@ let header t =
   | Error b -> b.header
   | Cram _ -> Some Header.Shell
   | Toplevel _ -> Some Header.OCaml
-  | Include (Include_OCaml _) -> Some Header.OCaml
-  | Include (Include_other b) -> b.header
+  | Include b -> b.header
 
 let dump_value ppf = function
   | Raw _ -> Fmt.string ppf "Raw"
@@ -175,11 +170,7 @@ let pp ?syntax ppf b =
 
 let directory t = t.dir
 
-let file t =
-  match t.value with
-  | Include (Include_OCaml t) -> Some t.file_included
-  | Include (Include_other t) -> Some t.file_included
-  | _ -> None
+let file t = match t.value with Include t -> Some t.file_included | _ -> None
 
 let source_trees t = t.source_trees
 
@@ -318,11 +309,11 @@ let mk ~line ~file ~section ~labels ~header ~contents =
       >>= fun () ->
       match header with
       | Some Header.OCaml ->
-        Ok (Include (Include_OCaml { file_included; part_included= part }))
+        Ok (Include { file_included; part_included= part; header })
       | _ ->
         check_not_set "`part` is not supported for non-OCaml code blocks." part
         >>= fun () ->
-        Ok (Include (Include_other { file_included; header })) )
+        Ok (Include { file_included; part_included= None; header }) )
   | None ->
     check_not_set "`part` label requires a `file` label." part >>= fun () ->
     match header with
