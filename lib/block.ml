@@ -69,6 +69,7 @@ type t = {
   file : string;
   section : section option;
   dir : string option;
+  source_trees : string list;
   labels : Label.t list;
   header : Header.t option;
   contents : string list;
@@ -166,10 +167,7 @@ let file t = match value t with Include t -> Some t.file_included | _ -> None
 
 let version t = t.version
 
-let source_trees t =
-  List.filter_map
-    (function Label.Source_tree x -> Some x | _ -> None)
-    (labels t)
+let source_trees t = t.source_trees
 
 let non_det t =
   match value t with
@@ -287,6 +285,9 @@ let mk ~line ~file ~section ~labels ~header ~contents =
   let version =
     get_label (function Version (x, y) -> Some (x, y) | _ -> None) labels
   in
+  let source_trees =
+    List.filter_map (function Label.Source_tree x -> Some x | _ -> None) labels
+  in
   let open Util.Result.Infix in
   (match get_label (function File x -> Some x | _ -> None) labels with
   | Some file_included -> (
@@ -322,7 +323,8 @@ let mk ~line ~file ~section ~labels ~header ~contents =
     | _ -> Ok Raw)
   >>= fun value ->
   Ok
-    { line; file; section; dir; labels; header; contents; skip; version; value }
+    { line; file; section; dir; source_trees; labels; header; contents; skip;
+      version; value }
 
 let is_active ?section:s t =
   let active =

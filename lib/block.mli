@@ -71,6 +71,7 @@ type t = {
   file : string;
   section : section option;
   dir : string option;
+  source_trees : string list;
   labels : Label.t list;
   header : Header.t option;
   contents : string list;
