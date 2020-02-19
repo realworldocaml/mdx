@@ -97,8 +97,9 @@ let pp_header ?syntax ppf t =
     assert (t.header = Syntax.cram_default_header);
     begin match t.labels with
     | [] -> ()
-    | [Non_det `Output] -> Fmt.pf ppf "<-- non-deterministic output\n"
-    | [Non_det `Command] -> Fmt.pf ppf "<-- non-deterministic command\n"
+    | [Non_det None] -> Fmt.pf ppf "<-- non-deterministic\n"
+    | [Non_det (Some Nd_output)] -> Fmt.pf ppf "<-- non-deterministic output\n"
+    | [Non_det (Some Nd_command)] -> Fmt.pf ppf "<-- non-deterministic command\n"
     | _ ->
       let err =
         Fmt.strf "Block.pp_header: [ %a ]" pp_labels t.labels
@@ -136,8 +137,13 @@ let source_trees t =
   List.filter_map (function Label.Source_tree x -> Some x | _ -> None) t.labels
 
 let mode t =
-  get_label_or (function Label.Non_det mode -> Some (`Non_det mode) | _ -> None)
-    ~default:`Normal t
+  get_label_or
+    (function
+      | Non_det (Some mode) -> Some (`Non_det mode)
+      | Non_det None -> Some (`Non_det Label.default_non_det)
+      | _ -> None)
+    ~default:`Normal
+    t
 
 let skip t = List.exists (function Label.Skip -> true | _ -> false) t.labels
 
