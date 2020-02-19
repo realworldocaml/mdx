@@ -12,6 +12,7 @@
 - Infer syntax kind when `--syntax` is not set, and add 'markdown' as an alias to 'normal' (#222, @gpetiot)
 - Add `ocaml-mdx deps` command to be used by dune to compute file and dir dependencies of an
   mdx file. (#217, @voodoos)
+- Add new delimiters syntax using comments for partial OCaml files include (#212, @voodoos).
 
 #### Changed
 
