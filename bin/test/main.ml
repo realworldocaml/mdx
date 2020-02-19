@@ -173,20 +173,20 @@ let run_toplevel_tests ?root c ppf tests t =
     ) tests;
   Block.pp_footer ppf ()
 
-type file = { first: Mdx_top.Part.file; current: Mdx_top.Part.file }
+type file = { first: Mdx.Part.file; current: Mdx.Part.file }
 
 let files: (string, file) Hashtbl.t = Hashtbl.create 8
 
 let has_changed ~force_output { first; current } =
-  let contents = Mdx_top.Part.contents current in
-  if contents = Mdx_top.Part.contents first && force_output = false
+  let contents = Mdx.Part.contents current in
+  if contents = Mdx.Part.contents first && force_output = false
   then None
   else Some contents
 
 let read_parts file =
   try Hashtbl.find files file
   with Not_found ->
-    match Mdx_top.Part.read file with
+    match Mdx.Part.read file with
     | exception Sys_error msg -> failwith msg
     | parts ->
       let f = { first=parts; current=parts} in
@@ -195,7 +195,7 @@ let read_parts file =
 
 let read_part file part =
   let parts = read_parts file in
-  match Mdx_top.Part.find parts.current ~part with
+  match Mdx.Part.find parts.current ~part with
   | None       ->
     Fmt.failwith "Cannot find part %S in %s"
       (match part with None -> "" | Some p -> p)

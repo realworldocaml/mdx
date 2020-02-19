@@ -252,6 +252,18 @@
  (action (diff padding/test-case.md padding.actual)))
 
 (rule
+ (target parts-begin-end.actual)
+ (deps (package mdx) (source_tree parts-begin-end))
+ (action
+  (with-stdout-to %{target}
+   (chdir parts-begin-end
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(alias
+ (name runtest)
+ (action (diff parts-begin-end/test-case.md.expected parts-begin-end.actual)))
+
+(rule
  (target prelude.actual)
  (deps (package mdx) (source_tree prelude))
  (action

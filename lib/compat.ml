@@ -113,6 +113,10 @@ module List = struct
        if n <= 0 then 1 else
          compare_length_with l (n-1)
 #endif
+
+#if OCAML_VERSION < (4, 3, 0)
+  let cons x xs = x :: xs
+#endif
 end
 
 module Warnings = struct

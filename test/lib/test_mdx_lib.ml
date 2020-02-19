@@ -6,4 +6,5 @@ let () =
     ; Test_library.suite
     ; Test_syntax.suite
     ; Test_util.suite
+    ; Test_part.suite
     ]
