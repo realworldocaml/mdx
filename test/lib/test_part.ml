@@ -29,7 +29,7 @@ let test_of_line =
     in
     (test_name, `Quick, test_fun)
   in
-  Parse_parts.([
+  [
     make_test ~line:(Error `End_of_file) ~expected:(File_end) ();
     make_test ~line:(Ok "foo") ~expected:(Normal "foo") ();
     make_test
@@ -44,6 +44,6 @@ let test_of_line =
     make_test
       ~line:(Ok "    [@@@part \"foobar\"]    ")
       ~expected:(Compat_attr ("foobar", "    ")) ()
-  ])
+  ]
 
 let suite = ("Parts", test_of_line)
