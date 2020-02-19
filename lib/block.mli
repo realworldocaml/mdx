@@ -87,6 +87,7 @@ type t = {
   contents : string list;
   skip : bool;
   version_enabled: bool;
+  (** Whether the current OCaml version complies with the block's version. *)
   set_variables : (string * string) list;
   unset_variables : string list;
   value : value;
