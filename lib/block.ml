@@ -84,7 +84,7 @@ type t = {
   labels : Label.t list;
   contents : string list;
   skip : bool;
-  version : (Label.Relation.t * Ocaml_version.t) option;
+  version_enabled: bool;
   set_variables : (string * string) list;
   unset_variables : string list;
   value : value;
@@ -261,14 +261,13 @@ let executable_contents b =
   if contents = [] || ends_by_semi_semi contents then contents
   else contents @ [ ";;" ]
 
-let version_enabled t =
-  match Ocaml_version.of_string Sys.ocaml_version with
-  | Ok curr_version -> (
-      match t.version with
-      | Some (op, v) ->
-          Label.Relation.compare op (Ocaml_version.compare curr_version v) 0
-      | None -> true )
-  | Error (`Msg e) -> Fmt.failwith "invalid OCaml version: %s" e
+let version_enabled version =
+  let open Util.Result.Infix in
+  Ocaml_version.of_string Sys.ocaml_version >>= fun curr_version ->
+  match version with
+  | Some (op, v) ->
+      Ok (Label.Relation.compare op (Ocaml_version.compare curr_version v) 0)
+  | None -> Ok true
 
 let get_label f (labels : Label.t list) = Util.List.find_map f labels
 
@@ -331,9 +330,10 @@ let mk ~line ~file ~section ~labels ~header ~contents =
           Ok (Toplevel { phrases; env; non_det }) )
     | _ -> Ok (Raw { header }) )
   >>= fun value ->
+  version_enabled version >>= fun version_enabled ->
   Ok
     { line; file; section; dir; source_trees; required_packages; labels;
-      contents; skip; version; set_variables; unset_variables; value }
+      contents; skip; version_enabled; set_variables; unset_variables; value }
 
 let is_active ?section:s t =
   let active =
@@ -344,4 +344,4 @@ let is_active ?section:s t =
         | None -> Re.execp (Re.Perl.compile_pat p) "" )
     | None -> true
   in
-  active && version_enabled t && not t.skip
+  active && t.version_enabled && not t.skip
