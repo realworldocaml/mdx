@@ -228,6 +228,18 @@
  (action (diff non-det/test-case.md non-det.actual)))
 
 (rule
+ (target non-det-default-preserved.actual)
+ (deps (package mdx) (source_tree non-det-default-preserved))
+ (action
+  (with-stdout-to %{target}
+   (chdir non-det-default-preserved
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(alias
+ (name runtest)
+ (action (diff non-det-default-preserved/test-case.md non-det-default-preserved.actual)))
+
+(rule
  (target ocaml-408-syntax.actual)
  (deps (package mdx) (source_tree ocaml-408-syntax))
  (action

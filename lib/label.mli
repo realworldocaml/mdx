@@ -26,6 +26,12 @@ module Relation : sig
       the associated value. *)
 end
 
+type non_det =
+  | Nd_output
+  | Nd_command
+
+val default_non_det : non_det
+
 type t =
   | Dir of string
   | Source_tree of string
@@ -33,7 +39,7 @@ type t =
   | Part of string
   | Env of string
   | Skip
-  | Non_det of [`Output | `Command]
+  | Non_det of non_det option
   | Version of Relation.t * Ocaml_version.t
   | Require_package of string
   | Set of string * string

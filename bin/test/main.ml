@@ -284,16 +284,16 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     (* The command is not active, skip it. *)
     | false, _, _, _, _
     (* the command is active but non-deterministic so skip everything *)
-    | true, false, _, `Non_det `Command, _ -> print_block ()
+    | true, false, _, `Non_det Nd_command, _ -> print_block ()
     (* the command is active but it's output is
        non-deterministic; run it but keep the old output. *)
-    | true, false, _, `Non_det `Output, Cram { tests; _ } ->
+    | true, false, _, `Non_det Nd_output, Cram { tests; _ } ->
       print_block ();
       let blacklist = Block.unset_variables t in
       List.iter (fun t ->
           let _: int = run_test ?root blacklist temp_file t in ()
         ) tests
-    | true, false, _, `Non_det `Output, Toplevel tests ->
+    | true, false, _, `Non_det Nd_output, Toplevel tests ->
       assert (syntax <> Some Cram);
       print_block ();
       List.iter (fun test ->

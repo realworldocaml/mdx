@@ -66,7 +66,7 @@ val pp_line_directive: (string * int) Fmt.t
 
 (** {2 Accessors} *)
 
-val mode: t -> [`Non_det of [`Command|`Output] | `Normal]
+val mode: t -> [`Non_det of Label.non_det | `Normal]
 (** [mode t] is [t]'s mode. *)
 
 val directory: t -> string option

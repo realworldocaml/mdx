@@ -67,6 +67,12 @@ module Relation = struct
       with Not_found -> (s, None)
 end
 
+type non_det =
+  | Nd_output
+  | Nd_command
+
+let default_non_det = Nd_output
+
 type t =
   | Dir of string
   | Source_tree of string
@@ -74,7 +80,7 @@ type t =
   | Part of string
   | Env of string
   | Skip
-  | Non_det of [`Output | `Command]
+  | Non_det of non_det option
   | Version of Relation.t * Ocaml_version.t
   | Require_package of string
   | Set of string * string
@@ -87,8 +93,9 @@ let pp ppf = function
   | Part p -> Fmt.pf ppf "part=%s" p
   | Env e -> Fmt.pf ppf "env=%s" e
   | Skip -> Fmt.string ppf "skip"
-  | Non_det `Output -> Fmt.string ppf "non-deterministic=output"
-  | Non_det `Command -> Fmt.string ppf "non-deterministic=command"
+  | Non_det None -> Fmt.string ppf "non-deterministic"
+  | Non_det (Some Nd_output) -> Fmt.string ppf "non-deterministic=output"
+  | Non_det (Some Nd_command) -> Fmt.string ppf "non-deterministic=command"
   | Version (op, v) ->
     Fmt.pf ppf "version%a%a" Relation.pp op Ocaml_version.pp v
   | Require_package p -> Fmt.pf ppf "require-package=%s" p
@@ -144,9 +151,9 @@ let interpret label value =
             Util.Result.errorf "Invalid `version` label value: %s." e))
   | "non-deterministic" -> (
       match value with
-      | None -> Ok (Non_det `Output)
-      | Some (Relation.Eq, "output") -> Ok (Non_det `Output)
-      | Some (Relation.Eq, "command") -> Ok (Non_det `Command)
+      | None -> Ok (Non_det None)
+      | Some (Relation.Eq, "output") -> Ok (Non_det (Some Nd_output))
+      | Some (Relation.Eq, "command") -> Ok (Non_det (Some Nd_command))
       | Some (Relation.Eq, v) ->
         let allowed_values = ["<none>"; {|"command"|}; {|"output"|}] in
         invalid_value ~label ~allowed_values v
