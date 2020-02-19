@@ -276,7 +276,12 @@ let check_not_set msg = function
   | None -> Ok ()
 
 let mk ~line ~file ~section ~labels ~header ~contents =
-  let non_det = get_label (function Non_det x -> x | _ -> None) labels in
+  let non_det =
+    get_label (function
+      | Non_det (Some x) -> Some x
+      | Non_det None -> Some Label.default_non_det
+      | _ -> None) labels
+  in
   let part = get_label (function Part x -> Some x | _ -> None) labels in
   let env = get_label (function Env x -> Some x | _ -> None) labels in
   let dir = get_label (function Dir x -> Some x | _ -> None) labels in
