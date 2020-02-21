@@ -43,9 +43,7 @@ module Relation = struct
     | "<=" -> Le
     | "<" -> Lt
     | "=" -> Eq
-    | _ -> assert false
-
-  (* can not happen, filtered by the regexp *)
+    | _ -> (* can not happen, filtered by the regexp *) assert false
 
   let re =
     let open Re in
