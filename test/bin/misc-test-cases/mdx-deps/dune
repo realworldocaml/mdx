@@ -1,6 +1,7 @@
 (rule
  (target deps.txt)
- (deps (package mdx))
+ (deps
+  (package mdx))
  (action
   (with-stdout-to
    %{target}
@@ -8,4 +9,5 @@
 
 (alias
  (name runtest)
- (action (diff %{dep:deps.txt.expected} %{dep:deps.txt})))
+ (action
+  (diff %{dep:deps.txt.expected} %{dep:deps.txt})))

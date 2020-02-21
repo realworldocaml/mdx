@@ -7,7 +7,7 @@ module Testable = struct
       | File f -> Fmt.pf fmt "File %S" f
       | Dir d -> Fmt.pf fmt "Dir %S" d
     in
-    Alcotest.testable pp (=)
+    Alcotest.testable pp ( = )
 end
 
 let test_of_block =
@@ -15,30 +15,26 @@ let test_of_block =
     let test_name = Printf.sprintf "of_block: %S" block_des in
     let test_fun () =
       let actual = Mdx.Dep.of_block block in
-      Alcotest.(check (option Testable.dep )) test_name expected actual
+      Alcotest.(check (option Testable.dep)) test_name expected actual
     in
     (test_name, `Quick, test_fun)
   in
   let block_with_labels s =
     match Mdx.Label.of_string s with
-    | Ok labels -> {Mdx.Block.empty with labels}
+    | Ok labels -> { Mdx.Block.empty with labels }
     | Error _ -> assert false
   in
-  [ make_test ~block_des:"Empty" ~block:Mdx.Block.empty ~expected:None ()
-  ; make_test
-      ~block_des:"file:toto.ml"
+  [
+    make_test ~block_des:"Empty" ~block:Mdx.Block.empty ~expected:None ();
+    make_test ~block_des:"file:toto.ml"
       ~block:(block_with_labels "file=toto.ml")
-      ~expected:(Some (File "toto.ml"))
-      ()
-  ; make_test
-      ~block_des:"dir:tata/"
+      ~expected:(Some (File "toto.ml")) ();
+    make_test ~block_des:"dir:tata/"
       ~block:(block_with_labels "dir=tata/")
-      ~expected:(Some (Dir "tata/"))
-      ()
-  ; make_test
-      ~block_des:"dir=tata/,skip"
+      ~expected:(Some (Dir "tata/")) ();
+    make_test ~block_des:"dir=tata/,skip"
       ~block:(block_with_labels "dir=tata/,skip")
-      ~expected:None ()
+      ~expected:None ();
   ]
 
 let test_of_line =
@@ -46,19 +42,20 @@ let test_of_line =
     let test_name = Printf.sprintf "of_line: %S" line_des in
     let test_fun () =
       let actual = Mdx.Dep.of_lines lines in
-      Alcotest.(check (list Testable.dep )) test_name expected actual
+      Alcotest.(check (list Testable.dep)) test_name expected actual
     in
     (test_name, `Quick, test_fun)
   in
-  let lines = Mdx.of_string Mdx.Normal
-  {|
+  let lines =
+    Mdx.of_string Mdx.Normal {|
 Toto
 
 ```ocaml file=tikitaka.ml
 ```
   |}
-  and lines2 = Mdx.of_string Mdx.Normal
-  {|
+  and lines2 =
+    Mdx.of_string Mdx.Normal
+      {|
 Tata
 
 ```ocaml file=tuktuk.ml,skip
@@ -72,12 +69,11 @@ Tata
   |}
   in
   [
-    make_test ~lines
-      ~line_des:"block: file=tikitaka.ml"
-      ~expected:[File "tikitaka.ml"] ();
-    make_test ~lines:lines2
-      ~line_des:"skip + file + dir"
-      ~expected:[File "burn.sh"; Dir "ping/"] ()
+    make_test ~lines ~line_des:"block: file=tikitaka.ml"
+      ~expected:[ File "tikitaka.ml" ] ();
+    make_test ~lines:lines2 ~line_des:"skip + file + dir"
+      ~expected:[ File "burn.sh"; Dir "ping/" ]
+      ();
   ]
 
 let test_to_sexp =
@@ -89,16 +85,13 @@ let test_to_sexp =
     in
     (test_name, `Quick, test_fun)
   in
-  [ make_test
-      ~name:"file"
-      ~input:(File "a.ml")
-      ~expected:(List [Atom "file"; Atom "a.ml"])
-      ()
-  ; make_test
-      ~name:"dir"
-      ~input:(Dir "./a/b")
-      ~expected:(List [Atom "dir"; Atom "./a/b"])
-      ()
+  [
+    make_test ~name:"file" ~input:(File "a.ml")
+      ~expected:(List [ Atom "file"; Atom "a.ml" ])
+      ();
+    make_test ~name:"dir" ~input:(Dir "./a/b")
+      ~expected:(List [ Atom "dir"; Atom "./a/b" ])
+      ();
   ]
 
 let suite = ("Dep", test_of_block @ test_of_line @ test_to_sexp)

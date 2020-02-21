@@ -20,7 +20,7 @@ type t = File of string | Dir of string
 
 let of_block block =
   let open Block in
-  match directory block, file block, skip block with
+  match (directory block, file block, skip block) with
   | Some d, Some f, false -> Some (File (Filename.concat d f))
   | Some d, None, false -> Some (Dir d)
   | None, Some f, false -> Some (File f)
@@ -29,12 +29,11 @@ let of_block block =
 
 let of_lines =
   let open Document in
-    List.filter_map
-    (function
-        | Section _ | Text _ -> None
-        | Block b -> of_block b)
+  List.filter_map (function
+    | Section _ | Text _ -> None
+    | Block b -> of_block b)
 
 let to_sexp t : Util.Sexp.t =
   match t with
-  | Dir dir -> List [Atom "dir"; Atom dir]
-  | File file -> List [Atom "file"; Atom file]
+  | Dir dir -> List [ Atom "dir"; Atom dir ]
+  | File file -> List [ Atom "file"; Atom file ]

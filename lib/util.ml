@@ -19,19 +19,12 @@ open Result
 
 module Result = struct
   module Infix = struct
-    let (>>=) r f =
-      match r with
-      | Ok x -> f x
-      | Error _ as e -> e
+    let ( >>= ) r f = match r with Ok x -> f x | Error _ as e -> e
 
-    let (>>|) r f =
-      match r with
-      | Ok x -> Ok (f x)
-      | Error _ as e -> e
+    let ( >>| ) r f = match r with Ok x -> Ok (f x) | Error _ as e -> e
   end
 
-  let errorf fmt =
-    Format.ksprintf (fun s -> Error (`Msg s)) fmt
+  let errorf fmt = Format.ksprintf (fun s -> Error (`Msg s)) fmt
 
   module List = struct
     open Infix
@@ -39,14 +32,13 @@ module Result = struct
     let fold ~f ~init l =
       let rec go acc = function
         | [] -> Ok acc
-        | hd::tl ->
-          f acc hd >>= fun acc ->
-          go acc tl
+        | hd :: tl -> f acc hd >>= fun acc -> go acc tl
       in
       go init l
 
     let map ~f l =
-      fold ~f:(fun acc elm -> f elm >>| fun elm' -> elm'::acc) ~init:[] l >>| List.rev
+      fold ~f:(fun acc elm -> f elm >>| fun elm' -> elm' :: acc) ~init:[] l
+      >>| List.rev
   end
 end
 
@@ -54,49 +46,48 @@ module File = struct
   let read_lines file =
     let ic = open_in file in
     let r = ref [] in
-    try while true do r := input_line ic :: !r done; assert false
+    try
+      while true do
+        r := input_line ic :: !r
+      done;
+      assert false
     with End_of_file ->
       close_in ic;
       List.rev !r
 end
 
 module Option = struct
-  let is_some = function
-  | Some _ -> true
-  | None -> false
+  let is_some = function Some _ -> true | None -> false
 
-  let value ~default = function
-    | Some v -> v
-    | None -> default
+  let value ~default = function Some v -> v | None -> default
 end
 
 module Sexp = struct
-  type t =
-    | Atom of string
-    | List of t list
+  type t = Atom of string | List of t list
 
   let rec equal t t' =
-    match t, t' with
+    match (t, t') with
     | Atom s, Atom s' -> String.equal s s'
     | List l, List l' -> equal_list l l'
     | _, _ -> false
+
   and equal_list l l' =
-    match l, l' with
+    match (l, l') with
     | [], [] -> true
-    | hd::tl, hd'::tl' -> equal hd hd' && equal_list tl tl'
+    | hd :: tl, hd' :: tl' -> equal hd hd' && equal_list tl tl'
     | _, _ -> false
 
   module Canonical = struct
     let to_buffer ~buf sexp =
       let rec loop = function
         | Atom str ->
-          Buffer.add_string buf (string_of_int (String.length str));
-          Buffer.add_string buf ":";
-          Buffer.add_string buf str
+            Buffer.add_string buf (string_of_int (String.length str));
+            Buffer.add_string buf ":";
+            Buffer.add_string buf str
         | List e ->
-          Buffer.add_char buf '(';
-          ignore (List.map loop e);
-          Buffer.add_char buf ')'
+            Buffer.add_char buf '(';
+            ignore (List.map loop e);
+            Buffer.add_char buf ')'
       in
       ignore (loop sexp)
 
@@ -112,12 +103,12 @@ module String = struct
     let pf = Printf.sprintf in
     let rec aux acc = function
       | [] -> acc
-      | [last] -> pf "%s %s %s" acc last_sep last
-      | hd::tl -> aux (pf "%s, %s" acc hd) tl
+      | [ last ] -> pf "%s %s %s" acc last_sep last
+      | hd :: tl -> aux (pf "%s, %s" acc hd) tl
     in
     match words with
     | [] -> invalid_arg "Util.String.english_concat"
-    | hd::tl -> aux hd tl
+    | hd :: tl -> aux hd tl
 
   let english_conjonction words = english_concat ~last_sep:"and" words
 end
@@ -126,10 +117,7 @@ module List = struct
   let find_map f l =
     let rec aux = function
       | [] -> None
-      | h :: t ->
-        match f h with
-        | Some x -> Some x
-        | None -> aux t
+      | h :: t -> ( match f h with Some x -> Some x | None -> aux t )
     in
     aux l
 end

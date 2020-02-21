@@ -15,6 +15,7 @@
  *)
 
 let src = Logs.Src.create "ocaml-mdx"
+
 module Log = (val Logs.src_log src : Logs.LOG)
 
 module Output = Output
@@ -30,51 +31,52 @@ module Prelude = Prelude
 module Syntax = Syntax
 module Label = Label
 module Dep = Dep
-
 include Document
 
 let section_of_line = function
   | Section s -> Some s
-  | Text _    -> None
-  | Block b   -> b.section
+  | Text _ -> None
+  | Block b -> b.section
 
-let filter_section re (t: t) =
+let filter_section re (t : t) =
   match
-    List.filter (fun l -> match section_of_line l with
-        | None        -> false
-        | Some (_, s) -> Re.execp re s
-      )  t
+    List.filter
+      (fun l ->
+        match section_of_line l with
+        | None -> false
+        | Some (_, s) -> Re.execp re s)
+      t
   with
   | [] -> None
-  | l  -> Some l
+  | l -> Some l
 
 let parse l =
-  List.map (function
-      | `Text t -> Text t
-      | `Section s -> Section s
-      | `Block b   -> Block b
-    ) l
+  List.map
+    (function
+      | `Text t -> Text t | `Section s -> Section s | `Block b -> Block b)
+    l
 
 let parse_lexbuf syntax l = parse (Lexer.token syntax l)
+
 let parse_file syntax f = parse (Lexer.token syntax (snd (Misc.init f)))
+
 let of_string syntax s = parse_lexbuf syntax (Lexing.from_string s)
 
-let dump_line ppf (l: line) = match l with
-  | Block b        -> Fmt.pf ppf "Block %a" Block.dump b
+let dump_line ppf (l : line) =
+  match l with
+  | Block b -> Fmt.pf ppf "Block %a" Block.dump b
   | Section (d, s) -> Fmt.pf ppf "Section (%d, %S)" d s
-  | Text s         -> Fmt.pf ppf "Text %S" s
+  | Text s -> Fmt.pf ppf "Text %S" s
 
 let dump = Fmt.Dump.list dump_line
 
 let eval = function
-  | Section _ | Text _ as x -> x
+  | (Section _ | Text _) as x -> x
   | Block t as x ->
-    let t' = Block.eval t in
-    if t == t' then x else Block t'
+      let t' = Block.eval t in
+      if t == t' then x else Block t'
 
-type expect_result =
-  | Identical
-  | Differs
+type expect_result = Identical | Differs
 
 let run_str ~syntax ~f file =
   let file_contents, lexbuf = Misc.init file in
@@ -90,20 +92,17 @@ let write_file ~outfile content =
   output_string oc content;
   close_out oc
 
-let run_to_stdout ?(syntax=Normal) ~f infile =
-  let (_, corrected) = run_str ~syntax ~f infile in
+let run_to_stdout ?(syntax = Normal) ~f infile =
+  let _, corrected = run_str ~syntax ~f infile in
   print_string corrected
 
-let run_to_file ?(syntax=Normal) ~f ~outfile infile =
-  let (_, corrected) = run_str ~syntax ~f infile in
+let run_to_file ?(syntax = Normal) ~f ~outfile infile =
+  let _, corrected = run_str ~syntax ~f infile in
   write_file ~outfile corrected
 
-let run ?(syntax=Normal) ?(force_output=false) ~f infile =
+let run ?(syntax = Normal) ?(force_output = false) ~f infile =
   let outfile = infile ^ ".corrected" in
-  let (test_result, corrected) = run_str ~syntax ~f infile in
-  match force_output, test_result with
-  | true, _
-  | false, Differs ->
-    write_file ~outfile corrected
-  | false, Identical ->
-    if Sys.file_exists outfile then Sys.remove outfile
+  let test_result, corrected = run_str ~syntax ~f infile in
+  match (force_output, test_result) with
+  | true, _ | false, Differs -> write_file ~outfile corrected
+  | false, Identical -> if Sys.file_exists outfile then Sys.remove outfile

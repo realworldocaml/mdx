@@ -41,32 +41,38 @@ include module type of Document
 
 (** {2 Document} *)
 
-val of_string: syntax -> string -> t
+val of_string : syntax -> string -> t
 (** [of_string syntax s] is the document [t] such that
     [to_string ~syntax t = s]. *)
 
-val parse_file: syntax -> string ->  t
+val parse_file : syntax -> string -> t
 (** [parse_file s] is {!of_string} of [s]'s contents. *)
 
-val parse_lexbuf: syntax -> Lexing.lexbuf -> t
+val parse_lexbuf : syntax -> Lexing.lexbuf -> t
 (** [parse_lexbuf l] is {!of_string} of [l]'s contents. *)
 
 (** {2 Evaluation} *)
 
-val run_to_stdout : ?syntax: syntax -> f:(string -> t -> string) -> string -> unit
+val run_to_stdout :
+  ?syntax:syntax -> f:(string -> t -> string) -> string -> unit
 (** [run_to_stdout ?syntax ~f file] runs the callback [f] on the raw and
     structured content of [file], as specified  by [syntax] (defaults to [Normal]).
     The returned corrected version is then written to stdout. *)
 
 val run_to_file :
-  ?syntax: syntax ->
+  ?syntax:syntax ->
   f:(string -> t -> string) ->
-  outfile: string ->
+  outfile:string ->
   string ->
   unit
 (** Same as [run_to_stdout] but writes the corrected version to [outfile]*)
 
-val run: ?syntax:syntax -> ?force_output:bool -> f:(string -> t -> string) -> string -> unit
+val run :
+  ?syntax:syntax ->
+  ?force_output:bool ->
+  f:(string -> t -> string) ->
+  string ->
+  unit
 (** [run_to_file ?syntax ?force_output ~f ~outfile file] runs the callback [f]
     similarly to [run_to_stdout] to generate its corrected version. If
     [force_output] is [true] (defaults to [false]) or if the corrected version
@@ -75,9 +81,9 @@ val run: ?syntax:syntax -> ?force_output:bool -> f:(string -> t -> string) -> st
 
 (** {2 Filtering} *)
 
-val section_of_line: line -> (int * string) option
+val section_of_line : line -> (int * string) option
 (** [section_of_line l] is [l]'s section. *)
 
-val filter_section: Re.re -> t -> t option
+val filter_section : Re.re -> t -> t option
 (** [section re t] is the subset of [t] such that their section
    matches with [re]. *)

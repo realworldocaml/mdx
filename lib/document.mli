@@ -14,19 +14,14 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
- (** {2 Lines} *)
+(** {2 Lines} *)
 
-type syntax = Syntax.t =
-  | Normal
-  | Cram
+type syntax = Syntax.t = Normal | Cram
 
-    (** The type for the lines of a markdown or cram file. *)
-type line =
-  | Section of (int * string)
-  | Text    of string
-  | Block   of Block.t
+(** The type for the lines of a markdown or cram file. *)
+type line = Section of (int * string) | Text of string | Block of Block.t
 
-val pp_line: ?syntax:syntax -> line Fmt.t
+val pp_line : ?syntax:syntax -> line Fmt.t
 (** [pp_line] is the pretty-printer for markdown or cram lines. *)
 
 (** {2 Document} *)
@@ -34,9 +29,9 @@ val pp_line: ?syntax:syntax -> line Fmt.t
 type t = line list
 (** The type for mdx documents. *)
 
-val pp: ?syntax:syntax -> t Fmt.t
+val pp : ?syntax:syntax -> t Fmt.t
 (** [pp] is the pretty printer for mdx documents. Should be idempotent
    with {!of_string}. *)
 
-val to_string: t -> string
+val to_string : t -> string
 (** [to_string t] converts the document [t] to a string. *)
