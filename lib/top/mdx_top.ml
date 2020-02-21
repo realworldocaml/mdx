@@ -540,7 +540,7 @@ let silent t =
   add_directive ~name:"silent" ~doc:"Be silent" (`Bool (fun x -> t.silent <- x))
 
 (* BLACK MAGIC: patch field of a module at runtime *)
-let monkey_patch (type a b) (m : a) (prj : unit -> b) (v : b) =
+let monkey_patch (type a) (m : a) (type b) (prj : unit -> b) (v : b) =
   let m = Obj.repr m in
   let v = Obj.repr v in
   let v' = Obj.repr (prj ()) in
