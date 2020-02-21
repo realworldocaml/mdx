@@ -168,7 +168,7 @@ module Config = struct
     root_packages : Types.Opam.package list;
     excludes : Types.Opam.package list;
     pins : Types.Opam.pin list;
-    pull_mode : pull_mode; [@default Submodules]
+    pull_mode : pull_mode; [@default Source]
     opam_repo : Uri_sexp.t;
         [@default Uri.of_string Config.duniverse_opam_repo] [@sexp_drop_default.sexp]
     remotes : string list; [@default []]

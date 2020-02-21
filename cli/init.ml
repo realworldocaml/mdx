@@ -103,7 +103,7 @@ let opam_repo =
 
 let pull_mode =
   let doc =
-    "How to pull the sources. If $(i,submodules) (the default), the pull command will initialise \
+    "How to pull the sources. If $(i,submodules), the pull command will initialise \
      them as git submodules.  If $(i,source) then the source code will directly be cloned to the \
      source tree."
   in
