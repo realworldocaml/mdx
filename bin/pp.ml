@@ -29,24 +29,23 @@ let run (`Setup ()) (`File file) (`Section section) =
   in
   match t with
   | [] -> 1
-  | _  ->
-    List.iter (function
-        | Mdx.Section _ | Text _ -> ()
-        | Block b ->
-          if not (Mdx.Block.skip b) then (
-            Log.debug (fun l -> l "pp: %a" Mdx.Block.dump b);
-            let pp_lines = Fmt.(list ~sep:(unit "\n") string) in
-            let contents = Mdx.Block.executable_contents b in
-            match b.value with
-            | Toplevel _ -> Fmt.pr "%a\n" pp_lines contents
-            | OCaml _    ->
-              Fmt.pr "%a\n%a\n"
-                Mdx.Block.pp_line_directive (file, b.line)
-                pp_lines contents
-            | _          -> ()
-          )
-      ) t;
-    0
+  | _ ->
+      List.iter
+        (function
+          | Mdx.Section _ | Text _ -> ()
+          | Block b ->
+              if not (Mdx.Block.skip b) then (
+                Log.debug (fun l -> l "pp: %a" Mdx.Block.dump b);
+                let pp_lines = Fmt.(list ~sep:(unit "\n") string) in
+                let contents = Mdx.Block.executable_contents b in
+                match b.value with
+                | Toplevel _ -> Fmt.pr "%a\n" pp_lines contents
+                | OCaml _ ->
+                    Fmt.pr "%a\n%a\n" Mdx.Block.pp_line_directive (file, b.line)
+                      pp_lines contents
+                | _ -> () ))
+        t;
+      0
 
 open Cmdliner
 

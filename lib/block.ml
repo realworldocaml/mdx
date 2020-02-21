@@ -40,10 +40,7 @@ type cram_value = {
   non_det : Label.non_det option;
 }
 
-type ocaml_value = {
-  env : string;
-  non_det : Label.non_det option;
-}
+type ocaml_value = { env : string; non_det : Label.non_det option }
 
 type toplevel_value = {
   phrases : Toplevel.t list;
@@ -57,14 +54,9 @@ type include_value = {
   part_included : string option;
 }
 
-type raw_value = {
-  header : Header.t option;
-}
+type raw_value = { header : Header.t option }
 
-type error_value = {
-  header : Header.t option;
-  errors: string list;
-}
+type error_value = { header : Header.t option; errors : string list }
 
 type value =
   | Raw of raw_value
@@ -84,7 +76,7 @@ type t = {
   labels : Label.t list;
   contents : string list;
   skip : bool;
-  version_enabled: bool;
+  version_enabled : bool;
   set_variables : (string * string) list;
   unset_variables : string list;
   value : value;
@@ -108,10 +100,11 @@ let dump_value ppf = function
   | OCaml _ -> Fmt.string ppf "OCaml"
   | Error e -> Fmt.pf ppf "Error %a" Fmt.(Dump.list dump_string) e.errors
   | Cram { pad; tests; _ } ->
-    Fmt.pf ppf "@[Cram@ {pad=%d;@ tests=%a}@]"
-      pad Fmt.(Dump.list Cram.dump) tests
-  | Toplevel { phrases= tests; _ } ->
-    Fmt.pf ppf "@[Toplevel %a@]" Fmt.(Dump.list Toplevel.dump) tests
+      Fmt.pf ppf "@[Cram@ {pad=%d;@ tests=%a}@]" pad
+        Fmt.(Dump.list Cram.dump)
+        tests
+  | Toplevel { phrases = tests; _ } ->
+      Fmt.pf ppf "@[Toplevel %a@]" Fmt.(Dump.list Toplevel.dump) tests
   | Include _ -> Fmt.string ppf "Include"
 
 let dump ppf ({ file; line; section; labels; contents; value; _ } as b) =
@@ -147,19 +140,21 @@ let pp_header ?syntax ppf t =
   | Some Syntax.Cram -> (
       match t.labels with
       | [] -> ()
-      | [Non_det None] -> Fmt.pf ppf "<-- non-deterministic\n"
-      | [Non_det (Some Nd_output)] ->
-        Fmt.pf ppf "<-- non-deterministic output\n"
-      | [Non_det (Some Nd_command)] ->
-        Fmt.pf ppf "<-- non-deterministic command\n"
+      | [ Non_det None ] -> Fmt.pf ppf "<-- non-deterministic\n"
+      | [ Non_det (Some Nd_output) ] ->
+          Fmt.pf ppf "<-- non-deterministic output\n"
+      | [ Non_det (Some Nd_command) ] ->
+          Fmt.pf ppf "<-- non-deterministic command\n"
       | _ -> failwith "cannot happen: checked during parsing" )
   | _ ->
-    Fmt.pf ppf "```%a%a\n" Fmt.(option Header.pp) (header t) pp_labels t.labels
+      Fmt.pf ppf "```%a%a\n"
+        Fmt.(option Header.pp)
+        (header t) pp_labels t.labels
 
 let pp_error ppf b =
   match b.value with
   | Error e ->
-    List.iter (fun e -> Fmt.pf ppf ">> @[<h>%a@]@." Fmt.words e) e.errors
+      List.iter (fun e -> Fmt.pf ppf ">> @[<h>%a@]@." Fmt.words e) e.errors
   | _ -> ()
 
 let pp ?syntax ppf b =
@@ -216,10 +211,11 @@ let require_from_lines lines =
   List.fold_left Library.Set.union Library.Set.empty libs
 
 let required_libraries = function
-  | { value = Toplevel _; contents; _} -> require_from_lines contents
+  | { value = Toplevel _; contents; _ } -> require_from_lines contents
   | _ -> Ok Library.Set.empty
 
 let value t = t.value
+
 let section t = t.section
 
 let guess_ocaml_kind contents =
@@ -233,10 +229,11 @@ let guess_ocaml_kind contents =
   in
   aux contents
 
-let ends_by_semi_semi c = match List.rev c with
-  | h::_ ->
+let ends_by_semi_semi c =
+  match List.rev c with
+  | h :: _ ->
       let len = String.length h in
-      len > 2 && h.[len-1] = ';' && h.[len-2] = ';'
+      len > 2 && h.[len - 1] = ';' && h.[len - 2] = ';'
   | _ -> false
 
 let pp_line_directive ppf (file, line) = Fmt.pf ppf "#%d %S" line file
@@ -249,14 +246,15 @@ let executable_contents b =
     | OCaml _ -> b.contents
     | Error _ | Raw _ | Cram _ | Include _ -> []
     | Toplevel { phrases; _ } ->
-      List.flatten (
-        List.map (fun t ->
-            match Toplevel.command t with
-            | [] -> []
-            | cs ->
-              let mk s = String.make (t.hpad+2) ' ' ^ s in
-              line_directive (b.file, t.line) :: List.map mk cs
-          ) phrases)
+        List.flatten
+          (List.map
+             (fun t ->
+               match Toplevel.command t with
+               | [] -> []
+               | cs ->
+                   let mk s = String.make (t.hpad + 2) ' ' ^ s in
+                   line_directive (b.file, t.line) :: List.map mk cs)
+             phrases)
   in
   if contents = [] || ends_by_semi_semi contents then contents
   else contents @ [ ";;" ]
@@ -277,10 +275,12 @@ let check_not_set msg = function
 
 let mk ~line ~file ~section ~labels ~header ~contents =
   let non_det =
-    get_label (function
-      | Non_det (Some x) -> Some x
-      | Non_det None -> Some Label.default_non_det
-      | _ -> None) labels
+    get_label
+      (function
+        | Non_det (Some x) -> Some x
+        | Non_det None -> Some Label.default_non_det
+        | _ -> None)
+      labels
   in
   let part = get_label (function Part x -> Some x | _ -> None) labels in
   let env = get_label (function Env x -> Some x | _ -> None) labels in
@@ -290,21 +290,25 @@ let mk ~line ~file ~section ~labels ~header ~contents =
     get_label (function Version (x, y) -> Some (x, y) | _ -> None) labels
   in
   let source_trees =
-    List.filter_map (function Label.Source_tree x -> Some x | _ -> None) labels
+    List.filter_map
+      (function Label.Source_tree x -> Some x | _ -> None)
+      labels
   in
   let required_packages =
     List.filter_map
-      (function Label.Require_package x -> Some x | _ -> None) labels
+      (function Label.Require_package x -> Some x | _ -> None)
+      labels
   in
   let set_variables =
     List.filter_map
-      (function Label.Set (v, x) -> Some (v, x) | _ -> None) labels
+      (function Label.Set (v, x) -> Some (v, x) | _ -> None)
+      labels
   in
   let unset_variables =
     List.filter_map (function Label.Unset x -> Some x | _ -> None) labels
   in
   let open Util.Result.Infix in
-  (match get_label (function File x -> Some x | _ -> None) labels with
+  ( match get_label (function File x -> Some x | _ -> None) labels with
   | Some file_included -> (
       check_not_set
         "`non-deterministic` label cannot be used with a `file` label." non_det
@@ -313,32 +317,46 @@ let mk ~line ~file ~section ~labels ~header ~contents =
       >>= fun () ->
       match header with
       | Some Header.OCaml ->
-        Ok (Include { file_included; part_included= part; header })
+          Ok (Include { file_included; part_included = part; header })
       | _ ->
-        check_not_set "`part` is not supported for non-OCaml code blocks." part
-        >>= fun () ->
-        Ok (Include { file_included; part_included= None; header }) )
-  | None ->
-    check_not_set "`part` label requires a `file` label." part >>= fun () ->
-    match header with
-    | Some Header.Shell ->
-      check_not_set "`env` label cannot be used with a `shell` header." env
-      >>= fun () ->
-      let pad, tests = Cram.of_lines contents in
-      Ok (Cram { pad; tests; non_det })
-    | Some Header.OCaml -> (
-        let env = match env with Some e -> e | None -> "default" in
-        match guess_ocaml_kind contents with
-        | `Code -> Ok (OCaml { env; non_det })
-        | `Toplevel ->
-          let phrases = Toplevel.of_lines ~file ~line contents in
-          Ok (Toplevel { phrases; env; non_det }) )
-    | _ -> Ok (Raw { header }) )
+          check_not_set "`part` is not supported for non-OCaml code blocks."
+            part
+          >>= fun () ->
+          Ok (Include { file_included; part_included = None; header }) )
+  | None -> (
+      check_not_set "`part` label requires a `file` label." part >>= fun () ->
+      match header with
+      | Some Header.Shell ->
+          check_not_set "`env` label cannot be used with a `shell` header." env
+          >>= fun () ->
+          let pad, tests = Cram.of_lines contents in
+          Ok (Cram { pad; tests; non_det })
+      | Some Header.OCaml -> (
+          let env = match env with Some e -> e | None -> "default" in
+          match guess_ocaml_kind contents with
+          | `Code -> Ok (OCaml { env; non_det })
+          | `Toplevel ->
+              let phrases = Toplevel.of_lines ~file ~line contents in
+              Ok (Toplevel { phrases; env; non_det }) )
+      | _ -> Ok (Raw { header }) ) )
   >>= fun value ->
   version_enabled version >>= fun version_enabled ->
   Ok
-    { line; file; section; dir; source_trees; required_packages; labels;
-      contents; skip; version_enabled; set_variables; unset_variables; value }
+    {
+      line;
+      file;
+      section;
+      dir;
+      source_trees;
+      required_packages;
+      labels;
+      contents;
+      skip;
+      version_enabled;
+      set_variables;
+      unset_variables;
+      value;
+    }
 
 let is_active ?section:s t =
   let active =

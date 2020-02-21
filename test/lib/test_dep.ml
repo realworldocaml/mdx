@@ -23,16 +23,16 @@ let test_of_block =
     match Mdx.Label.of_string s with
     | Ok labels -> (
         match
-          Mdx.Block.mk
-            ~line:0 ~file:"" ~section:None ~labels ~header:None ~contents:[]
+          Mdx.Block.mk ~line:0 ~file:"" ~section:None ~labels ~header:None
+            ~contents:[]
         with
         | Ok block -> block
         | Error _ -> assert false )
     | Error _ -> assert false
   in
-  [ make_test ~block_des:"Empty" ~block:(block_with_labels "") ~expected:None ()
-  ; make_test
-      ~block_des:"file:toto.ml"
+  [
+    make_test ~block_des:"Empty" ~block:(block_with_labels "") ~expected:None ();
+    make_test ~block_des:"file:toto.ml"
       ~block:(block_with_labels "file=toto.ml")
       ~expected:(Some (File "toto.ml")) ();
     make_test ~block_des:"dir:tata/"

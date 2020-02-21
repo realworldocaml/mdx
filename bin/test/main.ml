@@ -98,12 +98,9 @@ let resolve_root file dir root =
 
 let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
   Block.pp_header ?syntax ppf t;
-  let pad =
-    match syntax with
-    | Some Cram -> pad + 2
-    | _ -> pad
-  in
-  List.iter (fun test ->
+  let pad = match syntax with Some Cram -> pad + 2 | _ -> pad in
+  List.iter
+    (fun test ->
       let root = root_dir ?root ~block:t () in
       let blacklist = Block.unset_variables t in
       let n = run_test ?root blacklist temp_file test in
@@ -140,9 +137,11 @@ let err_eval ~cmd lines =
   exit 1
 
 let eval_raw ?block ?root c ~line lines =
-  let test = Toplevel.{vpad=0; hpad=0; line; command = lines; output = [] } in
+  let test =
+    Toplevel.{ vpad = 0; hpad = 0; line; command = lines; output = [] }
+  in
   match eval_test ?block ?root c test with
-  | Ok _    -> ()
+  | Ok _ -> ()
   | Error e -> err_eval ~cmd:lines e
 
 let lines = function Ok x | Error x -> x
@@ -157,7 +156,8 @@ let split_lines lines =
 
 let run_toplevel_tests ?root c ppf tests t =
   Block.pp_header ppf t;
-  List.iter (fun test ->
+  List.iter
+    (fun test ->
       let lines = lines (eval_test ?root ~block:t c test) in
       let lines = split_lines lines in
       let output =
@@ -233,13 +233,11 @@ let eval_prelude ?root top prelude prelude_str =
   let aux to_lines p =
     let env, f = Mdx.Prelude.env_and_file p in
     let eval () = eval_raw ?root top ~line:0 (to_lines f) in
-    match env with
-    | None   -> eval ()
-    | Some e -> Mdx_top.in_env e eval
+    match env with None -> eval () | Some e -> Mdx_top.in_env e eval
   in
-  match prelude, prelude_str with
+  match (prelude, prelude_str) with
   | [], [] -> ()
-  | [], fs -> List.iter (aux (fun x -> [x])) fs
+  | [], fs -> List.iter (aux (fun x -> [ x ])) fs
   | fs, [] -> List.iter (aux Mdx.Util.File.read_lines) fs
   | _ -> Fmt.failwith "only one of --prelude or --prelude-str shoud be used"
 
@@ -264,53 +262,52 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
       | Include { file_included; part_included; header } -> (
           match header with
           | Some Block.Header.OCaml ->
-            assert (syntax <> Some Cram);
-            update_file_or_block ?root ppf file file_included t part_included
+              assert (syntax <> Some Cram);
+              update_file_or_block ?root ppf file file_included t part_included
           | _ ->
-            (* By construction, there is no part for non-OCaml blocks *)
-            let new_content = (read_part file_included None) in
-            update_block_content ppf t new_content )
+              (* By construction, there is no part for non-OCaml blocks *)
+              let new_content = read_part file_included None in
+              update_block_content ppf t new_content )
       | OCaml { non_det; _ } -> (
           match non_det with
           (* the command is non-deterministic so skip everything *)
           | Some Nd_command when not non_deterministic -> print_block ()
           | _ ->
-            assert (syntax <> Some Cram);
-            eval_raw ~block:t ?root c ~line:t.line t.contents;
-            Block.pp ppf t
-        )
+              assert (syntax <> Some Cram);
+              eval_raw ~block:t ?root c ~line:t.line t.contents;
+              Block.pp ppf t )
       | Cram { tests; pad; non_det } -> (
           match non_det with
           (* the command is non-deterministic so skip everything *)
           | Some Nd_command when not non_deterministic -> print_block ()
           (* its output is non-deterministic; run it but keep the old output. *)
           | Some Nd_output when not non_deterministic ->
-            print_block ();
-            let blacklist = Block.unset_variables t in
-            List.iter
-              (fun t -> ignore (run_test ?root blacklist temp_file t))
-              tests
-          | _ -> run_cram_tests ?syntax t ?root ppf temp_file pad tests
-        )
-      | Toplevel { phrases= tests; non_det; _ } -> (
+              print_block ();
+              let blacklist = Block.unset_variables t in
+              List.iter
+                (fun t -> ignore (run_test ?root blacklist temp_file t))
+                tests
+          | _ -> run_cram_tests ?syntax t ?root ppf temp_file pad tests )
+      | Toplevel { phrases = tests; non_det; _ } -> (
           match non_det with
           (* the command is non-deterministic so skip everything *)
           | Some Nd_command when not non_deterministic -> print_block ()
           (* its output is non-deterministic; run it but keep the old output. *)
           | Some Nd_output when not non_deterministic ->
-            assert (syntax <> Some Cram);
-            print_block ();
-            List.iter (fun test ->
-                match eval_test ~block:t ?root c test with
-                | Ok _    -> ()
-                | Error e ->
-                  let output = List.map (fun l -> `Output l) e in
-                  if Output.equal test.output output then ()
-                  else err_eval ~cmd:test.command e
-              ) tests
+              assert (syntax <> Some Cram);
+              print_block ();
+              List.iter
+                (fun test ->
+                  match eval_test ~block:t ?root c test with
+                  | Ok _ -> ()
+                  | Error e ->
+                      let output = List.map (fun l -> `Output l) e in
+                      if Output.equal test.output output then ()
+                      else err_eval ~cmd:test.command e)
+                tests
           | _ ->
-            assert (syntax <> Some Cram);
-            run_toplevel_tests ?root c ppf tests t )
+              assert (syntax <> Some Cram);
+              run_toplevel_tests ?root c ppf tests t )
     else print_block ()
   in
   let gen_corrected file_contents items =
@@ -347,8 +344,8 @@ let report_error_in_block block msg =
     | Cram _ -> "cram "
     | Toplevel _ -> "toplevel "
   in
-  Fmt.epr "Error in the %scode block in %s at line %d:@]\n%s\n"
-    kind block.file block.line msg
+  Fmt.epr "Error in the %scode block in %s at line %d:@]\n%s\n" kind block.file
+    block.line msg
 
 let run setup non_deterministic silent_eval syntax silent verbose_findlib
     prelude prelude_str file section root force_output output : int =

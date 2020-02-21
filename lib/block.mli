@@ -34,34 +34,29 @@ type cram_value = {
 
 type ocaml_value = {
   env : string;
-  (** [env] is the name given to the environment where tests are run. *)
+      (** [env] is the name given to the environment where tests are run. *)
   non_det : Label.non_det option;
 }
 
 type toplevel_value = {
   phrases : Toplevel.t list;
   env : string;
-  (** [env] is the name given to the environment where tests are run. *)
+      (** [env] is the name given to the environment where tests are run. *)
   non_det : Label.non_det option;
 }
 
 type include_value = {
   header : Header.t option;
   file_included : string;
-  (** [file_included] is the name of the file to synchronize with. *)
+      (** [file_included] is the name of the file to synchronize with. *)
   part_included : string option;
-  (** [part_included] is the part of the file to synchronize with.
+      (** [part_included] is the part of the file to synchronize with.
       If lines is not specified synchronize the whole file. *)
 }
 
-type raw_value = {
-  header : Header.t option;
-}
+type raw_value = { header : Header.t option }
 
-type error_value = {
-  header : Header.t option;
-  errors : string list;
-}
+type error_value = { header : Header.t option; errors : string list }
 
 (** The type for block values. *)
 type value =
@@ -75,7 +70,6 @@ type value =
 type section = int * string
 (** The type for sections. *)
 
-(** The type for supported code blocks. *)
 type t = {
   line : int;
   file : string;
@@ -86,21 +80,22 @@ type t = {
   labels : Label.t list;
   contents : string list;
   skip : bool;
-  version_enabled: bool;
-  (** Whether the current OCaml version complies with the block's version. *)
+  version_enabled : bool;
+      (** Whether the current OCaml version complies with the block's version. *)
   set_variables : (string * string) list;
   unset_variables : string list;
   value : value;
 }
+(** The type for supported code blocks. *)
 
-val mk:
-  line:int
-  -> file:string
-  -> section:section option
-  -> labels:Label.t list
-  -> header:Header.t option
-  -> contents:string list
-  -> (t, [`Msg of string]) Result.result
+val mk :
+  line:int ->
+  file:string ->
+  section:section option ->
+  labels:Label.t list ->
+  header:Header.t option ->
+  contents:string list ->
+  (t, [ `Msg of string ]) Result.result
 
 (** {2 Printers} *)
 

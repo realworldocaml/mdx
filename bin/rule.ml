@@ -179,29 +179,31 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax)
   let on_item acc = function
     | Mdx.Section _ | Text _ -> Ok acc
     | Block b when active b ->
-      let files, dirs, nd, packages = acc in
-      let nd = nd || match Mdx.Block.non_det b with
-        | Some _ -> true
-        | None -> false
-      in
-      let source_trees = String.Set.of_list (Mdx.Block.source_trees b) in
-      let dirs =
-        dirs
-        |> add_opt (Mdx.Block.directory b)
-        |> String.Set.union source_trees
-      in
-      let files = add_opt (Mdx.Block.file b) files in
-      let explicit_requires = String.Set.of_list (Mdx.Block.explicit_required_packages b) in
-      let requires_from_statement =
-        if duniverse_mode then
-          Mdx.Block.required_libraries b >>| Mdx.Library.Set.to_package_set
-        else
-          Ok String.Set.empty
-      in
-      requires_from_statement >>| fun requires_from_statement ->
-      let (++) = String.Set.union in
-      let packages = packages ++ explicit_requires ++ requires_from_statement in
-      files, dirs, nd, packages
+        let files, dirs, nd, packages = acc in
+        let nd =
+          nd || match Mdx.Block.non_det b with Some _ -> true | None -> false
+        in
+        let source_trees = String.Set.of_list (Mdx.Block.source_trees b) in
+        let dirs =
+          dirs
+          |> add_opt (Mdx.Block.directory b)
+          |> String.Set.union source_trees
+        in
+        let files = add_opt (Mdx.Block.file b) files in
+        let explicit_requires =
+          String.Set.of_list (Mdx.Block.explicit_required_packages b)
+        in
+        let requires_from_statement =
+          if duniverse_mode then
+            Mdx.Block.required_libraries b >>| Mdx.Library.Set.to_package_set
+          else Ok String.Set.empty
+        in
+        requires_from_statement >>| fun requires_from_statement ->
+        let ( ++ ) = String.Set.union in
+        let packages =
+          packages ++ explicit_requires ++ requires_from_statement
+        in
+        (files, dirs, nd, packages)
     | Block _ -> Ok acc
   in
   let on_file file_contents items =
