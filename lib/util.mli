@@ -18,24 +18,23 @@ open Result
 
 module Result : sig
   module Infix : sig
-    val (>>=) : ('a, 'err) result -> ('a -> ('b, 'err) result) -> ('b, 'err) result
+    val ( >>= ) :
+      ('a, 'err) result -> ('a -> ('b, 'err) result) -> ('b, 'err) result
 
-    val (>>|) : ('a, 'err) result -> ('a -> 'b) -> ('b, 'err) result
+    val ( >>| ) : ('a, 'err) result -> ('a -> 'b) -> ('b, 'err) result
   end
 
-  val errorf : ('a, unit, string, ('b, [> `Msg of string ]) result) format4 -> 'a
+  val errorf :
+    ('a, unit, string, ('b, [> `Msg of string ]) result) format4 -> 'a
 
   module List : sig
     val fold :
-      f: ('acc -> 'a -> ('acc, 'err) result) ->
-      init: 'acc ->
+      f:('acc -> 'a -> ('acc, 'err) result) ->
+      init:'acc ->
       'a list ->
       ('acc, 'err) result
 
-    val map :
-      f: ('a -> ('b, 'err) result) ->
-      'a list ->
-      ('b list, 'err) result
+    val map : f:('a -> ('b, 'err) result) -> 'a list -> ('b list, 'err) result
   end
 end
 
@@ -60,14 +59,12 @@ module String : sig
 end
 
 module Sexp : sig
-  type t =
-    | Atom of string
-    | List of t list
+  type t = Atom of string | List of t list
 
   val equal : t -> t -> bool
 
   module Canonical : sig
-    val to_buffer : buf: Buffer.t -> t -> unit
+    val to_buffer : buf:Buffer.t -> t -> unit
 
     val to_string : t -> string
   end

@@ -15,14 +15,15 @@
  *)
 
 let run (`Setup ()) (`Syntax syntax) (`File file) =
-  let syntax = match syntax, Mdx.Syntax.infer ~file with
-    | Some s, _
-    | None, Some s -> s
+  let syntax =
+    match (syntax, Mdx.Syntax.infer ~file) with
+    | Some s, _ | None, Some s -> s
     | None, None ->
-      Printf.eprintf
-        "Fatal error: could not infer syntax from filename %s, use the \
-         --syntax option to specify a syntax.\n" file;
-      exit 1
+        Printf.eprintf
+          "Fatal error: could not infer syntax from filename %s, use the \
+           --syntax option to specify a syntax.\n"
+          file;
+        exit 1
   in
   let doc = Mdx.parse_file syntax file in
   let deps = Mdx.Dep.of_lines doc in
@@ -30,13 +31,10 @@ let run (`Setup ()) (`Syntax syntax) (`File file) =
   Printf.printf "%s" (Mdx.Util.Sexp.Canonical.to_string (List deps));
   0
 
-
 let cmd =
   let open Cmdliner in
   let doc =
-    "List the dependencies of the input file. \
-     This command is meant to be used by dune only. There are no stability \
-     guarantees."
+    "List the dependencies of the input file. This command is meant to be used \
+     by dune only. There are no stability guarantees."
   in
-  Term.(pure run $ Cli.setup $ Cli.syntax $ Cli.file),
-  Term.info "deps" ~doc
+  (Term.(pure run $ Cli.setup $ Cli.syntax $ Cli.file), Term.info "deps" ~doc)

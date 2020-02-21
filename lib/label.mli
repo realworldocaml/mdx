@@ -26,9 +26,7 @@ module Relation : sig
       the associated value. *)
 end
 
-type non_det =
-  | Nd_output
-  | Nd_command
+type non_det = Nd_output | Nd_command
 
 val default_non_det : non_det
 
@@ -48,9 +46,9 @@ type t =
 val pp : Format.formatter -> t -> unit
 
 val interpret :
-  string
-  -> (Relation.t * string) option
-  -> (t, [> `Msg of string ]) Result.result
+  string ->
+  (Relation.t * string) option ->
+  (t, [> `Msg of string ]) Result.result
 
-val of_string: string -> (t list, [`Msg of string] list) Result.result
+val of_string : string -> (t list, [ `Msg of string ] list) Result.result
 (** [of_string s] cuts [s] into a list of labels. *)

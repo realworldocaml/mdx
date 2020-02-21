@@ -8,14 +8,12 @@ module String = struct
       in
       (test_name, `Quick, test_fun)
     in
-    [ make_test ~name:"single" ~input:["a"] ~expected:"a" ()
-    ; make_test ~name:"two" ~input:["a"; "b"] ~expected:"a and b" ()
-    ; make_test ~name:"three" ~input:["a"; "b"; "c"] ~expected:"a, b and c" ()
-    ; make_test
-        ~name:"more"
-        ~input:["a"; "b"; "c"; "d"]
-        ~expected:"a, b, c and d"
-        ()
+    [
+      make_test ~name:"single" ~input:[ "a" ] ~expected:"a" ();
+      make_test ~name:"two" ~input:[ "a"; "b" ] ~expected:"a and b" ();
+      make_test ~name:"three" ~input:[ "a"; "b"; "c" ] ~expected:"a, b and c" ();
+      make_test ~name:"more" ~input:[ "a"; "b"; "c"; "d" ]
+        ~expected:"a, b, c and d" ();
     ]
 end
 

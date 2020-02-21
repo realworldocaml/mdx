@@ -13,11 +13,12 @@ let test_infer =
     in
     (test_name, `Quick, test_fun)
   in
-  [ make_test ~file:"" ~expected:None ()
-  ; make_test ~file:"test.md" ~expected:(Some Normal) ()
-  ; make_test ~file:"test.t" ~expected:(Some Cram) ()
-  ; make_test ~file:"test.mli" ~expected:None ()
-  ; make_test ~file:"no_ext" ~expected:None ()
+  [
+    make_test ~file:"" ~expected:None ();
+    make_test ~file:"test.md" ~expected:(Some Normal) ();
+    make_test ~file:"test.t" ~expected:(Some Cram) ();
+    make_test ~file:"test.mli" ~expected:None ();
+    make_test ~file:"no_ext" ~expected:None ();
   ]
 
 let suite = ("Syntax", test_infer)
