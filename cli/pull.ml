@@ -70,6 +70,7 @@ let pull ?(trim_clone = false) ~duniverse_dir ~cache src_dep =
   let open Duniverse.Deps.Source in
   let { dir; upstream; ref = { Git.Ref.t = ref; commit }; _ } = src_dep in
   let output_dir = Fpath.(duniverse_dir / dir) in
+  Bos.OS.Dir.delete ~must_exist:false ~recurse:true output_dir >>= fun () ->
   Cloner.clone_to ~output_dir ~remote:upstream ~ref ~commit cache
   |> Rresult.R.reword_error (fun (`Msg _) -> `Commit_is_gone dir)
   >>= fun cached ->
