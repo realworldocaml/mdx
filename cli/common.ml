@@ -1,3 +1,7 @@
+module Ffmt = Fmt
+open Stdune
+open Duniverse_lib
+
 module Arg = struct
   let named f = Cmdliner.Term.(app (const f))
 
@@ -56,3 +60,37 @@ module Logs = struct
     Logs.app ?src (fun l ->
         f (fun ?header ?tags fmt -> l ?header ?tags ("%a" ^^ fmt) Duniverse_lib.Styled_pp.header ()))
 end
+
+(** Checks that all provided repos match a source repo in the duniverse *)
+let check_duniverse_repos duniverse_repos src_deps =
+  let dir_names = List.map ~f:(fun (s : _ Duniverse.Deps.Source.t) -> s.dir) src_deps in
+  let found = List.sort_uniq ~compare:String.compare dir_names in
+  let asked = List.sort_uniq ~compare:String.compare duniverse_repos in
+  let rec diff acc asked_l found_l =
+    match (asked_l, found_l) with
+    | asked :: asked_tl, found :: found_tl ->
+        if String.equal asked found then diff acc asked_tl found_tl
+        else diff (asked :: acc) asked_tl found_l
+    | asked :: asked_tl, [] -> diff (asked :: acc) asked_tl found_l
+    | [], [] -> List.rev acc
+    | [], _ -> assert false
+  in
+  match diff [] asked found with
+  | [] -> Ok ()
+  | unmatched ->
+      let sep fmt () = Ffmt.pf fmt " " in
+      Rresult.R.error_msgf "The following repos are not in your duniverse: %a"
+        Ffmt.(list ~sep string)
+        unmatched
+
+let should_consider ~to_consider (src_dep : _ Duniverse.Deps.Source.t) =
+  List.mem ~set:to_consider src_dep.dir
+
+(** Filters the duniverse according to the CLI provided list of repos *)
+let filter_duniverse ~to_consider src_deps =
+  let open Rresult in
+  match to_consider with
+  | None -> Ok src_deps
+  | Some to_consider ->
+      let filtered = List.filter ~f:(should_consider ~to_consider) src_deps in
+      check_duniverse_repos to_consider filtered >>= fun () -> Ok filtered
