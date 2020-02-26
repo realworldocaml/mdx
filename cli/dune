@@ -1,3 +1,3 @@
 (library
  (name duniverse_cli)
- (libraries duniverse_lib fmt.cli fmt.tty logs.cli logs.fmt cmdliner opam-format))
+ (libraries duniverse_lib fmt.cli fmt.tty logs.cli logs.fmt cmdliner osrelease))

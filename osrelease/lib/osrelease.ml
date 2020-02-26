@@ -151,7 +151,7 @@ module Distro = struct
 
   let macos_to_string (x : macos) =
     match x with
-    | `Homebrew -> "brew"
+    | `Homebrew -> "homebrew"
     | `MacPorts -> "macports"
     | `None -> "macos"
 

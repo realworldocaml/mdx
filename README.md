@@ -44,7 +44,7 @@ DESCRIPTION
 
 COMMANDS
        depext
-           show depexts
+           print external packages required to build this duniverse
 
        init
            analyse opam files to generate an initial dune-get
