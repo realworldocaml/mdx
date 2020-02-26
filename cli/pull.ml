@@ -149,7 +149,7 @@ let run (`Yes yes) (`No_cache no_cache) (`Repo repo) () =
   | { deps = { duniverse = []; _ }; _ } ->
       Common.Logs.app (fun l -> l "No dependencies to pull, there's nothing to be done here!");
       Ok ()
-  | { deps = { duniverse; _ }; config } ->
+  | { deps = { duniverse; _ }; config; _ } ->
       let sm = Duniverse.Config.(config.pull_mode = Submodules) in
       Common.Logs.app (fun l ->
           l "Using pull mode %s"

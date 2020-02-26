@@ -43,6 +43,9 @@ DESCRIPTION
        bootstrapping use of this tool.
 
 COMMANDS
+       depext
+           show depexts
+
        init
            analyse opam files to generate an initial dune-get
 

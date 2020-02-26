@@ -161,6 +161,11 @@ module Deps = struct
     >>= fun duniverse -> Ok { t with duniverse }
 end
 
+module Depexts = struct
+  type t =
+    (string list * string) list [@@deriving sexp]
+end
+
 module Config = struct
   type pull_mode = Submodules | Source [@@deriving sexp]
 
@@ -177,7 +182,7 @@ module Config = struct
   [@@deriving sexp]
 end
 
-type t = { config : Config.t; deps : resolved Deps.t } [@@deriving sexp]
+type t = { config : Config.t; deps : resolved Deps.t; depexts : Depexts.t } [@@deriving sexp]
 
 let load ~file = Persist.load_sexp "duniverse" t_of_sexp file
 
