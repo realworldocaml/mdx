@@ -7,8 +7,8 @@
    (chdir casual-file-inc
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff casual-file-inc/test-case.md.expected casual-file-inc.actual)))
 
 (rule
@@ -19,8 +19,8 @@
    (chdir code
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff code/test-case.md code.actual)))
 
 (rule
@@ -31,8 +31,8 @@
    (chdir cram
     (run ocaml-mdx test --output - --syntax=cram test-case.t)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff cram/test-case.t cram.actual)))
 
 (rule
@@ -43,8 +43,8 @@
    (chdir ellipsis
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff ellipsis/test-case.md ellipsis.actual)))
 
 (rule
@@ -55,8 +55,8 @@
    (chdir ellipsis-updates
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff ellipsis-updates/test-case.md.expected ellipsis-updates.actual)))
 
 (rule
@@ -67,8 +67,8 @@
    (chdir empty-line
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff empty-line/test-case.md empty-line.actual)))
 
 (rule
@@ -79,8 +79,8 @@
    (chdir empty-lines
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff empty-lines/test-case.md.expected empty-lines.actual)))
 
 (rule
@@ -91,8 +91,8 @@
    (chdir environment-variable
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff environment-variable/test-case.md environment-variable.actual)))
 
 (rule
@@ -103,8 +103,8 @@
    (chdir environment-variable-set
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff environment-variable-set/test-case.md environment-variable-set.actual)))
 
 (rule
@@ -115,8 +115,8 @@
    (chdir environment-variable-unset
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff environment-variable-unset/test-case.md environment-variable-unset.actual)))
 
 (rule
@@ -127,8 +127,8 @@
    (chdir envs
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff envs/test-case.md envs.actual)))
 
 (rule
@@ -139,8 +139,8 @@
    (chdir errors
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff errors/test-case.md errors.actual)))
 
 (rule
@@ -151,8 +151,8 @@
    (chdir exit
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff exit/test-case.md exit.actual)))
 
 (rule
@@ -163,8 +163,8 @@
    (chdir heredoc
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff heredoc/test-case.md heredoc.actual)))
 
 (rule
@@ -175,8 +175,8 @@
    (chdir lines
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff lines/test-case.md lines.actual)))
 
 (rule
@@ -187,8 +187,8 @@
    (chdir lwt
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff lwt/test-case.md lwt.actual)))
 
 (rule
@@ -199,8 +199,8 @@
    (chdir mlt
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff mlt/test-case.md mlt.actual)))
 
 (rule
@@ -211,8 +211,8 @@
    (chdir multilines
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff multilines/test-case.md multilines.actual)))
 
 (rule
@@ -223,8 +223,8 @@
    (chdir non-det
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff non-det/test-case.md non-det.actual)))
 
 (rule
@@ -235,8 +235,8 @@
    (chdir non-det-default-preserved
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff non-det-default-preserved/test-case.md non-det-default-preserved.actual)))
 
 (rule
@@ -247,8 +247,8 @@
    (chdir ocaml-408-syntax
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff ocaml-408-syntax/test-case.md ocaml-408-syntax.actual)))
 
 (rule
@@ -259,8 +259,8 @@
    (chdir padding
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff padding/test-case.md padding.actual)))
 
 (rule
@@ -271,8 +271,8 @@
    (chdir parts-begin-end
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff parts-begin-end/test-case.md.expected parts-begin-end.actual)))
 
 (rule
@@ -283,8 +283,8 @@
    (chdir prelude
     (run ocaml-mdx test --output - --prelude-str "#require \"lwt\"" --prelude-str "toto:let x = \"42\"" test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff prelude/test-case.md prelude.actual)))
 
 (rule
@@ -295,8 +295,8 @@
    (chdir prelude-file
     (run ocaml-mdx test --output - --prelude prelude.ml test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff prelude-file/test-case.md prelude-file.actual)))
 
 (rule
@@ -307,8 +307,8 @@
    (chdir root-option
     (run ocaml-mdx test --output - --root=somedir test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff root-option/test-case.md.expected root-option.actual)))
 
 (rule
@@ -319,8 +319,8 @@
    (chdir section
     (run ocaml-mdx test --output - -s Testing test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff section/test-case.md.expected section.actual)))
 
 (rule
@@ -331,8 +331,8 @@
    (chdir semisemi
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff semisemi/test-case.md semisemi.actual)))
 
 (rule
@@ -343,8 +343,8 @@
    (chdir shell-file-inc
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff shell-file-inc/test-case.md.expected shell-file-inc.actual)))
 
 (rule
@@ -355,8 +355,8 @@
    (chdir spaces
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff spaces/test-case.md spaces.actual)))
 
 (rule
@@ -367,8 +367,8 @@
    (chdir sync-from-subdir
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff sync-from-subdir/test-case.md.expected sync-from-subdir.actual)))
 
 (rule
@@ -379,8 +379,8 @@
    (chdir sync-to-md
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff sync-to-md/test-case.md.expected sync-to-md.actual)))
 
 (rule
@@ -391,8 +391,8 @@
    (chdir toploop-getvalue
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff toploop-getvalue/test-case.md toploop-getvalue.actual)))
 
 (rule
@@ -403,6 +403,6 @@
    (chdir trailing-whitespaces
     (run ocaml-mdx test --output - test-case.md)))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff trailing-whitespaces/test-case.md.expected trailing-whitespaces.actual)))
