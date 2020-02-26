@@ -86,8 +86,8 @@ let dir dir_name =
 
 let pr_runtest_alias dir =
   Fmt.pr {|
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (action (diff %s/%s %s)))
 |} dir.dir_name
     dir.expected_file dir.target_file
