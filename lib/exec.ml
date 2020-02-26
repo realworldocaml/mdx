@@ -202,6 +202,12 @@ let run_opam_show ~root ~fields ~packages =
   in
   run_and_log_l cmd
 
+let get_opam_file ~root ~package =
+  let cmd = let open Cmd in
+  opam_cmd ~root "show" % "--color=never" % "--raw" % package in
+  run_and_log_s cmd >>= fun opam_str ->
+  Ok (OpamFile.OPAM.read_from_string opam_str)
+
 let opam_add_remote ~root { Types.Opam.Remote.name; url } =
   let open Cmd in
   let cmd = opam_cmd ~root "repository" % "add" % name % url in
