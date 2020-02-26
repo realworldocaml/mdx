@@ -178,7 +178,13 @@ let parse_opam_depends ~package data =
            "Unable to parse opam depends for %s\n\
             Try `opam show --normalise -f depends: %s` manually" package package)
 
-let get_opam_info ~root ~pins packages =
+let get_opam_depexts ~root pkg =
+  Exec.get_opam_file ~root ~package:pkg.name >>= fun opam ->
+  let depexts = OpamFile.OPAM.depexts opam in
+  Ok (List.map (fun (s,f) -> s, (OpamFilter.to_string f)) depexts)
+
+
+  let get_opam_info ~root ~pins packages =
   let fields = [ "name"; "dev-repo:"; "url.src:"; "depends:" ] in
   Exec.run_opam_show ~root ~packages ~fields >>= fun lines ->
   Opam_show_result.make lines >>= fun data ->

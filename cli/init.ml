@@ -29,6 +29,11 @@ let compute_deps ~opam_entries =
   let get_default_branch remote = Exec.git_default_branch ~remote () in
   Duniverse.Deps.from_opam_entries ~get_default_branch opam_entries
 
+let compute_depexts ~root pkgs =
+  let open Rresult.R in
+  Exec.map (Opam_cmd.get_opam_depexts ~root) pkgs >>= fun depexts ->
+  Ok (List.flatten depexts)
+
 let resolve_ref deps =
   let resolve_ref ~upstream ~ref = Exec.git_resolve ~remote:upstream ~ref in
   Duniverse.Deps.resolve ~resolve_ref deps
@@ -40,6 +45,7 @@ let run (`Repo repo) (`Branch branch) (`Explicit_root_packages explicit_root_pac
   let opam_repo = Uri.of_string opam_repo in
   Common.Logs.app (fun l -> l "Calculating Duniverse on the %a branch" Styled_pp.branch branch);
   Opam_cmd.find_local_opam_packages repo >>= fun local_packages ->
+  Common.Logs.app (fun l -> l "Local opam packages are: %s" (String.concat ", " local_packages));
   build_config ~local_packages ~branch ~explicit_root_packages ~pull_mode ~excludes ~pins ~remotes
     ~opam_repo
   >>= fun config ->
@@ -51,10 +57,14 @@ let run (`Repo repo) (`Branch branch) (`Explicit_root_packages explicit_root_pac
         config.root_packages);
   Opam_cmd.calculate_opam ~root ~config >>= fun packages ->
   report_stats ~packages;
+  let depext_pkgs = config.root_packages @ (List.map (fun {Types.Opam.package; _} -> package) packages) in
+  Common.Logs.app (fun l -> l "Recording depexts for packages %a" Fmt.(list ~sep:(unit " ") Styled_pp.package) depext_pkgs);
+  compute_depexts ~root depext_pkgs >>= fun depexts ->
+  List.iter (fun (k,v) -> Common.Logs.app (fun l -> l "%s %s" (String.concat "," k) v)) depexts;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor");
   compute_deps ~opam_entries:packages >>= fun unresolved_deps ->
   resolve_ref unresolved_deps >>= fun deps ->
-  let duniverse = { Duniverse.config; deps } in
+  let duniverse = { Duniverse.config; deps; depexts } in
   let file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.save ~file duniverse >>= fun () ->
   Common.Logs.app (fun l ->
