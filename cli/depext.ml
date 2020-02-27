@@ -31,15 +31,15 @@ let run (`Repo repo) () =
   let env = fun var ->
     let return s = Some (OpamVariable.string s) in
     match OpamVariable.Full.variable var |> OpamVariable.to_string with
-    |"os" -> return (Osrelease.OS.to_opam_string os)
-    |"os-distribution" -> return (Osrelease.Distro.to_opam_string distro)
+    |"os" -> return (Osrelease.OS.to_string os)
+    |"os-distribution" -> return (Osrelease.Distro.to_string distro)
     |"os-version" -> (match version with Some v -> return v | None -> None)
-    |"os-family" -> return (Osrelease.Distro.to_opam_string distro)
-    |"arch" -> return (Osrelease.Arch.to_opam_string arch)
+    |"os-family" -> return (Osrelease.Distro.to_string distro)
+    |"arch" -> return (Osrelease.Arch.to_string arch)
     |_ -> None
   in
   Common.Logs.app (fun l -> l "OS detected as %s with version %s" 
-    (Osrelease.Distro.to_opam_string distro) 
+    (Osrelease.Distro.to_string distro) 
     (match version with None -> "?" | Some v -> v)); 
   show_opam_depexts config env;
   Ok ()

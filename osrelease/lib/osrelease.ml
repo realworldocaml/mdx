@@ -33,7 +33,7 @@ module Arch = struct
     | `Aarch64
     | `Unknown of string ]
 
-  let to_opam_string (x : t) =
+  let to_string (x : t) =
     match x with
     | `X86_32 -> "x86_32"
     | `X86_64 -> "amd64"
@@ -43,6 +43,9 @@ module Arch = struct
     | `Arm32 _ -> "arm32"
     | `Aarch64 -> "arm64"
     | `Unknown v -> v
+
+  let pp fmt v =
+    Format.pp_print_string fmt (to_string v)
 
   let of_string v : t =
     match String.Ascii.lowercase v with
@@ -77,7 +80,7 @@ module OS = struct
     | `DragonFly
     | `Unknown of string ]
 
-  let to_opam_string (v : t) =
+  let to_string (v : t) =
     match v with
     | `Linux -> "linux"
     | `MacOS -> "macos"
@@ -99,6 +102,8 @@ module OS = struct
     | "dragonfly" -> `DragonFly
     | v -> `Unknown v
 
+  let pp fmt v = Format.pp_print_string fmt (to_string v)
+
   let v () =
     match Sys.os_type with
     | "Unix" -> uname "-s" |> of_string
@@ -106,6 +111,7 @@ module OS = struct
 end
 
 module Distro = struct
+
   type linux =
     [ `Arch
     | `Alpine
@@ -158,12 +164,14 @@ module Distro = struct
   let windows_to_string (x : windows) =
     match x with `Cygwin -> "cygwin" | `None -> "windows"
 
-  let to_opam_string (x : t) =
+  let to_string (x : t) =
     match x with
     | `Linux v -> linux_to_string v
     | `MacOS v -> macos_to_string v
     | `Other v -> v
     | `Windows v -> windows_to_string v
+
+  let pp fmt v = Format.pp_print_string fmt (to_string v)
 
   let android_release =
     lazy
@@ -186,11 +194,12 @@ module Distro = struct
        | Some file ->
            Bos.OS.File.fold_lines
              (fun acc line ->
+               let open Scanf in
                try
-                 Scanf.sscanf line "%s@= %s" (fun k v ->
-                     try Scanf.sscanf v "\"%s@\"" (fun s -> (k, s) :: acc)
-                     with Scanf.Scan_failure _ | End_of_file -> acc)
-               with Scanf.Scan_failure _ | End_of_file -> acc)
+                 sscanf line "%s@= %s" (fun k v ->
+                     try sscanf v "\"%s@\"" (fun s -> (k, s) :: acc)
+                     with Scan_failure _ | End_of_file -> acc)
+               with Scan_failure _ | End_of_file -> acc)
              [] (Fpath.v file))
 
   let os_release_field f =

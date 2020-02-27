@@ -25,9 +25,11 @@ module Arch : sig
     | `X86_32
     | `X86_64 ]
 
-  val to_opam_string : t -> string
+  val to_string : t -> string
 
   val of_string : string -> t
+
+  val pp : Format.formatter -> t -> unit
 
   val v : unit -> t
 end
@@ -43,9 +45,11 @@ module OS : sig
     | `Unknown of string
     | `Win32 ]
 
-  val to_opam_string : t -> string
+  val to_string : t -> string
 
   val of_string : string -> t
+
+  val pp : Format.formatter -> t -> unit
 
   val v : unit -> t
 end
@@ -83,7 +87,9 @@ module Distro : sig
 
   val windows_to_string : windows -> string
 
-  val to_opam_string : t -> string
+  val to_string : t -> string
+
+  val pp : Format.formatter -> t -> unit
 
   val os_release_field : string -> (string option, [> Rresult.R.msg ]) result
 
