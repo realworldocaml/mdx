@@ -157,9 +157,6 @@ val value : t -> value
 val section : t -> section option
 (** [section t] is [t]'s section. *)
 
-val header : t -> Header.t option
-(** [header t] is [t]'s header. *)
-
 val executable_contents : t -> string list
 (** [executable_contents t] is either [t]'s contents if [t] is a raw
    or a cram block, or [t]'s commands if [t] is a toplevel fragments
