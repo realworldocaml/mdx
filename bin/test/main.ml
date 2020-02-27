@@ -229,6 +229,13 @@ let update_file_or_block ?root ppf md_file ml_file block part =
 
 exception Test_block_failure of Block.t * string
 
+let with_non_det ~command ~output ~det non_deterministic = function
+  (* the command is non-deterministic so skip everything *)
+  | Some Label.Nd_command when not non_deterministic -> command ()
+  (* its output is non-deterministic; run it but keep the old output. *)
+  | Some Label.Nd_output when not non_deterministic -> output ()
+  | _ -> det ()
+
 let eval_prelude ?root top prelude prelude_str =
   let aux to_lines p =
     let env, f = Mdx.Prelude.env_and_file p in
@@ -268,32 +275,27 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
               (* By construction, there is no part for non-OCaml blocks *)
               let new_content = read_part file_included None in
               update_block_content ppf t new_content )
-      | OCaml { non_det; _ } -> (
-          match non_det with
-          (* the command is non-deterministic so skip everything *)
-          | Some Nd_command when not non_deterministic -> print_block ()
-          | _ ->
-              assert (syntax <> Some Cram);
-              eval_raw ~block:t ?root c ~line:t.line t.contents;
-              Block.pp ppf t )
-      | Cram { tests; pad; non_det } -> (
-          match non_det with
-          (* the command is non-deterministic so skip everything *)
-          | Some Nd_command when not non_deterministic -> print_block ()
-          (* its output is non-deterministic; run it but keep the old output. *)
-          | Some Nd_output when not non_deterministic ->
+      | OCaml { non_det; _ } ->
+          let det () =
+            assert (syntax <> Some Cram);
+            eval_raw ~block:t ?root c ~line:t.line t.contents;
+            Block.pp ppf t
+          in
+          with_non_det non_deterministic non_det ~command:print_block
+            ~output:det ~det
+      | Cram { tests; pad; non_det } ->
+          with_non_det non_deterministic non_det ~command:print_block
+            ~output:(fun () ->
               print_block ();
               let blacklist = Block.unset_variables t in
               List.iter
                 (fun t -> ignore (run_test ?root blacklist temp_file t))
-                tests
-          | _ -> run_cram_tests ?syntax t ?root ppf temp_file pad tests )
-      | Toplevel { phrases = tests; non_det; _ } -> (
-          match non_det with
-          (* the command is non-deterministic so skip everything *)
-          | Some Nd_command when not non_deterministic -> print_block ()
-          (* its output is non-deterministic; run it but keep the old output. *)
-          | Some Nd_output when not non_deterministic ->
+                tests)
+            ~det:(fun () ->
+              run_cram_tests ?syntax t ?root ppf temp_file pad tests)
+      | Toplevel { phrases = tests; non_det; _ } ->
+          with_non_det non_deterministic non_det ~command:print_block
+            ~output:(fun () ->
               assert (syntax <> Some Cram);
               print_block ();
               List.iter
@@ -304,10 +306,10 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
                       let output = List.map (fun l -> `Output l) e in
                       if Output.equal test.output output then ()
                       else err_eval ~cmd:test.command e)
-                tests
-          | _ ->
+                tests)
+            ~det:(fun () ->
               assert (syntax <> Some Cram);
-              run_toplevel_tests ?root c ppf tests t )
+              run_toplevel_tests ?root c ppf tests t)
     else print_block ()
   in
   let gen_corrected file_contents items =
