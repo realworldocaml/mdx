@@ -133,10 +133,6 @@ val source_trees : t -> string list
 val file : t -> string option
 (** [file t] is the name of the file to synchronize [t] with. *)
 
-val environment : t -> string
-(** [environment t] is the name given to the environment where [t] tests
-    are run. *)
-
 val set_variables : t -> (string * string) list
 (** [set_variable t] is the list of environment variable to set and their values *)
 

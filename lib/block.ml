@@ -178,12 +178,6 @@ let non_det t =
 
 let skip t = t.skip
 
-let environment t =
-  match t.value with
-  | OCaml b -> b.env
-  | Toplevel b -> b.env
-  | Cram _ | Error _ | Include _ | Raw _ -> "default"
-
 let set_variables t = t.set_variables
 
 let unset_variables t = t.unset_variables
@@ -307,8 +301,9 @@ let mk ~line ~file ~section ~labels ~header ~contents =
   let unset_variables =
     List.filter_map (function Label.Unset x -> Some x | _ -> None) labels
   in
+  let file_inc = get_label (function File x -> Some x | _ -> None) labels in
   let open Util.Result.Infix in
-  ( match get_label (function File x -> Some x | _ -> None) labels with
+  ( match file_inc with
   | Some file_included -> (
       check_not_set
         "`non-deterministic` label cannot be used with a `file` label." non_det

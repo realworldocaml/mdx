@@ -275,10 +275,11 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
               (* By construction, there is no part for non-OCaml blocks *)
               let new_content = read_part file_included None in
               update_block_content ppf t new_content )
-      | OCaml { non_det; _ } ->
+      | OCaml { non_det; env } ->
           let det () =
             assert (syntax <> Some Cram);
-            eval_raw ~block:t ?root c ~line:t.line t.contents;
+            Mdx_top.in_env env (fun () ->
+                eval_raw ~block:t ?root c ~line:t.line t.contents);
             Block.pp ppf t
           in
           with_non_det non_deterministic non_det ~command:print_block
@@ -293,14 +294,17 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
                 tests)
             ~det:(fun () ->
               run_cram_tests ?syntax t ?root ppf temp_file pad tests)
-      | Toplevel { phrases = tests; non_det; _ } ->
+      | Toplevel { phrases = tests; non_det; env } ->
           with_non_det non_deterministic non_det ~command:print_block
             ~output:(fun () ->
               assert (syntax <> Some Cram);
               print_block ();
               List.iter
                 (fun test ->
-                  match eval_test ~block:t ?root c test with
+                  match
+                    Mdx_top.in_env env (fun () ->
+                        eval_test ~block:t ?root c test)
+                  with
                   | Ok _ -> ()
                   | Error e ->
                       let output = List.map (fun l -> `Output l) e in
@@ -309,7 +313,8 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
                 tests)
             ~det:(fun () ->
               assert (syntax <> Some Cram);
-              run_toplevel_tests ?root c ppf tests t)
+              Mdx_top.in_env env (fun () ->
+                  run_toplevel_tests ?root c ppf tests t))
     else print_block ()
   in
   let gen_corrected file_contents items =
@@ -322,9 +327,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
         | (Section _ | Text _) as t -> Mdx.pp_line ?syntax ppf t
         | Block t -> (
             List.iter (fun (k, v) -> Unix.putenv k v) (Block.set_variables t);
-            try
-              Mdx_top.in_env (Block.environment t) (fun () ->
-                  test_block ~ppf ~temp_file t)
+            try test_block ~ppf ~temp_file t
             with Failure msg -> raise (Test_block_failure (t, msg)) ))
       items;
     Format.pp_print_flush ppf ();
