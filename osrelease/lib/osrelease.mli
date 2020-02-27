@@ -36,14 +36,7 @@ end
 
 module OS : sig
   type t =
-    [ `Cygwin
-    | `DragonFly
-    | `FreeBSD
-    | `Linux
-    | `MacOS
-    | `OpenBSD
-    | `Unknown of string
-    | `Win32 ]
+    [ `Cygwin | `DragonFly | `FreeBSD | `Linux | `MacOS | `OpenBSD | `Unknown of string | `Win32 ]
 
   val to_string : t -> string
 
@@ -75,11 +68,7 @@ module Distro : sig
 
   type windows = [ `Cygwin | `None ]
 
-  type t =
-    [ `Linux of linux
-    | `MacOS of macos
-    | `Other of string
-    | `Windows of windows ]
+  type t = [ `Linux of linux | `MacOS of macos | `Other of string | `Windows of windows ]
 
   val linux_to_string : linux -> string
 

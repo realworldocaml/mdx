@@ -92,10 +92,7 @@ val run_opam_show :
   (string list, [> Rresult.R.msg ]) result
 (** [run_opam_show ~root ~fields ~packages] runs opam show to get [fields] for each package in [packages].*)
 
-val get_opam_file :
-  root:Fpath.t ->
-  package:string ->
-  (OpamFile.OPAM.t, [> Rresult.R.msg ]) result
+val get_opam_file : root:Fpath.t -> package:string -> (OpamFile.OPAM.t, [> Rresult.R.msg ]) result
 
 val init_opam_and_remotes :
   root:Fpath.t ->

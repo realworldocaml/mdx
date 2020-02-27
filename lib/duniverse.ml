@@ -162,8 +162,7 @@ module Deps = struct
 end
 
 module Depexts = struct
-  type t =
-    (string list * string) list [@@deriving sexp]
+  type t = (string list * string) list [@@deriving sexp]
 end
 
 module Config = struct

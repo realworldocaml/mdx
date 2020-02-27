@@ -31,8 +31,7 @@ let compute_deps ~opam_entries =
 
 let compute_depexts ~root pkgs =
   let open Rresult.R in
-  Exec.map (Opam_cmd.get_opam_depexts ~root) pkgs >>= fun depexts ->
-  Ok (List.flatten depexts)
+  Exec.map (Opam_cmd.get_opam_depexts ~root) pkgs >>= fun depexts -> Ok (List.flatten depexts)
 
 let resolve_ref deps =
   let resolve_ref ~upstream ~ref = Exec.git_resolve ~remote:upstream ~ref in
@@ -57,10 +56,13 @@ let run (`Repo repo) (`Branch branch) (`Explicit_root_packages explicit_root_pac
         config.root_packages);
   Opam_cmd.calculate_opam ~root ~config >>= fun packages ->
   report_stats ~packages;
-  let depext_pkgs = config.root_packages @ (List.map (fun {Types.Opam.package; _} -> package) packages) in
-  Common.Logs.app (fun l -> l "Recording depexts for packages %a" Fmt.(list ~sep:(unit " ") Styled_pp.package) depext_pkgs);
+  let depext_pkgs =
+    config.root_packages @ List.map (fun { Types.Opam.package; _ } -> package) packages
+  in
+  Common.Logs.app (fun l ->
+      l "Recording depexts for packages %a" Fmt.(list ~sep:(unit " ") Styled_pp.package) depext_pkgs);
   compute_depexts ~root depext_pkgs >>= fun depexts ->
-  List.iter (fun (k,v) -> Common.Logs.app (fun l -> l "%s %s" (String.concat "," k) v)) depexts;
+  List.iter (fun (k, v) -> Common.Logs.app (fun l -> l "%s %s" (String.concat "," k) v)) depexts;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor");
   compute_deps ~opam_entries:packages >>= fun unresolved_deps ->
   resolve_ref unresolved_deps >>= fun deps ->
@@ -113,9 +115,8 @@ let opam_repo =
 
 let pull_mode =
   let doc =
-    "How to pull the sources. If $(i,submodules), the pull command will initialise \
-     them as git submodules.  If $(i,source) then the source code will directly be cloned to the \
-     source tree."
+    "How to pull the sources. If $(i,submodules), the pull command will initialise them as git \
+     submodules.  If $(i,source) then the source code will directly be cloned to the source tree."
   in
   Common.Arg.named
     (fun x -> `Pull_mode x)
