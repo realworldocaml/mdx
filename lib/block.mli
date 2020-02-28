@@ -45,13 +45,22 @@ type toplevel_value = {
   non_det : Label.non_det option;
 }
 
-type include_value = {
-  header : Header.t option;
-  file_included : string;
-      (** [file_included] is the name of the file to synchronize with. *)
+type include_ocaml_file = {
   part_included : string option;
       (** [part_included] is the part of the file to synchronize with.
-      If lines is not specified synchronize the whole file. *)
+          If lines is not specified synchronize the whole file. *)
+}
+
+type include_other_file = { header : Header.t option }
+
+type include_file_kind =
+  | Fk_ocaml of include_ocaml_file
+  | Fk_other of include_other_file
+
+type include_value = {
+  file_included : string;
+      (** [file_included] is the name of the file to synchronize with. *)
+  file_kind : include_file_kind;
 }
 
 type raw_value = { header : Header.t option }
