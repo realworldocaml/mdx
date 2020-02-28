@@ -124,7 +124,7 @@ let pull_mode =
       value
       & opt
           (enum [ ("submodule", Duniverse.Config.Submodules); ("source", Duniverse.Config.Source) ])
-          Duniverse.Config.Submodules
+          Duniverse.Config.Source
       & info [ "pull-mode" ] ~docv:"PULL_MODE" ~doc)
 
 let pins =
