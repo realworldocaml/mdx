@@ -341,7 +341,9 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
 let report_error_in_block block msg =
   let kind =
     match block.Block.value with
-    | Raw _ | Error _ | Include _ -> ""
+    | Raw _ | Error _ -> ""
+    | Include { file_kind = Fk_ocaml _; _ } -> "OCaml file include "
+    | Include { file_kind = Fk_other _; _ } -> "file include "
     | OCaml _ -> "OCaml "
     | Cram _ -> "cram "
     | Toplevel _ -> "toplevel "
