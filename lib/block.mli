@@ -26,11 +26,7 @@ end
 
 (** Code blocks. *)
 
-type cram_value = {
-  pad : int;
-  tests : Cram.t list;
-  non_det : Label.non_det option;
-}
+type cram_value = { non_det : Label.non_det option }
 
 type ocaml_value = {
   env : string;
@@ -39,7 +35,6 @@ type ocaml_value = {
 }
 
 type toplevel_value = {
-  phrases : Toplevel.t list;
   env : string;
       (** [env] is the name given to the environment where tests are run. *)
   non_det : Label.non_det option;

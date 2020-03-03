@@ -34,19 +34,11 @@ end
 
 type section = int * string
 
-type cram_value = {
-  pad : int;
-  tests : Cram.t list;
-  non_det : Label.non_det option;
-}
+type cram_value = { non_det : Label.non_det option }
 
 type ocaml_value = { env : string; non_det : Label.non_det option }
 
-type toplevel_value = {
-  phrases : Toplevel.t list;
-  env : string;
-  non_det : Label.non_det option;
-}
+type toplevel_value = { env : string; non_det : Label.non_det option }
 
 type include_ocaml_file = { part_included : string option }
 
@@ -104,12 +96,8 @@ let dump_value ppf = function
   | Raw _ -> Fmt.string ppf "Raw"
   | OCaml _ -> Fmt.string ppf "OCaml"
   | Error e -> Fmt.pf ppf "Error %a" Fmt.(Dump.list dump_string) e.errors
-  | Cram { pad; tests; _ } ->
-      Fmt.pf ppf "@[Cram@ {pad=%d;@ tests=%a}@]" pad
-        Fmt.(Dump.list Cram.dump)
-        tests
-  | Toplevel { phrases = tests; _ } ->
-      Fmt.pf ppf "@[Toplevel %a@]" Fmt.(Dump.list Toplevel.dump) tests
+  | Cram _ -> Fmt.string ppf "Cram"
+  | Toplevel _ -> Fmt.string ppf "Toplevel"
   | Include _ -> Fmt.string ppf "Include"
 
 let dump ppf ({ file; line; section; labels; contents; value; _ } as b) =
@@ -244,7 +232,8 @@ let executable_contents b =
     match b.value with
     | OCaml _ -> b.contents
     | Error _ | Raw _ | Cram _ | Include _ -> []
-    | Toplevel { phrases; _ } ->
+    | Toplevel _ ->
+        let phrases = Toplevel.of_lines ~file:b.file ~line:b.line b.contents in
         List.flatten
           (List.map
              (fun t ->
@@ -330,16 +319,12 @@ let mk ~line ~file ~section ~labels ~header ~contents =
       match header with
       | Some Header.Shell ->
           check_not_set "`env` label cannot be used with a `shell` header." env
-          >>= fun () ->
-          let pad, tests = Cram.of_lines contents in
-          Ok (Cram { pad; tests; non_det })
+          >>= fun () -> Ok (Cram { non_det })
       | Some Header.OCaml -> (
           let env = match env with Some e -> e | None -> "default" in
           match guess_ocaml_kind contents with
           | `Code -> Ok (OCaml { env; non_det })
-          | `Toplevel ->
-              let phrases = Toplevel.of_lines ~file ~line contents in
-              Ok (Toplevel { phrases; env; non_det }) )
+          | `Toplevel -> Ok (Toplevel { env; non_det }) )
       | _ -> Ok (Raw { header }) ) )
   >>= fun value ->
   version_enabled version >>= fun version_enabled ->

@@ -281,7 +281,8 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
           in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:det ~det
-      | Cram { tests; pad; non_det } ->
+      | Cram { non_det } ->
+          let pad, tests = Cram.of_lines t.contents in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:(fun () ->
               print_block ();
@@ -291,7 +292,8 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
                 tests)
             ~det:(fun () ->
               run_cram_tests ?syntax t ?root ppf temp_file pad tests)
-      | Toplevel { phrases = tests; non_det; env } ->
+      | Toplevel { non_det; env } ->
+          let tests = Toplevel.of_lines ~file:t.file ~line:t.line t.contents in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:(fun () ->
               assert (syntax <> Some Cram);
