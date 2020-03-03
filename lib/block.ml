@@ -52,12 +52,9 @@ type include_value = { file_included : string; file_kind : include_file_kind }
 
 type raw_value = { header : Header.t option }
 
-type error_value = { header : Header.t option; errors : string list }
-
 type value =
   | Raw of raw_value
   | OCaml of ocaml_value
-  | Error of error_value
   | Cram of cram_value
   | Toplevel of toplevel_value
   | Include of include_value
@@ -86,7 +83,6 @@ let header t =
   match t.value with
   | Raw b -> b.header
   | OCaml _ -> Some Header.OCaml
-  | Error b -> b.header
   | Cram _ -> Some Header.Shell
   | Toplevel _ -> Some Header.OCaml
   | Include { file_kind = Fk_ocaml _; _ } -> Some Header.OCaml
@@ -95,7 +91,6 @@ let header t =
 let dump_value ppf = function
   | Raw _ -> Fmt.string ppf "Raw"
   | OCaml _ -> Fmt.string ppf "OCaml"
-  | Error e -> Fmt.pf ppf "Error %a" Fmt.(Dump.list dump_string) e.errors
   | Cram _ -> Fmt.string ppf "Cram"
   | Toplevel _ -> Fmt.string ppf "Toplevel"
   | Include _ -> Fmt.string ppf "Include"
@@ -144,15 +139,8 @@ let pp_header ?syntax ppf t =
         Fmt.(option Header.pp)
         (header t) pp_labels t.labels
 
-let pp_error ppf b =
-  match b.value with
-  | Error e ->
-      List.iter (fun e -> Fmt.pf ppf ">> @[<h>%a@]@." Fmt.words e) e.errors
-  | _ -> ()
-
 let pp ?syntax ppf b =
   pp_header ?syntax ppf b;
-  pp_error ppf b;
   pp_contents ?syntax ppf b;
   pp_footer ?syntax ppf ()
 
@@ -167,7 +155,7 @@ let non_det t =
   | OCaml b -> b.non_det
   | Cram b -> b.non_det
   | Toplevel b -> b.non_det
-  | Error _ | Include _ | Raw _ -> None
+  | Include _ | Raw _ -> None
 
 let skip t = t.skip
 
@@ -231,7 +219,7 @@ let executable_contents b =
   let contents =
     match b.value with
     | OCaml _ -> b.contents
-    | Error _ | Raw _ | Cram _ | Include _ -> []
+    | Raw _ | Cram _ | Include _ -> []
     | Toplevel _ ->
         let phrases = Toplevel.of_lines ~file:b.file ~line:b.line b.contents in
         List.flatten

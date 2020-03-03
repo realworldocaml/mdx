@@ -263,8 +263,6 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     let print_block () = Block.pp ?syntax ppf t in
     if Block.is_active ?section t then
       match Block.value t with
-      (* Print errors *)
-      | Error _ -> print_block ()
       | Raw _ -> print_block ()
       | Include { file_included; file_kind = Fk_ocaml { part_included } } ->
           assert (syntax <> Some Cram);
@@ -343,7 +341,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
 let report_error_in_block block msg =
   let kind =
     match block.Block.value with
-    | Raw _ | Error _ -> ""
+    | Raw _ -> ""
     | Include { file_kind = Fk_ocaml _; _ } -> "OCaml file include "
     | Include { file_kind = Fk_other _; _ } -> "file include "
     | OCaml _ -> "OCaml "

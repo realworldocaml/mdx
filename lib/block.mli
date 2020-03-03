@@ -60,13 +60,10 @@ type include_value = {
 
 type raw_value = { header : Header.t option }
 
-type error_value = { header : Header.t option; errors : string list }
-
 (** The type for block values. *)
 type value =
   | Raw of raw_value
   | OCaml of ocaml_value
-  | Error of error_value
   | Cram of cram_value
   | Toplevel of toplevel_value
   | Include of include_value
