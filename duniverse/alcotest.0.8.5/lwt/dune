@@ -1,4 +1,0 @@
-(library
-  (name        alcotest_lwt)
-  (public_name alcotest-lwt)
-  (libraries   logs lwt.unix alcotest))

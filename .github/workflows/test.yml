@@ -1,0 +1,50 @@
+name: Duniverse
+on: [push]
+jobs:
+  tests:
+    name: Tests
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      matrix:
+        ocaml-version: [ '4.08.1', '4.09.0' ]
+        operating-system: [macos-latest, ubuntu-latest, windows-latest]
+    steps:
+    - uses: actions/checkout@master
+    - uses: avsm/setup-ocaml@master
+      with:
+        ocaml-version: ${{ matrix.ocaml-version }}
+    - name: Dune
+      run: opam install -y dune
+    - name: Build
+      run: opam exec -- dune build
+    - name: Test
+      run: opam exec -- dune runtest
+  binaries:
+    name: Binaries
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      matrix:
+        operating-system: [macos-latest, ubuntu-latest, windows-latest]
+        include:
+          - operating-system: ubuntu-latest
+            ocaml-version: 4.10.0+musl+static+flambda
+            artifact-name: duniverse-linux-x86_64
+          - operating-system: macos-latest
+            ocaml-version: 4.10.0
+            artifact-name: duniverse-macos-x86_64
+          - operating-system: windows-latest
+            ocaml-version: 4.10.0
+            artifact-name: duniverse-win32-x86_64
+    steps:
+    - uses: actions/checkout@master
+    - uses: avsm/setup-ocaml@master
+      with:
+        ocaml-version: ${{ matrix.ocaml-version }}
+    - name: Dune
+      run: opam install -y dune
+    - name: Build
+      run: opam exec -- dune build @install
+    - uses: actions/upload-artifact@v1
+      with:
+        name: ${{ matrix.artifact-name }}
+        path: _build/default/bin/duniverse.exe

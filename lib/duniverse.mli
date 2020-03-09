@@ -81,6 +81,10 @@ module Deps : sig
   (**/**)
 end
 
+module Depexts : sig
+  type t = (string list * string) list [@@deriving sexp]
+end
+
 module Config : sig
   type pull_mode = Submodules | Source [@@deriving sexp]
 
@@ -96,7 +100,7 @@ module Config : sig
   [@@deriving sexp]
 end
 
-type t = { config : Config.t; deps : resolved Deps.t } [@@deriving sexp]
+type t = { config : Config.t; deps : resolved Deps.t; depexts : Depexts.t } [@@deriving sexp]
 
 val load : file:Fpath.t -> (t, [> `Msg of string ]) result
 
