@@ -25,35 +25,19 @@ val x : int = 3
 - : int = 0
 ```
 
-```ocaml env=a,version<4.08
+```ocaml env=a
 # x + y
 - : int = 22
 # z
-Characters 0-1:
+...
 Error: Unbound value z
 ```
 
-```ocaml env=a,version>=4.08
-# x + y
-- : int = 22
-# z
-Line 1, characters 1-2:
-Error: Unbound value z
-```
-
-```ocaml env=b,version<4.08
+```ocaml env=b
 # x + y
 - : int = 33
 # z
-Characters 0-1:
-Error: Unbound value z
-```
-
-```ocaml env=b,version>=4.08
-# x + y
-- : int = 33
-# z
-Line 1, characters 1-2:
+...
 Error: Unbound value z
 ```
 
