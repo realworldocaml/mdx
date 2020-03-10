@@ -75,6 +75,7 @@ type t = {
   source_trees : string list;
   required_packages : string list;
   labels : Label.t list;
+  legacy_labels : bool;
   contents : string list;
   skip : bool;
   version_enabled : bool;
@@ -127,9 +128,13 @@ let pp_contents ?syntax ppf t = Fmt.pf ppf "%a\n" (pp_lines syntax) t.contents
 let pp_footer ?syntax ppf () =
   match syntax with Some Syntax.Cram -> () | _ -> Fmt.string ppf "```\n"
 
-let pp_labels ppf = function
+let pp_legacy_labels ppf = function
   | [] -> ()
   | l -> Fmt.pf ppf " %a" Fmt.(list ~sep:(unit ",") Label.pp) l
+
+let pp_labels ppf = function
+  | [] -> ()
+  | l -> Fmt.pf ppf "<!-- $MDX %a -->\n" Fmt.(list ~sep:(unit ",") Label.pp) l
 
 let pp_header ?syntax ppf t =
   match syntax with
@@ -143,9 +148,14 @@ let pp_header ?syntax ppf t =
           Fmt.pf ppf "<-- non-deterministic command\n"
       | _ -> failwith "cannot happen: checked during parsing" )
   | _ ->
-      Fmt.pf ppf "```%a%a\n"
-        Fmt.(option Header.pp)
-        (header t) pp_labels t.labels
+      if t.legacy_labels then
+        Fmt.pf ppf "```%a%a\n"
+          Fmt.(option Header.pp)
+          (header t) pp_legacy_labels t.labels
+      else
+        Fmt.pf ppf "%a```%a\n" pp_labels t.labels
+          Fmt.(option Header.pp)
+          (header t)
 
 let pp ?syntax ppf b =
   pp_header ?syntax ppf b;
@@ -257,7 +267,7 @@ let check_not_set msg = function
   | Some _ -> Util.Result.errorf msg
   | None -> Ok ()
 
-let mk ~line ~file ~section ~labels ~header ~contents =
+let mk ~line ~file ~section ~labels ~legacy_labels ~header ~contents =
   let non_det =
     get_label
       (function
@@ -333,6 +343,7 @@ let mk ~line ~file ~section ~labels ~header ~contents =
       source_trees;
       required_packages;
       labels;
+      legacy_labels;
       contents;
       skip;
       version_enabled;

@@ -24,7 +24,7 @@ let test_of_block =
     | Ok labels -> (
         match
           Mdx.Block.mk ~line:0 ~file:"" ~section:None ~labels ~header:None
-            ~contents:[]
+            ~contents:[] ~legacy_labels:false
         with
         | Ok block -> block
         | Error _ -> assert false )
