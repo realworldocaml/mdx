@@ -8,6 +8,8 @@
 
 #### Fixed
 
+- Fix the environment selection for preludes (#225, @gpetiot)
+
 #### Removed
 
 #### Security

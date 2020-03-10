@@ -32,13 +32,21 @@ module Header = struct
     | s -> Some (Other s)
 end
 
+module Env = struct
+  type t = Default | User_defined of string
+
+  let mk = function None | Some "" -> Default | Some s -> User_defined s
+
+  let name = function Default -> "" | User_defined s -> s
+end
+
 type section = int * string
 
 type cram_value = { non_det : Label.non_det option }
 
-type ocaml_value = { env : string; non_det : Label.non_det option }
+type ocaml_value = { env : Env.t; non_det : Label.non_det option }
 
-type toplevel_value = { env : string; non_det : Label.non_det option }
+type toplevel_value = { env : Env.t; non_det : Label.non_det option }
 
 type include_ocaml_file = { part_included : string option }
 
@@ -309,7 +317,7 @@ let mk ~line ~file ~section ~labels ~header ~contents =
           check_not_set "`env` label cannot be used with a `shell` header." env
           >>= fun () -> Ok (Cram { non_det })
       | Some Header.OCaml -> (
-          let env = match env with Some e -> e | None -> "default" in
+          let env = Env.mk env in
           match guess_ocaml_kind contents with
           | `Code -> Ok (OCaml { env; non_det })
           | `Toplevel -> Ok (Toplevel { env; non_det }) )
