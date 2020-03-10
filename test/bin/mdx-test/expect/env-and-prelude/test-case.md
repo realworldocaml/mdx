@@ -40,14 +40,3 @@ Error: Unbound value z
 ...
 Error: Unbound value z
 ```
-
-Changing the order of the options on the command line results in weird behaviour.
-For instance moving `--prelude default.ml` in the last position triggers the following:
-```
-``ocaml
- # x + y
--- : int = 31
-+Line 1, characters 5-6:
-+Error: Unbound value y
- ``
-```
