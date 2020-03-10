@@ -240,7 +240,7 @@ let eval_prelude ?root top prelude prelude_str =
   let aux to_lines p =
     let env, f = Mdx.Prelude.env_and_file p in
     let eval () = eval_raw ?root top ~line:0 (to_lines f) in
-    match env with None -> eval () | Some e -> Mdx_top.in_env e eval
+    Mdx_top.in_env env eval
   in
   match (prelude, prelude_str) with
   | [], [] -> ()

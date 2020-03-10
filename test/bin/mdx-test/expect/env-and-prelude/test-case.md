@@ -20,23 +20,41 @@ val x : int = 3
 
 ```ocaml
 # x + y
-- : int = 31
+- : int = 11
 # z
 - : int = 0
 ```
 
-```ocaml env=a
+```ocaml env=a,version<4.08
 # x + y
 - : int = 22
 # z
-- : int = 0
+Characters 0-1:
+Error: Unbound value z
 ```
 
-```ocaml env=b
+```ocaml env=a,version>=4.08
+# x + y
+- : int = 22
+# z
+Line 1, characters 1-2:
+Error: Unbound value z
+```
+
+```ocaml env=b,version<4.08
 # x + y
 - : int = 33
 # z
-- : int = 0
+Characters 0-1:
+Error: Unbound value z
+```
+
+```ocaml env=b,version>=4.08
+# x + y
+- : int = 33
+# z
+Line 1, characters 1-2:
+Error: Unbound value z
 ```
 
 Changing the order of the options on the command line results in weird behaviour.
