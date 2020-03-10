@@ -181,7 +181,7 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax)
     | Block b when active b ->
         let files, dirs, nd, packages = acc in
         let nd =
-          nd || match Mdx.Block.mode b with `Non_det _ -> true | _ -> false
+          nd || match Mdx.Block.non_det b with Some _ -> true | None -> false
         in
         let source_trees = String.Set.of_list (Mdx.Block.source_trees b) in
         let dirs =
