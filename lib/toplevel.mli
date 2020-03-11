@@ -21,7 +21,7 @@ type t = {
   hpad : int;
   pos : Lexing.position;
   command : string list;
-  output : Output.t list;
+  output : Output.Lines.t;
 }
 (** The type for top-level phrases. *)
 

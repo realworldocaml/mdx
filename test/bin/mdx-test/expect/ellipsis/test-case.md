@@ -31,3 +31,12 @@ Lines ending with ellipsis
 $ echo Hello world
 Hello...
 ```
+
+Sub-ellipsis in the middle of the output:
+
+```sh
+$ echo $HOME
+/home/...
+$ echo $HOME/../tmp/
+/home/.../../tmp/
+```

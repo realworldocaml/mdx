@@ -4,6 +4,7 @@
 
 - Allow to explicitly set the kind of blocks in labels: `ocaml`, `cram`, `toplevel` or `include`. (#237, @gpetiot)
 - Include blocks do not require an empty block anymore (#286, @gpetiot)
+- Add a more precise ellipsis mechanism, '...' are accepted anywhere in the output and not only at the end of lines (#235, @gpetiot)
 
 #### Changed
 

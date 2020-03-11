@@ -27,27 +27,6 @@ module Log = (val Logs.src_log src : Logs.LOG)
 
 let ( / ) = Filename.concat
 
-(* From jbuilder's stdlib *)
-let ansi_color_strip str =
-  let len = String.length str in
-  let buf = Buffer.create len in
-  let rec loop i =
-    if i = len then Buffer.contents buf
-    else
-      match str.[i] with
-      | '\027' -> skip (i + 1)
-      | c ->
-          Buffer.add_char buf c;
-          loop (i + 1)
-  and skip i =
-    if i = len then Buffer.contents buf
-    else match str.[i] with 'm' -> loop (i + 1) | _ -> skip (i + 1)
-  in
-  loop 0
-
-let output_from_line s =
-  `Output (String.drop ~rev:true ~sat:Char.Ascii.is_blank s)
-
 let with_dir root f =
   match root with
   | None -> f ()
@@ -106,17 +85,12 @@ let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
       let n = run_test ?root blacklist temp_file test in
       let lines = Mdx.Util.File.read_lines temp_file in
       let output =
-        let output = List.map output_from_line lines in
-        if Output.equal output test.output then test.output
-        else Output.merge output test.output
+        if Output.Lines.equal lines ~ref:test.output then test.output
+        else Output.Lines.merge lines test.output
       in
       Cram.pp_command ~pad ppf test;
       List.iter
-        (function
-          | `Ellipsis -> Output.pp ~pad ppf `Ellipsis
-          | `Output line ->
-              let line = ansi_color_strip line in
-              Output.pp ~pad ppf (`Output line))
+        (fun line -> Output.Line.(pp ~pad ppf (ansi_color_strip line)))
         output;
       Cram.pp_exit_code ~pad ppf n)
     tests;
@@ -160,14 +134,10 @@ let eval_ocaml ~block ?syntax ?root c ppf cmd errors =
   | Error lines ->
       let errors =
         let lines = split_lines lines in
-        let output = List.map output_from_line lines in
-        if Output.equal output errors then errors
+        if Output.Lines.equal lines ~ref:errors then errors
         else
-          List.map
-            (function
-              | `Ellipsis -> `Ellipsis
-              | `Output x -> `Output (ansi_color_strip x))
-            (Output.merge output errors)
+          List.map Output.Line.ansi_color_strip
+            (Output.Lines.merge lines errors)
       in
       Block.pp ?syntax ppf (update ~errors block)
 
@@ -180,17 +150,13 @@ let run_toplevel_tests ?syntax ?root c ppf tests t =
       let lines = lines (eval_test ?root ~block:t c test.command) in
       let lines = split_lines lines in
       let output =
-        let output = List.map output_from_line lines in
-        if Output.equal output test.output then test.output else output
+        if Output.Lines.equal lines ~ref:test.output then test.output
+        else List.map Output.Line.of_string lines
       in
       let pad = test.hpad in
       Toplevel.pp_command ppf test;
       List.iter
-        (function
-          | `Ellipsis -> Output.pp ~pad ppf `Ellipsis
-          | `Output line ->
-              let line = ansi_color_strip line in
-              Output.pp ~pad ppf (`Output line))
+        (fun line -> Output.Line.(pp ~pad ppf (ansi_color_strip line)))
         output)
     tests;
   match syntax with Some Syntax.Mli -> () | _ -> Block.pp_footer ?syntax ppf t
@@ -238,14 +204,15 @@ let write_parts ~force_output file parts =
 
 let update_block_content ?syntax ppf t content =
   Block.pp_header ?syntax ppf t;
-  Output.pp ppf (`Output content);
+  Output.Line.pp ppf content;
   Block.pp_footer ?syntax ppf t
 
 let update_file_or_block ?syntax ?root ppf md_file ml_file block part =
   let root = root_dir ?root ~block () in
   let dir = Filename.dirname md_file in
   let ml_file = resolve_root ml_file dir root in
-  update_block_content ?syntax ppf block (read_part ml_file part)
+  update_block_content ?syntax ppf block
+    (Output.Line.of_string (read_part ml_file part))
 
 exception Test_block_failure of Block.t * string
 
@@ -291,7 +258,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
             part_included
       | Include { file_included; file_kind = Fk_other _ } ->
           let new_content = read_part file_included None in
-          update_block_content ?syntax ppf t new_content
+          update_block_content ?syntax ppf t (Output.Line.of_string new_content)
       | OCaml { non_det; env; errors } ->
           let det () =
             assert (syntax <> Some Cram);
@@ -328,8 +295,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
                   with
                   | Ok _ -> ()
                   | Error e ->
-                      let output = List.map (fun l -> `Output l) e in
-                      if Output.equal test.output output then ()
+                      if Output.Lines.equal e ~ref:test.output then ()
                       else err_eval ~cmd:test.command e)
                 tests)
             ~det:(fun () ->

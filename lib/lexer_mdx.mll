@@ -41,8 +41,8 @@ rule text section = parse
           | e ->
             List.map (fun x ->
                 match String.trim x with
-                | "..." -> `Ellipsis
-                | _ -> `Output x) e
+                | "..." -> [Output.Sub.Ellipsis]
+                | _ -> (Output.Line.of_string x)) e
         in
         newline lexbuf;
         List.iter (fun _ -> newline lexbuf) contents;

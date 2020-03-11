@@ -34,3 +34,5 @@ let library_set =
 let block = Alcotest.testable Mdx.Block.dump ( = )
 
 let header = Alcotest.testable Mdx.Block.Header.pp ( = )
+
+let output_line = Alcotest.testable Mdx.Output.Line.dump ( = )

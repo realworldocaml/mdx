@@ -21,10 +21,10 @@ module Log = (val Logs.src_log src : Logs.LOG)
 open Astring
 open Misc
 
-type t = { command : string list; output : Output.t list; exit_code : int }
+type t = { command : string list; output : Output.Lines.t; exit_code : int }
 
 let dump_line ppf = function
-  | #Output.t as o -> Output.dump ppf o
+  | `Output o -> Output.Line.dump ppf o
   | `Exit i -> Fmt.pf ppf "`Exit %d" i
   | `Command c -> Fmt.pf ppf "`Command %S" c
   | `Command_first c -> Fmt.pf ppf "`Command_first %S" c
@@ -35,7 +35,7 @@ let dump ppf (t : t) =
   Fmt.pf ppf "{@[command: %a;@ output: %a;@ exit_code: %d@]}"
     Fmt.(Dump.list dump_string)
     t.command
-    Fmt.(Dump.list Output.dump)
+    Fmt.(Dump.list Output.Line.dump)
     t.output t.exit_code
 
 let pp_command ?(pad = 0) ppf (t : t) =
@@ -50,7 +50,7 @@ let pp_exit_code ?(pad = 0) ppf n =
 
 let pp ?pad ppf (t : t) =
   pp_command ?pad ppf t;
-  pp_lines (Output.pp ?pad) ppf t.output;
+  pp_lines (Output.Line.pp ?pad) ppf t.output;
   pp_exit_code ?pad ppf t.exit_code
 
 let pad_of_lines = function
@@ -88,16 +88,15 @@ let of_lines t =
     | [] when command = [] -> List.rev acc
     | [] -> List.rev (mk command output 0 :: acc)
     | `Exit i :: t -> aux [] [] (mk command output i :: acc) t
-    | (`Ellipsis as o) :: t -> aux command (o :: output) acc t
     | `Command cmd :: t ->
         if command = [] then aux [ cmd ] [] acc t
         else aux [ cmd ] [] (mk command output 0 :: acc) t
     | `Command_first cmd :: t ->
         let cmd, t = command_cont [ cmd ] t in
         aux cmd [] (mk command output 0 :: acc) t
-    | (`Output _ as o) :: t -> aux command (o :: output) acc t
+    | `Output o :: t -> aux command (o :: output) acc t
     | (`Command_last s | `Command_cont s) :: t ->
-        aux command output acc (`Output s :: t)
+        aux command output acc (`Output (Output.Line.of_string s) :: t)
   in
   match lines with
   | `Command_first cmd :: t ->
@@ -105,7 +104,7 @@ let of_lines t =
       (pad, aux cmd [] [] t)
   | `Command cmd :: t -> (pad, aux [ cmd ] [] [] t)
   | [] -> (0, [])
-  | `Output line :: _ ->
+  | `Output (S line :: _) :: _ ->
       if String.length line > 0 && line.[0] = '$' then
         failwith
           "Blocks must start with a command or similar, not with an output \
@@ -116,7 +115,7 @@ let of_lines t =
           "Blocks must start with a command or similar, not with an output \
            line. Please, make sure that there's no spare empty line, \
            particularly between the output and its input."
-  | _ -> Fmt.failwith "invalid cram block: %a" Fmt.(Dump.list dump_line) lines
+  | _ -> Fmt.failwith "invalid cram block: %a" (Fmt.Dump.list dump_line) lines
 
 let exit_code t = t.exit_code
 

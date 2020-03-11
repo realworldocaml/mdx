@@ -50,7 +50,7 @@ type cram_value = { language : [ `Sh | `Bash ]; non_det : Label.non_det option }
 type ocaml_value = {
   env : Ocaml_env.t;
   non_det : Label.non_det option;
-  errors : Output.t list;
+  errors : Output.Lines.t;
 }
 
 type toplevel_value = { env : Ocaml_env.t; non_det : Label.non_det option }
@@ -151,7 +151,7 @@ let pp_errors ppf t =
   match t.value with
   | OCaml { errors; _ } when List.length errors > 0 ->
       Fmt.string ppf "```mdx-error\n";
-      Fmt.pf ppf "%a" Fmt.(list ~sep:nop Output.pp) errors;
+      Fmt.pf ppf "%a" Fmt.(list ~sep:nop Output.Line.pp) errors;
       Fmt.string ppf "```\n"
   | _ -> ()
 

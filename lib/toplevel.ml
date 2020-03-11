@@ -26,11 +26,11 @@ type t = {
   hpad : int;
   pos : Lexing.position;
   command : string list;
-  output : Output.t list;
+  output : Output.Lines.t;
 }
 
 let dump_line ppf = function
-  | #Output.t as o -> Output.dump ppf o
+  | `Output o -> Output.Line.dump ppf o
   | `Command (c, _) -> Fmt.pf ppf "`Command %a" Fmt.(Dump.list dump_string) c
 
 let dump_lines = Fmt.(Dump.list dump_line)
@@ -39,7 +39,7 @@ let dump ppf { vpad; hpad; command; output; _ } =
   Fmt.pf ppf "@[{vpad=%d;@ hpad=%d;@ command=%a;@ output=%a}@]" vpad hpad
     Fmt.(Dump.list dump_string)
     command
-    Fmt.(Dump.list Output.dump)
+    Fmt.(Dump.list Output.Line.dump)
     output
 
 let pp_vpad ppf t =
@@ -67,7 +67,7 @@ let pp_command ppf (t : t) =
 
 let pp ppf (t : t) =
   pp_command ppf t;
-  pp_lines (Output.pp ~pad:t.vpad) ppf t.output
+  pp_lines (Output.Line.pp ~pad:t.vpad) ppf t.output
 
 let lexbuf ~(pos : Lexing.position) s =
   let lexbuf = Lexing.from_string s in
@@ -77,7 +77,8 @@ let lexbuf ~(pos : Lexing.position) s =
 
 let vpad_of_lines t =
   let rec aux i = function
-    | `Output h :: t when String.trim h = "" -> aux (i + 1) t
+    | `Output (Output.Sub.S h :: _) :: t when String.trim h = "" ->
+        aux (i + 1) t
     | t -> (i, t)
   in
   aux 0 t
@@ -108,10 +109,11 @@ let of_lines ~syntax ~(loc : Location.t) t =
   in
   let rec aux vpad command output acc = function
     | [] -> List.rev (mk vpad command output :: acc)
-    | (`Ellipsis as o) :: t -> aux vpad command (o :: output) acc t
-    | (`Output _ as o) :: t -> aux vpad command (o :: output) acc t
+    | `Output o :: t -> aux vpad command (o :: output) acc t
     | `Command cmd :: t ->
+        let output = List.map (fun x -> `Output x) output in
         let vpad', output = vpad_of_lines output in
+        let output = List.map (function `Output x -> x) output in
         aux vpad' cmd [] (mk vpad command output :: acc) t
   in
   match lines with

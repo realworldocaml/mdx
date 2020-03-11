@@ -7,13 +7,16 @@ let ws = ' ' | '\t'
 
 rule token = parse
  | eof           { [] }
- | "..." ws* eol { newline lexbuf; `Ellipsis :: token lexbuf }
- | '\n'          { newline lexbuf; `Output "" :: token lexbuf }
+ | "..." ws* eol { newline lexbuf;
+                   `Output [Output.Sub.Ellipsis] :: token lexbuf }
+ | '\n'          { newline lexbuf;
+                   `Output [Output.Sub.S ""] :: token lexbuf }
  | "# "          { let loc = Location.curr lexbuf in
                    let c = phrase [] (Buffer.create 8) lexbuf in
                    `Command (c, loc) :: token lexbuf }
  | ([^'#' '\n'] [^'\n']* as str) eol
-                 { newline lexbuf; `Output str :: token lexbuf }
+                 { newline lexbuf;
+                   `Output (Output.Line.of_string str) :: token lexbuf }
  | _ as c        { failwith (Printf.sprintf "unexpected character '%c'. Did you forget a space after the '#' at the start of the line?" c) }
 
 and phrase acc buf = parse

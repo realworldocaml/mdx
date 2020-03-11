@@ -11,7 +11,7 @@ rule token = parse
  | eof               { [] }
  | "[" (digit+ as str) "]" ws* eol
                      { `Exit (int_of_string str) :: token lexbuf }
- | ws* "..." ws* eol { `Ellipsis :: token lexbuf }
+ | ws* "..." ws* eol { `Output [Output.Sub.Ellipsis] :: token lexbuf }
  | "$ "              {
       let buf = Buffer.create 8 in
       let line, cont = command_line buf lexbuf in
@@ -24,12 +24,12 @@ rule token = parse
       if cont then `Command_cont line :: token lexbuf
       else `Command_last line :: token lexbuf
     }
- | eol               { `Output "" :: token lexbuf }
+ | eol               { `Output [Output.Sub.S ""] :: token lexbuf }
  | _ as c            {
      let buf = Buffer.create 8 in
      Buffer.add_char buf c;
      let line = line buf lexbuf in
-     `Output line :: token lexbuf
+     `Output (Output.Line.of_string line) :: token lexbuf
    }
 
 and command_line buf = parse
