@@ -276,6 +276,18 @@
  (action (diff ocaml-408-syntax/test-case.md ocaml-408-syntax.actual)))
 
 (rule
+ (target ocaml-errors.actual)
+ (deps (package mdx) (source_tree ocaml-errors))
+ (action
+  (with-stdout-to %{target}
+   (chdir ocaml-errors
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff ocaml-errors/test-case.md.expected ocaml-errors.actual)))
+
+(rule
  (target padding.actual)
  (deps (package mdx) (source_tree padding))
  (action
