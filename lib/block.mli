@@ -40,6 +40,7 @@ type ocaml_value = {
   env : Env.t;
       (** [env] is the name given to the environment where tests are run. *)
   non_det : Label.non_det option;
+  errors : string list;
 }
 
 type toplevel_value = {
@@ -106,6 +107,7 @@ val mk :
   legacy_labels:bool ->
   header:Header.t option ->
   contents:string list ->
+  errors:string list ->
   (t, [ `Msg of string ]) Result.result
 
 (** {2 Printers} *)

@@ -16,6 +16,8 @@
 
 - Fix the environment selection for preludes (#225, @gpetiot)
 
+- Errors of OCaml blocks are displayed in `mdx-error` blocks, that are immediately following the `ocaml` blocks they are attached to (#238, @gpetiot)
+
 #### Removed
 
 #### Security

@@ -144,6 +144,20 @@ let eval_raw ?block ?root c ~line lines =
   | Ok _ -> ()
   | Error e -> err_eval ~cmd:lines e
 
+let eval_ocaml ~block ?root c ppf ~line lines =
+  let test =
+    Toplevel.{ vpad = 0; hpad = 0; line; command = lines; output = [] }
+  in
+  let update ~errors = function
+    | { Block.value = OCaml v; _ } as b ->
+        { b with value = OCaml { v with errors } }
+    (* [eval_ocaml] only called on OCaml blocks *)
+    | _ -> assert false
+  in
+  match eval_test ?root ~block c test with
+  | Ok _ -> Block.pp ppf (update ~errors:[] block)
+  | Error errors -> Block.pp ppf (update ~errors block)
+
 let lines = function Ok x | Error x -> x
 
 let split_lines lines =
@@ -270,12 +284,11 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
       | Include { file_included; file_kind = Fk_other _ } ->
           let new_content = read_part file_included None in
           update_block_content ppf t new_content
-      | OCaml { non_det; env } ->
+      | OCaml { non_det; env; _ } ->
           let det () =
             assert (syntax <> Some Cram);
             Mdx_top.in_env env (fun () ->
-                eval_raw ~block:t ?root c ~line:t.line t.contents);
-            Block.pp ppf t
+                eval_ocaml ~block:t ?root c ppf ~line:t.line t.contents)
           in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:det ~det

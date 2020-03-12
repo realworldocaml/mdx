@@ -36,6 +36,11 @@ rule text section = parse
           | Some _, _ -> failwith "cannot mix both block labels syntax"
           | None, l -> labels l, true
         in
+        let errors =
+          match error_block lexbuf with
+          | exception _ -> []
+          | e -> e
+        in
         let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
         newline lexbuf;
         let line = !line_ref in
@@ -44,11 +49,17 @@ rule text section = parse
         let block =
           match
             Block.mk ~file ~line ~section ~header ~contents ~labels
-              ~legacy_labels
+              ~legacy_labels ~errors
           with
           | Ok block -> block
           | Error (`Msg msg) -> failwith msg
         in
+        (match errors with
+         | [] -> ()
+         | _ ->
+           newline lexbuf;
+           List.iter (fun _ -> newline lexbuf) errors;
+           newline lexbuf);
         `Block block :: text section lexbuf }
   | ([^'\n']* as str) eol
       { newline lexbuf;
@@ -58,6 +69,8 @@ and block = parse
   | eof | "```" ws* eol    { [] }
   | ([^'\n'] * as str) eol { str :: block lexbuf }
 
+and error_block = parse
+  | "```mdx-error" ws* eol { block lexbuf }
 
 and cram_text section = parse
   | eof { [] }
@@ -78,7 +91,7 @@ and cram_text section = parse
         let block =
           match
             Block.mk ~file ~line ~section ~header ~contents ~labels
-              ~legacy_labels
+              ~legacy_labels ~errors:[]
           with
           | Ok block -> block
           | Error (`Msg msg) -> failwith msg
@@ -102,7 +115,7 @@ and cram_text section = parse
         let block =
           match
             Block.mk ~file ~line ~section ~header ~contents ~labels
-              ~legacy_labels
+              ~legacy_labels ~errors:[]
           with
           | Ok block -> block
           | Error (`Msg msg) -> failwith msg
