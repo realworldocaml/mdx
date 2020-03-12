@@ -288,6 +288,18 @@
  (action (diff ocaml-errors/test-case.md.expected ocaml-errors.actual)))
 
 (rule
+ (target ocaml-errors-ellipsis.actual)
+ (deps (package mdx) (source_tree ocaml-errors-ellipsis))
+ (action
+  (with-stdout-to %{target}
+   (chdir ocaml-errors-ellipsis
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff ocaml-errors-ellipsis/test-case.md ocaml-errors-ellipsis.actual)))
+
+(rule
  (target padding.actual)
  (deps (package mdx) (source_tree padding))
  (action

@@ -47,7 +47,7 @@ type cram_value = { non_det : Label.non_det option }
 type ocaml_value = {
   env : Env.t;
   non_det : Label.non_det option;
-  errors : string list;
+  errors : Output.t list;
 }
 
 type toplevel_value = { env : Env.t; non_det : Label.non_det option }
@@ -132,9 +132,9 @@ let pp_contents ?syntax ppf t = Fmt.pf ppf "%a\n" (pp_lines syntax) t.contents
 let pp_errors ppf t =
   match t.value with
   | OCaml { errors; _ } when List.length errors > 0 ->
-      Fmt.string ppf "```\n";
       Fmt.string ppf "```mdx-error\n";
-      Fmt.pf ppf "%a\n" Fmt.(list ~sep:(unit "\n") string) errors
+      Fmt.pf ppf "%a" Fmt.(list ~sep:nop Output.pp) errors;
+      Fmt.string ppf "```\n"
   | _ -> ()
 
 let pp_footer ?syntax ppf () =
@@ -172,8 +172,8 @@ let pp_header ?syntax ppf t =
 let pp ?syntax ppf b =
   pp_header ?syntax ppf b;
   pp_contents ?syntax ppf b;
-  pp_errors ppf b;
-  pp_footer ?syntax ppf ()
+  pp_footer ?syntax ppf ();
+  pp_errors ppf b
 
 let directory t = t.dir
 

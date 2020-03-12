@@ -39,7 +39,11 @@ rule text section = parse
         let errors =
           match error_block lexbuf with
           | exception _ -> []
-          | e -> e
+          | e ->
+            List.map (fun x ->
+                match String.trim x with
+                | "..." -> `Ellipsis
+                | _ -> `Output x) e
         in
         let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
         newline lexbuf;

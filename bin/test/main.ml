@@ -144,7 +144,15 @@ let eval_raw ?block ?root c ~line lines =
   | Ok _ -> ()
   | Error e -> err_eval ~cmd:lines e
 
-let eval_ocaml ~block ?root c ppf ~line lines =
+let split_lines lines =
+  let aux acc s =
+    (* XXX(samoht) support windowns *)
+    let lines = String.cuts ~sep:"\n" s in
+    List.append lines acc
+  in
+  List.fold_left aux [] (List.rev lines)
+
+let eval_ocaml ~block ?root c ppf ~line lines errors =
   let test =
     Toplevel.{ vpad = 0; hpad = 0; line; command = lines; output = [] }
   in
@@ -156,17 +164,21 @@ let eval_ocaml ~block ?root c ppf ~line lines =
   in
   match eval_test ?root ~block c test with
   | Ok _ -> Block.pp ppf (update ~errors:[] block)
-  | Error errors -> Block.pp ppf (update ~errors block)
+  | Error lines ->
+      let errors =
+        let lines = split_lines lines in
+        let output = List.map output_from_line lines in
+        if Output.equal output errors then errors
+        else
+          List.map
+            (function
+              | `Ellipsis -> `Ellipsis
+              | `Output x -> `Output (ansi_color_strip x))
+            (Output.merge output errors)
+      in
+      Block.pp ppf (update ~errors block)
 
 let lines = function Ok x | Error x -> x
-
-let split_lines lines =
-  let aux acc s =
-    (* XXX(samoht) support windowns *)
-    let lines = String.cuts ~sep:"\n" s in
-    List.append lines acc
-  in
-  List.fold_left aux [] (List.rev lines)
 
 let run_toplevel_tests ?root c ppf tests t =
   Block.pp_header ppf t;
@@ -284,11 +296,11 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
       | Include { file_included; file_kind = Fk_other _ } ->
           let new_content = read_part file_included None in
           update_block_content ppf t new_content
-      | OCaml { non_det; env; _ } ->
+      | OCaml { non_det; env; errors } ->
           let det () =
             assert (syntax <> Some Cram);
             Mdx_top.in_env env (fun () ->
-                eval_ocaml ~block:t ?root c ppf ~line:t.line t.contents)
+                eval_ocaml ~block:t ?root c ppf ~line:t.line t.contents errors)
           in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:det ~det
