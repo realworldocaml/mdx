@@ -16,6 +16,7 @@
 
 open Result
 open Compat
+open Util.Result.Infix
 
 module Header = struct
   type t = Shell of [ `Sh | `Bash ] | OCaml | Other of string
@@ -287,13 +288,19 @@ let executable_contents ~syntax b =
 
 let version_enabled version =
   let open Util.Result.Infix in
-  Ocaml_version.of_string Sys.ocaml_version >>= fun curr_version ->
+  Ocaml_version.of_string Sys.ocaml_version >>| fun curr_version ->
   match version with
   | Some (op, v) ->
-      Ok (Label.Relation.compare op (Ocaml_version.compare curr_version v) 0)
-  | None -> Ok true
+      Label.Relation.compare op (Ocaml_version.compare curr_version v) 0
+  | None -> true
 
 let get_label f (labels : Label.t list) = Util.List.find_map f labels
+
+let label_not_allowed ~label ~kind =
+  Util.Result.errorf "`%s` label is not allowed for %s blocks." label kind
+
+let label_required ~label ~kind =
+  Util.Result.errorf "`%s` label is required for %s blocks." label kind
 
 let check_not_set msg = function
   | Some _ -> Util.Result.errorf msg
@@ -304,96 +311,156 @@ let check_no_errors = function
   | _ :: _ ->
       Util.Result.errorf "error block cannot be attached to a non-OCaml block"
 
-let mk ~line ~file ~column ~section ~labels ~legacy_labels ~header ~contents
-    ~errors =
-  let non_det =
-    get_label
-      (function
-        | Non_det (Some x) -> Some x
-        | Non_det None -> Some Label.default_non_det
-        | _ -> None)
-      labels
-  in
-  let part = get_label (function Part x -> Some x | _ -> None) labels in
-  let env = get_label (function Env x -> Some x | _ -> None) labels in
-  let dir = get_label (function Dir x -> Some x | _ -> None) labels in
-  let skip = List.exists (function Label.Skip -> true | _ -> false) labels in
-  let version =
-    get_label (function Version (x, y) -> Some (x, y) | _ -> None) labels
-  in
-  let source_trees =
-    List.filter_map
-      (function Label.Source_tree x -> Some x | _ -> None)
-      labels
-  in
-  let required_packages =
-    List.filter_map
-      (function Label.Require_package x -> Some x | _ -> None)
-      labels
-  in
-  let set_variables =
-    List.filter_map
-      (function Label.Set (v, x) -> Some (v, x) | _ -> None)
-      labels
-  in
-  let unset_variables =
-    List.filter_map (function Label.Unset x -> Some x | _ -> None) labels
-  in
-  let file_inc = get_label (function File x -> Some x | _ -> None) labels in
-  let open Util.Result.Infix in
-  ( match file_inc with
-  | Some file_included -> (
-      check_not_set
-        "`non-deterministic` label cannot be used with a `file` label." non_det
-      >>= fun () ->
-      check_not_set "`env` label cannot be used with a `file` label." env
-      >>= fun () ->
+type block_config = {
+  non_det : Label.non_det option;
+  part : string option;
+  env : string option;
+  dir : string option;
+  skip : bool;
+  version : (Label.Relation.t * Ocaml_version.t) option;
+  source_trees : string list;
+  required_packages : string list;
+  set_variables : (string * string) list;
+  unset_variables : string list;
+  file_inc : string option;
+}
+
+let get_block_config l =
+  {
+    non_det =
+      get_label
+        (function
+          | Non_det (Some x) -> Some x
+          | Non_det None -> Some Label.default_non_det
+          | _ -> None)
+        l;
+    part = get_label (function Part x -> Some x | _ -> None) l;
+    env = get_label (function Env x -> Some x | _ -> None) l;
+    dir = get_label (function Dir x -> Some x | _ -> None) l;
+    skip = List.exists (function Label.Skip -> true | _ -> false) l;
+    version = get_label (function Version (x, y) -> Some (x, y) | _ -> None) l;
+    source_trees =
+      List.filter_map (function Label.Source_tree x -> Some x | _ -> None) l;
+    required_packages =
+      List.filter_map
+        (function Label.Require_package x -> Some x | _ -> None)
+        l;
+    set_variables =
+      List.filter_map (function Label.Set (v, x) -> Some (v, x) | _ -> None) l;
+    unset_variables =
+      List.filter_map (function Label.Unset x -> Some x | _ -> None) l;
+    file_inc = get_label (function File x -> Some x | _ -> None) l;
+  }
+
+let mk_ocaml ~config ~contents ~errors =
+  let kind = "OCaml" in
+  match config with
+  | { file_inc = None; part = None; env; non_det; _ } -> (
+      match guess_ocaml_kind contents with
+      | `Code -> Ok (OCaml { env = Ocaml_env.mk env; non_det; errors })
+      | `Toplevel ->
+          Util.Result.errorf "toplevel syntax is not allowed in OCaml blocks." )
+  | { file_inc = Some _; _ } -> label_not_allowed ~label:"file" ~kind
+  | { part = Some _; _ } -> label_not_allowed ~label:"part" ~kind
+
+let mk_cram ?language ~config ~header ~errors () =
+  let kind = "shell" in
+  match config with
+  | { file_inc = None; part = None; env = None; non_det; _ } ->
+      check_no_errors errors >>| fun () ->
+      let language =
+        Util.Option.value language
+          ~default:
+            ( match header with
+            | Some (Header.Shell language) -> language
+            | _ -> `Sh )
+      in
+      Cram { language; non_det }
+  | { file_inc = Some _; _ } -> label_not_allowed ~label:"file" ~kind
+  | { part = Some _; _ } -> label_not_allowed ~label:"part" ~kind
+  | { env = Some _; _ } -> label_not_allowed ~label:"env" ~kind
+
+let mk_toplevel ~config ~contents ~errors =
+  let kind = "toplevel" in
+  match config with
+  | { file_inc = None; part = None; env; non_det; _ } -> (
+      match guess_ocaml_kind contents with
+      | `Code ->
+          Util.Result.errorf "invalid toplevel syntax in toplevel blocks."
+      | `Toplevel ->
+          check_no_errors errors >>| fun () ->
+          Toplevel { env = Ocaml_env.mk env; non_det } )
+  | { file_inc = Some _; _ } -> label_not_allowed ~label:"file" ~kind
+  | { part = Some _; _ } -> label_not_allowed ~label:"part" ~kind
+
+let mk_include ~config ~header ~errors =
+  let kind = "include" in
+  match config with
+  | { file_inc = Some file_included; part; non_det = None; env = None; _ } -> (
       check_no_errors errors >>= fun () ->
       match header with
       | Some Header.OCaml ->
           let file_kind = Fk_ocaml { part_included = part } in
           Ok (Include { file_included; file_kind })
-      | _ ->
-          check_not_set "`part` is not supported for non-OCaml code blocks."
-            part
-          >>= fun () ->
-          let file_kind = Fk_other { header } in
-          Ok (Include { file_included; file_kind }) )
-  | None -> (
-      check_not_set "`part` label requires a `file` label." part >>= fun () ->
+      | _ -> (
+          match part with
+          | None ->
+              let file_kind = Fk_other { header } in
+              Ok (Include { file_included; file_kind })
+          | Some _ -> label_not_allowed ~label:"part" ~kind:"non-OCaml include"
+          ) )
+  | { file_inc = None; _ } -> label_required ~label:"file" ~kind
+  | { non_det = Some _; _ } ->
+      label_not_allowed ~label:"non-deterministic" ~kind
+  | { env = Some _; _ } -> label_not_allowed ~label:"env" ~kind
+
+let infer_block ~config ~header ~contents ~errors =
+  match config with
+  | { file_inc = Some _; _ } -> mk_include ~config ~header ~errors
+  | { file_inc = None; part; _ } -> (
       match header with
       | Some (Header.Shell language) ->
-          check_no_errors errors >>= fun () ->
-          check_not_set "`env` label cannot be used with a `shell` header." env
-          >>= fun () -> Ok (Cram { language; non_det })
+          mk_cram ~language ~config ~header ~errors ()
       | Some Header.OCaml -> (
-          let env = Ocaml_env.mk env in
           match guess_ocaml_kind contents with
-          | `Code -> Ok (OCaml { env; non_det; errors })
-          | `Toplevel ->
-              check_no_errors errors >>= fun () ->
-              Ok (Toplevel { env; non_det }) )
-      | _ -> check_no_errors errors >>= fun () -> Ok (Raw { header }) ) )
+          | `Code -> mk_ocaml ~config ~contents ~errors
+          | `Toplevel -> mk_toplevel ~config ~contents ~errors )
+      | _ ->
+          check_not_set "`part` label requires a `file` label." part
+          >>= fun () ->
+          check_no_errors errors >>| fun () -> Raw { header } )
+
+let mk ~line ~file ~column ~section ~labels ~legacy_labels ~header ~contents
+    ~errors =
+  let block_kind =
+    get_label (function Block_kind x -> Some x | _ -> None) labels
+  in
+  let config = get_block_config labels in
+  ( match block_kind with
+  | Some OCaml -> mk_ocaml ~config ~contents ~errors
+  | Some Cram -> mk_cram ~config ~header ~errors ()
+  | Some Toplevel -> mk_toplevel ~config ~contents ~errors
+  | Some Include -> mk_include ~config ~header ~errors
+  | None -> infer_block ~config ~header ~contents ~errors )
   >>= fun value ->
-  version_enabled version >>= fun version_enabled ->
-  Ok
-    {
-      line;
-      file;
-      column;
-      section;
-      dir;
-      source_trees;
-      required_packages;
-      labels;
-      legacy_labels;
-      contents;
-      skip;
-      version_enabled;
-      set_variables;
-      unset_variables;
-      value;
-    }
+  version_enabled config.version >>| fun version_enabled ->
+  {
+    line;
+    file;
+    column;
+    section;
+    dir = config.dir;
+    source_trees = config.source_trees;
+    required_packages = config.required_packages;
+    labels;
+    legacy_labels;
+    contents;
+    skip = config.skip;
+    version_enabled;
+    set_variables = config.set_variables;
+    unset_variables = config.unset_variables;
+    value;
+  }
 
 let is_active ?section:s t =
   let active =

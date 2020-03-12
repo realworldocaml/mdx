@@ -1,16 +1,3 @@
-module Testable = struct
-  let library_set =
-    let open Mdx.Library in
-    let equal = Set.equal in
-    let pp fmt set =
-      let l = Set.elements set in
-      Fmt.string fmt "[ ";
-      Fmt.(list ~sep:(const string "; ") pp) fmt l;
-      Fmt.string fmt " ]"
-    in
-    Alcotest.testable pp equal
-end
-
 let test_require_from_line =
   let make_test ~line ~expected () =
     let open Mdx.Util.Result.Infix in
@@ -42,4 +29,26 @@ let test_require_from_line =
       ();
   ]
 
-let suite = ("Block", test_require_from_line)
+let test_mk =
+  let make_test ~name ~labels ~header ~contents ~expected =
+    let test_name = Printf.sprintf "mk: %S" name in
+    let test_fun () =
+      let actual =
+        Mdx.Block.mk ~line:0 ~file:"" ~column:0 ~section:None ~labels
+          ~legacy_labels:false ~header ~contents ~errors:[]
+      in
+      Alcotest.(check (result Testable.block Testable.msg))
+        test_name expected actual
+    in
+    (test_name, `Quick, test_fun)
+  in
+  [
+    make_test ~name:"invalid ocaml" ~labels:[ Block_kind OCaml ]
+      ~header:(Some OCaml) ~contents:[ "# let x = 2;;" ]
+      ~expected:(Error (`Msg "toplevel syntax is not allowed in OCaml blocks."));
+    make_test ~name:"invalid toplevel" ~labels:[ Block_kind Toplevel ]
+      ~header:(Some OCaml) ~contents:[ "let x = 2;;" ]
+      ~expected:(Error (`Msg "invalid toplevel syntax in toplevel blocks."));
+  ]
+
+let suite = ("Block", test_require_from_line @ test_mk)
