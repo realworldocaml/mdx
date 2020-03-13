@@ -48,6 +48,18 @@
  (action (diff invalid-label-value/test-case.md.expected invalid-label-value.actual)))
 
 (rule
+ (target mixed-label-syntax.actual)
+ (deps (package mdx) (source_tree mixed-label-syntax))
+ (action
+  (with-outputs-to %{target}
+   (chdir mixed-label-syntax
+    (system "! ocaml-mdx test test-case.md")))))
+
+(rule
+ (alias runtest)
+ (action (diff mixed-label-syntax/test-case.md.expected mixed-label-syntax.actual)))
+
+(rule
  (target ml-file-not-found.actual)
  (deps (package mdx) (source_tree ml-file-not-found))
  (action
