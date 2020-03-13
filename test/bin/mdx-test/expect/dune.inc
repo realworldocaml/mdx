@@ -180,6 +180,18 @@
  (action (diff heredoc/test-case.md heredoc.actual)))
 
 (rule
+ (target labels-syntax.actual)
+ (deps (package mdx) (source_tree labels-syntax))
+ (action
+  (with-stdout-to %{target}
+   (chdir labels-syntax
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff labels-syntax/test-case.md labels-syntax.actual)))
+
+(rule
  (target lines.actual)
  (deps (package mdx) (source_tree lines))
  (action

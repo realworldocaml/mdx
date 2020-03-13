@@ -7,6 +7,14 @@ let line_ref = ref 1
 let newline lexbuf =
   Lexing.new_line lexbuf;
   incr line_ref
+
+let labels l =
+  match Label.of_string l with
+  | Ok labels -> labels
+  | Error msgs ->
+    let msgs = List.map (fun (`Msg (x : string)) -> x) msgs in
+    let msg = String.concat ~sep:" " msgs in
+    failwith msg
 }
 
 let eol = '\n' | eof
@@ -18,15 +26,15 @@ rule text section = parse
       { let section = (String.length n, str) in
         newline lexbuf;
         `Section section :: text (Some section) lexbuf }
-  | "```" ([^' ' '\n']* as h) ws* ([^'\n']* as l) eol
+  | ( "<!--" ws* "$MDX" ws* ([^' ' '\n']* as label_cmt) ws* "-->" ws* eol? )?
+      "```" ([^' ' '\n']* as h) ws* ([^'\n']* as legacy_labels) eol
       { let header = Block.Header.of_string h in
         let contents = block lexbuf in
-        let labels = match Label.of_string l with
-          | Ok labels -> labels
-          | Error msgs ->
-            let msgs = List.map (fun (`Msg (x : string)) -> x) msgs in
-            let msg = String.concat ~sep:" " msgs in
-            failwith msg
+        let labels, legacy_labels =
+          match (label_cmt, legacy_labels) with
+          | Some label_cmt, "" -> labels label_cmt, false
+          | Some _, _ -> failwith "cannot mix both block labels syntax"
+          | None, l -> labels l, true
         in
         let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
         newline lexbuf;
@@ -34,7 +42,10 @@ rule text section = parse
         List.iter (fun _ -> newline lexbuf) contents;
         newline lexbuf;
         let block =
-          match Block.mk ~file ~line ~section ~header ~contents ~labels with
+          match
+            Block.mk ~file ~line ~section ~header ~contents ~labels
+              ~legacy_labels
+          with
           | Ok block -> block
           | Error (`Msg msg) -> failwith msg
         in
@@ -59,12 +70,16 @@ and cram_text section = parse
         let requires_empty_line, contents = cram_block lexbuf in
         let contents = first_line :: contents in
         let labels = [] in
+        let legacy_labels = false in
         let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
         let block =
-          match Block.mk ~file ~line ~section ~header ~contents ~labels with
+          match
+            Block.mk ~file ~line ~section ~header ~contents ~labels
+              ~legacy_labels
+          with
           | Ok block -> block
           | Error (`Msg msg) -> failwith msg
         in
@@ -78,13 +93,17 @@ and cram_text section = parse
           | Ok label -> [label]
           | Error (`Msg msg) -> failwith msg
         in
+        let legacy_labels = false in
         let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
         newline lexbuf;
         let line = !line_ref in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
         let block =
-          match Block.mk ~file ~line ~section ~header ~contents ~labels with
+          match
+            Block.mk ~file ~line ~section ~header ~contents ~labels
+              ~legacy_labels
+          with
           | Ok block -> block
           | Error (`Msg msg) -> failwith msg
         in

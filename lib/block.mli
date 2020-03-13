@@ -87,6 +87,7 @@ type t = {
   source_trees : string list;
   required_packages : string list;
   labels : Label.t list;
+  legacy_labels : bool;
   contents : string list;
   skip : bool;
   version_enabled : bool;
@@ -102,6 +103,7 @@ val mk :
   file:string ->
   section:section option ->
   labels:Label.t list ->
+  legacy_labels:bool ->
   header:Header.t option ->
   contents:string list ->
   (t, [ `Msg of string ]) Result.result
