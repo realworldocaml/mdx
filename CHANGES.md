@@ -3,7 +3,10 @@
 #### Added
 
 - HTML comments can carry block labels (#234, @gpetiot)
-  The syntax is: `<!-- $MDX labels -->`, where `labels` is a list of valid labels separated by a comma. This line has to immediately precede the block it is attached to. The legacy syntax is preserved and will be deprecated in a later release.
+  The syntax is: `<!-- $MDX labels -->`, where `labels` is a list of valid
+  labels separated by a comma. This line has to immediately precede the block
+  it is attached to. The legacy syntax is preserved and will be deprecated in a
+  later release.
 
 #### Changed
 
