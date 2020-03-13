@@ -3,11 +3,11 @@ The errors raised when evaluating OCaml blocks are displayed in a `mdx-error` bl
 
 ```ocaml version<4.08
 module Counter: Irmin.Contents.S with type t = int64 = struct
-	type t = int64
-	let t = Irmin.Type.int64
+  type t = int64
+  let t = Irmin.Type.int64
 ```
 ```mdx-error
-Characters 110-110:
+Characters 112-112:
 Error: Syntax error: 'end' expected
 Characters 55-61:
 Error: This 'struct' might be unmatched
@@ -16,8 +16,8 @@ Error: This 'struct' might be unmatched
 
 ```ocaml version>=4.08
 module Counter: Irmin.Contents.S with type t = int64 = struct
-	type t = int64
-	let t = Irmin.Type.int64
+  type t = int64
+  let t = Irmin.Type.int64
 ```
 ```mdx-error
 Line 4, characters 3-3:
@@ -31,7 +31,7 @@ If no error is raised, no error block must be attached:
 
 ```ocaml
 module Counter = struct
-	type t = int64
+  type t = int64
 end
 ```
 
@@ -39,7 +39,7 @@ Existing error blocks attached to a valid ocaml block are removed:
 
 ```ocaml
 module Counter = struct
-	type t = int64
+  type t = int64
 end
 ```
 ```mdx-error
