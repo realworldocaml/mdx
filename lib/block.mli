@@ -75,9 +75,7 @@ type section = int * string
 (** The type for sections. *)
 
 type t = {
-  line : int;
-  column : int;
-  file : string;
+  loc : Location.t;
   section : section option;
   dir : string option;
   source_trees : string list;
@@ -95,9 +93,7 @@ type t = {
 (** The type for supported code blocks. *)
 
 val mk :
-  line:int ->
-  file:string ->
-  column:int ->
+  loc:Location.t ->
   section:section option ->
   labels:Label.t list ->
   legacy_labels:bool ->
@@ -107,9 +103,7 @@ val mk :
   (t, [ `Msg of string ]) Result.result
 
 val mk_include :
-  line:int ->
-  file:string ->
-  column:int ->
+  loc:Location.t ->
   section:section option ->
   labels:Label.t list ->
   (t, [ `Msg of string ]) Result.result

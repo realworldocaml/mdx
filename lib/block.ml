@@ -16,6 +16,7 @@
 
 open Result
 open Compat
+open Migrate_ast
 open Util.Result.Infix
 
 module Header = struct
@@ -74,9 +75,7 @@ type value =
   | Include of include_value
 
 type t = {
-  line : int;
-  column : int;
-  file : string;
+  loc : Location.t;
   section : section option;
   dir : string option;
   source_trees : string list;
@@ -111,12 +110,11 @@ let dump_value ppf = function
   | Toplevel _ -> Fmt.string ppf "Toplevel"
   | Include _ -> Fmt.string ppf "Include"
 
-let dump ppf ({ file; line; column; section; labels; contents; value; _ } as b)
-    =
+let dump ppf ({ loc; section; labels; contents; value; _ } as b) =
   Fmt.pf ppf
-    "{@[file: %s;@ line: %d;@ column: %d;@ section: %a;@ labels: %a;@ header: \
-     %a;@\n\
-    \        contents: %a;@ value: %a@]}" file line column
+    "{@[loc: %a;@ section: %a;@ labels: %a;@ header: %a;@ contents: %a;@ \
+     value: %a@]}"
+    Location.print_loc loc
     Fmt.(Dump.option dump_section)
     section
     Fmt.Dump.(list Label.pp)
@@ -130,7 +128,8 @@ let pp_lines syntax t =
   let pp =
     match syntax with
     | Some Syntax.Cram -> Fmt.fmt "  %s"
-    | Some Syntax.Mli -> fun ppf -> Fmt.fmt "%*s%s" ppf (t.column + 2) ""
+    | Some Syntax.Mli ->
+        fun ppf -> Fmt.fmt "%*s%s" ppf (t.loc.loc_start.pos_cnum + 2) ""
     | _ -> Fmt.string
   in
   Fmt.(list ~sep:(unit "\n") pp)
@@ -276,18 +275,16 @@ let executable_contents ~syntax b =
     | OCaml _ -> b.contents
     | Raw _ | Cram _ | Include _ -> []
     | Toplevel _ ->
-        let phrases =
-          Toplevel.of_lines ~syntax ~file:b.file ~line:b.line ~column:b.column
-            b.contents
-        in
+        let phrases = Toplevel.of_lines ~syntax ~loc:b.loc b.contents in
         List.flatten
           (List.map
-             (fun t ->
-               match Toplevel.command t with
+             (fun (t : Toplevel.t) ->
+               match t.command with
                | [] -> []
                | cs ->
                    let mk s = String.make (t.hpad + 2) ' ' ^ s in
-                   line_directive (b.file, t.line) :: List.map mk cs)
+                   line_directive (t.pos.pos_fname, t.pos.pos_lnum)
+                   :: List.map mk cs)
              phrases)
   in
   if contents = [] || ends_by_semi_semi contents then contents
@@ -437,8 +434,7 @@ let infer_block ~config ~header ~contents ~errors =
           >>= fun () ->
           check_no_errors errors >>| fun () -> Raw { header } )
 
-let mk ~line ~file ~column ~section ~labels ~legacy_labels ~header ~contents
-    ~errors =
+let mk ~loc ~section ~labels ~legacy_labels ~header ~contents ~errors =
   let block_kind =
     get_label (function Block_kind x -> Some x | _ -> None) labels
   in
@@ -452,9 +448,7 @@ let mk ~line ~file ~column ~section ~labels ~legacy_labels ~header ~contents
   >>= fun value ->
   version_enabled config.version >>| fun version_enabled ->
   {
-    line;
-    file;
-    column;
+    loc;
     section;
     dir = config.dir;
     source_trees = config.source_trees;
@@ -469,12 +463,12 @@ let mk ~line ~file ~column ~section ~labels ~legacy_labels ~header ~contents
     value;
   }
 
-let mk_include ~line ~file ~column ~section ~labels =
+let mk_include ~loc ~section ~labels =
   match get_label (function File x -> Some x | _ -> None) labels with
   | Some file_inc ->
       let header = Header.infer_from_file file_inc in
-      mk ~line ~file ~column ~section ~labels ~legacy_labels:false ~header
-        ~contents:[] ~errors:[]
+      mk ~loc ~section ~labels ~legacy_labels:false ~header ~contents:[]
+        ~errors:[]
   | None -> label_required ~label:"file" ~kind:"include"
 
 let is_active ?section:s t =

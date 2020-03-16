@@ -18,6 +18,7 @@ open Mdx
 open Compat
 open Result
 open Astring
+open Migrate_ast
 open Mdx.Util.Result.Infix
 
 let src = Logs.Src.create "cram.test"
@@ -84,14 +85,12 @@ let run_test ?root blacklist temp_file t =
   match snd (Unix.waitpid [] pid) with WEXITED n -> n | _ -> 255
 
 let root_dir ?root ?block () =
-  match block with
-  | Some t -> (
-      match Mdx.Block.directory t with
-      | Some d -> (
-          match root with
-          | Some r -> Some (r / d)
-          | None -> Some (Filename.dirname t.file / d) )
-      | None -> root )
+  match (block : Block.t option) with
+  | Some { dir = None; _ } -> root
+  | Some { dir = Some d; loc = { loc_start = { pos_fname; _ }; _ }; _ } -> (
+      match root with
+      | Some r -> Some (r / d)
+      | None -> Some (Filename.dirname pos_fname / d) )
   | None -> root
 
 let resolve_root file dir root =
@@ -123,11 +122,10 @@ let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
     tests;
   Block.pp_footer ?syntax ppf t
 
-let eval_test ?block ?root c test =
-  Log.debug (fun l ->
-      l "eval_test %a" Fmt.(Dump.list (Fmt.fmt "%S")) (Toplevel.command test));
+let eval_test ?block ?root c cmd =
+  Log.debug (fun l -> l "eval_test %a" Fmt.(Dump.list (Fmt.fmt "%S")) cmd);
   let root = root_dir ?root ?block () in
-  with_dir root (fun () -> Mdx_top.eval c (Toplevel.command test))
+  with_dir root (fun () -> Mdx_top.eval c cmd)
 
 let err_eval ~cmd lines =
   Fmt.epr "Got an error while evaluating:\n---\n%a\n---\n%a\n%!"
@@ -137,13 +135,10 @@ let err_eval ~cmd lines =
     lines;
   exit 1
 
-let eval_raw ?block ?root c ~line lines =
-  let test =
-    Toplevel.{ vpad = 0; hpad = 0; line; command = lines; output = [] }
-  in
-  match eval_test ?block ?root c test with
+let eval_raw ?block ?root c cmd =
+  match eval_test ?block ?root c cmd with
   | Ok _ -> ()
-  | Error e -> err_eval ~cmd:lines e
+  | Error e -> err_eval ~cmd e
 
 let split_lines lines =
   let aux acc s =
@@ -153,17 +148,14 @@ let split_lines lines =
   in
   List.fold_left aux [] (List.rev lines)
 
-let eval_ocaml ~block ?syntax ?root c ppf ~line lines errors =
-  let test =
-    Toplevel.{ vpad = 0; hpad = 0; line; command = lines; output = [] }
-  in
+let eval_ocaml ~block ?syntax ?root c ppf cmd errors =
   let update ~errors = function
     | { Block.value = OCaml v; _ } as b ->
         { b with value = OCaml { v with errors } }
     (* [eval_ocaml] only called on OCaml blocks *)
     | _ -> assert false
   in
-  match eval_test ?root ~block c test with
+  match eval_test ?root ~block c cmd with
   | Ok _ -> Block.pp ?syntax ppf (update ~errors:[] block)
   | Error lines ->
       let errors =
@@ -184,8 +176,8 @@ let lines = function Ok x | Error x -> x
 let run_toplevel_tests ?syntax ?root c ppf tests t =
   Block.pp_header ?syntax ppf t;
   List.iter
-    (fun test ->
-      let lines = lines (eval_test ?root ~block:t c test) in
+    (fun (test : Toplevel.t) ->
+      let lines = lines (eval_test ?root ~block:t c test.command) in
       let lines = split_lines lines in
       let output =
         let output = List.map output_from_line lines in
@@ -304,8 +296,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
           let det () =
             assert (syntax <> Some Cram);
             Mdx_top.in_env env (fun () ->
-                eval_ocaml ~block:t ?syntax ?root c ppf ~line:t.line t.contents
-                  errors)
+                eval_ocaml ~block:t ?syntax ?root c ppf t.contents errors)
           in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:det ~det
@@ -323,18 +314,17 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
       | Toplevel { non_det; env } ->
           let tests =
             let syntax = Util.Option.value syntax ~default:Normal in
-            Toplevel.of_lines ~syntax ~file:t.file ~line:t.line ~column:t.column
-              t.contents
+            Toplevel.of_lines ~syntax ~loc:t.loc t.contents
           in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:(fun () ->
               assert (syntax <> Some Cram);
               print_block ();
               List.iter
-                (fun test ->
+                (fun (test : Toplevel.t) ->
                   match
                     Mdx_top.in_env env (fun () ->
-                        eval_test ~block:t ?root c test)
+                        eval_test ~block:t ?root c test.command)
                   with
                   | Ok _ -> ()
                   | Error e ->
@@ -354,7 +344,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     let buf = Buffer.create (String.length file_contents + 1024) in
     let ppf = Format.formatter_of_buffer buf in
     let envs = Document.envs items in
-    let eval lines () = eval_raw ?root c ~line:0 lines in
+    let eval lines () = eval_raw ?root c lines in
     let eval_in_env lines env = Mdx_top.in_env env (eval lines) in
     List.iter
       (function
@@ -391,8 +381,8 @@ let report_error_in_block block msg =
     | Cram _ -> "cram "
     | Toplevel _ -> "toplevel "
   in
-  Fmt.epr "Error in the %scode block in %s at line %d:@]\n%s\n" kind block.file
-    block.line msg
+  Fmt.epr "%a: Error in the %scode block@]\n%s\n" Location.print_loc block.loc
+    kind msg
 
 let run setup non_deterministic silent_eval record_backtrace syntax silent
     verbose_findlib prelude prelude_str file section root force_output output :
