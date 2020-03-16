@@ -37,11 +37,12 @@ jobs:
             artifact-name: duniverse-win32-x86_64
     steps:
     - uses: actions/checkout@master
-    - if: matrix.operating-system == 'ubuntu-latest'
-          run: |
-            add-apt-repository -y ppa:avsm/musl
-            apt-get update
-            apt-get install -y musl-tools
+    - name: Patches (Ubuntu)
+      if: matrix.operating-system == 'ubuntu-latest'
+      run: |
+        add-apt-repository -y ppa:avsm/musl
+        apt-get update
+        apt-get install -y musl-tools
     - uses: avsm/setup-ocaml@master
       with:
         ocaml-version: ${{ matrix.ocaml-version }}
