@@ -150,7 +150,7 @@ let run (`Yes yes) (`No_cache no_cache) (`Repo repo) (`Duniverse_repos duniverse
   | { deps = { duniverse = []; _ }; _ } ->
       Common.Logs.app (fun l -> l "No dependencies to pull, there's nothing to be done here!");
       Ok ()
-  | { deps = { duniverse; _ }; config } ->
+  | { deps = { duniverse; _ }; config; _ } ->
       Common.filter_duniverse ~to_consider:duniverse_repos duniverse >>= fun duniverse ->
       let sm = Duniverse.Config.(config.pull_mode = Submodules) in
       Common.Logs.app (fun l ->
@@ -161,7 +161,7 @@ let run (`Yes yes) (`No_cache no_cache) (`Repo repo) (`Duniverse_repos duniverse
       Bos.OS.Dir.create duniverse_dir >>= fun _created ->
       mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
       get_cache ~no_cache >>= fun cache ->
-      pull_source_dependencies ~trim_clone:sm ~duniverse_dir ~cache duniverse >>= fun () ->
+      pull_source_dependencies ~trim_clone:(not sm) ~duniverse_dir ~cache duniverse >>= fun () ->
       if sm then set_git_submodules ~repo ~duniverse_dir duniverse else Ok ()
 
 let no_cache =

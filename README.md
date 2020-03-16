@@ -43,6 +43,9 @@ DESCRIPTION
        bootstrapping use of this tool.
 
 COMMANDS
+       depext
+           print external packages required to build this duniverse
+
        init
            analyse opam files to generate an initial dune-get
 
