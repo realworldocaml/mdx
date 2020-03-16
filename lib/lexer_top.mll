@@ -12,7 +12,7 @@ rule token = parse
  | _ as c        { failwith (Printf.sprintf "unexpected character '%c'. Did you forget a space after the '#' at the start of the line?" c) }
 
 and phrase acc buf = parse
-  | ("\n"* as nl) "\n  "
+  | ("\n"* as nl) "\n" ws+
       { Lexing.new_line lexbuf;
         let nl = Compat.List.init (String.length nl) (fun _ -> "") in
         phrase (nl @ Buffer.contents buf :: acc) (Buffer.create 8) lexbuf }
