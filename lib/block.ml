@@ -44,7 +44,11 @@ type section = int * string
 
 type cram_value = { non_det : Label.non_det option }
 
-type ocaml_value = { env : Env.t; non_det : Label.non_det option }
+type ocaml_value = {
+  env : Env.t;
+  non_det : Label.non_det option;
+  errors : Output.t list;
+}
 
 type toplevel_value = { env : Env.t; non_det : Label.non_det option }
 
@@ -125,6 +129,14 @@ let pp_lines syntax =
 
 let pp_contents ?syntax ppf t = Fmt.pf ppf "%a\n" (pp_lines syntax) t.contents
 
+let pp_errors ppf t =
+  match t.value with
+  | OCaml { errors; _ } when List.length errors > 0 ->
+      Fmt.string ppf "```mdx-error\n";
+      Fmt.pf ppf "%a" Fmt.(list ~sep:nop Output.pp) errors;
+      Fmt.string ppf "```\n"
+  | _ -> ()
+
 let pp_footer ?syntax ppf () =
   match syntax with Some Syntax.Cram -> () | _ -> Fmt.string ppf "```\n"
 
@@ -160,7 +172,8 @@ let pp_header ?syntax ppf t =
 let pp ?syntax ppf b =
   pp_header ?syntax ppf b;
   pp_contents ?syntax ppf b;
-  pp_footer ?syntax ppf ()
+  pp_footer ?syntax ppf ();
+  pp_errors ppf b
 
 let directory t = t.dir
 
@@ -267,7 +280,12 @@ let check_not_set msg = function
   | Some _ -> Util.Result.errorf msg
   | None -> Ok ()
 
-let mk ~line ~file ~section ~labels ~legacy_labels ~header ~contents =
+let check_no_errors = function
+  | [] -> Ok ()
+  | _ :: _ ->
+      Util.Result.errorf "error block cannot be attached to a non-OCaml block"
+
+let mk ~line ~file ~section ~labels ~legacy_labels ~header ~contents ~errors =
   let non_det =
     get_label
       (function
@@ -310,6 +328,7 @@ let mk ~line ~file ~section ~labels ~legacy_labels ~header ~contents =
       >>= fun () ->
       check_not_set "`env` label cannot be used with a `file` label." env
       >>= fun () ->
+      check_no_errors errors >>= fun () ->
       match header with
       | Some Header.OCaml ->
           let file_kind = Fk_ocaml { part_included = part } in
@@ -324,14 +343,17 @@ let mk ~line ~file ~section ~labels ~legacy_labels ~header ~contents =
       check_not_set "`part` label requires a `file` label." part >>= fun () ->
       match header with
       | Some Header.Shell ->
+          check_no_errors errors >>= fun () ->
           check_not_set "`env` label cannot be used with a `shell` header." env
           >>= fun () -> Ok (Cram { non_det })
       | Some Header.OCaml -> (
           let env = Env.mk env in
           match guess_ocaml_kind contents with
-          | `Code -> Ok (OCaml { env; non_det })
-          | `Toplevel -> Ok (Toplevel { env; non_det }) )
-      | _ -> Ok (Raw { header }) ) )
+          | `Code -> Ok (OCaml { env; non_det; errors })
+          | `Toplevel ->
+              check_no_errors errors >>= fun () ->
+              Ok (Toplevel { env; non_det }) )
+      | _ -> check_no_errors errors >>= fun () -> Ok (Raw { header }) ) )
   >>= fun value ->
   version_enabled version >>= fun version_enabled ->
   Ok
