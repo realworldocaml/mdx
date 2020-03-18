@@ -128,14 +128,7 @@ let pp_lines syntax t =
   let pp =
     match syntax with
     | Some Syntax.Cram -> Fmt.fmt "  %s"
-    | Some Syntax.Mli ->
-        let i = ref (t.column + 2) in
-        let s = ref Fmt.string in
-        while !i > 0 do
-          s := Fmt.prefix (Fmt.unit " ") !s;
-          i := !i - 1
-        done;
-        !s
+    | Some Syntax.Mli -> fun ppf -> Fmt.fmt "%*s%s" ppf (t.column + 2) ""
     | _ -> Fmt.string
   in
   Fmt.(list ~sep:(unit "\n") pp)
