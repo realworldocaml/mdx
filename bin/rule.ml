@@ -79,8 +79,8 @@ let pp_rules ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~packages ~locks fmt
   in
   let pp fmt name arg =
     Fmt.pf fmt
-      "(alias@\n\
-      \ (name   %s)@\n\
+      "(rule@\n\
+      \ (alias   %s)@\n\
       \ (deps   @[<v>%a@])@\n\
        %a (action @[<hv 2>(progn@ %a)@]))@\n"
       name
