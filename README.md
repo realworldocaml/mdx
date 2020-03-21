@@ -187,8 +187,8 @@ To test that the code blocks of `file.md` stay consistent, one can use
 dune's `diff?` stanza:
 
 ```
-(alias
-  (name runtest)
+(rule
+  (alias runtest)
   (deps (:test file.md))
   (action (progn
            (run ocaml-mdx test %{test})
@@ -366,8 +366,8 @@ $ ocaml-mdx rule test/dune_rules.md
 
 generates the following `dune` rules on the standard output:
 ```
-(alias
- (name   runtest)
+(rule
+ (alias   runtest)
  (deps   (:x test/dune_rules.md)
          (:y1 dune_rules_1.ml)
          (:y0 dune_rules_2.ml)
