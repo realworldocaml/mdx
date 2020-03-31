@@ -1,3 +1,5 @@
+open Duniverse_lib
+
 module Logs : sig
   val app : ?src:Logs.src -> 'a Logs.log
   (** Formats the arguments and logs the resulting message with app level, preceded by a sexy looking
@@ -20,7 +22,18 @@ module Arg : sig
   (** CLI flag to skip any prompt and perform actions straight away. The value of this flag
       must be passed to [Prompt.confirm]. *)
 
+  val duniverse_repos : [ `Duniverse_repos of string list option ] Cmdliner.Term.t
+  (** CLI arguments consisting of the list of source deps repo to process. If [None],
+      the whole duniverse should be processed. If [Some l] then [l] is non empty. *)
+
   val setup_logs : unit -> unit Cmdliner.Term.t
   (** Adds the common options -v and --version and sets up the logs before being passed as [()] to a
       command. *)
 end
+
+val filter_duniverse :
+  to_consider:string list option ->
+  'a Duniverse.Deps.Source.t list ->
+  ('a Duniverse.Deps.Source.t list, Rresult.R.msg) result
+(** Filters the duniverse according to the CLI provided list of repos or returns an error
+    if some of the provided packages don't match any of the duniverse repositories. *)

@@ -11,8 +11,8 @@ let debug_update ~src_dep ~new_ref =
       l "Updated %a#%a from %a to %a" Styled_pp.package_name repo Styled_pp.branch ref
         Styled_pp.commit old_commit Styled_pp.commit new_commit)
 
-let should_update ~to_update (src_dep : _ Duniverse.Deps.Source.t) =
-  match to_update with [] -> true | _ -> List.mem ~set:to_update src_dep.dir
+let should_update ~to_update src_dep =
+  match to_update with None -> true | Some set -> List.mem ~set src_dep
 
 let update ~total ~updated ~to_update src_dep =
   let open Result.O in
@@ -37,8 +37,11 @@ let run (`Repo repo) (`Duniverse_repos duniverse_repos) () =
   | { deps = { duniverse; _ }; _ } as dune_get ->
       let total = ref 0 in
       let updated = ref 0 in
-      Result.List.map ~f:(update ~total ~updated ~to_update:duniverse_repos) duniverse
-      >>= fun duniverse ->
+      ( match duniverse_repos with
+      | None -> Ok None
+      | _ -> Common.filter_duniverse ~to_consider:duniverse_repos duniverse >>| Option.some )
+      >>= fun to_update ->
+      Result.List.map ~f:(update ~total ~updated ~to_update) duniverse >>= fun duniverse ->
       if !updated = 0 then (
         Common.Logs.app (fun l -> l "%a is already up-to-date!" Styled_pp.path duniverse_file);
         Ok () )
@@ -51,18 +54,10 @@ let run (`Repo repo) (`Duniverse_repos duniverse_repos) () =
         let dune_get = { dune_get with deps = { dune_get.deps with duniverse } } in
         Duniverse.save ~file:duniverse_file dune_get )
 
-let duniverse_repos =
-  let docv = "REPOSITORIES" in
-  let doc =
-    "The list of $(docv) from your duniverse to update. If none is provided, all will be updated"
-  in
-  Common.Arg.named
-    (fun x -> `Duniverse_repos x)
-    Cmdliner.Arg.(value & pos_all string [] & info ~doc ~docv [])
-
 let term =
   let open Cmdliner in
-  Term.(term_result (const run $ Common.Arg.repo $ duniverse_repos $ Common.Arg.setup_logs ()))
+  Term.(
+    term_result (const run $ Common.Arg.repo $ Common.Arg.duniverse_repos $ Common.Arg.setup_logs ()))
 
 let info =
   let open Cmdliner in

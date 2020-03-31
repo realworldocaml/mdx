@@ -70,6 +70,7 @@ let pull ?(trim_clone = false) ~duniverse_dir ~cache src_dep =
   let open Duniverse.Deps.Source in
   let { dir; upstream; ref = { Git.Ref.t = ref; commit }; _ } = src_dep in
   let output_dir = Fpath.(duniverse_dir / dir) in
+  Bos.OS.Dir.delete ~must_exist:false ~recurse:true output_dir >>= fun () ->
   Cloner.clone_to ~output_dir ~remote:upstream ~ref ~commit cache
   |> Rresult.R.reword_error (fun (`Msg _) -> `Commit_is_gone dir)
   >>= fun cached ->
@@ -142,7 +143,7 @@ let pull_source_dependencies ?trim_clone ~duniverse_dir ~cache src_deps =
 
 let get_cache ~no_cache = if no_cache then Ok Cloner.no_cache else Cloner.get_cache ()
 
-let run (`Yes yes) (`No_cache no_cache) (`Repo repo) () =
+let run (`Yes yes) (`No_cache no_cache) (`Repo repo) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
   let duniverse_file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.load ~file:duniverse_file >>= function
@@ -150,6 +151,7 @@ let run (`Yes yes) (`No_cache no_cache) (`Repo repo) () =
       Common.Logs.app (fun l -> l "No dependencies to pull, there's nothing to be done here!");
       Ok ()
   | { deps = { duniverse; _ }; config; _ } ->
+      Common.filter_duniverse ~to_consider:duniverse_repos duniverse >>= fun duniverse ->
       let sm = Duniverse.Config.(config.pull_mode = Submodules) in
       Common.Logs.app (fun l ->
           l "Using pull mode %s"
@@ -209,6 +211,8 @@ let info =
 
 let term =
   Cmdliner.Term.(
-    term_result (const run $ Common.Arg.yes $ no_cache $ Common.Arg.repo $ Common.Arg.setup_logs ()))
+    term_result
+      ( const run $ Common.Arg.yes $ no_cache $ Common.Arg.repo $ Common.Arg.duniverse_repos
+      $ Common.Arg.setup_logs () ))
 
 let cmd = (term, info)
