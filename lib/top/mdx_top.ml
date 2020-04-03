@@ -606,16 +606,16 @@ let in_words s =
   in
   split 0 0
 
-let init ~verbose:v ~silent:s ~verbose_findlib () =
+let init ~verbose:v ~silent:s ~verbose_findlib ~dirs ~packages ~predicates () =
   Clflags.real_paths := false;
   Toploop.set_paths ();
   Mdx.Compat.init_path ();
   Toploop.toplevel_env := Compmisc.initial_env ();
   Sys.interactive := false;
   patch_env ();
-  Topfind.don't_load_deeply
-    [ "unix"; "findlib.top"; "findlib.internal"; "compiler-libs.toplevel" ];
-  Topfind.add_predicates [ "byte"; "toploop" ];
+  List.iter (Topdirs.dir_load Format.err_formatter) dirs;
+  Topfind.don't_load_deeply packages;
+  Topfind.add_predicates predicates;
   (* [require] directive is overloaded to toggle the [errors] reference when
      an exception is raised. *)
   Hashtbl.add Toploop.directive_table "require"
