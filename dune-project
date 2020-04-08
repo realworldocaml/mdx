@@ -14,7 +14,7 @@
 opam package manager with having a local copy of all the source
 code required to build a project using the dune build tool.")
  (depends
-  (ocaml (>= 4.05))
+  (ocaml (and (>= 4.05.0) (<= 4.09.0)))
   (ppx_sexp_conv (>= v0.13.0))
   dune-private-libs
   bos

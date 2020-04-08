@@ -31,3 +31,7 @@ module Lang : sig
   val is_stanza : string -> bool
   (** Tells whether the given dune-project file line is a lang stanza *)
 end
+
+module Project : sig
+  val supported_ocaml_compilers : unit -> (Ocaml_version.t list, [> `Msg of string ]) result
+end
