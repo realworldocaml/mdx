@@ -1,7 +1,7 @@
 open Stdune
 open Duniverse_lib
 
-let _show_opam_depexts config env =
+let show_opam_depexts config env =
   (* TODO cant find a OpamFilter.of_string, so parse a minimal opam buffer
      to reconstruct formula instead *)
   let b = Buffer.create 1024 in
@@ -18,7 +18,6 @@ let _show_opam_depexts config env =
   |> fun tags -> List.iter ~f:print_endline tags
 
 let run (`Repo repo) () =
-  (*
   let open Rresult.R in
   let duniverse_file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.load ~file:duniverse_file >>= fun config ->
@@ -41,11 +40,6 @@ let run (`Repo repo) () =
         (Osrelease.Distro.to_string distro)
         (match version with None -> "?" | Some v -> v));
   show_opam_depexts config env;
-  *)
-  let _ = repo in
-  let open Result.O in
-  Dune_file.Project.supported_ocaml_compilers () >>= fun ovs ->
-  List.iter ~f:(fun ov -> Common.Logs.app (fun l -> l "%a" Ocaml_version.pp ov)) ovs;
   Ok ()
 
 let info =
