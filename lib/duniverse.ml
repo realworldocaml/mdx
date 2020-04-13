@@ -176,6 +176,7 @@ module Config = struct
     opam_repo : Uri_sexp.t;
         [@default Uri.of_string Config.duniverse_opam_repo] [@sexp_drop_default.sexp]
     remotes : string list; [@default []]
+    ocaml_compilers : string list; [@default []]
     branch : string; [@default "master"]
   }
   [@@deriving sexp]
