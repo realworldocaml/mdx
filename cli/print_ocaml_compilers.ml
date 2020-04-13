@@ -16,8 +16,8 @@ let info =
     [
       `S Manpage.s_description;
       `P
-        "This command prints the OCaml compilers that are supported by this\n \
-         duniverse. The results can be piped to your continuous integration\n\
+        "This command prints the OCaml compilers that are supported by this\n\
+        \ duniverse. The results can be piped to your continuous integration\n\
          system to install the compiler needed for a successful dune build.";
     ]
   in

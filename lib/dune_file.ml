@@ -102,13 +102,14 @@ module Project = struct
           List.filter_map
             ~f:(function
               | List (Atom "package" :: prsxp) -> (
-                    List.filter_map
-                      ~f:(function
-                        | List (Atom "depends" :: depsxp) ->
-                            prerr_endline "found depends";
-                            Some depsxp
-                        | _ -> None)
-                      prsxp |> function
+                  List.filter_map
+                    ~f:(function
+                      | List (Atom "depends" :: depsxp) ->
+                          prerr_endline "found depends";
+                          Some depsxp
+                      | _ -> None)
+                    prsxp
+                  |> function
                   | [] -> None
                   | depsxp :: _ -> (
                       List.filter_map
@@ -125,6 +126,9 @@ module Project = struct
           |> List.flatten
         in
         let constr = List (Atom "and" :: constr) in
-        let r = List.filter ~f:(eval_ocaml_bcomp constr) OV.Releases.recent_with_dev in
+        let r =
+          List.filter ~f:(eval_ocaml_bcomp constr)
+            (List.map ~f:OV.with_just_major_and_minor OV.Releases.recent_with_dev)
+        in
         Ok r
 end

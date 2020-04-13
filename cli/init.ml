@@ -8,7 +8,9 @@ let build_config ~local_packages ~branch ~explicit_root_packages ~pull_mode ~exc
   let ocaml_compilers =
     match Dune_file.Project.supported_ocaml_compilers () with
     | Ok l -> List.map Ocaml_version.to_string l
-    | Error (`Msg msg) -> Logs.warn (fun l -> l "%s" msg); []
+    | Error (`Msg msg) ->
+        Logs.warn (fun l -> l "%s" msg);
+        []
   in
   let root_packages =
     List.map Opam_cmd.split_opam_name_and_version root_packages |> Opam.sort_uniq
@@ -16,7 +18,17 @@ let build_config ~local_packages ~branch ~explicit_root_packages ~pull_mode ~exc
   let excludes =
     List.map Opam_cmd.split_opam_name_and_version (local_packages @ excludes) |> Opam.sort_uniq
   in
-  Ok { Duniverse.Config.root_packages; excludes; pins; opam_repo; pull_mode; remotes; ocaml_compilers; branch }
+  Ok
+    {
+      Duniverse.Config.root_packages;
+      excludes;
+      pins;
+      opam_repo;
+      pull_mode;
+      remotes;
+      ocaml_compilers;
+      branch;
+    }
 
 let init_tmp_opam ~local_packages ~config:{ Duniverse.Config.remotes; pins; opam_repo; _ } =
   let open Rresult.R.Infix in
