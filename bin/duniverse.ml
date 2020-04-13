@@ -16,6 +16,6 @@
 
 open Duniverse_cli
 
-let cmds = [ Init.cmd; Update.cmd; Pull.cmd; Opam_install.cmd; Depext.cmd ]
+let cmds = [ Init.cmd; Update.cmd; Pull.cmd; Opam_install.cmd; Depext.cmd; Print_ocaml_compilers.cmd ]
 
 let () = Cmdliner.Term.(exit @@ eval_choice Default.cmd cmds)
