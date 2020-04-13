@@ -23,9 +23,11 @@ depends: [
   "logs"
   "rresult"
   "opam-file-format"
+  "opam-format"
+  "opam-core"
+  "ocaml-version"
   "uri"
   "sexplib"
-  "opam-core"
   "uri-sexp"
   "alcotest" {with-test}
 ]

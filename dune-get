@@ -1,13 +1,14 @@
 ((config
   ((root_packages (((name alcotest)) ((name duniverse))))
    (excludes (((name duniverse)))) (pins ()) (pull_mode Source) (remotes ())
+   (ocaml_compilers (4.05.0 4.06.1 4.07.1 4.08.1 4.09.0 4.10.0))
    (branch master)))
  (deps
   ((opamverse ())
    (duniverse
-    (((dir alcotest.1.0.1) (upstream https://github.com/mirage/alcotest.git)
-      (ref ((t 1.0.1) (commit 261448ec6d43d8ccba0da911d5cf80bd469e61b6)))
-      (provided_packages (((name alcotest) (version (1.0.1))))))
+    (((dir alcotest.1.1.0) (upstream https://github.com/mirage/alcotest.git)
+      (ref ((t 1.1.0) (commit 4974a9b652cbec92b9aaa71354be9a6c85d14f52)))
+      (provided_packages (((name alcotest) (version (1.1.0))))))
      ((dir astring.0.8.3+dune)
       (upstream git://github.com/dune-universe/astring.git)
       (ref
@@ -85,23 +86,28 @@
       (ref ((t v1.6.0) (commit 93444dbd6153ec0ef6e9daebef6f1da53927792b)))
       (provided_packages
        (((name ocaml-migrate-parsetree) (version (1.6.0))))))
+     ((dir ocaml-version.2.4.0)
+      (upstream https://github.com/ocurrent/ocaml-version.git)
+      (ref ((t v2.4.0) (commit 1eb91307b47cb46508273d4f63faa95a8173a411)))
+      (provided_packages (((name ocaml-version) (version (2.4.0))))))
      ((dir ocamlgraph.1.8.8+dune)
       (upstream git://github.com/dune-universe/ocamlgraph.git)
       (ref
        ((t duniverse-v1.8.8)
         (commit 8b911e0c9c17b6c996b4af8e27fe5edf4e766d81)))
       (provided_packages (((name ocamlgraph) (version (1.8.8+dune))))))
-     ((dir ocplib-endian.1.0+dune)
-      (upstream git://github.com/dune-universe/ocplib-endian.git)
-      (ref
-       ((t duniverse-1.0) (commit ebd4740799e0f9d018e75ede55c777335a564080)))
-      (provided_packages (((name ocplib-endian) (version (1.0+dune))))))
+     ((dir ocplib-endian.1.1)
+      (upstream https://github.com/OCamlPro/ocplib-endian.git)
+      (ref ((t 1.1) (commit 6ee41bb7f8f2bef103bcf4e05ace57597c0d2316)))
+      (provided_packages (((name ocplib-endian) (version (1.1))))))
      ((dir opam-core.2.0.6+dune)
       (upstream git://github.com/dune-universe/opam.git)
       (ref
        ((t duniverse-2.0.6)
         (commit 004066ae560ec87d82030a107a7a58cd79b47e98)))
-      (provided_packages (((name opam-core) (version (2.0.6+dune))))))
+      (provided_packages
+       (((name opam-core) (version (2.0.6+dune)))
+        ((name opam-format) (version (2.0.6+dune))))))
      ((dir opam-file-format.2.0.0+dune)
       (upstream git://github.com/dune-universe/opam-file-format.git)
       (ref
