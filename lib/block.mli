@@ -17,7 +17,9 @@
 (** Code blocks headers. *)
 
 module Header : sig
-  type t = Shell | OCaml | Other of string
+  type t = Shell of string | OCaml | Other of string
+
+  val default_cram_header : string
 
   val pp : Format.formatter -> t -> unit
 
@@ -34,7 +36,7 @@ end
 
 (** Code blocks. *)
 
-type cram_value = { non_det : Label.non_det option }
+type cram_value = { header : string; non_det : Label.non_det option }
 
 type ocaml_value = {
   env : Env.t;
