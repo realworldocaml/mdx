@@ -18,16 +18,18 @@ open Result
 open Compat
 
 module Header = struct
-  type t = Shell | OCaml | Other of string
+  type t = Shell of [ `Sh | `Bash ] | OCaml | Other of string
 
   let pp ppf = function
-    | Shell -> Fmt.string ppf "sh"
+    | Shell `Sh -> Fmt.string ppf "sh"
+    | Shell `Bash -> Fmt.string ppf "bash"
     | OCaml -> Fmt.string ppf "ocaml"
     | Other s -> Fmt.string ppf s
 
   let of_string = function
     | "" -> None
-    | "sh" | "bash" -> Some Shell
+    | "sh" -> Some (Shell `Sh)
+    | "bash" -> Some (Shell `Bash)
     | "ocaml" -> Some OCaml
     | s -> Some (Other s)
 end
@@ -42,7 +44,7 @@ end
 
 type section = int * string
 
-type cram_value = { non_det : Label.non_det option }
+type cram_value = { header : Header.t option; non_det : Label.non_det option }
 
 type ocaml_value = {
   env : Env.t;
@@ -97,7 +99,7 @@ let header t =
   match t.value with
   | Raw b -> b.header
   | OCaml _ -> Some Header.OCaml
-  | Cram _ -> Some Header.Shell
+  | Cram { header; _ } -> header
   | Toplevel _ -> Some Header.OCaml
   | Include { file_kind = Fk_ocaml _; _ } -> Some Header.OCaml
   | Include { file_kind = Fk_other b; _ } -> b.header
@@ -375,10 +377,10 @@ let mk ~line ~file ~column ~section ~labels ~legacy_labels ~header ~contents
   | None -> (
       check_not_set "`part` label requires a `file` label." part >>= fun () ->
       match header with
-      | Some Header.Shell ->
+      | Some (Header.Shell _) ->
           check_no_errors errors >>= fun () ->
           check_not_set "`env` label cannot be used with a `shell` header." env
-          >>= fun () -> Ok (Cram { non_det })
+          >>= fun () -> Ok (Cram { header; non_det })
       | Some Header.OCaml -> (
           let env = Env.mk env in
           match guess_ocaml_kind contents with
