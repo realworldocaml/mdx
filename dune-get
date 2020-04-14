@@ -1,7 +1,7 @@
 ((config
   ((root_packages (((name alcotest)) ((name duniverse))))
    (excludes (((name duniverse)))) (pins ()) (pull_mode Source) (remotes ())
-   (ocaml_compilers (4.06 4.07 4.08 4.09 4.10)) (branch master)))
+   (ocaml_compilers (4.07 4.08 4.09 4.10)) (branch master)))
  (deps
   ((opamverse ())
    (duniverse
