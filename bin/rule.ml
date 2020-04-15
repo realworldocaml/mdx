@@ -242,6 +242,9 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax)
         print_format_dune_rules pp_rules;
         file_contents
   in
+  Printf.eprintf
+    "Warning: mdx rule is deprecated since 1.7.0 and will be removed in 2.0.0.\n\
+     %!";
   Mdx.run ?syntax md_file ~f:on_file;
   0
 
@@ -266,7 +269,10 @@ let locks =
     Arg.(value & opt (list ~sep:',' string) [] & info [ "locks" ] ~doc ~docv)
 
 let cmd =
-  let doc = "Produce dune rules to synchronize markdown and OCaml files." in
+  let doc =
+    "Produce dune rules to synchronize markdown and OCaml files. $(b,ocaml-mdx \
+     rule) is deprecated since 1.7.0 and will be removed in 2.0.0."
+  in
   ( Term.(
       pure run $ Cli.setup $ Cli.file $ Cli.section $ Cli.syntax $ Cli.prelude
       $ Cli.prelude_str $ Cli.root $ duniverse_mode $ locks),
