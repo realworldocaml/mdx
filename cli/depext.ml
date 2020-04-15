@@ -35,6 +35,9 @@ let run (`Repo repo) () =
     | "arch" -> return (Osrelease.Arch.to_string arch)
     | _ -> None
   in
+  prerr_endline (Printf.sprintf "OS detected as %s with version %s"
+   (Osrelease.Distro.to_string distro)
+   (match version with None -> "?" | Some v -> v));
   show_opam_depexts config env;
   Ok ()
 
