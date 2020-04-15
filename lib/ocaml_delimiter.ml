@@ -71,26 +71,29 @@ module Regexp = struct
            opt (str ";;");
            ws;
          ]
+
+  let matches regexp line =
+    match Re.exec_opt regexp line with
+    | Some g ->
+        let indent = Re.Group.get g 1 in
+        let name = Re.Group.get g 2 in
+        let payload = Re.Group.get g 3 in
+        Some (indent, name, payload)
+    | None -> None
 end
 
 let parse line =
   let error () =
     Util.Result.errorf "'%s' is not a valid ocaml delimiter for mdx" line
   in
-  match Re.exec_opt Regexp.attribute line with
-  | Some g -> (
-      let indent = Re.Group.get g 1 in
-      let name = Re.Group.get g 2 in
-      let payload = Re.Group.get g 3 in
+  match Regexp.matches Regexp.attribute line with
+  | Some (indent, name, payload) -> (
       match name with
       | "part" -> Ok (Some (Part_begin (Attr, { indent; payload })))
       | _ -> Ok None )
   | None -> (
-      match Re.exec_opt Regexp.cmt_assign line with
-      | Some g -> (
-          let indent = Re.Group.get g 1 in
-          let name = Re.Group.get g 2 in
-          let payload = Re.Group.get g 3 in
+      match Regexp.matches Regexp.cmt_assign line with
+      | Some (indent, name, payload) -> (
           match name with
           | "part-begin" -> Ok (Some (Part_begin (Cmt, { indent; payload })))
           | _ -> error () )
