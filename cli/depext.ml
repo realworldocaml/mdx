@@ -15,7 +15,7 @@ let show_opam_depexts config env =
   Buffer.to_bytes b |> Bytes.to_string |> OpamFile.OPAM.read_from_string |> OpamFile.OPAM.depexts
   |> List.fold_left ~init:[] ~f:(fun acc (tags, filter) ->
          if OpamFilter.eval_to_bool ~default:false env filter then tags @ acc else acc)
-  |> fun tags -> List.iter ~f:print_endline tags
+  |> fun tags -> List.sort_uniq ~compare:String.compare tags |> List.iter ~f:print_endline
 
 let run (`Repo repo) () =
   let open Rresult.R in
