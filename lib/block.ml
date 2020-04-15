@@ -44,7 +44,7 @@ end
 
 type section = int * string
 
-type cram_value = { header : Header.t option; non_det : Label.non_det option }
+type cram_value = { language : [ `Sh | `Bash ]; non_det : Label.non_det option }
 
 type ocaml_value = {
   env : Env.t;
@@ -99,7 +99,7 @@ let header t =
   match t.value with
   | Raw b -> b.header
   | OCaml _ -> Some Header.OCaml
-  | Cram { header; _ } -> header
+  | Cram { language; _ } -> Some (Header.Shell language)
   | Toplevel _ -> Some Header.OCaml
   | Include { file_kind = Fk_ocaml _; _ } -> Some Header.OCaml
   | Include { file_kind = Fk_other b; _ } -> b.header
@@ -377,10 +377,10 @@ let mk ~line ~file ~column ~section ~labels ~legacy_labels ~header ~contents
   | None -> (
       check_not_set "`part` label requires a `file` label." part >>= fun () ->
       match header with
-      | Some (Header.Shell _) ->
+      | Some (Header.Shell language) ->
           check_no_errors errors >>= fun () ->
           check_not_set "`env` label cannot be used with a `shell` header." env
-          >>= fun () -> Ok (Cram { header; non_det })
+          >>= fun () -> Ok (Cram { language; non_det })
       | Some Header.OCaml -> (
           let env = Env.mk env in
           match guess_ocaml_kind contents with

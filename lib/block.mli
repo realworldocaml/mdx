@@ -34,7 +34,7 @@ end
 
 (** Code blocks. *)
 
-type cram_value = { header : Header.t option; non_det : Label.non_det option }
+type cram_value = { language : [ `Bash | `Sh ]; non_det : Label.non_det option }
 
 type ocaml_value = {
   env : Env.t;

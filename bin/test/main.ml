@@ -308,7 +308,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
           in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:det ~det
-      | Cram { header = _; non_det } ->
+      | Cram { language = _; non_det } ->
           let pad, tests = Cram.of_lines t.contents in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:(fun () ->
