@@ -17,6 +17,8 @@ let test_parse =
     make_test ~line:"    (* $MDX part-begin=bar *)    "
       ~expected:
         (Ok (Some (Part_begin (Cmt, { indent = "    "; payload = "bar" }))));
+    (* Unclosed comments are caught by syntax highlighting, it is okay to
+       silently ignore them and not print a warning here. *)
     make_test ~line:"(* $MDX part-begin=bar     " ~expected:(Ok None);
     make_test ~line:"   (* $MDX part-end   *)   " ~expected:(Ok (Some Part_end));
     make_test ~line:"    [@@@part \"foobar\"]    "
