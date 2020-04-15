@@ -95,6 +95,7 @@ module Config : sig
     pull_mode : pull_mode; [@default Submodules]
     opam_repo : Uri_sexp.t;
     remotes : string list; [@default []]
+    ocaml_compilers : string list; [@default []]
     branch : string; [@default "master"]
   }
   [@@deriving sexp]

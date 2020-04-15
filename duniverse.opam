@@ -14,7 +14,7 @@ homepage: "https://github.com/ocamllabs/duniverse"
 bug-reports: "https://github.com/ocamllabs/duniverse/issues"
 depends: [
   "dune" {>= "2.0"}
-  "ocaml" {>= "4.05"}
+  "ocaml" {>= "4.07.0"}
   "ppx_sexp_conv" {>= "v0.13.0"}
   "dune-private-libs"
   "bos"
@@ -23,9 +23,11 @@ depends: [
   "logs"
   "rresult"
   "opam-file-format"
+  "opam-format"
+  "opam-core"
+  "ocaml-version"
   "uri"
   "sexplib"
-  "opam-core"
   "uri-sexp"
   "alcotest" {with-test}
 ]
