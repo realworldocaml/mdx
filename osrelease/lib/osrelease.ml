@@ -189,7 +189,7 @@ module Distro = struct
     | None -> (
         let cmd = Cmd.(v "lsb_release" % "-i" % "-s") in
         Bos.OS.Cmd.(run_out cmd |> to_string) |> function
-        | Ok v -> Ok (Some v)
+        | Ok v -> Ok (Some (String.Ascii.lowercase v))
         | Error _ -> (
             let issue =
               find_first_file
@@ -203,7 +203,7 @@ module Distro = struct
                 Bos.OS.File.read (Fpath.v f) >>= fun v ->
                 match Scanf.sscanf v " %s " (fun x -> x) with
                 | "" -> Ok None
-                | v -> Ok (Some v)
+                | v -> Ok (Some (String.Ascii.lowercase v))
                 | exception Not_found -> Ok None ) ) )
 
   let v () : (t, [ `Msg of string ]) result =
