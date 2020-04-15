@@ -35,10 +35,6 @@ let run (`Repo repo) () =
     | "arch" -> return (Osrelease.Arch.to_string arch)
     | _ -> None
   in
-  Common.Logs.app (fun l ->
-      l "OS detected as %s with version %s"
-        (Osrelease.Distro.to_string distro)
-        (match version with None -> "?" | Some v -> v));
   show_opam_depexts config env;
   Ok ()
 
