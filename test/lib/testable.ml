@@ -18,8 +18,8 @@ let ocaml_delimiter =
     | Part_begin (src, { indent; payload }) ->
         Fmt.string fs "Part_begin";
         ( match src with
-        | `Cmt -> Fmt.string fs "Cmt"
-        | `Attr -> Fmt.string fs "Attr" );
+        | Cmt -> Fmt.string fs "Cmt"
+        | Attr -> Fmt.string fs "Attr" );
         Fmt.fmt "indent:%s" fs indent;
         Fmt.fmt "payload:%s" fs payload
     | Part_end -> Fmt.string fs "Part_end"

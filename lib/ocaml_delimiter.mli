@@ -14,8 +14,11 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+(** The [Attr] syntax is legacy, its support will be dropped in 2.x in favor of [Cmt]. *)
+type syntax = Cmt | Attr
+
 type part_begin = { indent : string; payload : string }
 
-type t = Part_begin of [ `Cmt | `Attr ] * part_begin | Part_end
+type t = Part_begin of syntax * part_begin | Part_end
 
 val parse : string -> (t option, [ `Msg of string ]) Result.result

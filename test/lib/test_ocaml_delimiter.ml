@@ -16,12 +16,12 @@ let test_parse =
     make_test ~line:"foo" ~expected:(Ok None);
     make_test ~line:"    (* $MDX part-begin=bar *)    "
       ~expected:
-        (Ok (Some (Part_begin (`Cmt, { indent = "    "; payload = "bar" }))));
+        (Ok (Some (Part_begin (Cmt, { indent = "    "; payload = "bar" }))));
     make_test ~line:"(* $MDX part-begin=bar     " ~expected:(Ok None);
     make_test ~line:"   (* $MDX part-end   *)   " ~expected:(Ok (Some Part_end));
     make_test ~line:"    [@@@part \"foobar\"]    "
       ~expected:
-        (Ok (Some (Part_begin (`Attr, { indent = "    "; payload = "foobar" }))));
+        (Ok (Some (Part_begin (Attr, { indent = "    "; payload = "foobar" }))));
     make_test ~line:"(* $MDX foo *)"
       ~expected:
         (Error (`Msg "'(* $MDX foo *)' is not a valid ocaml delimiter for mdx"));

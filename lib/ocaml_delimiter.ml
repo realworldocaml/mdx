@@ -16,9 +16,11 @@
 
 open Result
 
+type syntax = Cmt | Attr
+
 type part_begin = { indent : string; payload : string }
 
-type t = Part_begin of [ `Cmt | `Attr ] * part_begin | Part_end
+type t = Part_begin of syntax * part_begin | Part_end
 
 module Regexp = struct
   let marker = Re.str "$MDX"
@@ -81,7 +83,7 @@ let parse line =
       let name = Re.Group.get g 2 in
       let payload = Re.Group.get g 3 in
       match name with
-      | "part" -> Ok (Some (Part_begin (`Attr, { indent; payload })))
+      | "part" -> Ok (Some (Part_begin (Attr, { indent; payload })))
       | _ -> error () )
   | None -> (
       match Re.exec_opt Regexp.cmt_assign line with
@@ -90,7 +92,7 @@ let parse line =
           let name = Re.Group.get g 2 in
           let payload = Re.Group.get g 3 in
           match name with
-          | "part-begin" -> Ok (Some (Part_begin (`Cmt, { indent; payload })))
+          | "part-begin" -> Ok (Some (Part_begin (Cmt, { indent; payload })))
           | _ -> error () )
       | None -> (
           match Re.exec_opt Regexp.cmt_simple line with

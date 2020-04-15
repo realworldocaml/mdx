@@ -74,8 +74,8 @@ module Parse_parts = struct
                 match delim with
                 | Part_begin (syntax, { indent; payload }) -> (
                     match syntax with
-                    | `Attr -> Compat_attr (payload, indent)
-                    | `Cmt -> Part_begin (payload, indent) )
+                    | Attr -> Compat_attr (payload, indent)
+                    | Cmt -> Part_begin (payload, indent) )
                 | Part_end -> Part_end )
             | None -> Normal line )
         | Error (`Msg msg) ->
