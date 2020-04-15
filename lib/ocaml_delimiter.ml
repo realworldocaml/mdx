@@ -84,7 +84,7 @@ let parse line =
       let payload = Re.Group.get g 3 in
       match name with
       | "part" -> Ok (Some (Part_begin (Attr, { indent; payload })))
-      | _ -> error () )
+      | _ -> Ok None )
   | None -> (
       match Re.exec_opt Regexp.cmt_assign line with
       | Some g -> (

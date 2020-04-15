@@ -25,6 +25,7 @@ let test_parse =
     make_test ~line:"(* $MDX foo *)"
       ~expected:
         (Error (`Msg "'(* $MDX foo *)' is not a valid ocaml delimiter for mdx"));
+    make_test ~line:"[@@@foo \"bar\"]" ~expected:(Ok None);
   ]
 
 let suite = ("Ocaml_delimiter", test_parse)
