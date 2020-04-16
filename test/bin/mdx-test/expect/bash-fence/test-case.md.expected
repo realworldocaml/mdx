@@ -9,3 +9,15 @@ bash block runs
 $ echo 'sh block runs'
 sh block runs
 ```
+
+Even when the blocks are skipped:
+
+<!-- $MDX skip -->
+```bash
+
+```
+
+<!-- $MDX skip -->
+```sh
+
+```
