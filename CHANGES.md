@@ -18,6 +18,8 @@
 
 - Errors of OCaml blocks are displayed in `mdx-error` blocks, that are immediately following the `ocaml` blocks they are attached to (#238, @gpetiot)
 
+- Fix toplevel parsing when phrases contain tabs (#240, @gpetiot)
+
 #### Removed
 
 #### Security

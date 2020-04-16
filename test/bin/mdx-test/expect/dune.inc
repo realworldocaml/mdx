@@ -456,6 +456,18 @@
  (action (diff sync-to-md/test-case.md.expected sync-to-md.actual)))
 
 (rule
+ (target tabs.actual)
+ (deps (package mdx) (source_tree tabs))
+ (action
+  (with-stdout-to %{target}
+   (chdir tabs
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff tabs/test-case.md.expected tabs.actual)))
+
+(rule
  (target toploop-getvalue.actual)
  (deps (package mdx) (source_tree toploop-getvalue))
  (action
