@@ -27,9 +27,9 @@ module Regexp = struct
 
   let spaces = Re.rep1 Re.space
 
-  let id = Re.(rep1 (alt [ alnum; char '_'; char '-' ]))
+  let id = Re.(rep1 (alt [ alnum; char '_'; char '-'; char '=' ]))
 
-  let cmt_assign =
+  let cmt =
     let open Re in
     compile
     @@ seq
@@ -40,16 +40,9 @@ module Regexp = struct
            marker;
            spaces;
            group id;
-           str "=";
-           group id;
            spaces;
            str "*)";
          ]
-
-  let cmt_simple =
-    let open Re in
-    compile
-    @@ seq [ str "(*"; spaces; marker; spaces; group id; spaces; str "*)" ]
 
   let attribute =
     let open Re in
@@ -71,35 +64,35 @@ module Regexp = struct
            opt (str ";;");
            ws;
          ]
-
-  let matches regexp line =
-    match Re.exec_opt regexp line with
-    | Some g ->
-        let indent = Re.Group.get g 1 in
-        let name = Re.Group.get g 2 in
-        let payload = Re.Group.get g 3 in
-        Some (indent, name, payload)
-    | None -> None
 end
 
-let parse line =
-  let error () =
-    Util.Result.errorf "'%s' is not a valid ocaml delimiter for mdx" line
-  in
-  match Regexp.matches Regexp.attribute line with
-  | Some (indent, name, payload) -> (
+let parse_attr line =
+  match Re.exec_opt Regexp.attribute line with
+  | Some g -> (
+      let indent = Re.Group.get g 1 in
+      let name = Re.Group.get g 2 in
+      let payload = Re.Group.get g 3 in
       match name with
-      | "part" -> Ok (Some (Part_begin (Attr, { indent; payload })))
-      | _ -> Ok None )
-  | None -> (
-      match Regexp.matches Regexp.cmt_assign line with
-      | Some (indent, name, payload) -> (
-          match name with
-          | "part-begin" -> Ok (Some (Part_begin (Cmt, { indent; payload })))
-          | _ -> error () )
-      | None -> (
-          match Re.exec_opt Regexp.cmt_simple line with
-          | Some g -> (
-              let name = Re.Group.get g 1 in
-              match name with "part-end" -> Ok (Some Part_end) | _ -> error () )
-          | None -> Ok None ) )
+      | "part" -> Some (Part_begin (Attr, { indent; payload }))
+      | _ -> None )
+  | None -> None
+
+let parse_cmt line =
+  match Re.exec_opt Regexp.cmt line with
+  | Some g -> (
+      let indent = Re.Group.get g 1 in
+      match Re.Group.get g 2 with
+      | "part-end" -> Ok (Some Part_end)
+      | s -> (
+          match Astring.String.cut ~sep:"=" s with
+          | Some ("part-begin", payload) ->
+              Ok (Some (Part_begin (Cmt, { indent; payload })))
+          | _ ->
+              Util.Result.errorf "'%s' is not a valid ocaml delimiter for mdx"
+                line ) )
+  | None -> Ok None
+
+let parse line =
+  match parse_attr line with
+  | Some delimiter -> Ok (Some delimiter)
+  | None -> parse_cmt line
