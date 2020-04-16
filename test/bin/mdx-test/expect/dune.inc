@@ -1,5 +1,17 @@
 
 (rule
+ (target bash-fence.actual)
+ (deps (package mdx) (source_tree bash-fence))
+ (action
+  (with-stdout-to %{target}
+   (chdir bash-fence
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff bash-fence/test-case.md.expected bash-fence.actual)))
+
+(rule
  (target casual-file-inc.actual)
  (deps (package mdx) (source_tree casual-file-inc))
  (action

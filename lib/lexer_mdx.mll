@@ -84,7 +84,7 @@ and cram_text section = parse
         newline lexbuf;
         `Section section :: cram_text (Some section) lexbuf }
   | "  " ([^'\n']* as first_line) eol
-      { let header = Some Block.Header.Shell in
+      { let header = Some (Block.Header.Shell `Sh) in
         let requires_empty_line, contents = cram_block lexbuf in
         let contents = first_line :: contents in
         let labels = [] in
@@ -105,7 +105,7 @@ and cram_text section = parse
         `Block block
         :: (if requires_empty_line then `Text "" :: rest else rest) }
   | "<-- non-deterministic" ws* ([^'\n']* as choice) eol
-      { let header = Some Block.Header.Shell in
+      { let header = Some (Block.Header.Shell `Sh) in
         let requires_empty_line, contents = cram_block lexbuf in
         let labels =
           match Label.interpret "non-deterministic" (Some (Eq, choice)) with
