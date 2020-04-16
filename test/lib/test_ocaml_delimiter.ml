@@ -26,8 +26,14 @@ let test_parse =
         (Ok (Some (Part_begin (Attr, { indent = "    "; payload = "foobar" }))));
     make_test ~line:"(* $MDX foo *)"
       ~expected:
-        (Error (`Msg "'(* $MDX foo *)' is not a valid ocaml delimiter for mdx"));
+        (Error (`Msg "'(* $MDX foo *)' is not a valid ocaml delimiter for mdx."));
     make_test ~line:"[@@@foo \"bar\"]" ~expected:(Ok None);
+    make_test ~line:"(* $MDX part-end=foo *)"
+      ~expected:
+        (Error
+           (`Msg
+             "'part-end' delimiter does not accept a value. Please write '(* \
+              $MDX part-end *)' instead."));
   ]
 
 let suite = ("Ocaml_delimiter", test_parse)

@@ -87,8 +87,12 @@ let parse_cmt line =
           match Astring.String.cut ~sep:"=" s with
           | Some ("part-begin", payload) ->
               Ok (Some (Part_begin (Cmt, { indent; payload })))
+          | Some ("part-end", _) ->
+              Util.Result.errorf
+                "'part-end' delimiter does not accept a value. Please write \
+                 '(* $MDX part-end *)' instead."
           | _ ->
-              Util.Result.errorf "'%s' is not a valid ocaml delimiter for mdx"
+              Util.Result.errorf "'%s' is not a valid ocaml delimiter for mdx."
                 line ) )
   | None -> Ok None
 
