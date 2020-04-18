@@ -24,7 +24,7 @@ depends: [
   "rresult"
   "opam-file-format"
   "opam-format"
-  "opam-core"
+  "opam-state"
   "ocaml-version"
   "uri"
   "sexplib"

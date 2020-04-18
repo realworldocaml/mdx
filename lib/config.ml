@@ -28,7 +28,7 @@ let base_packages =
     "ocaml-variants";
   ]
 
-let duniverse_opam_repo = "git://github.com/dune-universe/opam-repository.git#duniverse"
+let duniverse_opam_repo = "https://github.com/dune-universe/opam-repository.git#duniverse"
 
 let duniverse_file = Fpath.v "dune-get"
 

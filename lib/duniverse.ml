@@ -171,15 +171,12 @@ module Config = struct
   type t = {
     root_packages : Types.Opam.package list;
     excludes : Types.Opam.package list;
-    pins : Types.Opam.pin list;
     pull_mode : pull_mode; [@default Source]
     opam_repo : Uri_sexp.t;
         [@default Uri.of_string Config.duniverse_opam_repo] [@sexp_drop_default.sexp]
-    remotes : string list; [@default []]
     ocaml_compilers : string list; [@default []]
-    branch : string; [@default "master"]
   }
-  [@@deriving sexp]
+  [@@deriving sexp] [@@sexp.allow_extra_fields]
 end
 
 type t = { config : Config.t; deps : resolved Deps.t; depexts : Depexts.t } [@@deriving sexp]

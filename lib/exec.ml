@@ -17,7 +17,6 @@
 open Bos
 open Rresult
 open Astring
-open Types
 
 let rec iter fn l = match l with hd :: tl -> fn hd >>= fun () -> iter fn tl | [] -> Ok ()
 
@@ -107,6 +106,7 @@ let git_checkout_or_branch ~repo branch =
   | Ok () -> Ok ()
   | Error (`Msg _) -> git_checkout ~args:(Cmd.v "-b") ~repo branch
 
+  
 let git_add_and_commit ~repo ~message files =
   run_git ~ignore_error:true ~repo Cmd.(v "add" %% files) >>= fun () ->
   run_git ~ignore_error:true ~repo Cmd.(v "commit" % "-m" % message %% files)
@@ -157,6 +157,13 @@ let git_clone ~branch ~remote ~output_dir =
   run_and_log
     Cmd.(v "git" % "clone" % "--depth" % "1" % "--branch" % branch % remote % p output_dir)
 
+let git_clone_or_pull ~branch ~remote ~output_dir =
+  OS.Dir.exists output_dir >>= function
+  | false -> git_clone ~branch ~remote ~output_dir
+  | true ->
+      run_and_log Cmd.(v "git" % "-C" % p output_dir % "fetch" % "origin") >>= fun () ->
+      run_and_log Cmd.(v "git" % "-C" % p output_dir % "reset" % "--hard" % ("origin/"^branch))
+
 let git_rename_branch_to ~repo ~branch = run_git ~repo Cmd.(v "branch" % "-m" % branch)
 
 let git_remotes ~repo =
@@ -169,69 +176,6 @@ let git_branch_exists ~repo ~branch =
   with
   | Ok (`Exited 0) -> true
   | _ -> false
-
-let opam_cmd ~root sub_cmd =
-  let open Cmd in
-  v "opam" % sub_cmd % Fmt.strf "--root=%a" Fpath.pp root
-
-let run_opam_package_deps ~root packages =
-  let packages = String.concat ~sep:"," packages in
-  let cmd =
-    let open Cmd in
-    opam_cmd ~root "list" % "--color=never" % "-s" % ("--resolve=" ^ packages) % "-V" % "-S"
-  in
-  run_and_log_l cmd
-
-let opam_init_bare ~root ~opam_repo () =
-  let open Cmd in
-  let cmd = opam_cmd ~root "init" % "--no-setup" % "--bare" % Uri.to_string opam_repo in
-  run_and_log cmd
-
-let opam_switch_create_empty ~root () =
-  let open Cmd in
-  let cmd = opam_cmd ~root "switch" % "create" % "empty" % "--empty" % "--no-install" in
-  run_and_log cmd
-
-let run_opam_show ~root ~fields ~packages =
-  let fields_str = String.concat ~sep:"," fields in
-  let packages_str = List.map Types.Opam.string_of_package packages in
-  let cmd =
-    let open Cmd in
-    opam_cmd ~root "show" % "--color=never" % "--normalise" % "-f" % fields_str
-    %% of_list packages_str
-  in
-  run_and_log_l cmd
-
-let get_opam_file ~root ~package =
-  let cmd =
-    let open Cmd in
-    opam_cmd ~root "show" % "--color=never" % "--raw" % package
-  in
-  run_and_log_s cmd >>= fun opam_str -> Ok (OpamFile.OPAM.read_from_string opam_str)
-
-let opam_add_remote ~root { Types.Opam.Remote.name; url } =
-  let open Cmd in
-  let cmd = opam_cmd ~root "repository" % "add" % name % url in
-  run_and_log cmd
-
-let init_opam_and_remotes ~root ~opam_repo ~remotes () =
-  Logs.info (fun l ->
-      l "Initialising a fresh temporary opam with an empty switch in %a from %a." Fpath.pp root
-        Uri.pp opam_repo);
-  opam_init_bare ~root ~opam_repo () >>= fun () ->
-  opam_switch_create_empty ~root () >>= fun () -> iter (opam_add_remote ~root) remotes
-
-let add_opam_dev_pin ~root { Opam.pin; url; tag } =
-  let targ =
-    match (url, tag) with
-    | None, _ -> "--dev"
-    | Some url, Some tag -> Fmt.strf "%s#%s" url tag
-    | Some url, None -> url
-  in
-  run_and_log Cmd.(opam_cmd ~root "pin" % "add" % "-yn" % (pin ^ ".dev") % targ)
-
-let add_opam_local_pin ~root ~kind package =
-  run_and_log Cmd.(opam_cmd ~root "pin" % "add" % "-yn" % "-k" % kind % (package ^ ".dev") % ".")
 
 let run_opam_install ~yes opam_deps =
   let packages =

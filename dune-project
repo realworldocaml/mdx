@@ -24,7 +24,7 @@ code required to build a project using the dune build tool.")
   rresult
   opam-file-format
   opam-format
-  opam-core
+  opam-state
   ocaml-version
   uri
   sexplib

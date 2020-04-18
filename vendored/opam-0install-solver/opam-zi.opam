@@ -1,0 +1,34 @@
+opam-version: "2.0"
+synopsis: "Opam solver using 0install backend"
+description: """
+Opam's default solver is designed to maintain a set of packages
+over time, minimising disruption when installing new programs and
+finding a compromise solution across all packages.
+
+In many situations (e.g. CI, local roots or duniverse builds) this
+is not necessary, and we can get a solution much faster by using
+a different algorithm.
+
+This package uses 0install's solver algorithm with opam packages.
+"""
+maintainer: "talex5@gmail.com"
+authors: "talex5@gmail.com"
+homepage: "https://github.com/talex5/opam-0install-solver"
+bug-reports: "https://github.com/talex5/opam-0install-solver/issues"
+dev-repo: "git+https://github.com/talex5/opam-0install-solver.git"
+doc: "https://talex5.github.io/opam-0install-solver/"
+build: [
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "build" "-p" name "-j" jobs "./test/test.exe" "./test/dump.exe"] {with-test}
+]
+depends: [
+  "fmt"
+  "cmdliner"
+  "opam-state"
+  "dune" {>= "1.11"}
+  "ocaml" {>= "4.8.0"}
+  "opam-client" {with-test}
+  "opam-solver" {with-test}
+  "astring" {with-test}
+  "alcotest" {with-test}
+]

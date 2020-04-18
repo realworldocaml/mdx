@@ -1,4 +1,0 @@
-(library
- (public_name cmdliner)
- (flags :standard -w -3-6-27-32-35)
- (wrapped false))

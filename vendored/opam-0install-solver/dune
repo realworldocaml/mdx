@@ -1,0 +1,5 @@
+(executable
+ (name main)
+ (public_name opam-zi)
+ (package opam-zi)
+ (libraries opam_zi fmt cmdliner))
