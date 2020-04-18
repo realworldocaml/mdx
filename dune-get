@@ -1,7 +1,7 @@
 ((config
   ((root_packages (((name alcotest)) ((name duniverse))))
    (excludes (((name duniverse)))) (pins ()) (pull_mode Source) (remotes ())
-   (ocaml_compilers (4.07 4.08 4.09 4.10)) (branch master)))
+   (ocaml_compilers (4.08 4.09 4.10)) (branch master)))
  (deps
   ((opamverse ())
    (duniverse
@@ -35,12 +35,12 @@
      ((dir cppo.1.6.6) (upstream https://github.com/ocaml-community/cppo.git)
       (ref ((t v1.6.6) (commit 51c598bf4a4732fdd9be1b16a5b26743ec4023d2)))
       (provided_packages (((name cppo) (version (1.6.6))))))
-     ((dir dune-configurator.2.4.0)
+     ((dir dune-configurator.2.5.0)
       (upstream https://github.com/ocaml/dune.git)
-      (ref ((t 2.4.0) (commit ccd447e41a711f8a52bc854d71dba8677c900c34)))
+      (ref ((t 2.5.0) (commit c3756d15308d7cbb7f61f232038d822f21713a8b)))
       (provided_packages
-       (((name dune-configurator) (version (2.4.0)))
-        ((name dune-private-libs) (version (2.4.0))))))
+       (((name dune-private-libs) (version (2.5.0)))
+        ((name dune-configurator) (version (2.5.0))))))
      ((dir findlib.1.8.1+dune)
       (upstream https://github.com/dune-universe/lib-findlib)
       (ref
@@ -80,11 +80,11 @@
       (upstream https://github.com/janestreet/ocaml-compiler-libs.git)
       (ref ((t v0.12.1) (commit c202a46641ed0bb20eac15ea4f005cbd9f3e5c01)))
       (provided_packages (((name ocaml-compiler-libs) (version (v0.12.1))))))
-     ((dir ocaml-migrate-parsetree.1.6.0)
+     ((dir ocaml-migrate-parsetree.1.7.1)
       (upstream https://github.com/ocaml-ppx/ocaml-migrate-parsetree.git)
-      (ref ((t v1.6.0) (commit 93444dbd6153ec0ef6e9daebef6f1da53927792b)))
+      (ref ((t v1.7.1) (commit 25c7c1111759823213fe5ac15b967122205dc4c7)))
       (provided_packages
-       (((name ocaml-migrate-parsetree) (version (1.6.0))))))
+       (((name ocaml-migrate-parsetree) (version (1.7.1))))))
      ((dir ocaml-version.2.4.0)
       (upstream https://github.com/ocurrent/ocaml-version.git)
       (ref ((t v2.4.0) (commit 1eb91307b47cb46508273d4f63faa95a8173a411)))
@@ -125,9 +125,9 @@
       (upstream https://github.com/janestreet/ppx_sexp_conv.git)
       (ref ((t v0.13.0) (commit 03c42d49513564809400de62b4515afaedb094a8)))
       (provided_packages (((name ppx_sexp_conv) (version (v0.13.0))))))
-     ((dir ppxlib.0.12.0) (upstream https://github.com/ocaml-ppx/ppxlib.git)
-      (ref ((t 0.12.0) (commit f13dc352b9bb17e8ced3d12d2533cffba2fcbfac)))
-      (provided_packages (((name ppxlib) (version (0.12.0))))))
+     ((dir ppxlib.0.13.0) (upstream https://github.com/ocaml-ppx/ppxlib.git)
+      (ref ((t 0.13.0) (commit a148a3c976e0a3d71e93ea5287c7cfd546844656)))
+      (provided_packages (((name ppxlib) (version (0.13.0))))))
      ((dir re.1.9.0) (upstream https://github.com/ocaml/ocaml-re.git)
       (ref ((t 1.9.0) (commit 42c7f8899c9b1a4e011053487a97cf7eab312d5f)))
       (provided_packages (((name re) (version (1.9.0))))))
