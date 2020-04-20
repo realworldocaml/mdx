@@ -20,6 +20,8 @@
 
 - Fix toplevel parsing when phrases contain tabs (#240, @gpetiot)
 
+- Avoid adding newlines to empty blocks (#253, @gpetiot)
+
 #### Removed
 
 #### Security

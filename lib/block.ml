@@ -146,7 +146,8 @@ let pp_contents ?syntax ppf t =
         Fmt.pf ppf "%s" (String.concat "\n" t.contents)
       else Fmt.pf ppf "\n%a" (pp_lines syntax t) (List.map lstrip t.contents)
   | Some Cram | Some Normal | None ->
-      Fmt.pf ppf "%a\n" (pp_lines syntax t) t.contents
+      if List.length t.contents > 0 then
+        Fmt.pf ppf "%a\n" (pp_lines syntax t) t.contents
 
 let pp_errors ppf t =
   match t.value with

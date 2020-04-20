@@ -72,6 +72,18 @@
  (action (diff ellipsis-updates/test-case.md.expected ellipsis-updates.actual)))
 
 (rule
+ (target empty.actual)
+ (deps (package mdx) (source_tree empty))
+ (action
+  (with-stdout-to %{target}
+   (chdir empty
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff empty/test-case.md empty.actual)))
+
+(rule
  (target empty-line.actual)
  (deps (package mdx) (source_tree empty-line))
  (action
