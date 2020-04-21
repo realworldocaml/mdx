@@ -26,6 +26,8 @@ let test_raw_parse =
     make_test ~input:"foo<=bar" ~expected:("foo", Some (Le, "bar"));
     make_test ~input:"foo>bar" ~expected:("foo", Some (Gt, "bar"));
     make_test ~input:">=" ~expected:("", Some (Ge, ""));
+    make_test ~input:"FOO_BAR=foo_bar"
+      ~expected:("FOO_BAR", Some (Eq, "foo_bar"));
   ]
 
 let test_interpret =
