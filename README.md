@@ -184,15 +184,11 @@ If the output is not consistent with what is expected
 #### Integration with Dune
 
 To test that the code blocks of `file.md` stay consistent, one can use
-dune's `diff?` stanza:
+dune's `mdx` stanza:
 
 ```
-(alias
-  (name runtest)
-  (deps (:test file.md))
-  (action (progn
-           (run ocaml-mdx test %{test})
-           (diff? %{test} %{test}.corrected))))
+(mdx
+ (files file.md))
 ```
 
 This allows to test the consistency of a markdown file using the normal dev
@@ -225,6 +221,10 @@ And the changes can then be accepted using:
 ```
 $ dune promote
 ```
+
+For further details about the mdx stanza you should read the
+[according section](https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4)
+in the dune documentation.
 
 #### Non-deterministic Tests
 
