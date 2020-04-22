@@ -38,3 +38,11 @@ And the variable stays available in subsequent blocks.
   $ echo $BOO
   far
 ```
+
+Environment variables can contain underscores
+
+<!-- $MDX set-TWO_WORDS=success -->
+```sh
+  $ echo $TWO_WORDS
+  success
+```

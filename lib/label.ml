@@ -51,7 +51,7 @@ module Relation = struct
     @@ seq
          [
            bos;
-           group (rep (alt [ alnum; char '-' ]));
+           group (rep (alt [ alnum; char '-'; char '_' ]));
            group
              (alt [ str "<="; str ">="; str "<>"; str "<"; str ">"; str "=" ]);
            group (rep any);
