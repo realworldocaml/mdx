@@ -242,9 +242,7 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax)
         print_format_dune_rules pp_rules;
         file_contents
   in
-  Printf.eprintf
-    "Warning: mdx rule is deprecated since 1.7.0 and will be removed in 2.0.0.\n\
-     %!";
+  Mdx.Deprecated.warn "ocaml-mdx rule" ~since:"1.7.0";
   Mdx.run ?syntax md_file ~f:on_file;
   0
 

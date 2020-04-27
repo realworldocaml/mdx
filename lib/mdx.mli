@@ -26,6 +26,7 @@
 module Lexer_mdx = Lexer_mdx
 module Output = Output
 module Cram = Cram
+module Deprecated = Deprecated
 module Document = Document
 module Toplevel = Toplevel
 module Library = Library
