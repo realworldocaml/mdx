@@ -22,6 +22,7 @@ module Log = (val Logs.src_log src : Logs.LOG)
 
 module Output = Output
 module Cram = Cram
+module Deprecated = Deprecated
 module Document = Document
 module Toplevel = Toplevel
 module Library = Library

@@ -12,6 +12,8 @@
 
 #### Deprecated
 
+- The command 'mdx rule' is deprecated and will be removed in 2.0.0 (#251, @gpetiot)
+
 #### Fixed
 
 - Fix the environment selection for preludes (#225, @gpetiot)
