@@ -41,60 +41,6 @@ let rec remove_empty_heads = function
 let trim_empty_rev l = remove_empty_heads (List.rev (remove_empty_heads l))
 
 module Parse_parts = struct
-  module Regexp = struct
-    let marker = Re.str "$MDX"
-
-    let begin_label = Re.str "part-begin"
-
-    let end_label = Re.str "part-end"
-
-    let spaces = Re.rep1 Re.space
-
-    let part_begin =
-      let open Re in
-      compile
-      @@ seq
-           [
-             group (rep space);
-             str "(*";
-             spaces;
-             marker;
-             spaces;
-             begin_label;
-             str "=";
-             group (rep1 (alt [ alnum; char '_'; char '-' ]));
-             spaces;
-             str "*)";
-           ]
-
-    let part_end =
-      let open Re in
-      compile
-      @@ seq [ str "(*"; spaces; marker; spaces; end_label; spaces; str "*)" ]
-
-    (* Legacy parts annotations *)
-    let part_attribute =
-      let open Re in
-      let ws = rep space in
-      compile @@ whole_string
-      @@ seq
-           [
-             group ws;
-             str "[@@@";
-             ws;
-             str "part";
-             ws;
-             str "\"";
-             group (rep1 any);
-             str "\"";
-             ws;
-             str "]";
-             ws;
-             opt (str ";;");
-             ws;
-           ]
-  end
-
   type part_decl =
     | Normal of string
     | Compat_attr of string * string
@@ -112,10 +58,6 @@ module Parse_parts = struct
 
   let anonymous_part = next_part ~name:"" ~sep_indent:""
 
-  let sep_indent_of_groups groups = Re.Group.get groups 1
-
-  let part_name_of_groups groups = Re.Group.get groups 2
-
   (* let next_part_of_groups name sep_indent =
      let sep_indent = Re.Group.get groups 1 in
      let name = part_name_of_groups groups in
@@ -125,21 +67,20 @@ module Parse_parts = struct
     match line with
     | Error `End_of_file -> File_end
     | Ok line -> (
-        match Re.exec_opt Regexp.part_attribute line with
-        | Some g ->
-            let sep_indent = sep_indent_of_groups g in
-            let next_part_name = part_name_of_groups g in
-            Compat_attr (next_part_name, sep_indent)
-        | None -> (
-            match Re.exec_opt Regexp.part_begin line with
-            | Some g ->
-                let sep_indent = sep_indent_of_groups g in
-                let next_part_name = part_name_of_groups g in
-                Part_begin (next_part_name, sep_indent)
-            | None -> (
-                match Re.exec_opt Regexp.part_end line with
-                | Some _ -> Part_end
-                | None -> Normal line ) ) )
+        match Ocaml_delimiter.parse line with
+        | Ok delim -> (
+            match delim with
+            | Some delim -> (
+                match delim with
+                | Part_begin (syntax, { indent; payload }) -> (
+                    match syntax with
+                    | Attr -> Compat_attr (payload, indent)
+                    | Cmt -> Part_begin (payload, indent) )
+                | Part_end -> Part_end )
+            | None -> Normal line )
+        | Error (`Msg msg) ->
+            Fmt.epr "Warning: %s\n" msg;
+            Normal line )
 
   let input_line_err i =
     match input_line i with

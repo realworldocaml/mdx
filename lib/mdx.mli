@@ -29,6 +29,7 @@ module Cram = Cram
 module Document = Document
 module Toplevel = Toplevel
 module Library = Library
+module Ocaml_delimiter = Ocaml_delimiter
 module Part = Part
 module Block = Block
 module Migrate_ast = Migrate_ast
