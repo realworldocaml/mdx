@@ -14,7 +14,12 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-let warn s ~since =
+let warn ?replacement s ~since =
+  let replacement =
+    match replacement with
+    | Some r -> Format.sprintf "Please use %s instead." r
+    | None -> Format.sprintf "There is no replacement for this feature."
+  in
   Format.eprintf
-    "Warning: %s is deprecated since %s and will be removed in 2.0.0.\n%!" s
-    since
+    "Warning: %s is deprecated since %s and will be removed in 2.0.0. %s\n%!" s
+    since replacement

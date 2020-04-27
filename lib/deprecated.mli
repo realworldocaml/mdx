@@ -14,5 +14,5 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-val warn : string -> since:string -> unit
+val warn : ?replacement:string -> string -> since:string -> unit
 (** Emits a warning on the standard error. *)
