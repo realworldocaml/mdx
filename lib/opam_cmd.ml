@@ -271,7 +271,7 @@ let filter_duniverse_packages ~excludes pkgs =
 
 let calculate_opam ~config ~local_opam_repo =
   let { Duniverse.Config.root_packages; excludes; _ } = config in
-  Opam_solve.calculate ~opam_repo:local_opam_repo
+  Opam_solve.calculate ~opam_repo:local_opam_repo ~root_packages:config.root_packages
   >>| List.map OpamPackage.to_string
   >>| List.map split_opam_name_and_version
   >>= fun deps ->

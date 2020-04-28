@@ -191,8 +191,8 @@ let solve ~opam_repo ~opam_files src ~variants =
              (* Fmt.pr "Eliminated all possibilities in %.2f s\n%!" (t1 -. t0); *)
              Lwt.return_none)
 
-let calculate_t ~opam_repo =
-  let opam_files = [ "duniverse.opam" ] in
+let calculate_t ~opam_repo ~root_packages =
+  let opam_files = List.map (fun {Types.Opam.name;_} -> name ^ ".opam") root_packages in
   let src = Fpath.v "." in
   let module OR = Osrelease in
   let variants =
@@ -211,5 +211,5 @@ let calculate_t ~opam_repo =
   | [ s ] -> Lwt.return s.packages
   | _ -> Lwt.fail (Failure "too many results from solver")
 
-let calculate ~opam_repo =
-  try Ok (Lwt_main.run (calculate_t ~opam_repo)) with exn -> Error (`Msg (Printexc.to_string exn))
+let calculate ~opam_repo ~root_packages =
+  try Ok (Lwt_main.run (calculate_t ~opam_repo ~root_packages)) with exn -> Error (`Msg (Printexc.to_string exn))
