@@ -1,9 +1,9 @@
 open Duniverse_lib
 open Duniverse_lib.Types
 
-let build_config ~local_packages ~explicit_root_packages ~pull_mode ~excludes ~opam_repo =
+let build_config ~local_packages ~pull_mode ~opam_repo =
   let open Rresult.R.Infix in
-  Opam_cmd.choose_root_packages ~explicit_root_packages ~local_packages >>= fun root_packages ->
+  Opam_cmd.choose_root_packages ~local_packages >>= fun root_packages ->
   let ocaml_compilers =
     match Dune_file.Project.supported_ocaml_compilers () with
     | Ok l -> List.map Ocaml_version.to_string l
@@ -14,26 +14,23 @@ let build_config ~local_packages ~explicit_root_packages ~pull_mode ~excludes ~o
   let root_packages =
     List.map Opam_cmd.split_opam_name_and_version root_packages |> Opam.sort_uniq
   in
-  let excludes =
-    List.map Opam_cmd.split_opam_name_and_version (local_packages @ excludes) |> Opam.sort_uniq
-  in
-  Ok { Duniverse.Config.root_packages; excludes; pull_mode; ocaml_compilers; opam_repo }
+  Ok { Duniverse.Config.root_packages; pull_mode; ocaml_compilers; opam_repo }
 
 let compute_deps ~opam_entries =
   Dune_cmd.log_invalid_packages opam_entries;
   let get_default_branch remote = Exec.git_default_branch ~remote () in
   Duniverse.Deps.from_opam_entries ~get_default_branch opam_entries
 
-let compute_depexts ~local_opam_repo ~root_packages pkgs =
+let compute_depexts ~local_opam_repo pkgs =
   let open Rresult.R in
-  Exec.map (Opam_cmd.get_opam_depexts ~local_opam_repo ~root_packages) pkgs >>= fun depexts ->
-  Ok (List.flatten depexts |> List.sort_uniq Stdlib.compare)
+  Exec.map (Opam_cmd.get_opam_depexts ~local_opam_repo) pkgs >>| fun depexts ->
+  List.flatten depexts |> List.sort_uniq Stdlib.compare
 
 let resolve_ref deps =
   let resolve_ref ~upstream ~ref = Exec.git_resolve ~remote:upstream ~ref in
   Duniverse.Deps.resolve ~resolve_ref deps
 
-let run (`Repo repo) (`Explicit_root_packages explicit_root_packages) (`Excludes excludes)
+let run (`Repo repo) 
     (`Opam_repo opam_repo) (`Pull_mode pull_mode) () =
   let open Rresult.R.Infix in
   (match Cloner.get_cache_dir () with None -> Ok (Fpath.v ".") | Some t -> t) >>= fun cache_dir ->
@@ -43,15 +40,14 @@ let run (`Repo repo) (`Explicit_root_packages explicit_root_packages) (`Excludes
   Exec.git_clone_or_pull ~remote:opam_repo_url ~branch:opam_repo_branch ~output_dir:local_opam_repo
   >>= fun () ->
   Opam_cmd.find_local_opam_packages repo >>= fun local_packages ->
-  (* Common.Logs.app (fun l -> l "Local opam packages are: %s" (String.concat ", " local_packages)); *)
-  build_config ~local_packages ~explicit_root_packages ~pull_mode ~excludes ~opam_repo
+  build_config ~local_packages ~pull_mode ~opam_repo
   >>= fun config ->
   Opam_cmd.calculate_opam ~config ~local_opam_repo >>= fun packages ->
-  Opam_cmd.report_packages_stats ~config packages;
+  Opam_cmd.report_packages_stats packages;
   let depext_pkgs =
     config.root_packages @ List.map (fun { Types.Opam.package; _ } -> package) packages
   in
-  compute_depexts ~local_opam_repo ~root_packages:config.root_packages depext_pkgs
+  compute_depexts ~local_opam_repo depext_pkgs
   >>= fun depexts ->
   Common.Logs.app (fun l ->
       l "Recording %a depext formulae for %a packages."
@@ -76,25 +72,6 @@ let run (`Repo repo) (`Explicit_root_packages explicit_root_packages) (`Excludes
   Ok ()
 
 open Cmdliner
-
-let explicit_root_packages =
-  let doc =
-    "opam packages to calculate duniverse for. If not supplied, any local opam metadata files are \
-     used as the default package list."
-  in
-  Common.Arg.named
-    (fun x -> `Explicit_root_packages x)
-    Arg.(value & pos_all string [] & info [] ~doc ~docv:"PACKAGES")
-
-let excludes =
-  let doc =
-    "Packages to exclude from the output list. You can use this to remove the root packages so \
-     they are not duplicated in the vendor directory.  Repeat this flag multiple times for more \
-     than one exclusion."
-  in
-  Common.Arg.named
-    (fun x -> `Excludes x)
-    Arg.(value & opt_all string [] & info [ "exclude"; "x" ] ~docv:"EXCLUDE" ~doc)
 
 let opam_repo =
   let doc =
@@ -131,7 +108,7 @@ let info =
 let term =
   let open Term in
   term_result
-    ( const run $ Common.Arg.repo $ explicit_root_packages $ excludes $ opam_repo $ pull_mode
+    ( const run $ Common.Arg.repo $ opam_repo $ pull_mode
     $ Common.Arg.setup_logs () )
 
 let cmd = (term, info)

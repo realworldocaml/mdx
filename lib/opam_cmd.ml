@@ -132,64 +132,17 @@ let classify_package ~package ~dev_repo ~archive () =
             (kind, tag)
         | x -> (x, None) )
 
-(* Fetch and parse an opam field from an Opam_show_result.t*)
-let extract_opam_value ~field ~package data =
-  let v = Opam_show_result.get ~field ~package data in
-  match v with
-  | None -> None
-  | Some str ->
-      let res =
-        try Ok (OpamParser.value_from_string str "")
-        with OpamLexer.Error _ ->
-          let error_message = Printf.sprintf "Failed to parse %S" str in
-          Error (`Msg error_message)
-      in
-      Some res
-
-let parse_string ~field ~package data =
-  let open OpamParserTypes in
-  match extract_opam_value ~field ~package data with
-  | Some (Ok (String (_, v))) -> Ok v
-  | Some (Ok (List (_, []))) -> Ok ""
-  | None -> Ok ""
-  | _ ->
-      R.error_msg
-        (Fmt.strf "Unable to parse opam string.\nTry `opam show --normalise -f %s: %s`" field
-           package)
-
-let parse_dev_repo = parse_string ~field:"dev-repo:"
-
-let parse_archive_url ~package data =
-  parse_string ~field:"url.src:" ~package data >>= function "" -> Ok None | uri -> Ok (Some uri)
-
-let parse_opam_depends ~package data =
-  let open OpamParserTypes in
-  match extract_opam_value ~field:"depends:" ~package data with
-  | Some (Ok (List (_, vs))) ->
-      let ss =
-        List.fold_left
-          (fun acc -> function Option (_, String (_, v), _) | String (_, v) -> v :: acc | _ -> acc)
-          [] vs
-      in
-      Logs.debug (fun l -> l "Depends for %s: %s" package (String.concat ~sep:" " ss));
-      Ok ss
-  | None -> Ok []
-  | _ ->
-      R.error_msg
-        (Fmt.strf
-           "Unable to parse opam depends for %s\n\
-            Try `opam show --normalise -f depends: %s` manually" package package)
-
-let get_opam_depexts ~local_opam_repo ~root_packages { name; version } =
+let get_opam_depexts ~local_opam_repo { name; version } =
   let version = match version with None -> "dev" | Some v -> v in
   let opam_file =
-    if List.exists (fun p -> p.name = name) root_packages then Fpath.v (name ^ ".opam")
+    let local_file = name ^ ".opam" in
+    if Sys.file_exists local_file then Fpath.v local_file
     else Fpath.(local_opam_repo / "packages" / name / (name ^ "." ^ version) / "opam")
   in
-  Bos.OS.File.read opam_file >>= fun opam_contents ->
+  Bos.OS.File.read opam_file >>| fun opam_contents ->
   let opam = OpamFile.OPAM.read_from_string opam_contents in
-  let depexts = OpamFile.OPAM.depexts opam in
-  Ok (List.map (fun (s, f) -> (s, OpamFilter.to_string f)) depexts)
+  OpamFile.OPAM.depexts opam |>
+  List.map (fun (s, f) -> (s, OpamFilter.to_string f))
 
 let get_opam_info ~opam_repo ~root_packages packages =
   List.map
@@ -256,15 +209,13 @@ let get_opam_info ~opam_repo ~root_packages packages =
 
 (* TODO catch exceptions and turn to error *)
 
-let filter_duniverse_packages ~config pkgs =
-  let { Duniverse.Config.excludes; _ } = config in
+let filter_duniverse_packages pkgs =
   Logs.info (fun l ->
       l "%aFiltering out packages that are irrelevant to the Duniverse." pp_header header);
   let rec fn acc = function
     | hd :: tl ->
         let filter =
-          List.exists (fun e -> e.name = hd.package.name) excludes
-          || List.mem hd.package.name Config.base_packages
+             List.mem hd.package.name Config.base_packages
           || hd.dev_repo = `Virtual
         in
         if filter then fn acc tl else fn (hd :: acc) tl
@@ -274,7 +225,7 @@ let filter_duniverse_packages ~config pkgs =
 
 let calculate_opam ~config ~local_opam_repo =
   let { Duniverse.Config.root_packages; _ } = config in
-  Opam_solve.calculate ~opam_repo:local_opam_repo ~root_packages:config.root_packages
+  Opam_solve.calculate ~opam_repo:local_opam_repo ~root_packages
   >>| List.map OpamPackage.to_string
   >>| List.map split_opam_name_and_version
   >>= fun deps ->
@@ -296,15 +247,15 @@ let calculate_opam ~config ~local_opam_repo =
 
 type packages_stats = { total : int; dune : int; not_dune : entry list }
 
-let packages_stats ~config packages =
-  filter_duniverse_packages ~config packages |> fun packages ->
+let packages_stats packages =
+  filter_duniverse_packages packages |> fun packages ->
   let dune, not_dune = List.partition (fun { is_dune; _ } -> is_dune) packages in
   let dune = List.length dune in
   let total = List.length packages in
   { total; dune; not_dune }
 
-let report_packages_stats ~config packages =
-  packages_stats ~config packages |> fun packages_stats ->
+let report_packages_stats packages =
+  packages_stats packages |> fun packages_stats ->
   if packages_stats.dune < packages_stats.total then
     Logs.app (fun l ->
         l
@@ -324,37 +275,19 @@ let report_packages_stats ~config packages =
           Fmt.(styled `Green int)
           packages_stats.total)
 
-let choose_root_packages ~explicit_root_packages ~local_packages =
-  match (explicit_root_packages, local_packages) with
-  | [], [] ->
+let choose_root_packages ~local_packages =
+  match local_packages with
+  | [] ->
       R.error_msg
         "Cannot find any packages to vendor.\n\
          Either create some *.opam files in the local repository, or specify them manually via \
          'duniverse opam <packages>'."
-  | [], local_packages ->
+  | local_packages ->
       Logs.app (fun l ->
           l "%aUsing locally scanned packages '%a' as the roots." pp_header header
             Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
             local_packages);
       Ok local_packages
-  | explicit_root_packages, [] ->
-      Logs.app (fun l ->
-          l "%aUsing command-line specified packages '%a' as the roots." pp_header header
-            Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
-            explicit_root_packages);
-      Ok explicit_root_packages
-  | explicit_root_packages, local_packages ->
-      Logs.app (fun l ->
-          l
-            "%aUsing command-line specified packages '%a' as the roots.\n\
-             Ignoring the locally found packages %a unless they are explicitly specified on the \
-             command line."
-            pp_header header
-            Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
-            explicit_root_packages
-            Fmt.(list ~sep:(unit ",@ ") string)
-            local_packages);
-      Ok explicit_root_packages
 
 let install_incompatible_packages yes repo =
   Logs.app (fun l ->

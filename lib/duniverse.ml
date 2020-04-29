@@ -170,7 +170,6 @@ module Config = struct
 
   type t = {
     root_packages : Types.Opam.package list;
-    excludes : Types.Opam.package list;
     pull_mode : pull_mode; [@default Source]
     opam_repo : Uri_sexp.t;
         [@default Uri.of_string Config.duniverse_opam_repo] [@sexp_drop_default.sexp]
