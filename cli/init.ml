@@ -36,11 +36,10 @@ let resolve_ref deps =
   let resolve_ref ~upstream ~ref = Exec.git_resolve ~remote:upstream ~ref in
   Duniverse.Deps.resolve ~resolve_ref deps
 
-let run (`Repo repo) (`Branch _ (* TODO remove *))
+let run (`Repo repo)
     (`Explicit_root_packages explicit_root_packages) (`Excludes excludes) (`Opam_repo opam_repo)
     (`Pull_mode pull_mode) () =
   let open Rresult.R.Infix in
-  let opam_repo = Uri.of_string opam_repo (* TODO move this to cmdliner *) in
   let local_opam_repo = Fpath.v "/Users/avsm/.cache/.duniverse/opam-repository.git" in
   let opam_repo_url = Uri.with_fragment opam_repo None |> Uri.to_string in
   let opam_repo_branch = match Uri.fragment opam_repo with None -> "master" | Some b -> b in
@@ -79,12 +78,6 @@ let run (`Repo repo) (`Branch _ (* TODO remove *))
 
 open Cmdliner
 
-let branch =
-  let doc = "Branch that represents the working tree of the source code. Defaults to $(i,master)" in
-  Common.Arg.named
-    (fun x -> `Branch x)
-    Cmdliner.Arg.(value & opt string "master" & info [ "b" ] ~docv:"BRANCH" ~doc)
-
 let explicit_root_packages =
   let doc =
     "opam packages to calculate duniverse for. If not supplied, any local opam metadata files are \
@@ -110,7 +103,7 @@ let opam_repo =
      yet been ported to Dune upstream."
   in
   Common.Arg.named
-    (fun x -> `Opam_repo x)
+    (fun x -> `Opam_repo (Uri.of_string x))
     Arg.(
       value & opt string Config.duniverse_opam_repo & info [ "opam-repo" ] ~docv:"OPAM_REPO" ~doc)
 
@@ -139,7 +132,7 @@ let info =
 let term =
   let open Term in
   term_result
-    ( const run $ Common.Arg.repo $ branch $ explicit_root_packages $ excludes $ opam_repo
+    ( const run $ Common.Arg.repo $ explicit_root_packages $ excludes $ opam_repo
     $ pull_mode $ Common.Arg.setup_logs () )
 
 let cmd = (term, info)
