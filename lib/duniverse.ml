@@ -169,6 +169,7 @@ module Config = struct
   type pull_mode = Submodules | Source [@@deriving sexp]
 
   type t = {
+    version: string;
     root_packages : Types.Opam.package list;
     pull_mode : pull_mode; [@default Source]
     opam_repo : Uri_sexp.t;

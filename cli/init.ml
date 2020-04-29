@@ -11,10 +11,11 @@ let build_config ~local_packages ~pull_mode ~opam_repo =
         Logs.warn (fun l -> l "%s" msg);
         []
   in
+  let version = "1" in
   let root_packages =
     List.map Opam_cmd.split_opam_name_and_version root_packages |> Opam.sort_uniq
   in
-  Ok { Duniverse.Config.root_packages; pull_mode; ocaml_compilers; opam_repo }
+  Ok { Duniverse.Config.version; root_packages; pull_mode; ocaml_compilers; opam_repo }
 
 let compute_deps ~opam_entries =
   Dune_cmd.log_invalid_packages opam_entries;

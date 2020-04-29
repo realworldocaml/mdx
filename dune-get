@@ -1,6 +1,6 @@
 ((config
-  ((root_packages (((name duniverse)))) (excludes (((name duniverse))))
-   (pull_mode Source) (ocaml_compilers (4.07.0 4.08.0 4.09.0 4.10.0 4.11.0))))
+  ((version 1) (root_packages (((name duniverse)))) (pull_mode Source)
+   (ocaml_compilers (4.07.0 4.08.0 4.09.0 4.10.0 4.11.0))))
  (deps
   ((opamverse ())
    (duniverse
