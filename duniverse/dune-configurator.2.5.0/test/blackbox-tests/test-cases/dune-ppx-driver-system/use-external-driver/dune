@@ -1,6 +1,0 @@
-(rule (with-stdout-to driveruser.ml (echo "")))
-
-(library
- (name driveruser)
- (modules driveruser)
- (preprocess (pps -arg1 testdriver -arg2 -- -foo bar)))
