@@ -27,7 +27,7 @@ let info =
          use of this tool.";
     ]
   in
-  Term.info "duniverse" ~version:"%%VERSION%%" ~doc ~man_xrefs ~sdocs ~man
+  Term.info "duniverse" ~version:Common.Arg.version ~doc ~man_xrefs ~sdocs ~man
 
 let term = Cmdliner.Term.(ret (const run $ pure ()))
 

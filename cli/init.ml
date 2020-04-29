@@ -19,10 +19,6 @@ let build_config ~local_packages ~explicit_root_packages ~pull_mode ~excludes ~o
   in
   Ok { Duniverse.Config.root_packages; excludes; pull_mode; ocaml_compilers; opam_repo }
 
-let report_stats ~packages =
-  let packages_stats = Opam_cmd.packages_stats packages in
-  Opam_cmd.report_packages_stats packages_stats
-
 let compute_deps ~opam_entries =
   Dune_cmd.log_invalid_packages opam_entries;
   let get_default_branch remote = Exec.git_default_branch ~remote () in
@@ -30,50 +26,53 @@ let compute_deps ~opam_entries =
 
 let compute_depexts ~local_opam_repo ~root_packages pkgs =
   let open Rresult.R in
-  Exec.map (Opam_cmd.get_opam_depexts ~local_opam_repo ~root_packages) pkgs >>= fun depexts -> Ok (List.flatten depexts)
+  Exec.map (Opam_cmd.get_opam_depexts ~local_opam_repo ~root_packages) pkgs >>= fun depexts ->
+  Ok (List.flatten depexts |> List.sort_uniq Stdlib.compare)
 
 let resolve_ref deps =
   let resolve_ref ~upstream ~ref = Exec.git_resolve ~remote:upstream ~ref in
   Duniverse.Deps.resolve ~resolve_ref deps
 
-let run (`Repo repo)
-    (`Explicit_root_packages explicit_root_packages) (`Excludes excludes) (`Opam_repo opam_repo)
-    (`Pull_mode pull_mode) () =
+let run (`Repo repo) (`Explicit_root_packages explicit_root_packages) (`Excludes excludes)
+    (`Opam_repo opam_repo) (`Pull_mode pull_mode) () =
   let open Rresult.R.Infix in
-  let local_opam_repo = Fpath.v "/Users/avsm/.cache/.duniverse/opam-repository.git" in
+  (match Cloner.get_cache_dir () with None -> Ok (Fpath.v ".") | Some t -> t) >>= fun cache_dir ->
+  let local_opam_repo = Fpath.(cache_dir / "opam-repository.git") in
   let opam_repo_url = Uri.with_fragment opam_repo None |> Uri.to_string in
   let opam_repo_branch = match Uri.fragment opam_repo with None -> "master" | Some b -> b in
   Exec.git_clone_or_pull ~remote:opam_repo_url ~branch:opam_repo_branch ~output_dir:local_opam_repo
   >>= fun () ->
   Opam_cmd.find_local_opam_packages repo >>= fun local_packages ->
   (* Common.Logs.app (fun l -> l "Local opam packages are: %s" (String.concat ", " local_packages)); *)
-  build_config ~local_packages ~explicit_root_packages ~pull_mode ~excludes
-    ~opam_repo
+  build_config ~local_packages ~explicit_root_packages ~pull_mode ~excludes ~opam_repo
   >>= fun config ->
-  Common.Logs.app (fun l ->
-      l "Resolving opam dependencies for %a"
-        Fmt.(list ~sep:(unit " ") Styled_pp.package)
-        config.root_packages);
   Opam_cmd.calculate_opam ~config ~local_opam_repo >>= fun packages ->
-  report_stats ~packages;
+  Opam_cmd.report_packages_stats ~config packages;
   let depext_pkgs =
     config.root_packages @ List.map (fun { Types.Opam.package; _ } -> package) packages
   in
+  compute_depexts ~local_opam_repo ~root_packages:config.root_packages depext_pkgs
+  >>= fun depexts ->
   Common.Logs.app (fun l ->
-      l "Recording depexts for packages %a" Fmt.(list ~sep:(unit " ") Styled_pp.package) depext_pkgs);
-  compute_depexts ~local_opam_repo ~root_packages:config.root_packages depext_pkgs >>= fun depexts ->
-  List.iter (fun (k, v) -> Common.Logs.app (fun l -> l "%s %s" (String.concat "," k) v)) depexts;
-  Common.Logs.app (fun l -> l "Calculating Git repositories to vendor");
+      l "Recording %a depext formulae for %a packages."
+        Fmt.(styled `Green int)
+        (List.length depexts)
+        Fmt.(styled `Green int)
+        (List.length depext_pkgs));
+  List.iter (fun (k, v) -> Logs.info (fun l -> l "depext %s %s" (String.concat "," k) v)) depexts;
+  Common.Logs.app (fun l -> l "Calculating Git repositories to vendor source code.");
   compute_deps ~opam_entries:packages >>= fun unresolved_deps ->
   resolve_ref unresolved_deps >>= fun deps ->
   let duniverse = { Duniverse.config; deps; depexts } in
   let file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.save ~file duniverse >>= fun () ->
   Common.Logs.app (fun l ->
-      l "Wrote duniverse file with %a entries to %a."
+      l "Wrote duniverse file with %a entries to %a. You can now run %a to fetch the sources."
         Fmt.(styled `Green int)
         (Duniverse.Deps.count duniverse.deps)
-        Styled_pp.path (Fpath.normalize file));
+        Styled_pp.path (Fpath.normalize file)
+        Fmt.(styled `Blue string)
+        "duniverse pull");
   Ok ()
 
 open Cmdliner
@@ -127,12 +126,12 @@ let info =
     Fmt.strf "analyse opam files to generate an initial $(b,%a)" Fpath.pp Config.duniverse_file
   in
   let man = [] in
-  Term.info "init" ~doc ~exits ~man
+  Term.info "init" ~doc ~exits ~man ~envs:Common.Arg.caches
 
 let term =
   let open Term in
   term_result
-    ( const run $ Common.Arg.repo $ explicit_root_packages $ excludes $ opam_repo
-    $ pull_mode $ Common.Arg.setup_logs () )
+    ( const run $ Common.Arg.repo $ explicit_root_packages $ excludes $ opam_repo $ pull_mode
+    $ Common.Arg.setup_logs () )
 
 let cmd = (term, info)

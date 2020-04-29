@@ -106,7 +106,6 @@ let git_checkout_or_branch ~repo branch =
   | Ok () -> Ok ()
   | Error (`Msg _) -> git_checkout ~args:(Cmd.v "-b") ~repo branch
 
-  
 let git_add_and_commit ~repo ~message files =
   run_git ~ignore_error:true ~repo Cmd.(v "add" %% files) >>= fun () ->
   run_git ~ignore_error:true ~repo Cmd.(v "commit" % "-m" % message %% files)
@@ -162,7 +161,7 @@ let git_clone_or_pull ~branch ~remote ~output_dir =
   | false -> git_clone ~branch ~remote ~output_dir
   | true ->
       run_and_log Cmd.(v "git" % "-C" % p output_dir % "fetch" % "origin") >>= fun () ->
-      run_and_log Cmd.(v "git" % "-C" % p output_dir % "reset" % "--hard" % ("origin/"^branch))
+      run_and_log Cmd.(v "git" % "-C" % p output_dir % "reset" % "--hard" % ("origin/" ^ branch))
 
 let git_rename_branch_to ~repo ~branch = run_git ~repo Cmd.(v "branch" % "-m" % branch)
 

@@ -16,6 +16,7 @@ code required to build a project using the dune build tool.")
  (depends
   (ocaml (>= 4.07.0))
   (ppx_sexp_conv (>= v0.13.0))
+  dune-build-info
   dune-private-libs
   bos
   cmdliner

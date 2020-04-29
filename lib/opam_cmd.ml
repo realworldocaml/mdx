@@ -75,6 +75,8 @@ let tag_from_archive archive =
           | [ "janestreet"; _r; "archive"; f ] -> Some (strip_ext f)
           | _ -> parse_err () )
       | Some "gitlab.camlcity.org" | Some "download.camlcity.org" -> tag_of_last_path ()
+      | Some "gitlab.inria.fr" -> (
+          match path with [ _u; _r; "repository"; v; _archive ] -> Some v | _ -> parse_err () )
       | Some "ocamlgraph.lri.fr" | Some "erratique.ch" -> tag_of_last_path ~prefix:"v" ()
       | _ ->
           Logs.info (fun l ->
@@ -178,7 +180,7 @@ let parse_opam_depends ~package data =
            "Unable to parse opam depends for %s\n\
             Try `opam show --normalise -f depends: %s` manually" package package)
 
-let get_opam_depexts ~local_opam_repo ~root_packages {name;version} =
+let get_opam_depexts ~local_opam_repo ~root_packages { name; version } =
   let version = match version with None -> "dev" | Some v -> v in
   let opam_file =
     if List.exists (fun p -> p.name = name) root_packages then Fpath.v (name ^ ".opam")
@@ -254,8 +256,9 @@ let get_opam_info ~opam_repo ~root_packages packages =
 
 (* TODO catch exceptions and turn to error *)
 
-let filter_duniverse_packages ~excludes pkgs =
-  Logs.app (fun l ->
+let filter_duniverse_packages ~config pkgs =
+  let { Duniverse.Config.excludes; _ } = config in
+  Logs.info (fun l ->
       l "%aFiltering out packages that are irrelevant to the Duniverse." pp_header header);
   let rec fn acc = function
     | hd :: tl ->
@@ -265,18 +268,22 @@ let filter_duniverse_packages ~excludes pkgs =
           || hd.dev_repo = `Virtual
         in
         if filter then fn acc tl else fn (hd :: acc) tl
-    | [] -> Ok (List.rev acc)
+    | [] -> List.rev acc
   in
   fn [] pkgs
 
 let calculate_opam ~config ~local_opam_repo =
-  let { Duniverse.Config.root_packages; excludes; _ } = config in
+  let { Duniverse.Config.root_packages; _ } = config in
   Opam_solve.calculate ~opam_repo:local_opam_repo ~root_packages:config.root_packages
   >>| List.map OpamPackage.to_string
   >>| List.map split_opam_name_and_version
   >>= fun deps ->
   Logs.app (fun l ->
-      l "%aFound %a opam dependencies." pp_header header Fmt.(styled `Green int) (List.length deps));
+      l "%aFound %a opam dependencies for %a." pp_header header
+        Fmt.(styled `Green int)
+        (List.length deps)
+        Fmt.(list ~sep:(unit " ") Styled_pp.package)
+        root_packages);
   Logs.info (fun l ->
       l "The dependencies for %a are: %a"
         Fmt.(list ~sep:(unit ",@ ") pp_package)
@@ -284,19 +291,20 @@ let calculate_opam ~config ~local_opam_repo =
         Fmt.(list ~sep:(unit ",@ ") pp_package)
         deps);
   Logs.app (fun l ->
-      l "%aQuerying local opam switch for their metadata and Dune compatibility." pp_header header);
+      l "%aQuerying opam database for their metadata and Dune compatibility." pp_header header);
   get_opam_info ~opam_repo:local_opam_repo ~root_packages deps
-  >>= filter_duniverse_packages ~excludes
 
 type packages_stats = { total : int; dune : int; not_dune : entry list }
 
-let packages_stats packages =
+let packages_stats ~config packages =
+  filter_duniverse_packages ~config packages |> fun packages ->
   let dune, not_dune = List.partition (fun { is_dune; _ } -> is_dune) packages in
   let dune = List.length dune in
   let total = List.length packages in
   { total; dune; not_dune }
 
-let report_packages_stats packages_stats =
+let report_packages_stats ~config packages =
+  packages_stats ~config packages |> fun packages_stats ->
   if packages_stats.dune < packages_stats.total then
     Logs.app (fun l ->
         l

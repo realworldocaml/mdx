@@ -192,7 +192,7 @@ let solve ~opam_repo ~opam_files src ~variants =
              Lwt.return_none)
 
 let calculate_t ~opam_repo ~root_packages =
-  let opam_files = List.map (fun {Types.Opam.name;_} -> name ^ ".opam") root_packages in
+  let opam_files = List.map (fun { Types.Opam.name; _ } -> name ^ ".opam") root_packages in
   let src = Fpath.v "." in
   let module OR = Osrelease in
   let variants =
@@ -212,4 +212,5 @@ let calculate_t ~opam_repo ~root_packages =
   | _ -> Lwt.fail (Failure "too many results from solver")
 
 let calculate ~opam_repo ~root_packages =
-  try Ok (Lwt_main.run (calculate_t ~opam_repo ~root_packages)) with exn -> Error (`Msg (Printexc.to_string exn))
+  try Ok (Lwt_main.run (calculate_t ~opam_repo ~root_packages))
+  with exn -> Error (`Msg (Printexc.to_string exn))
