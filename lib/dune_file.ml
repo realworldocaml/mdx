@@ -103,11 +103,7 @@ module Project = struct
             ~f:(function
               | List (Atom "package" :: prsxp) -> (
                   List.filter_map
-                    ~f:(function
-                      | List (Atom "depends" :: depsxp) ->
-                          prerr_endline "found depends";
-                          Some depsxp
-                      | _ -> None)
+                    ~f:(function List (Atom "depends" :: depsxp) -> Some depsxp | _ -> None)
                     prsxp
                   |> function
                   | [] -> None

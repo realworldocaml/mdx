@@ -75,6 +75,8 @@ let tag_from_archive archive =
           | [ "janestreet"; _r; "archive"; f ] -> Some (strip_ext f)
           | _ -> parse_err () )
       | Some "gitlab.camlcity.org" | Some "download.camlcity.org" -> tag_of_last_path ()
+      | Some "gitlab.inria.fr" -> (
+          match path with [ _u; _r; "repository"; v; _archive ] -> Some v | _ -> parse_err () )
       | Some "ocamlgraph.lri.fr" | Some "erratique.ch" -> tag_of_last_path ~prefix:"v" ()
       | _ ->
           Logs.info (fun l ->
@@ -95,10 +97,10 @@ let classify_from_url_src src =
 
 let classify_from_dev_repo ~name src =
   match src with
-  | "" ->
+  | None ->
       Logs.debug (fun l -> l "Mapped %s to a virtual package as it has a blank dev repo" name);
       `Virtual
-  | src -> (
+  | Some src -> (
       match Opam.Dev_repo.from_string src with
       | { vcs = Some Git; uri = dev_repo_uri } -> (
           match Uri.host dev_repo_uri with
@@ -130,120 +132,109 @@ let classify_package ~package ~dev_repo ~archive () =
             (kind, tag)
         | x -> (x, None) )
 
-(* Fetch and parse an opam field from an Opam_show_result.t*)
-let extract_opam_value ~field ~package data =
-  let v = Opam_show_result.get ~field ~package data in
-  match v with
-  | None -> None
-  | Some str ->
-      let res =
-        try Ok (OpamParser.value_from_string str "")
-        with OpamLexer.Error _ ->
-          let error_message = Printf.sprintf "Failed to parse %S" str in
-          Error (`Msg error_message)
-      in
-      Some res
-
-let parse_string ~field ~package data =
-  let open OpamParserTypes in
-  match extract_opam_value ~field ~package data with
-  | Some (Ok (String (_, v))) -> Ok v
-  | Some (Ok (List (_, []))) -> Ok ""
-  | None -> Ok ""
-  | _ ->
-      R.error_msg
-        (Fmt.strf "Unable to parse opam string.\nTry `opam show --normalise -f %s: %s`" field
-           package)
-
-let parse_dev_repo = parse_string ~field:"dev-repo:"
-
-let parse_archive_url ~package data =
-  parse_string ~field:"url.src:" ~package data >>= function "" -> Ok None | uri -> Ok (Some uri)
-
-let parse_opam_depends ~package data =
-  let open OpamParserTypes in
-  match extract_opam_value ~field:"depends:" ~package data with
-  | Some (Ok (List (_, vs))) ->
-      let ss =
-        List.fold_left
-          (fun acc -> function Option (_, String (_, v), _) | String (_, v) -> v :: acc | _ -> acc)
-          [] vs
-      in
-      Logs.debug (fun l -> l "Depends for %s: %s" package (String.concat ~sep:" " ss));
-      Ok ss
-  | None -> Ok []
-  | _ ->
-      R.error_msg
-        (Fmt.strf
-           "Unable to parse opam depends for %s\n\
-            Try `opam show --normalise -f depends: %s` manually" package package)
-
-let get_opam_depexts ~root pkg =
-  Exec.get_opam_file ~root ~package:pkg.name >>= fun opam ->
-  let depexts = OpamFile.OPAM.depexts opam in
-  Ok (List.map (fun (s, f) -> (s, OpamFilter.to_string f)) depexts)
-
-let get_opam_info ~root ~pins packages =
-  let fields = [ "name"; "dev-repo:"; "url.src:"; "depends:" ] in
-  Exec.run_opam_show ~root ~packages ~fields >>= fun lines ->
-  Opam_show_result.make lines >>= fun data ->
-  let packages =
-    List.map
-      (fun pkg ->
-        let name = pkg.name in
-        let archive = parse_archive_url ~package:name data in
-        let dev_repo = parse_dev_repo ~package:name data in
-        let depends = parse_opam_depends ~package:name data in
-        dev_repo >>= fun dev_repo ->
-        archive >>= fun archive ->
-        depends >>| fun depends ->
-        let dev_repo, tag = classify_package ~package:pkg ~dev_repo ~archive () in
-        let is_dune = List.exists (fun l -> l = "jbuilder" || l = "dune") depends in
-        Logs.info (fun l ->
-            l "Classified %a as %a with tag %a"
-              Fmt.(styled `Yellow pp_package)
-              pkg pp_repo dev_repo
-              Fmt.(option string)
-              tag);
-        let tag =
-          match List.find_opt (fun { pin; _ } -> pkg.name = pin) pins with
-          | Some { tag; _ } -> tag
-          | None -> tag
-        in
-        { package = pkg; dev_repo; tag; is_dune })
-      packages
+let get_opam_depexts ~local_opam_repo { name; version } =
+  let version = match version with None -> "dev" | Some v -> v in
+  let opam_file =
+    let local_file = name ^ ".opam" in
+    if Sys.file_exists local_file then Fpath.v local_file
+    else Fpath.(local_opam_repo / "packages" / name / (name ^ "." ^ version) / "opam")
   in
-  List.fold_left
-    (fun lst elem ->
-      lst >>= fun lst ->
-      elem >>| fun elem -> elem :: lst)
-    (Ok []) packages
+  Bos.OS.File.read opam_file >>| fun opam_contents ->
+  let opam = OpamFile.OPAM.read_from_string opam_contents in
+  OpamFile.OPAM.depexts opam |>
+  List.map (fun (s, f) -> (s, OpamFilter.to_string f))
 
-let filter_duniverse_packages ~excludes pkgs =
-  Logs.app (fun l ->
+let get_opam_info ~opam_repo ~root_packages packages =
+  List.map
+    (fun ({ name; version } as pkg) ->
+      let version =
+        match version with None -> failwith "must have package version" | Some v -> v
+      in
+      let opam_file =
+        if List.exists (fun p -> p.name = name) root_packages then Fpath.v (name ^ ".opam")
+        else Fpath.(opam_repo / "packages" / name / (name ^ "." ^ version) / "opam")
+      in
+      Logs.info (fun l -> l "processing %a" Fpath.pp opam_file);
+      let open OpamParserTypes in
+      OpamParser.file (Fpath.to_string opam_file) |> fun { file_contents; _ } ->
+      let archive =
+        List.filter_map
+          (function
+            | Section (_, { section_kind = "url"; section_items; _ }) ->
+                Some
+                  (List.filter_map
+                     (function Variable (_, "src", String (_, v)) -> Some v | _ -> None)
+                     section_items)
+            | _ -> None)
+          file_contents
+        |> List.flatten
+        |> function
+        | [ hd ] -> Some hd
+        | _ -> None
+      in
+      let dev_repo =
+        List.filter_map
+          (function Variable (_, "dev-repo", String (_, v)) -> Some v | _ -> None)
+          file_contents
+        |> function
+        | [ hd ] -> Some hd
+        | _ -> None
+      in
+      let depends =
+        List.filter_map
+          (function
+            | Variable (_, "depends", List (_, v)) ->
+                Some
+                  (List.filter_map
+                     (function
+                       | Option (_, String (_, v), _) -> Some v
+                       | String (_, v) -> Some v
+                       | _ -> None)
+                     v)
+            | _ -> None)
+          file_contents
+        |> List.flatten
+      in
+      let dev_repo, tag = classify_package ~package:pkg ~dev_repo ~archive () in
+      let is_dune = List.exists (fun l -> l = "jbuilder" || l = "dune") depends in
+      Logs.info (fun l ->
+          l "Classified %a as %a with tag %a"
+            Fmt.(styled `Yellow pp_package)
+            pkg pp_repo dev_repo
+            Fmt.(option string)
+            tag);
+      { package = pkg; dev_repo; tag; is_dune })
+    packages
+  |> fun v -> Ok v
+
+(* TODO catch exceptions and turn to error *)
+
+let filter_duniverse_packages pkgs =
+  Logs.info (fun l ->
       l "%aFiltering out packages that are irrelevant to the Duniverse." pp_header header);
   let rec fn acc = function
     | hd :: tl ->
         let filter =
-          List.exists (fun e -> e.name = hd.package.name) excludes
-          || List.mem hd.package.name Config.base_packages
+             List.mem hd.package.name Config.base_packages
           || hd.dev_repo = `Virtual
         in
         if filter then fn acc tl else fn (hd :: acc) tl
-    | [] -> Ok (List.rev acc)
+    | [] -> List.rev acc
   in
   fn [] pkgs
 
-let calculate_opam ~root ~config =
-  let { Duniverse.Config.root_packages; pins; excludes; _ } = config in
-  Exec.run_opam_package_deps ~root (List.map string_of_package root_packages)
+let calculate_opam ~config ~local_opam_repo =
+  let { Duniverse.Config.root_packages; _ } = config in
+  Opam_solve.calculate ~opam_repo:local_opam_repo ~root_packages
+  >>| List.map OpamPackage.to_string
   >>| List.map split_opam_name_and_version
-  >>| List.map (fun p ->
-          if List.exists (fun { pin; _ } -> p.name = pin) pins then { p with version = Some "dev" }
-          else p)
   >>= fun deps ->
   Logs.app (fun l ->
-      l "%aFound %a opam dependencies." pp_header header Fmt.(styled `Green int) (List.length deps));
+      l "%aFound %a opam dependencies for %a." pp_header header
+        Fmt.(styled `Green int)
+        (List.length deps)
+        Fmt.(list ~sep:(unit " ") Styled_pp.package)
+        root_packages);
   Logs.info (fun l ->
       l "The dependencies for %a are: %a"
         Fmt.(list ~sep:(unit ",@ ") pp_package)
@@ -251,18 +242,20 @@ let calculate_opam ~root ~config =
         Fmt.(list ~sep:(unit ",@ ") pp_package)
         deps);
   Logs.app (fun l ->
-      l "%aQuerying local opam switch for their metadata and Dune compatibility." pp_header header);
-  get_opam_info ~root ~pins deps >>= filter_duniverse_packages ~excludes
+      l "%aQuerying opam database for their metadata and Dune compatibility." pp_header header);
+  get_opam_info ~opam_repo:local_opam_repo ~root_packages deps
 
 type packages_stats = { total : int; dune : int; not_dune : entry list }
 
 let packages_stats packages =
+  filter_duniverse_packages packages |> fun packages ->
   let dune, not_dune = List.partition (fun { is_dune; _ } -> is_dune) packages in
   let dune = List.length dune in
   let total = List.length packages in
   { total; dune; not_dune }
 
-let report_packages_stats packages_stats =
+let report_packages_stats packages =
+  packages_stats packages |> fun packages_stats ->
   if packages_stats.dune < packages_stats.total then
     Logs.app (fun l ->
         l
@@ -282,42 +275,19 @@ let report_packages_stats packages_stats =
           Fmt.(styled `Green int)
           packages_stats.total)
 
-let init_opam ~root ~remotes () =
-  let open Types.Opam.Remote in
-  let remotes = List.mapi (fun i url -> { name = Fmt.strf "remote%d" i; url }) remotes in
-  Exec.init_opam_and_remotes ~root ~remotes ()
-
-let choose_root_packages ~explicit_root_packages ~local_packages =
-  match (explicit_root_packages, local_packages) with
-  | [], [] ->
+let choose_root_packages ~local_packages =
+  match local_packages with
+  | [] ->
       R.error_msg
         "Cannot find any packages to vendor.\n\
          Either create some *.opam files in the local repository, or specify them manually via \
          'duniverse opam <packages>'."
-  | [], local_packages ->
+  | local_packages ->
       Logs.app (fun l ->
           l "%aUsing locally scanned packages '%a' as the roots." pp_header header
             Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
             local_packages);
       Ok local_packages
-  | explicit_root_packages, [] ->
-      Logs.app (fun l ->
-          l "%aUsing command-line specified packages '%a' as the roots." pp_header header
-            Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
-            explicit_root_packages);
-      Ok explicit_root_packages
-  | explicit_root_packages, local_packages ->
-      Logs.app (fun l ->
-          l
-            "%aUsing command-line specified packages '%a' as the roots.\n\
-             Ignoring the locally found packages %a unless they are explicitly specified on the \
-             command line."
-            pp_header header
-            Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
-            explicit_root_packages
-            Fmt.(list ~sep:(unit ",@ ") string)
-            local_packages);
-      Ok explicit_root_packages
 
 let install_incompatible_packages yes repo =
   Logs.app (fun l ->

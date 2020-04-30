@@ -1,10 +1,9 @@
 open Duniverse_lib
 open Duniverse_lib.Types
 
-let build_config ~local_packages ~branch ~explicit_root_packages ~pull_mode ~excludes ~pins ~remotes
-    ~opam_repo =
+let build_config ~local_packages ~pull_mode ~opam_repo =
   let open Rresult.R.Infix in
-  Opam_cmd.choose_root_packages ~explicit_root_packages ~local_packages >>= fun root_packages ->
+  Opam_cmd.choose_root_packages ~local_packages >>= fun root_packages ->
   let ocaml_compilers =
     match Dune_file.Project.supported_ocaml_compilers () with
     | Ok l -> List.map Ocaml_version.to_string l
@@ -12,113 +11,68 @@ let build_config ~local_packages ~branch ~explicit_root_packages ~pull_mode ~exc
         Logs.warn (fun l -> l "%s" msg);
         []
   in
+  let version = "1" in
   let root_packages =
     List.map Opam_cmd.split_opam_name_and_version root_packages |> Opam.sort_uniq
   in
-  let excludes =
-    List.map Opam_cmd.split_opam_name_and_version (local_packages @ excludes) |> Opam.sort_uniq
-  in
-  Ok
-    {
-      Duniverse.Config.root_packages;
-      excludes;
-      pins;
-      opam_repo;
-      pull_mode;
-      remotes;
-      ocaml_compilers;
-      branch;
-    }
-
-let init_tmp_opam ~local_packages ~config:{ Duniverse.Config.remotes; pins; opam_repo; _ } =
-  let open Rresult.R.Infix in
-  Bos.OS.Dir.tmp ".duniverse-opam-root-%s" >>= fun root ->
-  Opam_cmd.init_opam ~root ~opam_repo ~remotes () >>= fun () ->
-  Exec.(iter (add_opam_dev_pin ~root) pins) >>= fun () ->
-  Exec.(iter (add_opam_local_pin ~root ~kind:"path") local_packages) >>= fun () -> Ok root
-
-let report_stats ~packages =
-  let packages_stats = Opam_cmd.packages_stats packages in
-  Opam_cmd.report_packages_stats packages_stats
+  Ok { Duniverse.Config.version; root_packages; pull_mode; ocaml_compilers; opam_repo }
 
 let compute_deps ~opam_entries =
   Dune_cmd.log_invalid_packages opam_entries;
   let get_default_branch remote = Exec.git_default_branch ~remote () in
   Duniverse.Deps.from_opam_entries ~get_default_branch opam_entries
 
-let compute_depexts ~root pkgs =
+let compute_depexts ~local_opam_repo pkgs =
   let open Rresult.R in
-  Exec.map (Opam_cmd.get_opam_depexts ~root) pkgs >>= fun depexts -> Ok (List.flatten depexts)
+  Exec.map (Opam_cmd.get_opam_depexts ~local_opam_repo) pkgs >>| fun depexts ->
+  List.flatten depexts |> List.sort_uniq Stdlib.compare
 
 let resolve_ref deps =
   let resolve_ref ~upstream ~ref = Exec.git_resolve ~remote:upstream ~ref in
   Duniverse.Deps.resolve ~resolve_ref deps
 
-let run (`Repo repo) (`Branch branch) (`Explicit_root_packages explicit_root_packages)
-    (`Excludes excludes) (`Pins pins) (`Opam_repo opam_repo) (`Remotes remotes)
-    (`Pull_mode pull_mode) () =
+let run (`Repo repo) 
+    (`Opam_repo opam_repo) (`Pull_mode pull_mode) () =
   let open Rresult.R.Infix in
-  let opam_repo = Uri.of_string opam_repo in
-  Common.Logs.app (fun l -> l "Calculating Duniverse on the %a branch" Styled_pp.branch branch);
+  (match Cloner.get_cache_dir () with None -> Ok (Fpath.v ".") | Some t -> t) >>= fun cache_dir ->
+  let local_opam_repo = Fpath.(cache_dir / "opam-repository.git") in
+  let opam_repo_url = Uri.with_fragment opam_repo None |> Uri.to_string in
+  let opam_repo_branch = match Uri.fragment opam_repo with None -> "master" | Some b -> b in
+  Exec.git_clone_or_pull ~remote:opam_repo_url ~branch:opam_repo_branch ~output_dir:local_opam_repo
+  >>= fun () ->
   Opam_cmd.find_local_opam_packages repo >>= fun local_packages ->
-  Common.Logs.app (fun l -> l "Local opam packages are: %s" (String.concat ", " local_packages));
-  build_config ~local_packages ~branch ~explicit_root_packages ~pull_mode ~excludes ~pins ~remotes
-    ~opam_repo
+  build_config ~local_packages ~pull_mode ~opam_repo
   >>= fun config ->
-  Common.Logs.app (fun l -> l "Initializing temporary opam switch");
-  init_tmp_opam ~local_packages ~config >>= fun root ->
-  Common.Logs.app (fun l ->
-      l "Resolving opam dependencies for %a"
-        Fmt.(list ~sep:(unit " ") Styled_pp.package)
-        config.root_packages);
-  Opam_cmd.calculate_opam ~root ~config >>= fun packages ->
-  report_stats ~packages;
+  Opam_cmd.calculate_opam ~config ~local_opam_repo >>= fun packages ->
+  Opam_cmd.report_packages_stats packages;
   let depext_pkgs =
     config.root_packages @ List.map (fun { Types.Opam.package; _ } -> package) packages
   in
+  compute_depexts ~local_opam_repo depext_pkgs
+  >>= fun depexts ->
   Common.Logs.app (fun l ->
-      l "Recording depexts for packages %a" Fmt.(list ~sep:(unit " ") Styled_pp.package) depext_pkgs);
-  compute_depexts ~root depext_pkgs >>= fun depexts ->
-  List.iter (fun (k, v) -> Common.Logs.app (fun l -> l "%s %s" (String.concat "," k) v)) depexts;
-  Common.Logs.app (fun l -> l "Calculating Git repositories to vendor");
+      l "Recording %a depext formulae for %a packages."
+        Fmt.(styled `Green int)
+        (List.length depexts)
+        Fmt.(styled `Green int)
+        (List.length depext_pkgs));
+  List.iter (fun (k, v) -> Logs.info (fun l -> l "depext %s %s" (String.concat "," k) v)) depexts;
+  Common.Logs.app (fun l -> l "Calculating Git repositories to vendor source code.");
   compute_deps ~opam_entries:packages >>= fun unresolved_deps ->
   resolve_ref unresolved_deps >>= fun deps ->
   let duniverse = { Duniverse.config; deps; depexts } in
   let file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.save ~file duniverse >>= fun () ->
   Common.Logs.app (fun l ->
-      l "Wrote duniverse file with %a entries to %a."
+      l "Wrote duniverse file with %a entries to %a. You can now run %a to fetch the sources."
         Fmt.(styled `Green int)
         (Duniverse.Deps.count duniverse.deps)
-        Styled_pp.path (Fpath.normalize file));
+        Styled_pp.path (Fpath.normalize file)
+        Fmt.(styled `Blue string)
+        "duniverse pull");
   Ok ()
 
 open Cmdliner
-
-let branch =
-  let doc = "Branch that represents the working tree of the source code. Defaults to $(i,master)" in
-  Common.Arg.named
-    (fun x -> `Branch x)
-    Cmdliner.Arg.(value & opt string "master" & info [ "b" ] ~docv:"BRANCH" ~doc)
-
-let explicit_root_packages =
-  let doc =
-    "opam packages to calculate duniverse for. If not supplied, any local opam metadata files are \
-     used as the default package list."
-  in
-  Common.Arg.named
-    (fun x -> `Explicit_root_packages x)
-    Arg.(value & pos_all string [] & info [] ~doc ~docv:"PACKAGES")
-
-let excludes =
-  let doc =
-    "Packages to exclude from the output list. You can use this to remove the root packages so \
-     they are not duplicated in the vendor directory.  Repeat this flag multiple times for more \
-     than one exclusion."
-  in
-  Common.Arg.named
-    (fun x -> `Excludes x)
-    Arg.(value & opt_all string [] & info [ "exclude"; "x" ] ~docv:"EXCLUDE" ~doc)
 
 let opam_repo =
   let doc =
@@ -126,7 +80,7 @@ let opam_repo =
      yet been ported to Dune upstream."
   in
   Common.Arg.named
-    (fun x -> `Opam_repo x)
+    (fun x -> `Opam_repo (Uri.of_string x))
     Arg.(
       value & opt string Config.duniverse_opam_repo & info [ "opam-repo" ] ~docv:"OPAM_REPO" ~doc)
 
@@ -144,55 +98,18 @@ let pull_mode =
           Duniverse.Config.Source
       & info [ "pull-mode" ] ~docv:"PULL_MODE" ~doc)
 
-let pins =
-  let open Types.Opam in
-  let doc =
-    "Packages to pin for the latest opam metadata and source. You can separate the package name \
-     and a url and a remote branch via commas to specify a manual url (e.g. \
-     $(i,mirage,git://github.com/avsm/mirage,fixme)).  If a url is not specified then the \
-     $(i,--dev) pin is used.  If a branch is not specified then the default remote branch is used. \
-     Repeat this flag multiple times for more than one exclusion."
-  in
-  let fin s =
-    match Astring.String.cuts ~sep:"," s with
-    | [] -> failwith "unexpected pin error"
-    | [ pin ] -> Ok { pin; url = None; tag = None }
-    | [ pin; url ] -> Ok { pin; url = Some url; tag = None }
-    | [ pin; url; tag ] -> Ok { pin; url = Some url; tag = Some tag }
-    | _ -> failwith "pins must have maximum of 3 commas"
-  in
-  let fout ppf { pin; url; tag } =
-    match (url, tag) with
-    | None, _ -> Fmt.(pf ppf "%s" pin)
-    | Some url, None -> Fmt.(pf ppf "%s,%s" pin url)
-    | Some url, Some tag -> Fmt.(pf ppf "%s,%s,%s" pin url tag)
-  in
-  let t = Arg.conv ~docv:"PIN" (fin, fout) in
-  Common.Arg.named
-    (fun x -> `Pins x)
-    Arg.(value & opt_all t [] & info [ "pin"; "p" ] ~docv:"PIN" ~doc)
-
-let remotes =
-  let doc =
-    "Extra opam remotes to add when resolving package names. Repeat this flag multiple times for \
-     more than one remote."
-  in
-  Common.Arg.named
-    (fun x -> `Remotes x)
-    Arg.(value & opt_all string [] & info [ "opam-remote" ] ~docv:"OPAM_REMOTE" ~doc)
-
 let info =
   let exits = Term.default_exits in
   let doc =
     Fmt.strf "analyse opam files to generate an initial $(b,%a)" Fpath.pp Config.duniverse_file
   in
   let man = [] in
-  Term.info "init" ~doc ~exits ~man
+  Term.info "init" ~doc ~exits ~man ~envs:Common.Arg.caches
 
 let term =
   let open Term in
   term_result
-    ( const run $ Common.Arg.repo $ branch $ explicit_root_packages $ excludes $ pins $ opam_repo
-    $ remotes $ pull_mode $ Common.Arg.setup_logs () )
+    ( const run $ Common.Arg.repo $ opam_repo $ pull_mode
+    $ Common.Arg.setup_logs () )
 
 let cmd = (term, info)

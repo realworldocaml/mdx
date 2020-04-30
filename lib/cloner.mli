@@ -1,5 +1,7 @@
 type cache
 
+val get_cache_dir : unit -> (Fpath.t, [> `Msg of string ]) result option
+
 val get_cache : unit -> (cache, [> `Msg of string ]) result
 
 val no_cache : cache

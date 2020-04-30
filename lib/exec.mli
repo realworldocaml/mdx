@@ -81,37 +81,6 @@ val git_update_index :
 (** [git_update_index] will add the [cacheinfo] (a tuple of mode, hash and target path)
   to the index, and append it to the cache if [add] is [true]. *)
 
-val run_opam_package_deps : root:Fpath.t -> string list -> (string list, [> Rresult.R.msg ]) result
-(** [run_opam_packages_deps ~root packages] returns a list of versioned constrained packages that
-    resolves the transitive dependencies of [packages]. *)
-
-val run_opam_show :
-  root:Fpath.t ->
-  fields:string list ->
-  packages:Types.Opam.package list ->
-  (string list, [> Rresult.R.msg ]) result
-(** [run_opam_show ~root ~fields ~packages] runs opam show to get [fields] for each package in [packages].*)
-
-val get_opam_file : root:Fpath.t -> package:string -> (OpamFile.OPAM.t, [> Rresult.R.msg ]) result
-
-val init_opam_and_remotes :
-  root:Fpath.t ->
-  opam_repo:Uri.t ->
-  remotes:Types.Opam.Remote.t list ->
-  unit ->
-  (unit, [> Rresult.R.msg ]) result
-(** [init_opam_and_remotes ~root ~opam_repo ~remotes ()] creates a fresh opam state with a single
-    switch using [root] as [OPAMROOT] from the [repo] Uri as the opam-repository location,
-    and adds the [remotes] opam repositories to it. *)
-
-val add_opam_dev_pin : root:Fpath.t -> Types.Opam.pin -> (unit, [> Rresult.R.msg ]) result
-(** [add_opam_dev_pin ~root pin] pins [pin] in the active switch using [root] as OPAMROOT. *)
-
-val add_opam_local_pin : root:Fpath.t -> kind:string -> string -> (unit, [> Rresult.R.msg ]) result
-(** [add_opam_local_pin ~root ~kind package] pins the package in the current working dir under
-    [package ^ ".dev"] in the active switch using [root] as OPAMROOT and [kind] to determine the
-    kind of pinning ("path", "git", ...). *)
-
 val run_opam_install : yes:bool -> Duniverse.Deps.Opam.t list -> (unit, [> Rresult.R.msg ]) result
 (** [run_opam_install ~yes packages] launch an opam command to install the given packages. If yes is
     set to true, it doesn't prompt the user for confirmation. *)
@@ -139,6 +108,9 @@ val git_init_bare : repo:Fpath.t -> (unit, [> Rresult.R.msg ]) result
 val git_clone :
   branch:string -> remote:string -> output_dir:Fpath.t -> (unit, [> Rresult.R.msg ]) result
 (** [git_clone ~branch ~remote ~output_dir] Git clone branch from remote in output_dir **)
+
+val git_clone_or_pull :
+  branch:string -> remote:string -> output_dir:Fpath.t -> (unit, [> Rresult.R.msg ]) result
 
 val git_rename_branch_to : repo:Fpath.t -> branch:string -> (unit, [> Rresult.R.msg ]) result
 (** [git_rename_branch_to ~branch] Sets repo's branch name to branch. **)

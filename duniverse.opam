@@ -16,6 +16,7 @@ depends: [
   "dune" {>= "2.0"}
   "ocaml" {>= "4.07.0"}
   "ppx_sexp_conv" {>= "v0.13.0"}
+  "dune-build-info"
   "dune-private-libs"
   "bos"
   "cmdliner"
@@ -24,7 +25,7 @@ depends: [
   "rresult"
   "opam-file-format"
   "opam-format"
-  "opam-core"
+  "opam-state"
   "ocaml-version"
   "uri"
   "sexplib"

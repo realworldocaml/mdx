@@ -30,6 +30,28 @@ module Arg = struct
       (fun x -> `Duniverse_repos x)
       Term.(non_empty_list_opt $ Arg.(value & pos_all string [] & info ~doc ~docv []))
 
+  let cache_env_var ?(windows_only = false) ~priority ~extra_path ~var () =
+    let windows_only = if windows_only then " (only on Windows)" else "" in
+    let doc =
+      Printf.sprintf
+        "Used to determine the cache location%s. It has priority %s. If set, the cache will be \
+         read from/written to $(b,\\$)$(env)$(b,/%s)."
+        windows_only priority extra_path
+    in
+    Cmdliner.Term.env_info ~doc var
+
+  let caches =
+    let duniverse_cache =
+      cache_env_var ~priority:"1 (the highest)" ~extra_path:"duniverse" ~var:"DUNIVERSE_CACHE" ()
+    in
+    let xdg_cache = cache_env_var ~priority:"2" ~extra_path:"duniverse" ~var:"XDG_CACHE_HOME" () in
+    let home_cache = cache_env_var ~priority:"3" ~extra_path:".cache/duniverse" ~var:"HOME" () in
+    let app_data_cache =
+      cache_env_var ~windows_only:true ~priority:"4 (the lowest)"
+        ~extra_path:"Local Settings/Cache/duniverse" ~var:"AppData" ()
+    in
+    [ duniverse_cache; xdg_cache; home_cache; app_data_cache ]
+
   let thread_safe_reporter reporter =
     let lock = Mutex.create () in
     let { Logs.report } = reporter in
@@ -53,6 +75,11 @@ module Arg = struct
     const setup_log
     $ Fmt_cli.style_renderer ~docs:global_option_section ()
     $ Logs_cli.level ~docs:global_option_section ()
+
+  let version =
+    match Build_info.V1.version () with
+    | None -> "n/a"
+    | Some v -> Build_info.V1.Version.to_string v
 end
 
 module Logs = struct

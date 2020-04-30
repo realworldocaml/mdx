@@ -89,14 +89,11 @@ module Config : sig
   type pull_mode = Submodules | Source [@@deriving sexp]
 
   type t = {
+    version: string;
     root_packages : Types.Opam.package list;
-    excludes : Types.Opam.package list;
-    pins : Types.Opam.pin list;
     pull_mode : pull_mode; [@default Submodules]
     opam_repo : Uri_sexp.t;
-    remotes : string list; [@default []]
     ocaml_compilers : string list; [@default []]
-    branch : string; [@default "master"]
   }
   [@@deriving sexp]
 end
