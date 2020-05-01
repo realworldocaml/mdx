@@ -209,6 +209,7 @@ let calculate_t ~opam_repo ~root_packages =
   let open Lwt.Infix in
   solve ~opam_repo ~opam_files src ~variants >>= function
   | [ s ] -> Lwt.return s.packages
+  | [] -> Lwt.fail (Failure "no results from solver")
   | _ -> Lwt.fail (Failure "too many results from solver")
 
 let calculate ~opam_repo ~root_packages =
