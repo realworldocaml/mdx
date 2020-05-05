@@ -28,3 +28,9 @@ let () =
   f x print_int;
 (* $MDX part-end *)
   ()
+
+let () =
+(* $MDX part-begin=indented *)
+  let () = fooooooooooooooooooooooooooooooooooooooooooo in
+  if not fooooooooo then foooooooooooo
+(* $MDX part-end *)

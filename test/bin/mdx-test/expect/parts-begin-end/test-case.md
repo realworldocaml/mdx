@@ -30,3 +30,6 @@ val x : int = 2
 3
 - : unit = ()
 ```
+
+```ocaml file=parts-begin-end.ml,part=indented
+```
