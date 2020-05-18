@@ -174,7 +174,7 @@ module Rewrite = struct
 
   (* Rewrite Lwt.t expressions to Lwt_main.run <expr> *)
   let lwt =
-    let typ = Longident.(Ldot (Lident "Lwt", "t"))  in
+    let typ = Longident.(Ldot (Lident "Lwt", "t")) in
     let runner = Longident.(Ldot (Lident "Lwt_main", "run")) in
     let witness = Longident.(Ldot (Lident "Lwt", "return")) in
     let preload = Some "lwt.unix" in
@@ -191,7 +191,10 @@ module Rewrite = struct
      Async.Thread_safe.block_on_async_exn (fun () -> <expr>). *)
   let async =
     let typ = Longident.(Ldot (Ldot (Lident "Async", "Deferred"), "t")) in
-    let runner = Longident.(Ldot (Ldot (Lident "Async", "Thread_safe"), "block_on_async_exn")) in
+    let runner =
+      Longident.(
+        Ldot (Ldot (Lident "Async", "Thread_safe"), "block_on_async_exn"))
+    in
     let witness = runner in
     let preload = None in
     let open Ast_helper in
