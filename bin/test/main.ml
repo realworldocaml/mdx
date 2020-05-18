@@ -230,7 +230,8 @@ let read_part file part =
         file
   | Some lines ->
       let contents = String.concat ~sep:"\n" lines in
-      String.trim contents ~drop:(function '\n' -> true | _ -> false)
+      String.drop contents ~rev:true ~sat:Char.Ascii.is_white
+      |> String.drop ~sat:(function '\n' -> true | _ -> false)
 
 let write_parts ~force_output file parts =
   let output_file = file ^ ".corrected" in
