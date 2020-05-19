@@ -49,6 +49,10 @@ let () =
 let () =
   f x print_int;
   ()
+
+let () =
+  let () = fooooooooooooooooooooooooooooooooooooooooooo in
+  if not fooooooooo then foooooooooooo
 ```
 
 ```ocaml
@@ -57,4 +61,9 @@ val x : int = 2
 # print_int x;;
 2
 - : unit = ()
+```
+
+```ocaml file=parts-begin-end.ml,part=indented
+  let () = fooooooooooooooooooooooooooooooooooooooooooo in
+  if not fooooooooo then foooooooooooo
 ```

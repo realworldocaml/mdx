@@ -24,6 +24,8 @@
 
 - Avoid adding newlines to empty blocks (#253, @gpetiot)
 
+- Preserve the indentation of included files (#259, @gpetiot)
+
 #### Removed
 
 #### Security
