@@ -27,8 +27,13 @@ let run (`Setup ()) _ _ _ _ _ _ _ _ _ _ =
     match base with
     | "main.exe" -> dir / "test" / "main.exe"
     | x when String.length x > 6 && String.sub x 0 6 = "ocaml-" ->
-        (dir / x) ^ "-test"
-    | x -> (dir / "ocaml-") ^ x ^ "-test"
+        let x_without_ext = Filename.remove_extension x in
+        let x_ext = Filename.extension x in
+        (dir / x_without_ext) ^ "-test" ^ x_ext
+    | x ->
+        let x_without_ext = Filename.remove_extension x in
+        let x_ext = Filename.extension x in
+        (dir / "ocaml-") ^ x_without_ext ^ "-test" ^ x_ext
   in
   let argv = Array.sub Sys.argv 1 (Array.length Sys.argv - 1) in
   argv.(0) <- cmd;
