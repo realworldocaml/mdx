@@ -131,8 +131,7 @@ let pp_sel f pkg = Fmt.string f (OpamPackage.to_string pkg)
 
 let ocaml_name = OpamPackage.Name.of_string "ocaml"
 
-let solve ~opam_repo ~opam_files src ~variants =
-  let src = Fpath.to_string src in
+let solve ~opam_repo ~opam_files ~variants =
   let opam_repository = Fpath.to_string opam_repo in
   let pkgs =
     opam_files
@@ -157,7 +156,7 @@ let solve ~opam_repo ~opam_files src ~variants =
   in
   let pins =
     pkgs
-    |> List.map (fun (pkg, path) -> (OpamPackage.name pkg, (OpamPackage.version pkg, src / path)))
+    |> List.map (fun (pkg, path) -> (OpamPackage.name pkg, (OpamPackage.version pkg, path)))
     |> OpamPackage.Name.Map.of_list
   in
   (* let pp_name f name = Fmt.string f (OpamPackage.Name.to_string name) in *)
@@ -191,9 +190,7 @@ let solve ~opam_repo ~opam_files src ~variants =
              (* Fmt.pr "Eliminated all possibilities in %.2f s\n%!" (t1 -. t0); *)
              Lwt.return_none)
 
-let calculate_t ~opam_repo ~root_packages =
-  let opam_files = List.map (fun { Types.Opam.name; _ } -> name ^ ".opam") root_packages in
-  let src = Fpath.v "." in
+let calculate_t ~opam_repo ~opam_files =
   let module OR = Osrelease in
   let variants =
     [
@@ -207,11 +204,11 @@ let calculate_t ~opam_repo ~root_packages =
     ]
   in
   let open Lwt.Infix in
-  solve ~opam_repo ~opam_files src ~variants >>= function
+  solve ~opam_repo ~opam_files ~variants >>= function
   | [ s ] -> Lwt.return s.packages
   | [] -> Lwt.fail (Failure "no results from solver")
   | _ -> Lwt.fail (Failure "too many results from solver")
 
-let calculate ~opam_repo ~root_packages =
-  try Ok (Lwt_main.run (calculate_t ~opam_repo ~root_packages))
+let calculate ~opam_repo ~opam_files =
+  try Ok (Lwt_main.run (calculate_t ~opam_repo ~opam_files))
   with exn -> Error (`Msg (Printexc.to_string exn))

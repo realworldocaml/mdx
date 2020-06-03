@@ -1,5 +1,6 @@
 open Duniverse_lib
 open Duniverse_lib.Types
+open Astring
 
 let build_config ~local_packages ~pins ~pull_mode ~opam_repo =
   let open Rresult.R.Infix in
@@ -34,6 +35,12 @@ let resolve_ref deps =
 module Pins = struct
   open Rresult.R
 
+  let name pin =
+    pin.Types.Opam.pin
+
+  let path pin =
+    Fpath.(Config.pins_dir / (pin.Types.Opam.pin ^ ".opam"))
+
   let read_from_config duniverse_file =
     Bos.OS.File.exists duniverse_file >>= fun exists ->
     if not exists then Ok [] else
@@ -50,11 +57,18 @@ let run (`Repo repo)
   let opam_repo_branch = match Uri.fragment opam_repo with None -> "master" | Some b -> b in
   Exec.git_clone_or_pull ~remote:opam_repo_url ~branch:opam_repo_branch ~output_dir:local_opam_repo
   >>= fun () ->
-  Opam_cmd.find_local_opam_packages repo >>= fun local_packages ->
+  Opam_cmd.find_local_opam_packages repo >>= fun local_package_paths ->
   Pins.read_from_config Fpath.(repo // Config.duniverse_file) >>= fun pins ->
+  let local_packages = List.map fst (String.Map.bindings local_package_paths) in
   build_config ~local_packages ~pins ~pull_mode ~opam_repo
   >>= fun config ->
-  Opam_cmd.calculate_opam ~config ~local_opam_repo >>= fun packages ->
+  let paths =
+    let pin_paths =
+      pins
+      |> List.to_seq |> Seq.map (fun pin -> Pins.name pin, Pins.path pin) in
+    String.Map.add_seq pin_paths local_package_paths
+  in
+  Opam_cmd.calculate_opam ~config ~paths ~local_opam_repo >>= fun packages ->
   Opam_cmd.report_packages_stats packages;
   let depext_pkgs =
     config.root_packages @ List.map (fun { Types.Opam.package; _ } -> package) packages
@@ -67,7 +81,7 @@ let run (`Repo repo)
         (List.length depexts)
         Fmt.(styled `Green int)
         (List.length depext_pkgs));
-  List.iter (fun (k, v) -> Logs.info (fun l -> l "depext %s %s" (String.concat "," k) v)) depexts;
+  List.iter (fun (k, v) -> Logs.info (fun l -> l "depext %s %s" (String.concat ~sep:"," k) v)) depexts;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor source code.");
   compute_deps ~opam_entries:packages >>= fun unresolved_deps ->
   resolve_ref unresolved_deps >>= fun deps ->

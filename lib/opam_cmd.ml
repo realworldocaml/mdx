@@ -37,7 +37,8 @@ let strip_ext fname =
 let find_local_opam_packages dir =
   Bos.OS.Dir.contents ~rel:true dir
   >>| List.filter (Fpath.has_ext ".opam")
-  >>| List.map Fpath.rem_ext >>| List.map Fpath.to_string
+  >>| List.map (fun path -> Fpath.(to_string (rem_ext path), dir // path))
+  >>| String.Map.of_list
 
 let tag_from_archive archive =
   let uri = Uri.of_string archive in
@@ -144,15 +145,16 @@ let get_opam_depexts ~local_opam_repo { name; version } =
   OpamFile.OPAM.depexts opam |>
   List.map (fun (s, f) -> (s, OpamFilter.to_string f))
 
-let get_opam_info ~opam_repo ~root_packages packages =
+let get_opam_info ~opam_repo ~paths packages =
   List.map
     (fun ({ name; version } as pkg) ->
       let version =
         match version with None -> failwith "must have package version" | Some v -> v
       in
       let opam_file =
-        if List.exists (fun p -> p.name = name) root_packages then Fpath.v (name ^ ".opam")
-        else Fpath.(opam_repo / "packages" / name / (name ^ "." ^ version) / "opam")
+        match String.Map.find name paths with
+        | Some path -> path
+        | None -> Fpath.(opam_repo / "packages" / name / (name ^ "." ^ version) / "opam")
       in
       Logs.info (fun l -> l "processing %a" Fpath.pp opam_file);
       let open OpamParserTypes in
@@ -223,9 +225,10 @@ let filter_duniverse_packages pkgs =
   in
   fn [] pkgs
 
-let calculate_opam ~config ~local_opam_repo =
+let calculate_opam ~config ~paths ~local_opam_repo =
   let { Duniverse.Config.root_packages; _ } = config in
-  Opam_solve.calculate ~opam_repo:local_opam_repo ~root_packages
+  let opam_files = String.Map.fold (fun _ path acc -> Fpath.to_string path :: acc) paths [] in
+  Opam_solve.calculate ~opam_repo:local_opam_repo ~opam_files
   >>| List.map OpamPackage.to_string
   >>| List.map split_opam_name_and_version
   >>= fun deps ->
@@ -243,7 +246,7 @@ let calculate_opam ~config ~local_opam_repo =
         deps);
   Logs.app (fun l ->
       l "%aQuerying opam database for their metadata and Dune compatibility." pp_header header);
-  get_opam_info ~opam_repo:local_opam_repo ~root_packages deps
+  get_opam_info ~opam_repo:local_opam_repo ~paths deps
 
 type packages_stats = { total : int; dune : int; not_dune : entry list }
 
