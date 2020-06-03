@@ -1,7 +1,7 @@
 open Duniverse_lib
 open Duniverse_lib.Types
 
-let build_config ~local_packages ~pull_mode ~opam_repo =
+let build_config ~local_packages ~pins ~pull_mode ~opam_repo =
   let open Rresult.R.Infix in
   Opam_cmd.choose_root_packages ~local_packages >>= fun root_packages ->
   let ocaml_compilers =
@@ -15,7 +15,7 @@ let build_config ~local_packages ~pull_mode ~opam_repo =
   let root_packages =
     List.map Opam_cmd.split_opam_name_and_version root_packages |> Opam.sort_uniq
   in
-  Ok { Duniverse.Config.version; root_packages; pull_mode; ocaml_compilers; opam_repo }
+  Ok { Duniverse.Config.version; root_packages; pins; pull_mode; ocaml_compilers; opam_repo }
 
 let compute_deps ~opam_entries =
   Dune_cmd.log_invalid_packages opam_entries;
@@ -31,6 +31,16 @@ let resolve_ref deps =
   let resolve_ref ~upstream ~ref = Exec.git_resolve ~remote:upstream ~ref in
   Duniverse.Deps.resolve ~resolve_ref deps
 
+module Pins = struct
+  open Rresult.R
+
+  let read_from_config duniverse_file =
+    Bos.OS.File.exists duniverse_file >>= fun exists ->
+    if not exists then Ok [] else
+    Duniverse.load ~file:duniverse_file >>= fun duniverse ->
+    Ok duniverse.config.pins
+end
+
 let run (`Repo repo) 
     (`Opam_repo opam_repo) (`Pull_mode pull_mode) () =
   let open Rresult.R.Infix in
@@ -41,7 +51,8 @@ let run (`Repo repo)
   Exec.git_clone_or_pull ~remote:opam_repo_url ~branch:opam_repo_branch ~output_dir:local_opam_repo
   >>= fun () ->
   Opam_cmd.find_local_opam_packages repo >>= fun local_packages ->
-  build_config ~local_packages ~pull_mode ~opam_repo
+  Pins.read_from_config Fpath.(repo // Config.duniverse_file) >>= fun pins ->
+  build_config ~local_packages ~pins ~pull_mode ~opam_repo
   >>= fun config ->
   Opam_cmd.calculate_opam ~config ~local_opam_repo >>= fun packages ->
   Opam_cmd.report_packages_stats packages;
