@@ -134,12 +134,17 @@ let classify_package ~package ~dev_repo ~archive () =
             (kind, tag)
         | x -> (x, None) )
 
-let get_opam_depexts ~get_opam_path pkg =
-  let opam_file = get_opam_path pkg in
-  Bos.OS.File.read opam_file >>| fun opam_contents ->
-  let opam = OpamFile.OPAM.read_from_string opam_contents in
-  OpamFile.OPAM.depexts opam |>
-  List.map (fun (s, f) -> (s, OpamFilter.to_string f))
+let compute_depexts ~get_opam_path pkgs =
+  let opam_depexts_of_pkg pkg =
+    let opam_file = get_opam_path pkg in
+    Bos.OS.File.read opam_file >>| fun opam_contents ->
+    let opam = OpamFile.OPAM.read_from_string opam_contents in
+    OpamFile.OPAM.depexts opam |>
+    List.map (fun (s, f) -> (s, OpamFilter.to_string f))
+  in
+  let open Rresult.R in
+  Exec.map opam_depexts_of_pkg pkgs >>| fun depexts ->
+  List.flatten depexts |> List.sort_uniq Stdlib.compare
 
 let get_opam_info ~get_opam_path packages =
   List.map
