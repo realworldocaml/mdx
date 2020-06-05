@@ -72,6 +72,7 @@ module Pins = struct
             Bos.OS.Cmd.run cmd))
 
   let remove_stale_pins ~pinned_paths pins =
+    if pins = [] then Bos.OS.Dir.delete ~recurse:true Config.pins_dir else
     let stale =
       String.Map.filter
         (fun name _ -> not (List.exists (fun pin -> pin.Types.Opam.pin = name) pins))
@@ -91,11 +92,12 @@ module Pins = struct
     Ok duniverse
 
   let init ~repo ~pull_mode ~pins =
-    Common.Logs.app (fun l -> l "Using %a pins from %a: %a."
-        Fmt.(styled `Green int) (List.length pins)
-        Styled_pp.path (Fpath.normalize Config.duniverse_file)
-        Fmt.(list ~sep:(unit " ") (styled `Yellow string))
-        (List.map name pins));
+    if pins <> [] then
+      Common.Logs.app (fun l -> l "Using %a pins from %a: %a."
+          Fmt.(styled `Green int) (List.length pins)
+          Styled_pp.path (Fpath.normalize Config.duniverse_file)
+          Fmt.(list ~sep:(unit " ") (styled `Yellow string))
+          (List.map name pins));
     Opam_cmd.find_local_opam_packages Config.pins_dir >>= fun pinned_paths ->
     remove_stale_pins ~pinned_paths pins >>= fun () ->
     pull ~pull_mode ~repo ~pinned_paths pins >>= fun src_deps ->
