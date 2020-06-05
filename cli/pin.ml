@@ -47,6 +47,7 @@ let unpin (`Pin_name to_remove) (`Repo repo) () =
       let config = { duniverse.config with pins = filtered } in
       let duniverse = { duniverse with config } in
       Duniverse.save ~file duniverse >>= fun () ->
+      Bos.OS.File.delete Fpath.(Config.pins_dir / (to_remove ^ ".opam")) >>= fun () ->
       Common.Logs.app (fun l ->
           l "Removed pin %a from %a. You can now run %a to update the dependencies."
             Fmt.(styled `Yellow string) to_remove
