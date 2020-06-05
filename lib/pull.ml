@@ -87,6 +87,7 @@ let set_git_submodules ~repo ~duniverse_dir src_deps =
   Ok ()
 
 let duniverse ~cache ~pull_mode ~repo duniverse =
+  if List.is_empty duniverse then Ok () else
   let open Result.O in
   let duniverse_dir = Fpath.(repo // Config.vendor_dir) in
   Bos.OS.Dir.create duniverse_dir >>= fun _created ->
