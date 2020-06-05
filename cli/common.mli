@@ -26,6 +26,9 @@ module Arg : sig
   (** CLI arguments consisting of the list of source deps repo to process. If [None],
       the whole duniverse should be processed. If [Some l] then [l] is non empty. *)
 
+  val dev_repo : Uri.t Cmdliner.Arg.converter
+  (** Cache selection environment variables for use in terms. *)
+
   val caches : Cmdliner.Term.env_info list
   (** Cache selection environment variables for use in terms. *)
 

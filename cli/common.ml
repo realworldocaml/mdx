@@ -1,5 +1,4 @@
 module Ffmt = Fmt
-open Stdune
 open Duniverse_lib
 
 module Arg = struct
@@ -39,6 +38,17 @@ module Arg = struct
         windows_only priority extra_path
     in
     Cmdliner.Term.env_info ~doc var
+
+  let dev_repo =
+    let parse s =
+      match Opam.Dev_repo.from_string s with
+      | { vcs = Some Git; uri = dev_repo_uri } ->
+          (match Uri.host dev_repo_uri with
+          | Some _host -> Ok dev_repo_uri
+          | None -> Error (`Msg "dev-repo without host"))
+      | { vcs = None | Some (Other _); _ } -> Error (`Msg "dev-repo doesn't use git as a VCS") in
+    Cmdliner.Arg.conv ~docv:"DEV_REPO" (parse, Uri.pp_hum)
+
 
   let caches =
     let duniverse_cache =
@@ -90,6 +100,7 @@ end
 
 (** Filters the duniverse according to the CLI provided list of repos *)
 let filter_duniverse ~to_consider (src_deps : _ Duniverse.Deps.Source.t list) =
+  let open Stdune in
   let open Rresult in
   match to_consider with
   | None -> Ok src_deps
