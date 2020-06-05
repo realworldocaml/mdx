@@ -51,6 +51,56 @@ module Pins = struct
     let name = pin.pin in
     let version = None in
     {name; version}
+
+  let to_opam_entry (pin : Types.Opam.pin) : Types.Opam.entry =
+    let name = pin.pin in
+    let package = to_package pin in
+    let dev_repo = Opam_cmd.classify_from_dev_repo ~name pin.url in
+    { package; dev_repo; tag = pin.tag; is_dune = true }
+
+  let copy_opam_files ~pinned_paths deps =
+    Bos.OS.Dir.create Config.pins_dir >>= fun _created ->
+    Stdune.Result.List.iter deps
+      ~f:(fun {Duniverse.Deps.Source.dir; provided_packages; _} ->
+        Stdune.Result.List.iter provided_packages
+          ~f:(fun {Duniverse.Deps.Opam.name; _} ->
+            if String.Map.mem name pinned_paths then Ok () else
+            let opam = name ^ ".opam" in
+            let src = Fpath.(Config.vendor_dir / dir / opam |> to_string) in
+            let dst = Fpath.(Config.pins_dir / opam |> to_string) in
+            let cmd = Bos.Cmd.(v "cp" % src % dst) in (* FIXME: does this work on win? *)
+            Bos.OS.Cmd.run cmd))
+
+  let remove_stale_pins ~pinned_paths pins =
+    let stale =
+      String.Map.filter
+        (fun name _ -> not (List.exists (fun pin -> pin.Types.Opam.pin = name) pins))
+        pinned_paths in
+    String.Map.fold (fun _ p _ -> Bos.OS.File.delete ~must_exist:true p) stale (Ok ())
+
+  let pull ~pull_mode ~repo ~pinned_paths pins =
+    let opam_entries = List.map to_opam_entry pins in
+    compute_deps ~opam_entries >>= resolve_ref >>= fun {Duniverse.Deps.duniverse; _} ->
+    let duniverse_to_pull =
+      List.filter (fun {Duniverse.Deps.Source.provided_packages; _} ->
+          List.for_all (fun {Duniverse.Deps.Opam.name; _} -> not (String.Map.mem name pinned_paths))
+            provided_packages)
+        duniverse in
+    Cloner.get_cache () >>= fun cache ->
+    Pull.duniverse ~cache ~pull_mode ~repo duniverse_to_pull >>= fun () ->
+    Ok duniverse
+
+  let init ~repo ~pull_mode ~pins =
+    Common.Logs.app (fun l -> l "Using %a pins from %a: %a."
+        Fmt.(styled `Green int) (List.length pins)
+        Styled_pp.path (Fpath.normalize Config.duniverse_file)
+        Fmt.(list ~sep:(unit " ") (styled `Yellow string))
+        (List.map name pins));
+    Opam_cmd.find_local_opam_packages Config.pins_dir >>= fun pinned_paths ->
+    remove_stale_pins ~pinned_paths pins >>= fun () ->
+    pull ~pull_mode ~repo ~pinned_paths pins >>= fun src_deps ->
+    copy_opam_files ~pinned_paths src_deps >>= fun () ->
+    Ok src_deps
 end
 
 let run (`Repo repo)
@@ -67,6 +117,7 @@ let run (`Repo repo)
   let local_packages = List.map fst (String.Map.bindings local_paths) in
   build_config ~local_packages ~pins ~pull_mode ~opam_repo
   >>= fun config ->
+  Pins.init ~repo ~pull_mode ~pins >>= fun pin_deps ->
   let opam_paths =
     List.fold_left (fun acc pin -> String.Map.add (Pins.name pin) (Pins.path pin) acc)
       local_paths pins in
@@ -90,8 +141,8 @@ let run (`Repo repo)
         (List.length opam_entries));
   List.iter (fun (k, v) -> Logs.info (fun l -> l "depext %s %s" (String.concat ~sep:"," k) v)) depexts;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor source code.");
-  compute_deps ~opam_entries >>= fun unresolved_deps ->
-  resolve_ref unresolved_deps >>= fun deps ->
+  compute_deps ~opam_entries >>= resolve_ref >>= fun deps ->
+  let deps = { deps with duniverse = deps.duniverse @ pin_deps } in
   let duniverse = { Duniverse.config; deps; depexts } in
   let file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.save ~file duniverse >>= fun () ->
