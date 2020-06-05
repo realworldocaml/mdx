@@ -23,9 +23,9 @@ let compute_deps ~opam_entries =
   let get_default_branch remote = Exec.git_default_branch ~remote () in
   Duniverse.Deps.from_opam_entries ~get_default_branch opam_entries
 
-let compute_depexts ~local_opam_repo pkgs =
+let compute_depexts ~get_opam_path pkgs =
   let open Rresult.R in
-  Exec.map (Opam_cmd.get_opam_depexts ~local_opam_repo) pkgs >>| fun depexts ->
+  Exec.map (Opam_cmd.get_opam_depexts ~get_opam_path) pkgs >>| fun depexts ->
   List.flatten depexts |> List.sort_uniq Stdlib.compare
 
 let resolve_ref deps =
@@ -46,9 +46,14 @@ module Pins = struct
     if not exists then Ok [] else
     Duniverse.load ~file:duniverse_file >>= fun duniverse ->
     Ok duniverse.config.pins
+
+  let to_package (pin : Types.Opam.pin) : Types.Opam.package =
+    let name = pin.pin in
+    let version = None in
+    {name; version}
 end
 
-let run (`Repo repo) 
+let run (`Repo repo)
     (`Opam_repo opam_repo) (`Pull_mode pull_mode) () =
   let open Rresult.R.Infix in
   (match Cloner.get_cache_dir () with None -> Ok (Fpath.v ".") | Some t -> t) >>= fun cache_dir ->
@@ -57,33 +62,35 @@ let run (`Repo repo)
   let opam_repo_branch = match Uri.fragment opam_repo with None -> "master" | Some b -> b in
   Exec.git_clone_or_pull ~remote:opam_repo_url ~branch:opam_repo_branch ~output_dir:local_opam_repo
   >>= fun () ->
-  Opam_cmd.find_local_opam_packages repo >>= fun local_package_paths ->
+  Opam_cmd.find_local_opam_packages repo >>= fun local_paths ->
   Pins.read_from_config Fpath.(repo // Config.duniverse_file) >>= fun pins ->
-  let local_packages = List.map fst (String.Map.bindings local_package_paths) in
+  let local_packages = List.map fst (String.Map.bindings local_paths) in
   build_config ~local_packages ~pins ~pull_mode ~opam_repo
   >>= fun config ->
-  let paths =
-    let pin_paths =
-      pins
-      |> List.to_seq |> Seq.map (fun pin -> Pins.name pin, Pins.path pin) in
-    String.Map.add_seq pin_paths local_package_paths
+  let opam_paths =
+    List.fold_left (fun acc pin -> String.Map.add (Pins.name pin) (Pins.path pin) acc)
+      local_paths pins in
+  let get_opam_path {Types.Opam.name; version} =
+    match String.Map.find name opam_paths with
+    | Some path -> path
+    | None ->
+      let version = match version with None -> "dev" | Some v -> v in
+      Fpath.(local_opam_repo / "packages" / name / (name ^ "." ^ version) / "opam")
   in
-  Opam_cmd.calculate_opam ~config ~paths ~local_opam_repo >>= fun packages ->
-  Opam_cmd.report_packages_stats packages;
-  let depext_pkgs =
-    config.root_packages @ List.map (fun { Types.Opam.package; _ } -> package) packages
-  in
-  compute_depexts ~local_opam_repo depext_pkgs
+  let packages = config.root_packages @ List.map Pins.to_package pins in
+  Opam_cmd.calculate_opam ~packages ~get_opam_path ~local_opam_repo >>= fun opam_entries ->
+  Opam_cmd.report_packages_stats opam_entries;
+  compute_depexts ~get_opam_path (List.map (fun entry -> entry.Types.Opam.package) opam_entries)
   >>= fun depexts ->
   Common.Logs.app (fun l ->
       l "Recording %a depext formulae for %a packages."
         Fmt.(styled `Green int)
         (List.length depexts)
         Fmt.(styled `Green int)
-        (List.length depext_pkgs));
+        (List.length opam_entries));
   List.iter (fun (k, v) -> Logs.info (fun l -> l "depext %s %s" (String.concat ~sep:"," k) v)) depexts;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor source code.");
-  compute_deps ~opam_entries:packages >>= fun unresolved_deps ->
+  compute_deps ~opam_entries >>= fun unresolved_deps ->
   resolve_ref unresolved_deps >>= fun deps ->
   let duniverse = { Duniverse.config; deps; depexts } in
   let file = Fpath.(repo // Config.duniverse_file) in
