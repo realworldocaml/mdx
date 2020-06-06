@@ -4068,8 +4068,8 @@ module Outcometree = struct
 end
 
 module Config = struct
-  let ast_impl_magic_number = "Caml1999M027"
-  let ast_intf_magic_number = "Caml1999N027"
+  let ast_impl_magic_number = "Caml1999M028"
+  let ast_intf_magic_number = "Caml1999N028"
 end
 
 let map_signature mapper = mapper.Ast_mapper.signature mapper
