@@ -24,6 +24,7 @@ module Arch : sig
     | `Unknown of string
     | `X86_32
     | `X86_64 ]
+  [@@deriving sexp]
 
   val to_string : t -> string
 
@@ -36,7 +37,15 @@ end
 
 module OS : sig
   type t =
-    [ `Cygwin | `DragonFly | `FreeBSD | `Linux | `MacOS | `OpenBSD | `Unknown of string | `Win32 ]
+    [ `Cygwin
+    | `DragonFly
+    | `FreeBSD
+    | `Linux
+    | `MacOS
+    | `OpenBSD
+    | `Unknown of string
+    | `Win32 ]
+  [@@deriving sexp]
 
   val to_string : t -> string
 
@@ -63,12 +72,18 @@ module Distro : sig
     | `Other of string
     | `RHEL
     | `Ubuntu ]
+  [@@deriving sexp]
 
-  type macos = [ `Homebrew | `MacPorts | `None ]
+  type macos = [ `Homebrew | `MacPorts | `None ] [@@deriving sexp]
 
-  type windows = [ `Cygwin | `None ]
+  type windows = [ `Cygwin | `None ] [@@deriving sexp]
 
-  type t = [ `Linux of linux | `MacOS of macos | `Other of string | `Windows of windows ]
+  type t =
+    [ `Linux of linux
+    | `MacOS of macos
+    | `Other of string
+    | `Windows of windows ]
+  [@@deriving sexp]
 
   val linux_to_string : linux -> string
 

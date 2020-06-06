@@ -55,7 +55,6 @@ let check_dune_lang_version ~yes ~repo =
     Logs.debug (fun l -> l "No dune-project found");
     Ok () )
 
-let get_cache ~no_cache = if no_cache then Ok Cloner.no_cache else Cloner.get_cache ()
 
 let run (`Yes yes) (`No_cache no_cache) (`Repo repo) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
@@ -70,12 +69,8 @@ let run (`Yes yes) (`No_cache no_cache) (`Repo repo) (`Duniverse_repos duniverse
           l "Using pull mode %s"
             (Sexplib.Sexp.to_string_hum Duniverse.Config.(sexp_of_pull_mode config.pull_mode)));
       check_dune_lang_version ~yes ~repo >>= fun () ->
-      get_cache ~no_cache >>= fun cache ->
+      Common.get_cache ~no_cache >>= fun cache ->
       Pull.duniverse ~cache ~pull_mode:config.Duniverse.Config.pull_mode ~repo duniverse
-
-let no_cache =
-  let doc = "Run without using the duniverse global cache" in
-  Common.Arg.named (fun x -> `No_cache x) Cmdliner.Arg.(value & flag & info ~doc [ "no-cache" ])
 
 let info =
   let open Cmdliner in
@@ -102,7 +97,7 @@ let info =
 let term =
   Cmdliner.Term.(
     term_result
-      ( const run $ Common.Arg.yes $ no_cache $ Common.Arg.repo $ Common.Arg.duniverse_repos
+      ( const run $ Common.Arg.yes $ Common.Arg.no_cache $ Common.Arg.repo $ Common.Arg.duniverse_repos
       $ Common.Arg.setup_logs () ))
 
 let cmd = (term, info)

@@ -1,0 +1,2 @@
+(lang dune 1.1)
+(env (static (flags -cclib -static)))

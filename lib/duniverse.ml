@@ -165,6 +165,54 @@ module Depexts = struct
   type t = (string list * string) list [@@deriving sexp]
 end
 
+(** duniverse knows about which tools to use, and can calculate a set of allowable versions
+    by inspecting the repo metadata *)
+module Tools = struct
+
+  type version =
+     | Eq of string
+     | Latest
+     | Min of string
+  [@@deriving sexp]
+
+  type t = {
+    opam: version;
+    ocamlformat: version;
+    dune: version;
+    odoc: version;
+    mdx: version;
+    lsp: version;
+    merlin: version;
+   } [@@deriving sexp]
+
+  let tools = [
+    ("base", ["opam"; "ocamlformat"; "odoc"; "mdx"]);
+    (* ("lsp", ["ocaml-lsp-server"]); TODO broken *)
+    ("merlin", ["merlin"])]
+
+  (** Calculate a version of this tool by looking at repo metadata *)
+  let of_repo () = (* TODO expose CLI overrides *)
+     let ocamlformat =
+       match Bos.OS.File.read_lines (Fpath.v ".ocamlformat") with
+       | Ok f -> begin
+               List.filter_map ~f:(Astring.String.cut ~sep:"=") f |>
+               List.assoc_opt "version" |> begin
+                function
+               | Some v -> Eq v
+               | None -> Latest
+               end
+              end
+       | Error (`Msg _) -> Latest
+     in
+    let dune = Latest in (* TODO check for minimum in dune-project *)
+    let odoc = Latest in (* No real version constraints on odoc *)
+    let opam = Latest in (* No real version constraints on opam *)
+    let mdx = Latest in 
+    let lsp = Latest in
+    let merlin = Latest in
+    { ocamlformat; dune; odoc; opam; mdx; lsp; merlin }
+end
+
 module Config = struct
   type pull_mode = Submodules | Source [@@deriving sexp]
 
@@ -176,6 +224,7 @@ module Config = struct
     opam_repo : Uri_sexp.t;
         [@default Uri.of_string Config.duniverse_opam_repo] [@sexp_drop_default.sexp]
     ocaml_compilers : string list; [@default []]
+    tools: Tools.t;
   }
   [@@deriving sexp] [@@sexp.allow_extra_fields]
 end

@@ -8,3 +8,4 @@ examples/**/duniverse
 _opam
 *.lock
 .vscode
+_ocaml

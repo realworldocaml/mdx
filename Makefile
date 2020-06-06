@@ -14,6 +14,8 @@ doc:
 test:
 	dune runtest
 
+docker-test:
+	DOCKER_BUILDKIT=1 BUILDKIT_PROGRESS=plain docker build -f Dockerfile.test .
 
 install:
 	mkdir -p $(PREFIX)

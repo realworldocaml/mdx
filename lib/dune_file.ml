@@ -123,8 +123,7 @@ module Project = struct
         in
         let constr = List (Atom "and" :: constr) in
         let r =
-          List.filter ~f:(eval_ocaml_bcomp constr)
-            (List.map ~f:(fun ov -> OV.with_patch ov (Some 0)) OV.Releases.recent_with_dev)
+          List.filter ~f:(eval_ocaml_bcomp constr) OV.Releases.all
         in
         Ok r
 end

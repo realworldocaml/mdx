@@ -60,6 +60,9 @@ COMMANDS
        pull
            fetch the latest archives of the vendored libraries
 
+       tools
+           Make all the tools needed to build the project available
+
        unpin
            Remove a pinned package dependency from dune-get
 

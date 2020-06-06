@@ -18,6 +18,7 @@
 open Rresult
 open Astring
 open Bos
+open Sexplib.Conv
 
 let uname f =
   let cmd = Cmd.(v "uname" % f) in
@@ -32,6 +33,7 @@ module Arch = struct
     | `Arm32 of [ `Armv5 | `Armv6 | `Earmv6 | `Armv7 | `Earmv7 ]
     | `Aarch64
     | `Unknown of string ]
+  [@@deriving sexp]
 
   let to_string (x : t) =
     match x with
@@ -70,7 +72,15 @@ end
 
 module OS = struct
   type t =
-    [ `Linux | `MacOS | `Win32 | `Cygwin | `FreeBSD | `OpenBSD | `DragonFly | `Unknown of string ]
+    [ `Linux
+    | `MacOS
+    | `Win32
+    | `Cygwin
+    | `FreeBSD
+    | `OpenBSD
+    | `DragonFly
+    | `Unknown of string ]
+  [@@deriving sexp]
 
   let to_string (v : t) =
     match v with
@@ -96,7 +106,10 @@ module OS = struct
 
   let pp fmt v = Format.pp_print_string fmt (to_string v)
 
-  let v () = match Sys.os_type with "Unix" -> uname "-s" |> of_string | v -> of_string v
+  let v () =
+    match Sys.os_type with
+    | "Unix" -> uname "-s" |> of_string
+    | v -> of_string v
 end
 
 module Distro = struct
@@ -115,12 +128,18 @@ module Distro = struct
     | `OpenSUSE
     | `Android
     | `Other of string ]
+  [@@deriving sexp]
 
-  type macos = [ `Homebrew | `MacPorts | `None ]
+  type macos = [ `Homebrew | `MacPorts | `None ] [@@deriving sexp]
 
-  type windows = [ `Cygwin | `None ]
+  type windows = [ `Cygwin | `None ] [@@deriving sexp]
 
-  type t = [ `Linux of linux | `MacOS of macos | `Windows of windows | `Other of string ]
+  type t =
+    [ `Linux of linux
+    | `MacOS of macos
+    | `Windows of windows
+    | `Other of string ]
+  [@@deriving sexp]
 
   let linux_to_string (x : linux) =
     match x with
@@ -140,9 +159,13 @@ module Distro = struct
     | `Ubuntu -> "ubuntu"
 
   let macos_to_string (x : macos) =
-    match x with `Homebrew -> "homebrew" | `MacPorts -> "macports" | `None -> "macos"
+    match x with
+    | `Homebrew -> "homebrew"
+    | `MacPorts -> "macports"
+    | `None -> "macos"
 
-  let windows_to_string (x : windows) = match x with `Cygwin -> "cygwin" | `None -> "windows"
+  let windows_to_string (x : windows) =
+    match x with `Cygwin -> "cygwin" | `None -> "windows"
 
   let to_string (x : t) =
     match x with
@@ -166,7 +189,9 @@ module Distro = struct
 
   let os_release_fields =
     lazy
-      (let os_release_file = find_first_file [ "/etc/os-release"; "/usr/lib/os-release" ] in
+      (let os_release_file =
+         find_first_file [ "/etc/os-release"; "/usr/lib/os-release" ]
+       in
        match os_release_file with
        | None -> Error (`Msg "no os-release file found")
        | Some file ->
@@ -181,7 +206,9 @@ module Distro = struct
              [] (Fpath.v file))
 
   let os_release_field f =
-    Lazy.force os_release_fields >>| List.assoc_opt f >>| function Some "" -> None | v -> v
+    Lazy.force os_release_fields >>| List.assoc_opt f >>| function
+    | Some "" -> None
+    | v -> v
 
   let identify_linux () =
     os_release_field "ID" >>= function
@@ -194,7 +221,10 @@ module Distro = struct
             let issue =
               find_first_file
                 [
-                  "/etc/redhat-release"; "/etc/centos-release"; "/etc/gentoo-release"; "/etc/issue";
+                  "/etc/redhat-release";
+                  "/etc/centos-release";
+                  "/etc/gentoo-release";
+                  "/etc/issue";
                 ]
             in
             match issue with
@@ -237,11 +267,15 @@ module Version = struct
 
   let detect_macos_version () =
     let cmd = Cmd.(v "sw_vers" % "-productVersion") in
-    Bos.OS.Cmd.(run_out cmd |> to_string) >>| function "" -> None | v -> Some v
+    Bos.OS.Cmd.(run_out cmd |> to_string) >>| function
+    | "" -> None
+    | v -> Some v
 
   let detect_freebsd_version () =
     let cmd = Cmd.(v "uname" % "-U") in
-    Bos.OS.Cmd.(run_out cmd |> to_string) >>| function "" -> None | v -> Some v
+    Bos.OS.Cmd.(run_out cmd |> to_string) >>| function
+    | "" -> None
+    | v -> Some v
 
   let v () =
     match OS.v () with
