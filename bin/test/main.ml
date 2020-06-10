@@ -364,13 +364,19 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     Format.pp_print_flush ppf ();
     Buffer.contents buf
   in
-  ( match (output : Cli.output option) with
-  | Some Stdout -> Mdx.run_to_stdout ?syntax ~f:gen_corrected file
-  | Some (File outfile) ->
-      Mdx.run_to_file ?syntax ~outfile ~f:gen_corrected file
-  | None -> Mdx.run ?syntax ~force_output ~f:gen_corrected file );
-  Hashtbl.iter (write_parts ~force_output) files;
-  0
+  match
+    match (output : Cli.output option) with
+    | Some Stdout -> Mdx.run_to_stdout ?syntax ~f:gen_corrected file
+    | Some (File outfile) ->
+        Mdx.run_to_file ?syntax ~outfile ~f:gen_corrected file
+    | None -> Mdx.run ?syntax ~force_output ~f:gen_corrected file
+  with
+  | Ok () ->
+      Hashtbl.iter (write_parts ~force_output) files;
+      0
+  | Error (`Msg e) ->
+      Printf.eprintf "Fatal error while parsing file: %s" e;
+      1
 
 let report_error_in_block block msg =
   let kind =

@@ -24,7 +24,7 @@ module Result = struct
     let ( >>| ) r f = match r with Ok x -> Ok (f x) | Error _ as e -> e
   end
 
-  let errorf fmt = Format.ksprintf (fun s -> Error (`Msg s)) fmt
+  let errorf fmt = Format.kasprintf (fun s -> Error (`Msg s)) fmt
 
   module List = struct
     open Infix

@@ -1,1 +1,1 @@
-File "test-case.md", line 3, character 25: invalid code block: `toto` is not a valid label.
+Fatal error while parsing file: File "test-case.md", line 3, characters 25-29: invalid code block: `toto` is not a valid label.

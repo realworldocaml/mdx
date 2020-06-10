@@ -2,6 +2,8 @@
 open Result
 open Astring
 
+type token = [ `Block of Block.t | `Section of int * string | `Text of string ]
+
 let line_ref = ref 1
 
 let newline lexbuf =
@@ -142,12 +144,23 @@ and cram_block = parse
 
 {
   let markdown_token lexbuf =
-    try
-      text None lexbuf
-    with Failure e -> Misc.err lexbuf "invalid code block: %s" e
+    try Ok (text None lexbuf)
+    with
+    | Failure e ->
+      let loc = Location.curr lexbuf in
+      Util.Result.errorf "%a: invalid code block: %s" Location.print_loc loc e
+    | exn ->
+      let loc = Location.curr lexbuf in
+      Util.Result.errorf "%a: %s" Location.print_loc loc (Printexc.to_string exn)
+
 
 let cram_token lexbuf =
-    try
-      cram_text None lexbuf
-    with Failure e -> Misc.err lexbuf "invalid code block: %s" e
+    try Ok (cram_text None lexbuf)
+    with
+    | Failure e ->
+      let loc = Location.curr lexbuf in
+      Util.Result.errorf "%a: invalid code block: %s" Location.print_loc loc e
+    | exn ->
+      let loc = Location.curr lexbuf in
+      Util.Result.errorf "%a: %s" Location.print_loc loc (Printexc.to_string exn)
 }

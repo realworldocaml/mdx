@@ -1,1 +1,1 @@
-File "test-case.md", line 3, character 36: invalid code block: `part` is not supported for non-OCaml code blocks.
+Fatal error while parsing file: File "test-case.md", lines 3-5, characters 36-0: invalid code block: `part` is not supported for non-OCaml code blocks.
