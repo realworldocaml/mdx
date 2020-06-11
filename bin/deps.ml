@@ -14,6 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+open Mdx.Util.Result.Infix
+
 let run (`Setup ()) (`Syntax syntax) (`File file) =
   let syntax =
     match (syntax, Mdx.Syntax.infer ~file) with
@@ -25,15 +27,11 @@ let run (`Setup ()) (`Syntax syntax) (`File file) =
           file;
         exit 1
   in
-  match Mdx.parse_file syntax file with
-  | Ok doc ->
-      let deps = Mdx.Dep.of_lines doc in
-      let deps = List.map Mdx.Dep.to_sexp deps in
-      Printf.printf "%s" (Mdx.Util.Sexp.Canonical.to_string (List deps));
-      0
-  | Error (`Msg e) ->
-      Printf.eprintf "Fatal error while parsing file: %s" e;
-      1
+  Mdx.parse_file syntax file >>! fun doc ->
+  let deps = Mdx.Dep.of_lines doc in
+  let deps = List.map Mdx.Dep.to_sexp deps in
+  Printf.printf "%s" (Mdx.Util.Sexp.Canonical.to_string (List deps));
+  0
 
 let cmd =
   let open Cmdliner in

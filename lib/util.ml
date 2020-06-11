@@ -22,6 +22,13 @@ module Result = struct
     let ( >>= ) r f = match r with Ok x -> f x | Error _ as e -> e
 
     let ( >>| ) r f = match r with Ok x -> Ok (f x) | Error _ as e -> e
+
+    let ( >>! ) r f =
+      match r with
+      | Ok x -> f x
+      | Error (`Msg e) ->
+          Printf.eprintf "Fatal error: %s" e;
+          1
   end
 
   let errorf fmt = Format.kasprintf (fun s -> Error (`Msg s)) fmt

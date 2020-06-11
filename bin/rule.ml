@@ -244,11 +244,7 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax)
   in
   Mdx.Deprecated.warn "ocaml-mdx rule" ~since:"1.7.0"
     ~replacement:"the mdx stanza";
-  match Mdx.run ?syntax md_file ~f:on_file with
-  | Ok () -> 0
-  | Error (`Msg e) ->
-      Printf.eprintf "Fatal error while parsing file: %s" e;
-      1
+  Mdx.run ?syntax md_file ~f:on_file >>! fun () -> 0
 
 open Cmdliner
 

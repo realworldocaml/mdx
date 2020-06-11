@@ -14,44 +14,40 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+open Mdx.Util.Result.Infix
+
 let src = Logs.Src.create "cram.pp"
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
 let run (`Setup ()) (`File file) (`Section section) =
-  match Mdx.parse_file Normal file with
-  | Ok t -> (
-      let t =
-        match section with
-        | None -> t
-        | Some s -> (
-            let re = Re.Perl.compile_pat s in
-            match Mdx.filter_section re t with None -> [] | Some t -> t )
-      in
-      match t with
-      | [] -> 1
-      | _ ->
-          List.iter
-            (function
-              | Mdx.Section _ | Text _ -> ()
-              | Block b ->
-                  if not (Mdx.Block.skip b) then (
-                    Log.debug (fun l -> l "pp: %a" Mdx.Block.dump b);
-                    let pp_lines = Fmt.(list ~sep:(unit "\n") string) in
-                    let contents =
-                      Mdx.Block.executable_contents ~syntax:Normal b
-                    in
-                    match b.value with
-                    | Toplevel _ -> Fmt.pr "%a\n" pp_lines contents
-                    | OCaml _ ->
-                        Fmt.pr "%a\n%a\n" Mdx.Block.pp_line_directive
-                          (file, b.line) pp_lines contents
-                    | _ -> () ))
-            t;
-          0 )
-  | Error (`Msg e) ->
-      Printf.eprintf "Fatal error while parsing file: %s" e;
-      1
+  Mdx.parse_file Normal file >>! fun t ->
+  let t =
+    match section with
+    | None -> t
+    | Some s -> (
+        let re = Re.Perl.compile_pat s in
+        match Mdx.filter_section re t with None -> [] | Some t -> t )
+  in
+  match t with
+  | [] -> 1
+  | _ ->
+      List.iter
+        (function
+          | Mdx.Section _ | Text _ -> ()
+          | Block b ->
+              if not (Mdx.Block.skip b) then (
+                Log.debug (fun l -> l "pp: %a" Mdx.Block.dump b);
+                let pp_lines = Fmt.(list ~sep:(unit "\n") string) in
+                let contents = Mdx.Block.executable_contents ~syntax:Normal b in
+                match b.value with
+                | Toplevel _ -> Fmt.pr "%a\n" pp_lines contents
+                | OCaml _ ->
+                    Fmt.pr "%a\n%a\n" Mdx.Block.pp_line_directive (file, b.line)
+                      pp_lines contents
+                | _ -> () ))
+        t;
+      0
 
 open Cmdliner
 
