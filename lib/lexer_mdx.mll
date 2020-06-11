@@ -1,6 +1,7 @@
 {
 open Result
 open Astring
+open Migrate_ast
 
 type token = [ `Block of Block.t | `Section of int * string | `Text of string ]
 
