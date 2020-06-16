@@ -12,6 +12,30 @@
  (action (diff both-prelude/test-case.md.expected both-prelude.actual)))
 
 (rule
+ (target cram-command-syntax.actual)
+ (deps (package mdx) (source_tree cram-command-syntax))
+ (action
+  (with-outputs-to %{target}
+   (chdir cram-command-syntax
+    (system "! ocaml-mdx test test-case.t")))))
+
+(rule
+ (alias runtest)
+ (action (diff cram-command-syntax/test-case.t.expected cram-command-syntax.actual)))
+
+(rule
+ (target cram-empty-line.actual)
+ (deps (package mdx) (source_tree cram-empty-line))
+ (action
+  (with-outputs-to %{target}
+   (chdir cram-empty-line
+    (system "! ocaml-mdx test test-case.t")))))
+
+(rule
+ (alias runtest)
+ (action (diff cram-empty-line/test-case.t.expected cram-empty-line.actual)))
+
+(rule
  (target in-toplevel.actual)
  (deps (package mdx) (source_tree in-toplevel))
  (action
