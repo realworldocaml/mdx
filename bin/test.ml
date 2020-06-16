@@ -20,6 +20,13 @@ module Log = (val Logs.src_log src : Logs.LOG)
 
 let ( / ) x y = match x with "." -> y | _ -> Filename.concat x y
 
+let split_exe_extension path =
+  let exe = ".exe" in
+  if Filename.check_suffix path exe then
+    (Filename.chop_extension path, exe)
+  else
+    (path, "")
+
 let run (`Setup ()) _ _ _ _ _ _ _ _ _ _ =
   let base = Filename.basename Sys.argv.(0) in
   let dir = Filename.dirname Sys.argv.(0) in
@@ -27,8 +34,11 @@ let run (`Setup ()) _ _ _ _ _ _ _ _ _ _ =
     match base with
     | "main.exe" -> dir / "test" / "main.exe"
     | x when String.length x > 6 && String.sub x 0 6 = "ocaml-" ->
-        (dir / x) ^ "-test"
-    | x -> (dir / "ocaml-") ^ x ^ "-test"
+        let (x_without_ext, x_ext) = split_exe_extension x in
+        (dir / x_without_ext) ^ "-test" ^ x_ext
+    | x ->
+        let (x_without_ext, x_ext) = split_exe_extension x in
+        (dir / "ocaml-") ^ x_without_ext ^ "-test" ^ x_ext
   in
   let argv = Array.sub Sys.argv 1 (Array.length Sys.argv - 1) in
   argv.(0) <- cmd;
