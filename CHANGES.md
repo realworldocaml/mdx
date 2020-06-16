@@ -10,6 +10,12 @@
 
 #### Changed
 
+- Apply unnamed preludes to all environments (#271, @gpetiot)
+  New behavior:
+   * `env_and_file "a:f"` associates `f` to the environment named `a`
+   * `env_and_file " :f"` associates `f` to the default environment
+   * `env_and_file "f"` associates `f` to all environments.
+
 #### Deprecated
 
 - The command 'mdx rule' is deprecated and will be removed in 2.0.0 (#251, @gpetiot)

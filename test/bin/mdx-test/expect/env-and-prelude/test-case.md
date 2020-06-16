@@ -40,3 +40,8 @@ Error: Unbound value z
 ...
 Error: Unbound value z
 ```
+
+```ocaml env=c
+# y
+- : int = 40
+```

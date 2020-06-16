@@ -33,3 +33,13 @@ let pp ?syntax ppf t =
   Fmt.pf ppf "%a\n" Fmt.(list ~sep:(unit "\n") (pp_line ?syntax)) t
 
 let to_string = Fmt.to_to_string pp
+
+let envs t =
+  List.fold_left
+    (fun acc line ->
+      match line with
+      | Block b ->
+          let env = Block.env b in
+          if List.mem env acc then acc else env :: acc
+      | Section _ | Text _ -> acc)
+    [] t

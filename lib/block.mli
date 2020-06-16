@@ -177,6 +177,8 @@ val executable_contents : syntax:Syntax.t -> t -> string list
    or a cram block, or [t]'s commands if [t] is a toplevel fragments
    (e.g. the phrase result is discarded). *)
 
+val env : t -> Env.t
+
 val is_active : ?section:string -> t -> bool
 
 (** {2 Parsers} *)

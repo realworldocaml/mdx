@@ -35,3 +35,5 @@ val pp : ?syntax:syntax -> t Fmt.t
 
 val to_string : t -> string
 (** [to_string t] converts the document [t] to a string. *)
+
+val envs : t -> Block.Env.t list

@@ -14,7 +14,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-val env_and_file : string -> Block.Env.t * string
-(** [env_and_file s] returns the environment and file/prelude string describe
+val env_and_file : string -> Block.Env.t Util.One_or_all.t * string
+(** [env_and_file s] returns the environment and file/prelude string described
     by [s].
-    I.e. [env_and_file "a:prelude.ml"] is [(Some "a", "prelude.ml")]. *)
+    I.e. [env_and_file "a:f"] associates [f] to the environment named [a],
+    [env_and_file " :f"] associates [f] to the default environment, and
+    [env_and_file "f"] associates [f] to all environments. *)

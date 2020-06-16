@@ -293,6 +293,11 @@ let executable_contents ~syntax b =
   if contents = [] || ends_by_semi_semi contents then contents
   else contents @ [ ";;" ]
 
+let env b =
+  match b.value with
+  | OCaml { env; _ } | Toplevel { env; _ } -> env
+  | Raw _ | Cram _ | Include _ -> Default
+
 let version_enabled version =
   let open Util.Result.Infix in
   Ocaml_version.of_string Sys.ocaml_version >>= fun curr_version ->

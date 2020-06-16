@@ -263,16 +263,15 @@ let with_non_det ~command ~output ~det non_deterministic = function
   | Some Label.Nd_output when not non_deterministic -> output ()
   | _ -> det ()
 
-let eval_prelude ?root top prelude prelude_str =
+let preludes ~prelude ~prelude_str =
   let aux to_lines p =
-    let env, f = Mdx.Prelude.env_and_file p in
-    let eval () = eval_raw ?root top ~line:0 (to_lines f) in
-    Mdx_top.in_env env eval
+    let env, file = Mdx.Prelude.env_and_file p in
+    (env, to_lines file)
   in
   match (prelude, prelude_str) with
-  | [], [] -> ()
-  | [], fs -> List.iter (aux (fun x -> [ x ])) fs
-  | fs, [] -> List.iter (aux Mdx.Util.File.read_lines) fs
+  | [], [] -> []
+  | [], fs -> List.map (aux (fun x -> [ x ])) fs
+  | fs, [] -> List.map (aux Mdx.Util.File.read_lines) fs
   | _ -> Fmt.failwith "only one of --prelude or --prelude-str shoud be used"
 
 let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
@@ -286,7 +285,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     match syntax with Some syntax -> Some syntax | None -> Syntax.infer ~file
   in
   let c = Mdx_top.init ~verbose:(not silent_eval) ~silent ~verbose_findlib () in
-  eval_prelude ?root c prelude prelude_str;
+  let preludes = preludes ~prelude ~prelude_str in
 
   let test_block ~ppf ~temp_file t =
     let print_block () = Block.pp ?syntax ppf t in
@@ -353,6 +352,14 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     at_exit (fun () -> Sys.remove temp_file);
     let buf = Buffer.create (String.length file_contents + 1024) in
     let ppf = Format.formatter_of_buffer buf in
+    let envs = Document.envs items in
+    let eval lines () = eval_raw ?root c ~line:0 lines in
+    let eval_in_env lines env = Mdx_top.in_env env (eval lines) in
+    List.iter
+      (function
+        | Util.One_or_all.All, lines -> List.iter (eval_in_env lines) envs
+        | Util.One_or_all.One env, lines -> eval_in_env lines env)
+      preludes;
     List.iter
       (function
         | (Mdx.Document.Section _ | Text _) as t -> Mdx.pp_line ?syntax ppf t

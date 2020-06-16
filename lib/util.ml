@@ -127,3 +127,7 @@ module Array = struct
     let start_index, length = (from, to_ - from + 1) in
     Array.sub t start_index length
 end
+
+module One_or_all = struct
+  type 'a t = All | One of 'a
+end
