@@ -1,1 +1,1 @@
-let y = 40
+let all = 1

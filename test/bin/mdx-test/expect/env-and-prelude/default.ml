@@ -1,2 +1,1 @@
-let y = 10
-let z = 0
+let default = 1

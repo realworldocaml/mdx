@@ -1,47 +1,57 @@
 Different environments can have different preludes
 
-This is run with `--prelude default.ml --prelude a:a.ml --prelude b:b.ml`.
-Each of them defines a `y` variable, respectively set to `10`, `20` and `30`.
+This is run with `--prelude all.ml --prelude " :default.ml" --prelude a:a.ml --prelude b:b.ml`.
+Each of them defines a variable of the same name.
 
 ```ocaml
-# let x = 1
-val x : int = 1
+# all;;
+- : int = 1
+# default;;
+- : int = 1
+# a;;
+...
+Error: Unbound value a
+# b;;
+...
+Error: Unbound value b
 ```
 
 ```ocaml env=a
-# let x = 2
-val x : int = 2
+# all;;
+- : int = 1
+# default;;
+...
+Error: Unbound value default
+# a;;
+- : int = 1
+# b;;
+...
+Error: Unbound value b
 ```
 
 ```ocaml env=b
-# let x = 3
-val x : int = 3
-```
-
-```ocaml
-# x + y
-- : int = 11
-# z
-- : int = 0
-```
-
-```ocaml env=a
-# x + y
-- : int = 22
-# z
+# all;;
+- : int = 1
+# default;;
 ...
-Error: Unbound value z
-```
-
-```ocaml env=b
-# x + y
-- : int = 33
-# z
+Error: Unbound value default
+# a;;
 ...
-Error: Unbound value z
+Error: Unbound value a
+# b;;
+- : int = 1
 ```
 
 ```ocaml env=c
-# y
-- : int = 40
+# all;;
+- : int = 1
+# default;;
+...
+Error: Unbound value default
+# a;;
+...
+Error: Unbound value a
+# b;;
+...
+Error: Unbound value b
 ```
