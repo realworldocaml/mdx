@@ -37,6 +37,7 @@ module Prelude = Prelude
 module Syntax = Syntax
 module Label = Label
 module Dep = Dep
+module Ocaml_env = Ocaml_env
 include Document
 
 let section_of_line = function

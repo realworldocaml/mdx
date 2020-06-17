@@ -41,6 +41,7 @@ module Prelude = Prelude
 module Syntax = Syntax
 module Label = Label
 module Dep = Dep
+module Ocaml_env = Ocaml_env
 
 include module type of Document
 

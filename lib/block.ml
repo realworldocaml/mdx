@@ -34,25 +34,17 @@ module Header = struct
     | s -> Some (Other s)
 end
 
-module Env = struct
-  type t = Default | User_defined of string
-
-  let mk = function None | Some "" -> Default | Some s -> User_defined s
-
-  let name = function Default -> "" | User_defined s -> s
-end
-
 type section = int * string
 
 type cram_value = { language : [ `Sh | `Bash ]; non_det : Label.non_det option }
 
 type ocaml_value = {
-  env : Env.t;
+  env : Ocaml_env.t;
   non_det : Label.non_det option;
   errors : Output.t list;
 }
 
-type toplevel_value = { env : Env.t; non_det : Label.non_det option }
+type toplevel_value = { env : Ocaml_env.t; non_det : Label.non_det option }
 
 type include_ocaml_file = { part_included : string option }
 
@@ -293,11 +285,6 @@ let executable_contents ~syntax b =
   if contents = [] || ends_by_semi_semi contents then contents
   else contents @ [ ";;" ]
 
-let env b =
-  match b.value with
-  | OCaml { env; _ } | Toplevel { env; _ } -> env
-  | Raw _ | Cram _ | Include _ -> Default
-
 let version_enabled version =
   let open Util.Result.Infix in
   Ocaml_version.of_string Sys.ocaml_version >>= fun curr_version ->
@@ -380,7 +367,7 @@ let mk ~line ~file ~column ~section ~labels ~legacy_labels ~header ~contents
           check_not_set "`env` label cannot be used with a `shell` header." env
           >>= fun () -> Ok (Cram { language; non_det })
       | Some Header.OCaml -> (
-          let env = Env.mk env in
+          let env = Ocaml_env.mk env in
           match guess_ocaml_kind contents with
           | `Code -> Ok (OCaml { env; non_det; errors })
           | `Toplevel ->

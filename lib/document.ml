@@ -38,8 +38,9 @@ let envs t =
   List.fold_left
     (fun acc line ->
       match line with
-      | Block b ->
-          let env = Block.env b in
-          if List.mem env acc then acc else env :: acc
+      | Block b -> (
+          match b.value with
+          | OCaml { env; _ } | Toplevel { env; _ } -> Ocaml_env.Set.add env acc
+          | Raw _ | Cram _ | Include _ -> acc )
       | Section _ | Text _ -> acc)
-    [] t
+    Ocaml_env.Set.empty t

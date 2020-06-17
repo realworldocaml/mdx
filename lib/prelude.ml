@@ -19,5 +19,5 @@ let env_and_file f =
   | None -> (Util.One_or_all.All, f)
   | Some (e, f) ->
       if Astring.String.exists (( = ) ' ') e then
-        (Util.One_or_all.One Block.Env.Default, f)
-      else (Util.One_or_all.One (Block.Env.User_defined e), f)
+        (Util.One_or_all.One Ocaml_env.Default, f)
+      else (Util.One_or_all.One (Ocaml_env.User_defined e), f)
