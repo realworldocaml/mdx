@@ -49,6 +49,10 @@ module String = struct
 
   let index_opt s c = index_rec_opt s (length s) 0 c
 #endif
+
+#if OCAML_VERSION < (4, 3, 0)
+  let capitalize_ascii = String.capitalize (* deprecated >= 4.3.0 *)
+#endif
 end
 
 module Filename = struct
