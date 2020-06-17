@@ -48,15 +48,15 @@ val dump : line list Fmt.t
 
 (** {2 Document} *)
 
-val of_string : syntax -> string -> (t, [ `Msg of string ]) Result.t
+val of_string : syntax -> string -> (t, [ `Msg of string ]) Result.result
 (** [of_string syntax s] is the document [t] such that
     [to_string ~syntax t = s]. *)
 
-val parse_file : syntax -> string -> (t, [ `Msg of string ]) Result.t
+val parse_file : syntax -> string -> (t, [ `Msg of string ]) Result.result
 (** [parse_file s] is {!of_string} of [s]'s contents. *)
 
 val parse_lexbuf :
-  string -> syntax -> Lexing.lexbuf -> (t, [ `Msg of string ]) Result.t
+  string -> syntax -> Lexing.lexbuf -> (t, [ `Msg of string ]) Result.result
 (** [parse_lexbuf l] is {!of_string} of [l]'s contents. *)
 
 (** {2 Evaluation} *)
@@ -65,7 +65,7 @@ val run_to_stdout :
   ?syntax:syntax ->
   f:(string -> t -> string) ->
   string ->
-  (unit, [ `Msg of string ]) Result.t
+  (unit, [ `Msg of string ]) Result.result
 (** [run_to_stdout ?syntax ~f file] runs the callback [f] on the raw and
     structured content of [file], as specified  by [syntax] (defaults to [Normal]).
     The returned corrected version is then written to stdout. *)
@@ -75,7 +75,7 @@ val run_to_file :
   f:(string -> t -> string) ->
   outfile:string ->
   string ->
-  (unit, [ `Msg of string ]) Result.t
+  (unit, [ `Msg of string ]) Result.result
 (** Same as [run_to_stdout] but writes the corrected version to [outfile]*)
 
 val run :
@@ -83,7 +83,7 @@ val run :
   ?force_output:bool ->
   f:(string -> t -> string) ->
   string ->
-  (unit, [ `Msg of string ]) Result.t
+  (unit, [ `Msg of string ]) Result.result
 (** [run_to_file ?syntax ?force_output ~f ~outfile file] runs the callback [f]
     similarly to [run_to_stdout] to generate its corrected version. If
     [force_output] is [true] (defaults to [false]) or if the corrected version

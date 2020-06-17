@@ -187,5 +187,5 @@ let parse_mli file_contents =
   else tokens
 
 let parse_mli file_contents =
-  try Ok (parse_mli file_contents)
+  try Result.Ok (parse_mli file_contents)
   with exn -> Util.Result.errorf "%s" (Printexc.to_string exn)
