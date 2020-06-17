@@ -27,7 +27,7 @@ module Result : sig
   end
 
   val errorf :
-    ('a, Format.formatter, unit, ('b, [> `Msg of string ]) result) format4 -> 'a
+    ('a, unit, string, ('b, [> `Msg of string ]) result) format4 -> 'a
 
   module List : sig
     val fold :
