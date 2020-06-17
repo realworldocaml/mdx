@@ -73,7 +73,3 @@ end
 module Array : sig
   val slice : 'a array -> from:int -> to_:int -> 'a array
 end
-
-module One_or_all : sig
-  type 'a t = All | One of 'a
-end

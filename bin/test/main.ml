@@ -357,9 +357,8 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     let eval_in_env lines env = Mdx_top.in_env env (eval lines) in
     List.iter
       (function
-        | Util.One_or_all.All, lines ->
-            Ocaml_env.Set.iter (eval_in_env lines) envs
-        | Util.One_or_all.One env, lines -> eval_in_env lines env)
+        | `All, lines -> Ocaml_env.Set.iter (eval_in_env lines) envs
+        | `One env, lines -> eval_in_env lines env)
       preludes;
     List.iter
       (function

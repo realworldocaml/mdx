@@ -16,8 +16,7 @@
 
 let env_and_file f =
   match Astring.String.cut ~sep:":" f with
-  | None -> (Util.One_or_all.All, f)
+  | None -> (`All, f)
   | Some (e, f) ->
-      if Astring.String.exists (( = ) ' ') e then
-        (Util.One_or_all.One Ocaml_env.Default, f)
-      else (Util.One_or_all.One (Ocaml_env.User_defined e), f)
+      if Astring.String.exists (( = ) ' ') e then (`One Ocaml_env.Default, f)
+      else (`One (Ocaml_env.User_defined e), f)
