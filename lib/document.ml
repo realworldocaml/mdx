@@ -33,3 +33,14 @@ let pp ?syntax ppf t =
   Fmt.pf ppf "%a\n" Fmt.(list ~sep:(unit "\n") (pp_line ?syntax)) t
 
 let to_string = Fmt.to_to_string pp
+
+let envs t =
+  List.fold_left
+    (fun acc line ->
+      match line with
+      | Block b -> (
+          match b.value with
+          | OCaml { env; _ } | Toplevel { env; _ } -> Ocaml_env.Set.add env acc
+          | Raw _ | Cram _ | Include _ -> acc )
+      | Section _ | Text _ -> acc)
+    Ocaml_env.Set.empty t

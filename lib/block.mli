@@ -24,27 +24,19 @@ module Header : sig
   val of_string : string -> t option
 end
 
-(** Block environments. *)
-
-module Env : sig
-  type t = Default | User_defined of string
-
-  val name : t -> string
-end
-
 (** Code blocks. *)
 
 type cram_value = { language : [ `Bash | `Sh ]; non_det : Label.non_det option }
 
 type ocaml_value = {
-  env : Env.t;
+  env : Ocaml_env.t;
       (** [env] is the name given to the environment where tests are run. *)
   non_det : Label.non_det option;
   errors : Output.t list;
 }
 
 type toplevel_value = {
-  env : Env.t;
+  env : Ocaml_env.t;
       (** [env] is the name given to the environment where tests are run. *)
   non_det : Label.non_det option;
 }

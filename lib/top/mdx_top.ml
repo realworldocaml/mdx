@@ -631,7 +631,7 @@ let load_env env names objs =
   List.iter2 Toploop.setvalue names objs
 
 let in_env e f =
-  let env_name = Mdx.Block.Env.name e in
+  let env_name = Mdx.Ocaml_env.name e in
   if !first_call then (
     (* We will start from the *correct* initial environment with
        everything loaded, for each environment. *)

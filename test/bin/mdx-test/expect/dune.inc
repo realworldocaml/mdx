@@ -113,7 +113,7 @@
  (action
   (with-stdout-to %{target}
    (chdir env-and-prelude
-    (run ocaml-mdx test --output - --prelude default.ml --prelude a:a.ml --prelude b:b.ml test-case.md)))))
+    (run ocaml-mdx test --output - --prelude all.ml --prelude " :default.ml" --prelude a:a.ml --prelude b:b.ml test-case.md)))))
 
 (rule
  (alias runtest)
