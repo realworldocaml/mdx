@@ -1,0 +1,78 @@
+# syntax = docker/dockerfile:experimental@sha256:ee85655c57140bd20a5ebc3bb802e7410ee9ac47ca92b193ed0ab17485024fe5
+FROM ocaml/opam2:alpine as base
+RUN opam install -y dune
+COPY --chown=opam . /home/opam/src/
+WORKDIR /home/opam/src
+ENV DUNE_CACHE=enabled
+RUN --mount=type=cache,target=/home/opam/.cache,uid=1000 opam exec -- dune build --profile=static @install
+RUN --mount=type=cache,target=/home/opam/.cache,uid=1000 opam exec -- dune install
+
+# no-ocaml
+FROM alpine:3.12 as no-ocaml
+ENV DUNE_CACHE=enabled
+COPY --from=base /home/opam/.opam/4.10/bin/duniverse /usr/bin/duniverse
+RUN apk add --update musl-dev gcc g++ make git
+COPY --chown=opam . /src/
+WORKDIR /src
+RUN --mount=type=cache,target=/home/opam/.cache,sharing=locked,uid=1000 duniverse pull
+RUN --mount=type=cache,target=/home/opam/.cache,sharing=private,uid=1000 duniverse tools -vv
+RUN --mount=type=cache,target=/home/opam/.cache,sharing=private,uid=1000 duniverse tools -vv
+
+# ocaml-too-old
+FROM alpine:3.8 as ocaml-too-old
+RUN apk add --update musl-dev gcc g++ make git ocaml ocaml-compiler-libs ocaml-dev
+ENV DUNE_CACHE=enabled
+COPY --from=base /home/opam/.opam/4.10/bin/duniverse /usr/bin/duniverse
+COPY --chown=opam . /src/
+WORKDIR /src
+RUN --mount=type=cache,target=/home/opam/.cache,sharing=locked,uid=1000 duniverse pull
+RUN --mount=type=cache,target=/home/opam/.cache,sharing=private,uid=1000 duniverse tools -vv
+
+
+# ocaml-no-dune
+FROM alpine:3.12 as ocaml-no-dune
+RUN apk add --update musl-dev gcc g++ make git ocaml ocaml-compiler-libs ocaml-dev
+ENV DUNE_CACHE=enabled
+COPY --from=base /home/opam/.opam/4.10/bin/duniverse /usr/bin/duniverse
+COPY --chown=opam . /src/
+WORKDIR /src
+RUN --mount=type=cache,target=/home/opam/.cache,sharing=locked,uid=1000 duniverse pull
+RUN --mount=type=cache,target=/home/opam/.cache,sharing=private,uid=1000 duniverse tools -vv
+
+# opam-no-dune
+FROM ocaml/opam2:alpine as opam-no-dune
+COPY --from=base /home/opam/.opam/4.10/bin/duniverse /usr/bin/duniverse
+ENV DUNE_CACHE=enabled
+COPY --chown=opam . /src/
+WORKDIR /src
+RUN --mount=type=cache,target=/home/opam/.cache,sharing=locked,uid=1000 duniverse pull
+RUN --mount=type=cache,target=/home/opam/.cache,sharing=private,uid=1000 opam exec -- duniverse tools -vv
+
+# opam-old-ocaml
+FROM ocaml/opam2:alpine as opam-old-ocaml
+RUN opam switch 4.03
+COPY --from=base /home/opam/.opam/4.10/bin/duniverse /usr/bin/duniverse
+ENV DUNE_CACHE=enabled
+COPY --chown=opam . /src/
+WORKDIR /src
+RUN --mount=type=cache,target=/home/opam/.cache,sharing=locked,uid=1000 duniverse pull
+RUN --mount=type=cache,target=/home/opam/.cache,sharing=private,uid=1000 opam exec -- duniverse tools -vv
+
+# opam-dune
+FROM ocaml/opam2:alpine as opam-dune
+RUN opam install -y dune
+COPY --from=base /home/opam/.opam/4.10/bin/duniverse /usr/bin/duniverse
+ENV DUNE_CACHE=enabled
+COPY --chown=opam . /src/
+WORKDIR /src
+RUN --mount=type=cache,target=/home/opam/.cache,sharing=locked,uid=1000 duniverse pull
+RUN --mount=type=cache,target=/home/opam/.cache,sharing=private,uid=1000 opam exec -- duniverse tools -vv
+
+# toplevel container
+FROM alpine:3.12
+COPY --from=no-ocaml /usr/bin/duniverse /usr/bin/duniverse
+COPY --from=ocaml-no-dune /usr/bin/duniverse /usr/bin/duniverse
+COPY --from=opam-no-dune /usr/bin/duniverse /usr/bin/duniverse
+COPY --from=opam-dune /usr/bin/duniverse /usr/bin/duniverse
+COPY --from=opam-old-ocaml /usr/bin/duniverse /usr/bin/duniverse
+COPY --from=ocaml-too-old /usr/bin/duniverse /usr/bin/duniverse

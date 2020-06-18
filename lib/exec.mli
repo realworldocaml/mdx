@@ -18,6 +18,21 @@ val map : ('a -> ('b, 'c) result) -> 'a list -> ('b list, 'c) result
 
 val iter : ('a -> (unit, 'b) result) -> 'a list -> (unit, 'b) result
 
+val opam_version : unit -> (string, [> Rresult.R.msg ]) result
+
+val ocaml_version : ?ocamlc:Fpath.t -> unit -> (Ocaml_version.t, [> Rresult.R.msg ]) result
+
+val dune_version: unit -> (string, [> Rresult.R.msg ]) result
+
+val dune_build : root:Fpath.t -> ?profile:string -> string list -> (unit, [> Rresult.R.msg ]) result
+
+val dune_install : root:Fpath.t -> prefix:Fpath.t -> sections:string list ->
+  string list -> (unit, [> Rresult.R.msg ]) result
+
+val install_ocaml_to : prefix:Fpath.t -> src:Fpath.t -> unit -> (unit, [> Rresult.R.msg ]) result
+
+val install_dune_to : prefix:Fpath.t -> src:Fpath.t -> unit -> (unit, [> Rresult.R.msg ]) result
+
 val git_default_branch : remote:string -> unit -> (string, [> Rresult.R.msg ]) result
 (** Return the default branch for the given remote name by running git remote show [remote] and
     parsing the output looking for HEAD branch: <branch_name> *)

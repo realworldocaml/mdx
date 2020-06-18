@@ -85,6 +85,29 @@ module Depexts : sig
   type t = (string list * string) list [@@deriving sexp]
 end
 
+module Tools : sig
+  type version =
+  | Eq of string
+  | Latest
+  | Min of string
+  [@@deriving sexp]
+
+  type t = {
+    opam: version;
+    ocamlformat: version;
+    dune: version;
+    odoc: version;
+    mdx: version;
+    lsp: version;
+    merlin: version;
+  } [@@deriving sexp]
+
+  val of_repo : unit -> t
+
+  (** List of all the tool packages *)
+  val tools : (string * string list) list
+end
+
 module Config : sig
   type pull_mode = Submodules | Source [@@deriving sexp]
 
@@ -95,7 +118,9 @@ module Config : sig
     pull_mode : pull_mode; [@default Submodules]
     opam_repo : Uri_sexp.t;
     ocaml_compilers : string list; [@default []]
+    tools : Tools.t;
   }
+
   [@@deriving sexp]
 end
 

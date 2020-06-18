@@ -16,7 +16,8 @@ let build_config ~local_packages ~pins ~pull_mode ~opam_repo =
   let root_packages =
     List.map Opam_cmd.split_opam_name_and_version root_packages |> Opam.sort_uniq
   in
-  Ok { Duniverse.Config.version; root_packages; pins; pull_mode; ocaml_compilers; opam_repo }
+  let tools = Duniverse.Tools.of_repo () in
+  Ok { Duniverse.Config.version; root_packages; pins; pull_mode; ocaml_compilers; opam_repo; tools }
 
 let compute_deps ~opam_entries =
   Dune_cmd.log_invalid_packages opam_entries;
@@ -27,15 +28,21 @@ let resolve_ref deps =
   let resolve_ref ~upstream ~ref = Exec.git_resolve ~remote:upstream ~ref in
   Duniverse.Deps.resolve ~resolve_ref deps
 
-let run (`Repo repo)
-    (`Opam_repo opam_repo) (`Pull_mode pull_mode) () =
+let init_local_opam_repo opam_repo =
   let open Rresult.R.Infix in
-  (match Cloner.get_cache_dir () with None -> Ok (Fpath.v ".") | Some t -> t) >>= fun cache_dir ->
+  (match Cloner.get_cache_dir () with
+  | None -> Ok (Fpath.v ".")
+  | Some t -> t) >>= fun cache_dir ->
   let local_opam_repo = Fpath.(cache_dir / "opam-repository.git") in
   let opam_repo_url = Uri.with_fragment opam_repo None |> Uri.to_string in
   let opam_repo_branch = match Uri.fragment opam_repo with None -> "master" | Some b -> b in
-  Exec.git_clone_or_pull ~remote:opam_repo_url ~branch:opam_repo_branch ~output_dir:local_opam_repo
-  >>= fun () ->
+  Exec.git_clone_or_pull ~remote:opam_repo_url ~branch:opam_repo_branch ~output_dir:local_opam_repo >>= fun () ->
+  Ok local_opam_repo
+
+let run (`Repo repo)
+    (`Opam_repo opam_repo) (`Pull_mode pull_mode) () =
+  let open Rresult.R.Infix in
+  init_local_opam_repo opam_repo >>= fun local_opam_repo ->
   Opam_cmd.find_local_opam_packages repo >>= fun local_paths ->
   Pins.read_from_config Fpath.(repo // Config.duniverse_file) >>= fun pins ->
   let local_packages = List.map fst (String.Map.bindings local_paths) in
@@ -87,16 +94,6 @@ let run (`Repo repo)
 
 open Cmdliner
 
-let opam_repo =
-  let doc =
-    "URL or path to the Duniverse opam-repository that has overrides for packages that have not \
-     yet been ported to Dune upstream."
-  in
-  Common.Arg.named
-    (fun x -> `Opam_repo (Uri.of_string x))
-    Arg.(
-      value & opt string Config.duniverse_opam_repo & info [ "opam-repo" ] ~docv:"OPAM_REPO" ~doc)
-
 let pull_mode =
   let doc =
     "How to pull the sources. If $(i,submodules), the pull command will initialise them as git \
@@ -122,7 +119,7 @@ let info =
 let term =
   let open Term in
   term_result
-    ( const run $ Common.Arg.repo $ opam_repo $ pull_mode
+    ( const run $ Common.Arg.repo $ Common.Arg.opam_repo $ pull_mode
     $ Common.Arg.setup_logs () )
 
 let cmd = (term, info)
