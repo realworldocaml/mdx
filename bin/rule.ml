@@ -224,7 +224,7 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax)
     in
     match req_res with
     | Error s ->
-        Printf.eprintf "Fatal error while parsing block: %s" s;
+        Printf.eprintf "[mdx] Fatal error while parsing block: %s\n" s;
         exit 1
     | Ok (ml_files, dirs, nd, packages) ->
         let packages =
@@ -244,8 +244,7 @@ let run (`Setup ()) (`File md_file) (`Section section) (`Syntax syntax)
   in
   Mdx.Deprecated.warn "ocaml-mdx rule" ~since:"1.7.0"
     ~replacement:"the mdx stanza";
-  Mdx.run ?syntax md_file ~f:on_file;
-  0
+  Mdx.run ?syntax md_file ~f:on_file >>! fun () -> 0
 
 open Cmdliner
 

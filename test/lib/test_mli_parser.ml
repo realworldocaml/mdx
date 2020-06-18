@@ -1,3 +1,5 @@
+open Mdx.Util.Result.Infix
+
 let mli =
   {|
 (** This is a doc comment with some code blocks in it:
@@ -27,17 +29,20 @@ let test_parse_mli =
     let test_fun () =
       let buffer = Buffer.create 256 in
       let fmt = Format.formatter_of_buffer buffer in
-      let actual = Mdx.Mli_parser.parse_mli mli in
-      Mdx.dump fmt actual;
-      let actual = Buffer.contents buffer in
-      Alcotest.(check string) test_name expected actual
+      let actual =
+        Mdx.Mli_parser.parse_mli mli >>| fun lines ->
+        Mdx.dump fmt lines;
+        Buffer.contents buffer
+      in
+      Alcotest.(check (result string Testable.msg)) test_name expected actual
     in
     (test_name, `Quick, test_fun)
   in
   [
     make_test ~test_name:"mli" ~mli
       ~expected:
-        {x|[Text "\n(** This is a doc comment with some code blocks in it:\n\n    ";
+        (Ok
+           {x|[Text "\n(** This is a doc comment with some code blocks in it:\n\n    ";
  Text "{[";
  Block {file: ; line: 4; column: 4; section: None; labels: [];
         header: Some ocaml;
@@ -61,7 +66,7 @@ let test_parse_mli =
  Block {file: ; line: 20; column: 4; section: None; labels: [];
         header: Some ocaml;
                 contents: ["1 + 1 = 3"]; value: OCaml};
- Text "]}";|x}
+ Text "]}";|x})
       ();
   ]
 

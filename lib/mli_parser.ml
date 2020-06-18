@@ -185,3 +185,7 @@ let parse_mli file_contents =
     if not (Compat.String.equal remainder "") then tokens @ [ Text remainder ]
     else tokens
   else tokens
+
+let parse_mli file_contents =
+  try Result.Ok (parse_mli file_contents)
+  with exn -> Util.Result.errorf "%s" (Printexc.to_string exn)

@@ -1,6 +1,9 @@
 {
 open Result
 open Astring
+open Migrate_ast
+
+type token = [ `Block of Block.t | `Section of int * string | `Text of string ]
 
 let line_ref = ref 1
 
@@ -142,12 +145,35 @@ and cram_block = parse
 
 {
   let markdown_token lexbuf =
-    try
-      text None lexbuf
-    with Failure e -> Misc.err lexbuf "invalid code block: %s" e
+    try Ok (text None lexbuf)
+    with
+    | Failure e ->
+      let loc = Location.curr lexbuf in
+      let msg =
+        Format.asprintf "%a: invalid code block: %s" Location.print_loc loc e
+      in
+      Util.Result.errorf "%s" msg
+    | exn ->
+      let loc = Location.curr lexbuf in
+      let msg =
+        Format.asprintf "%a: %s" Location.print_loc loc (Printexc.to_string exn)
+      in
+      Util.Result.errorf "%s" msg
+
 
 let cram_token lexbuf =
-    try
-      cram_text None lexbuf
-    with Failure e -> Misc.err lexbuf "invalid code block: %s" e
+    try Ok (cram_text None lexbuf)
+    with
+    | Failure e ->
+      let loc = Location.curr lexbuf in
+      let msg =
+        Format.asprintf "%a: invalid code block: %s" Location.print_loc loc e
+      in
+      Util.Result.errorf "%s" msg
+    | exn ->
+      let loc = Location.curr lexbuf in
+      let msg =
+        Format.asprintf "%a: %s" Location.print_loc loc (Printexc.to_string exn)
+      in
+      Util.Result.errorf "%s" msg
 }

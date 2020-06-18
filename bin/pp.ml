@@ -14,12 +14,14 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+open Mdx.Util.Result.Infix
+
 let src = Logs.Src.create "cram.pp"
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
 let run (`Setup ()) (`File file) (`Section section) =
-  let t = Mdx.parse_file Normal file in
+  Mdx.parse_file Normal file >>! fun t ->
   let t =
     match section with
     | None -> t

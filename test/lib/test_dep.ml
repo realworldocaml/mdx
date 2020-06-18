@@ -1,3 +1,5 @@
+open Mdx.Util.Result.Infix
+
 module Testable = struct
   include Testable
 
@@ -47,21 +49,22 @@ let test_of_line =
   let make_test ~line_des ~lines ~expected () =
     let test_name = Printf.sprintf "of_line: %S" line_des in
     let test_fun () =
-      let actual = Mdx.Dep.of_lines lines in
-      Alcotest.(check (list Testable.dep)) test_name expected actual
+      let actual =
+        Mdx.of_string Mdx.Normal lines >>| fun lines -> Mdx.Dep.of_lines lines
+      in
+      Alcotest.(check (result (list Testable.dep) Testable.msg))
+        test_name expected actual
     in
     (test_name, `Quick, test_fun)
   in
-  let lines =
-    Mdx.of_string Mdx.Normal {|
+  let lines = {|
 Toto
 
 ```ocaml file=tikitaka.ml
 ```
   |}
   and lines2 =
-    Mdx.of_string Mdx.Normal
-      {|
+    {|
 Tata
 
 ```ocaml file=tuktuk.ml,skip
@@ -76,9 +79,10 @@ Tata
   in
   [
     make_test ~lines ~line_des:"block: file=tikitaka.ml"
-      ~expected:[ File "tikitaka.ml" ] ();
+      ~expected:(Ok [ File "tikitaka.ml" ])
+      ();
     make_test ~lines:lines2 ~line_des:"skip + file + dir"
-      ~expected:[ File "burn.sh"; Dir "ping/" ]
+      ~expected:(Ok [ File "burn.sh"; Dir "ping/" ])
       ();
   ]
 
