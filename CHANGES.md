@@ -1,3 +1,9 @@
+### unreleased
+
+#### Removed
+
+- Do not install deprecated `mdx` binary anymore (#274, @gpetiot)
+
 ### 1.10.0
 
 #### Added
