@@ -22,7 +22,7 @@ let run (`Setup ()) (`Syntax syntax) (`File file) =
     | Some s, _ | None, Some s -> s
     | None, None ->
         Printf.eprintf
-          "Fatal error: could not infer syntax from filename %s, use the \
+          "[mdx] Fatal error: could not infer syntax from filename %s, use the \
            --syntax option to specify a syntax.\n"
           file;
         exit 1

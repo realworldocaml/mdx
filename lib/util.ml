@@ -27,7 +27,7 @@ module Result = struct
       match r with
       | Ok x -> f x
       | Error (`Msg e) ->
-          Printf.eprintf "Fatal error: %s" e;
+          Printf.eprintf "[mdx] Fatal error: %s\n" e;
           1
   end
 
