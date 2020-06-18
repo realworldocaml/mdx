@@ -1,0 +1,4 @@
+(library
+ (name opam_0install)
+ (public_name opam-0install)
+ (libraries opam-state 0install-solver fmt))
