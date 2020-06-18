@@ -35,9 +35,11 @@ let strip_ext fname =
   to_string fname
 
 let find_local_opam_packages dir =
+  Bos.OS.Dir.exists dir >>= fun exists -> if not exists then Ok String.Map.empty else
   Bos.OS.Dir.contents ~rel:true dir
   >>| List.filter (Fpath.has_ext ".opam")
-  >>| List.map Fpath.rem_ext >>| List.map Fpath.to_string
+  >>| List.map (fun path -> Fpath.(to_string (rem_ext path), dir // path))
+  >>| String.Map.of_list
 
 let tag_from_archive archive =
   let uri = Uri.of_string archive in
@@ -132,28 +134,22 @@ let classify_package ~package ~dev_repo ~archive () =
             (kind, tag)
         | x -> (x, None) )
 
-let get_opam_depexts ~local_opam_repo { name; version } =
-  let version = match version with None -> "dev" | Some v -> v in
-  let opam_file =
-    let local_file = name ^ ".opam" in
-    if Sys.file_exists local_file then Fpath.v local_file
-    else Fpath.(local_opam_repo / "packages" / name / (name ^ "." ^ version) / "opam")
+let compute_depexts ~get_opam_path pkgs =
+  let opam_depexts_of_pkg pkg =
+    let opam_file = get_opam_path pkg in
+    Bos.OS.File.read opam_file >>| fun opam_contents ->
+    let opam = OpamFile.OPAM.read_from_string opam_contents in
+    OpamFile.OPAM.depexts opam |>
+    List.map (fun (s, f) -> (s, OpamFilter.to_string f))
   in
-  Bos.OS.File.read opam_file >>| fun opam_contents ->
-  let opam = OpamFile.OPAM.read_from_string opam_contents in
-  OpamFile.OPAM.depexts opam |>
-  List.map (fun (s, f) -> (s, OpamFilter.to_string f))
+  let open Rresult.R in
+  Exec.map opam_depexts_of_pkg pkgs >>| fun depexts ->
+  List.flatten depexts |> List.sort_uniq Stdlib.compare
 
-let get_opam_info ~opam_repo ~root_packages packages =
+let get_opam_info ~get_opam_path packages =
   List.map
-    (fun ({ name; version } as pkg) ->
-      let version =
-        match version with None -> failwith "must have package version" | Some v -> v
-      in
-      let opam_file =
-        if List.exists (fun p -> p.name = name) root_packages then Fpath.v (name ^ ".opam")
-        else Fpath.(opam_repo / "packages" / name / (name ^ "." ^ version) / "opam")
-      in
+    (fun pkg ->
+      let opam_file = get_opam_path pkg in
       Logs.info (fun l -> l "processing %a" Fpath.pp opam_file);
       let open OpamParserTypes in
       OpamParser.file (Fpath.to_string opam_file) |> fun { file_contents; _ } ->
@@ -223,9 +219,10 @@ let filter_duniverse_packages pkgs =
   in
   fn [] pkgs
 
-let calculate_opam ~config ~local_opam_repo =
-  let { Duniverse.Config.root_packages; _ } = config in
-  Opam_solve.calculate ~opam_repo:local_opam_repo ~root_packages
+let calculate_opam ~packages ~get_opam_path ~local_opam_repo =
+  let opam_files =
+    List.map (fun pkg -> Fpath.to_string (get_opam_path pkg)) packages in
+  Opam_solve.calculate ~opam_repo:local_opam_repo ~opam_files
   >>| List.map OpamPackage.to_string
   >>| List.map split_opam_name_and_version
   >>= fun deps ->
@@ -234,16 +231,16 @@ let calculate_opam ~config ~local_opam_repo =
         Fmt.(styled `Green int)
         (List.length deps)
         Fmt.(list ~sep:(unit " ") Styled_pp.package)
-        root_packages);
+        packages);
   Logs.info (fun l ->
       l "The dependencies for %a are: %a"
         Fmt.(list ~sep:(unit ",@ ") pp_package)
-        root_packages
+        packages
         Fmt.(list ~sep:(unit ",@ ") pp_package)
         deps);
   Logs.app (fun l ->
       l "%aQuerying opam database for their metadata and Dune compatibility." pp_header header);
-  get_opam_info ~opam_repo:local_opam_repo ~root_packages deps
+  get_opam_info ~get_opam_path deps
 
 type packages_stats = { total : int; dune : int; not_dune : entry list }
 

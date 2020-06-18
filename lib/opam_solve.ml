@@ -45,7 +45,7 @@ module Context = struct
   type t = {
     variant : variant;
     packages_dir : string;
-    pins : (OpamPackage.Version.t * string) OpamPackage.Name.Map.t;
+    local_packages : (OpamPackage.Version.t * string) OpamPackage.Name.Map.t;
     (* name -> version, opam path *)
     constraints : OpamFormula.version_constraint OpamTypes.name_map;
     (* User-provided constraints *)
@@ -55,7 +55,7 @@ module Context = struct
   let load t pkg =
     let { OpamPackage.name; version = _ } = pkg in
     let opam_path =
-      match OpamPackage.Name.Map.find_opt name t.pins with
+      match OpamPackage.Name.Map.find_opt name t.local_packages with
       | Some (_, path) -> path
       | None ->
           t.packages_dir / OpamPackage.Name.to_string name / OpamPackage.to_string pkg / "opam"
@@ -85,7 +85,7 @@ module Context = struct
     |> OpamFilter.filter_deps ~build:true ~post:true ~test ~doc:false ~dev:false ~default:false
 
   let candidates t name =
-    match OpamPackage.Name.Map.find_opt name t.pins with
+    match OpamPackage.Name.Map.find_opt name t.local_packages with
     | Some (version, _) -> [ (version, None) ]
     | None -> (
         match list_dir (t.packages_dir / OpamPackage.Name.to_string name) with
@@ -131,37 +131,29 @@ let pp_sel f pkg = Fmt.string f (OpamPackage.to_string pkg)
 
 let ocaml_name = OpamPackage.Name.of_string "ocaml"
 
-let solve ~opam_repo ~opam_files src ~variants =
-  let src = Fpath.to_string src in
+let solve ~opam_repo ~opam_files ~variants =
   let opam_repository = Fpath.to_string opam_repo in
-  let pkgs =
-    opam_files
-    |> List.map (fun path ->
-           let name =
-             Filename.basename path |> Filename.chop_extension |> OpamPackage.Name.of_string
-           in
-           let version =
-             let dir = Filename.dirname path in
-             if dir = "." then dev
-             else
-               match OpamPackage.of_string_opt dir with
-               | Some { OpamPackage.version; _ } -> version
-               | None -> dev
-           in
-           (OpamPackage.create name version, path))
+  let local_packages =
+    List.fold_left
+      (fun acc path -> 
+        let name =
+          Filename.basename path |> Filename.chop_extension |> OpamPackage.Name.of_string
+        in
+        let version =
+          let dir = Filename.dirname path in
+          if dir = "." then dev
+          else
+            match OpamPackage.of_string_opt dir with
+            | Some { OpamPackage.version; _ } -> version
+            | None -> dev
+        in
+        OpamPackage.Name.Map.add name (version, path) acc)
+      OpamPackage.Name.Map.empty
+      opam_files
   in
-  let root_pkgs =
-    pkgs
-    |> List.filter_map (fun (pkg, path) ->
-           if Filename.dirname path = "." then Some (OpamPackage.name pkg) else None)
-  in
-  let pins =
-    pkgs
-    |> List.map (fun (pkg, path) -> (OpamPackage.name pkg, (OpamPackage.version pkg, src / path)))
-    |> OpamPackage.Name.Map.of_list
-  in
+  let local_package_names = OpamPackage.Name.Map.keys local_packages in
   (* let pp_name f name = Fmt.string f (OpamPackage.Name.to_string name) in *)
-  (* Fmt.pr "Solving for %a\n%!" (Fmt.(list ~sep:comma) pp_name) root_pkgs; *)
+  (* Fmt.pr "Solving for %a\n%!" (Fmt.(list ~sep:comma) pp_name) local_package_names; *)
   variants
   |> Lwt_list.filter_map_s (fun variant ->
          (* Fmt.pr "= %a =\n%!" pp_variant variant; *)
@@ -169,12 +161,12 @@ let solve ~opam_repo ~opam_files src ~variants =
            {
              Context.variant;
              packages_dir = opam_repository / "packages";
-             pins;
+             local_packages;
              constraints = OpamPackage.Name.Map.singleton ocaml_name (`Eq, variant.ocaml);
-             test = OpamPackage.Name.Set.of_list root_pkgs;
+             test = OpamPackage.Name.Set.of_list local_package_names;
            }
          in
-         let req = requirements ~context root_pkgs in
+         let req = requirements ~context local_package_names in
          let _t0 = Unix.gettimeofday () in
          let r = Solver.do_solve ~closest_match:false req in
          let _t1 = Unix.gettimeofday () in
@@ -191,9 +183,7 @@ let solve ~opam_repo ~opam_files src ~variants =
              (* Fmt.pr "Eliminated all possibilities in %.2f s\n%!" (t1 -. t0); *)
              Lwt.return_none)
 
-let calculate_t ~opam_repo ~root_packages =
-  let opam_files = List.map (fun { Types.Opam.name; _ } -> name ^ ".opam") root_packages in
-  let src = Fpath.v "." in
+let calculate_t ~opam_repo ~opam_files =
   let module OR = Osrelease in
   let variants =
     [
@@ -207,11 +197,11 @@ let calculate_t ~opam_repo ~root_packages =
     ]
   in
   let open Lwt.Infix in
-  solve ~opam_repo ~opam_files src ~variants >>= function
+  solve ~opam_repo ~opam_files ~variants >>= function
   | [ s ] -> Lwt.return s.packages
   | [] -> Lwt.fail (Failure "no results from solver")
   | _ -> Lwt.fail (Failure "too many results from solver")
 
-let calculate ~opam_repo ~root_packages =
-  try Ok (Lwt_main.run (calculate_t ~opam_repo ~root_packages))
+let calculate ~opam_repo ~opam_files =
+  try Ok (Lwt_main.run (calculate_t ~opam_repo ~opam_files))
   with exn -> Error (`Msg (Printexc.to_string exn))
