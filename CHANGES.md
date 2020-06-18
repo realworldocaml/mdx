@@ -16,6 +16,7 @@
 
 - Dropped compatibility with older OCaml versions. The minimal supported range
   is 4.08 to 4.13 now (#345, @Leonidas-from-XIV)
+- Do not install deprecated `mdx` binary anymore (#274, @gpetiot)
 
 #### Security
 
