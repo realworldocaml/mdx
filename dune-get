@@ -118,7 +118,7 @@
         (commit ec0db8081136a93f4d6873dba90e0f0d29d1b43b)))
       (provided_packages (((name opam-file-format) (version (2.0.0+dune))))))
      ((dir osrelease.zdev) (upstream https://github.com/avsm/osrelease.git)
-      (ref ((t master) (commit 254629a6b50e7957325c3ffb19c2f9ca89fdbe7f)))
+      (ref ((t master) (commit b7f343c8ecbb63884eb6a94e9bdcbf1c21919f46)))
       (provided_packages (((name osrelease)))))
      ((dir parsexp.v0.14.0)
       (upstream https://github.com/janestreet/parsexp.git)

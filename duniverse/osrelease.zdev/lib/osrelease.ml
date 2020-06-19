@@ -38,7 +38,7 @@ module Arch = struct
   let to_string (x : t) =
     match x with
     | `X86_32 -> "x86_32"
-    | `X86_64 -> "amd64"
+    | `X86_64 -> "x86_64"
     | `Ppc32 -> "ppc32"
     | `Ppc64 `Be -> "ppc64"
     | `Ppc64 `Le -> "ppc64le"
