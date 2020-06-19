@@ -22,6 +22,7 @@ depends: [
   "astring"
   "logs"
   "cmdliner" {>= "1.0.0"}
+  "csexp" {>= "1.2.0"}
   "re" {>= "1.7.2"}
   "result"
   "ocaml-migrate-parsetree" {>= "1.0.6"}

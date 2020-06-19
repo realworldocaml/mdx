@@ -62,14 +62,10 @@ end
 
 module Sexp : sig
   type t = Atom of string | List of t list
+end
 
-  val equal : t -> t -> bool
-
-  module Canonical : sig
-    val to_buffer : buf:Buffer.t -> t -> unit
-
-    val to_string : t -> string
-  end
+module Csexp : sig
+  val to_string : Sexp.t -> string
 end
 
 module Array : sig
