@@ -15,6 +15,12 @@
      ((dir alcotest.1.1.0) (upstream https://github.com/mirage/alcotest.git)
       (ref ((t 1.1.0) (commit 4974a9b652cbec92b9aaa71354be9a6c85d14f52)))
       (provided_packages (((name alcotest) (version (1.1.0))))))
+     ((dir astring.0.8.4+dune)
+      (upstream git://github.com/dune-universe/astring.git)
+      (ref
+       ((t duniverse-v0.8.4)
+        (commit baa4e7e2bf919293aac2c899786c2ac40757dd9b)))
+      (provided_packages (((name astring) (version (0.8.4+dune))))))
      ((dir base.v0.14.0) (upstream https://github.com/janestreet/base.git)
       (ref ((t v0.14.0) (commit b333879831027292802556282855e60a472660e2)))
       (provided_packages (((name base) (version (v0.14.0))))))
@@ -169,12 +175,6 @@
       (upstream https://github.com/rgrinberg/stringext.git)
       (ref ((t 1.6.0) (commit 2bce0a6fe54e8f8782f7a3b2be44a5e1fb37a522)))
       (provided_packages (((name stringext) (version (1.6.0))))))
-     ((dir topkg.1.0.1+dune)
-      (upstream git://github.com/dune-universe/topkg.git)
-      (ref
-       ((t duniverse-v1.0.1)
-        (commit 828109856ba227712fe370728f2fb9c2269f50f6)))
-      (provided_packages (((name topkg) (version (1.0.1+dune))))))
      ((dir uri-sexp.3.1.0) (upstream https://github.com/mirage/ocaml-uri.git)
       (ref ((t v3.1.0) (commit 21f76c72f126be44ac29c7cb22e1fc95ef9c8b0c)))
       (provided_packages
