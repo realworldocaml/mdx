@@ -26,6 +26,7 @@ depends: [
   "opam-file-format"
   "opam-format"
   "opam-state"
+  "opam-0install"
   "ocaml-version"
   "uri"
   "sexplib"

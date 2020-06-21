@@ -1,0 +1,7 @@
+(library
+ (name topkg_care)
+ (public_name topkg.care)
+ (libraries topkg opam-format cmdliner bos.setup)
+ (flags :standard -w -3-6-27-32-33-39)
+ (optional)
+ (wrapped false))
