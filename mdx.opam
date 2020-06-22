@@ -21,7 +21,7 @@ depends: [
   "cppo" {build}
   "astring"
   "logs"
-  "cmdliner" {>= "1.0.0"}
+  "cmdliner" {>= "1.0.3"}
   "csexp" {>= "1.2.0"}
   "re" {>= "1.7.2"}
   "result"
