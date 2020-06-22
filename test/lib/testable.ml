@@ -1,12 +1,6 @@
 let sexp =
-  let rec pp fmt s =
-    match (s : Mdx.Util.Sexp.t) with
-    | Atom s -> Fmt.pf fmt "Atom %S" s
-    | List l ->
-        let sep fmt () = Fmt.pf fmt "; " in
-        Fmt.pf fmt "List [%a]" Fmt.(list ~sep pp) l
-  in
-  Alcotest.testable pp Mdx.Util.Sexp.equal
+  let pp fmt s = Fmt.pf fmt "%s" (Mdx.Util.Csexp.to_string s) in
+  Alcotest.testable pp ( = )
 
 let msg =
   let pp fs = function `Msg s -> Fmt.pf fs "`Msg %S" s in

@@ -30,7 +30,7 @@ let run (`Setup ()) (`Syntax syntax) (`File file) =
   Mdx.parse_file syntax file >>! fun doc ->
   let deps = Mdx.Dep.of_lines doc in
   let deps = List.map Mdx.Dep.to_sexp deps in
-  Printf.printf "%s" (Mdx.Util.Sexp.Canonical.to_string (List deps));
+  Printf.printf "%s" (Mdx.Util.Csexp.to_string (List deps));
   0
 
 let cmd =
