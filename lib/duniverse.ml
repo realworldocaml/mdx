@@ -186,7 +186,8 @@ module Tools = struct
    } [@@deriving sexp]
 
   let tools = [
-    ("base", ["opam"; "ocamlformat"; "odoc"; "mdx"]);
+    ("base", ["opam"; "odoc"; "mdx"]);
+    ("ocamlformat", ["ocamlformat"]);
     (* ("lsp", ["ocaml-lsp-server"]); TODO broken *)
     ("merlin", ["merlin"])]
 
