@@ -22,7 +22,7 @@ let read_from_config duniverse_file =
 
 let to_package (pin : Types.Opam.pin) : Types.Opam.package =
   let name = pin.pin in
-  let version = None in
+  let version = pin.tag in
   {name; version}
 
 let to_opam_entry (pin : Types.Opam.pin) : Types.Opam.entry =
