@@ -1,6 +1,10 @@
 open Duniverse_lib
 open Rresult
 
+let confirm_replace_pin name () =
+  Prompt.confirm_or_abort ~yes:false ~question:(fun l ->
+    l "A pin with name %a already exists, would you like to replace it?"
+      Fmt.(styled `Yellow string) name)
 
 let pin (`Pin_name pin_name) (`Pin_uri uri) (`Repo repo) () =
   let file = Fpath.(repo // Config.duniverse_file) in
@@ -14,11 +18,13 @@ let pin (`Pin_name pin_name) (`Pin_uri uri) (`Repo repo) () =
     let uri = Uri.with_fragment uri None in
     let pin = { Types.Opam.pin = pin_name; url = Some (Uri.to_string uri); tag } in
     Duniverse.load ~file >>= fun duniverse ->
-    if List.exists (fun pin -> pin.Types.Opam.pin = pin_name) duniverse.config.pins then
-      R.error_msgf "Could not add pin `%s` as this package already exists in %a."
-        pin_name Fpath.pp (Fpath.normalize file)
-    else
-    let config = { duniverse.config with pins = pin :: duniverse.config.pins } in
+    begin
+      if List.exists (fun pin -> pin.Types.Opam.pin = pin_name) duniverse.config.pins then
+        confirm_replace_pin pin_name () >>= fun () ->
+        Ok (List.filter (fun pin -> pin.Types.Opam.pin <> pin_name) duniverse.config.pins)
+      else Ok duniverse.config.pins
+    end >>= fun pins ->
+    let config = { duniverse.config with pins = pin :: pins } in
     let duniverse = { duniverse with config } in
     Duniverse.save ~file duniverse >>= fun () ->
     Common.Logs.app (fun l ->
@@ -29,7 +35,6 @@ let pin (`Pin_name pin_name) (`Pin_uri uri) (`Repo repo) () =
     let opam_repo = duniverse.config.opam_repo in
     let pull_mode = duniverse.config.pull_mode in
     Init.run (`Repo repo) (`Opam_repo opam_repo) (`Pull_mode pull_mode) ()
-
 
 let unpin (`Pin_name pin_name) (`Repo repo) () =
   let file = Fpath.(repo // Config.duniverse_file) in
@@ -57,7 +62,6 @@ let unpin (`Pin_name pin_name) (`Repo repo) () =
     let opam_repo = duniverse.config.opam_repo in
     let pull_mode = duniverse.config.pull_mode in
     Init.run (`Repo repo) (`Opam_repo opam_repo) (`Pull_mode pull_mode) ()
-
 
 open Cmdliner
 
