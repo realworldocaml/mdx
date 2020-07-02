@@ -236,6 +236,9 @@ let extension_constructor
   ; ext_private
   ; ext_loc
   ; ext_attributes
+#if OCAML_VERSION >= (4, 11, 0)
+  ; ext_uid = Uid.mk ~current_unit:"mdx"
+#endif
   }
 
 let is_predef_or_global id =
