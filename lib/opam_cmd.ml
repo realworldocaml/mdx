@@ -23,6 +23,8 @@ let pp_header = Fmt.(styled `Blue string)
 
 let header = "==> "
 
+let pp_plural = Fmt.using (function _ :: _ :: _ -> "s" | _ -> "") Fmt.string
+
 let split_opam_name_and_version name =
   match String.cut ~sep:"." name with
   | None -> { name; version = None }
@@ -284,9 +286,10 @@ let choose_root_packages ~local_packages =
          'duniverse opam <packages>'."
   | local_packages ->
       Logs.app (fun l ->
-          l "%aUsing locally scanned packages '%a' as the roots." pp_header header
+          l "%aUsing locally scanned package%a '%a' as the root%a." pp_header header
+            pp_plural local_packages
             Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
-            local_packages);
+            local_packages pp_plural local_packages);
       Ok local_packages
 
 let install_incompatible_packages yes repo =
