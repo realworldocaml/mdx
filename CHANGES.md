@@ -22,14 +22,11 @@
 
 #### Fixed
 
-- Fix the environment selection for preludes (#225, @gpetiot)
-
+- Fix the environment selection for preludes and slightly improve quality
+  of type names in evaluations of toplevel phrases in certain cases. (#225, @gpetiot)
 - Errors of OCaml blocks are displayed in `mdx-error` blocks, that are immediately following the `ocaml` blocks they are attached to (#238, @gpetiot)
-
 - Fix toplevel parsing when phrases contain tabs (#240, @gpetiot)
-
 - Avoid adding newlines to empty blocks (#253, @gpetiot)
-
 - Preserve the indentation of included files (#259, @gpetiot)
 
 #### Removed
