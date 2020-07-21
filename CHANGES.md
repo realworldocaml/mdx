@@ -1,4 +1,4 @@
-### unreleased
+### 1.7.0
 
 #### Added
 
@@ -21,6 +21,7 @@
   following the ocaml block instead of crashing the mdx process. Those `mdx-error` blocks
   are recognized and checked by mdx and can be intentionally used to show case specific
   compile errors. (#238, @gpetiot)
+- Improve error reporting for invalid `(* $MDX part-... *)` delimiters (#250, @gpetiot)
 
 #### Deprecated
 
@@ -38,10 +39,6 @@
 - Fix mdx on Windows which was looking for the ocaml-mdx-test binary at the wrong place
   (#263, @hcarty)
 - Properly report mdx parsing errors instead of crashing with an uncaught exception (#267, @gpetiot)
-
-#### Removed
-
-#### Security
 
 ### 1.6.0
 
