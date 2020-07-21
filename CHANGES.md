@@ -7,6 +7,8 @@
   labels separated by a comma. This line has to immediately precede the block
   it is attached to. The legacy syntax is preserved and will be deprecated in a
   later release.
+- Add support for toplevel blocks in `.mli` files' doc comments (#206, @jsomers)
+- Add support for OCaml 4.11 (#261, @kit-ty-kate)
 
 #### Changed
 
@@ -15,6 +17,10 @@
    * `env_and_file "a:f"` associates `f` to the environment named `a`
    * `env_and_file " :f"` associates `f` to the default environment
    * `env_and_file "f"` associates `f` to all environments.
+- Errors in non toplevel OCaml blocks are now printed to a seperate `mdx-error` code block
+  following the ocaml block instead of crashing the mdx process. Those `mdx-error` blocks
+  are recognized and checked by mdx and can be intentionally used to show case specific
+  compile errors. (#238, @gpetiot)
 
 #### Deprecated
 
@@ -24,10 +30,14 @@
 
 - Fix the environment selection for preludes and slightly improve quality
   of type names in evaluations of toplevel phrases in certain cases. (#225, @gpetiot)
-- Errors of OCaml blocks are displayed in `mdx-error` blocks, that are immediately following the `ocaml` blocks they are attached to (#238, @gpetiot)
 - Fix toplevel parsing when phrases contain tabs (#240, @gpetiot)
 - Avoid adding newlines to empty blocks (#253, @gpetiot)
 - Preserve the indentation of included files (#259, @gpetiot)
+- Preserve the header in shell blocks (#249, @craigfe)
+- Support underscores in environment variables in `set-` and `unset-` labels (#257, @shonfeder)
+- Fix mdx on Windows which was looking for the ocaml-mdx-test binary at the wrong place
+  (#263, @hcarty)
+- Properly report mdx parsing errors instead of crashing with an uncaught exception (#267, @gpetiot)
 
 #### Removed
 
