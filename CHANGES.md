@@ -10,6 +10,8 @@
 
 #### Fixed
 
+- Report `#require` directive errors (#276, @gpetiot)
+
 #### Security
 
 ### 1.7.0

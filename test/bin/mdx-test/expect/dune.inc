@@ -372,6 +372,18 @@
  (action (diff prelude-file/test-case.md prelude-file.actual)))
 
 (rule
+ (target requires.actual)
+ (deps (package mdx) (source_tree requires))
+ (action
+  (with-stdout-to %{target}
+   (chdir requires
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff requires/test-case.md requires.actual)))
+
+(rule
  (target root-option.actual)
  (deps (package mdx) (source_tree root-option))
  (action

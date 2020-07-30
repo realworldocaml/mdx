@@ -380,10 +380,12 @@ let cut_into_sentences l =
   in
   aux [] [] l
 
+let errors = ref false
+
 let eval t cmd =
   let buf = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buf in
-  let errors = ref false in
+  errors := false;
   let exec_code ~capture phrase =
     let lines = ref [] in
     let capture () =
@@ -416,7 +418,9 @@ let eval t cmd =
     Format.pp_print_flush ppf ();
     capture ();
     if
-      t.silent || ((not t.verbose_findlib) && Phrase.is_findlib_directive phrase)
+      t.silent
+      || (not !errors) && (not t.verbose_findlib)
+         && Phrase.is_findlib_directive phrase
     then []
     else trim (List.rev !lines)
   in
@@ -571,6 +575,37 @@ let patch_env () =
   end in
   ()
 
+let protect f arg =
+  try
+    let _ = f arg in
+    ()
+  with
+  | Failure s ->
+      errors := true;
+      print_string s
+  | Fl_package_base.No_such_package (pkg, reason) ->
+      errors := true;
+      print_string
+        ("No such package: " ^ pkg ^ if reason <> "" then " - " ^ reason else "")
+  | Fl_package_base.Package_loop pkg ->
+      errors := true;
+      print_string ("Package requires itself: " ^ pkg)
+
+let in_words s =
+  (* splits s in words separated by commas and/or whitespace *)
+  let l = String.length s in
+  let rec split i j =
+    if j < l then
+      match s.[j] with
+      | ' ' | '\t' | '\n' | '\r' | ',' ->
+          if i < j then String.sub s i (j - i) :: split (j + 1) (j + 1)
+          else split (j + 1) (j + 1)
+      | _ -> split i (j + 1)
+    else if i < j then [ String.sub s i (j - i) ]
+    else []
+  in
+  split 0 0
+
 let init ~verbose:v ~silent:s ~verbose_findlib () =
   Clflags.real_paths := false;
   Toploop.set_paths ();
@@ -581,6 +616,11 @@ let init ~verbose:v ~silent:s ~verbose_findlib () =
   Topfind.don't_load_deeply
     [ "unix"; "findlib.top"; "findlib.internal"; "compiler-libs.toplevel" ];
   Topfind.add_predicates [ "byte"; "toploop" ];
+  (* [require] directive is overloaded to toggle the [errors] reference when
+     an exception is raised. *)
+  Hashtbl.add Toploop.directive_table "require"
+    (Toploop.Directive_string
+       (fun s -> protect Topfind.load_deeply (in_words s)));
   let t = { verbose = v; silent = s; verbose_findlib } in
   show ();
   show_val ();
