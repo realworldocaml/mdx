@@ -6,6 +6,8 @@
 
 #### Changed
 
+- Improve error message of cram test exceptions due to empty lines in a block (#270, @pitag-ha)
+
 #### Deprecated
 
 #### Removed
