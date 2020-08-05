@@ -1,12 +1,12 @@
 open Duniverse_lib
 open Rresult
 
-let confirm_replace_pin name () =
-  Prompt.confirm_or_abort ~yes:false ~question:(fun l ->
+let confirm_replace_pin name ~yes () =
+  Prompt.confirm_or_abort ~yes ~question:(fun l ->
     l "A pin with name %a already exists, would you like to replace it?"
       Fmt.(styled `Yellow string) name)
 
-let pin (`Pin_name pin_name) (`Pin_uri uri) (`Repo repo) () =
+let pin (`Pin_name pin_name) (`Pin_uri uri) (`Repo repo) (`Yes yes) () =
   let file = Fpath.(repo // Config.duniverse_file) in
   Bos.OS.File.exists file >>= fun exists ->
   if not exists then
@@ -20,7 +20,7 @@ let pin (`Pin_name pin_name) (`Pin_uri uri) (`Repo repo) () =
     Duniverse.load ~file >>= fun duniverse ->
     begin
       if List.exists (fun pin -> pin.Types.Opam.pin = pin_name) duniverse.config.pins then
-        confirm_replace_pin pin_name () >>= fun () ->
+        confirm_replace_pin ~yes pin_name () >>= fun () ->
         Ok (List.filter (fun pin -> pin.Types.Opam.pin <> pin_name) duniverse.config.pins)
       else Ok duniverse.config.pins
     end >>= fun pins ->
@@ -83,7 +83,7 @@ let pin_cmd =
   let term =
     let open Term in
     term_result
-      ( const pin $ pin_name $ dev_repo $ Common.Arg.repo $ Common.Arg.setup_logs () ) in
+      ( const pin $ pin_name $ dev_repo $ Common.Arg.repo $ Common.Arg.yes $ Common.Arg.setup_logs () ) in
   let info =
     let exits = Term.default_exits in
     let doc =
@@ -106,4 +106,3 @@ let unpin_cmd =
     let man = [] in
     Term.info "unpin" ~doc ~exits ~man ~envs:Common.Arg.caches in
   (term, info)
-
