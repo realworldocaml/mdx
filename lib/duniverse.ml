@@ -19,6 +19,14 @@ module Deps = struct
     let raw_pp fmt { name; version } =
       let open Pp_combinators.Ocaml in
       Format.fprintf fmt "@[<hov 2>{ name = %S;@ version = %a }@]" name (option string) version
+
+    let explicit_version t =
+      Option.value ~default:"zdev" t.version
+
+    let to_opam_dep t : OpamTypes.filtered_formula =
+      let version = explicit_version t in
+      let name = OpamPackage.Name.of_string t.name in
+      Atom (name, Atom (Constraint (`Eq, (FString version))))
   end
 
   module Source = struct
@@ -95,6 +103,14 @@ module Deps = struct
     let resolve ~resolve_ref ({ upstream; ref; _ } as t) =
       let open Result.O in
       resolve_ref ~upstream ~ref >>= fun resolved_ref -> Ok { t with ref = resolved_ref }
+
+    let to_opam_pin_deps (t : resolved t) =
+      let url = OpamUrl.of_string (Printf.sprintf "git+%s#%s" t.upstream t.ref.commit) in
+      List.map t.provided_packages
+        ~f:(fun pkg ->
+            let version = Opam.explicit_version pkg in
+            let opam_pkg = OpamPackage.of_string (Printf.sprintf "%s.%s" pkg.name version) in
+            (opam_pkg, url))
   end
 
   module Classified = struct
@@ -248,3 +264,29 @@ let sort ({ deps = { opamverse; duniverse }; _ } as t) =
   { t with deps = { opamverse = sorted_opamverse; duniverse = sorted_duniverse } }
 
 let save ~file t = Persist.save_sexp "duniverse" sexp_of_t file (sort t)
+
+let to_opam t =
+  let deps =
+    let packages =
+      let opam = t.deps.opamverse in
+      let source = List.concat_map t.deps.duniverse ~f:(fun s -> s.provided_packages) in
+      List.sort ~compare:(fun o o' -> String.compare o.name o'.name) (opam @ source)
+    in
+    match packages with
+    | hd::tl ->
+      List.fold_left tl
+        ~f:(fun acc pkg -> OpamFormula.(And (acc, (Deps.Opam.to_opam_dep pkg))))
+        ~init:(Deps.Opam.to_opam_dep hd)
+    | [] ->
+      OpamFormula.Empty
+  in
+  let pin_deps =
+    List.concat_map t.deps.duniverse ~f:Deps.Source.to_opam_pin_deps
+    |> List.sort ~compare:(fun (p, _) (p', _) -> Ordering.of_int (OpamPackage.compare p p'))
+  in
+  let open OpamFile.OPAM in
+  empty
+  |> with_maintainer ["duniverse"]
+  |> with_synopsis "duniverse generated lockfile"
+  |> with_depends deps
+  |> with_pin_depends pin_deps

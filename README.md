@@ -60,6 +60,9 @@ COMMANDS
        pull
            fetch the latest archives of the vendored libraries
 
+       to-opam
+           convert a dune-get file to an opam lock file
+
        tools
            Make all the tools needed to build the project available
 

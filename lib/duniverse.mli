@@ -126,6 +126,8 @@ end
 
 type t = { config : Config.t; deps : resolved Deps.t; depexts : Depexts.t } [@@deriving sexp]
 
+val to_opam : t -> OpamFile.OPAM.t
+
 val load : file:Fpath.t -> (t, [> `Msg of string ]) result
 
 val save : file:Fpath.t -> t -> (unit, [> `Msg of string ]) result
