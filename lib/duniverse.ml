@@ -285,8 +285,10 @@ let to_opam t =
     |> List.sort ~compare:(fun (p, _) (p', _) -> Ordering.of_int (OpamPackage.compare p p'))
   in
   let open OpamFile.OPAM in
+  let add_ext field value opam = add_extension opam field value in
   empty
   |> with_maintainer ["duniverse"]
   |> with_synopsis "duniverse generated lockfile"
   |> with_depends deps
   |> with_pin_depends pin_deps
+  |> add_ext "x-duniverse-config" (Opam_value.from_sexp (Config.sexp_of_t t.config))
