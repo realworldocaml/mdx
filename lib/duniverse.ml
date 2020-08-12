@@ -272,7 +272,7 @@ end
 
 type t = { config : Config.t; deps : resolved Deps.t; depexts : Depexts.t } [@@deriving sexp]
 
-let load ~file = Persist.load_sexp "duniverse" t_of_sexp file
+let load_dune_get ~file = Persist.load_sexp "duniverse" t_of_sexp file
 
 let sort ({ deps = { opamverse; duniverse }; _ } as t) =
   let sorted_opamverse =
@@ -286,8 +286,6 @@ let sort ({ deps = { opamverse; duniverse }; _ } as t) =
     List.sort ~compare duniverse
   in
   { t with deps = { opamverse = sorted_opamverse; duniverse = sorted_duniverse } }
-
-let save ~file t = Persist.save_sexp "duniverse" sexp_of_t file (sort t)
 
 let sexp_of_opamverse opamverse =
   Sexplib0.Sexp_conv.sexp_of_list Deps.Opam.sexp_of_t opamverse
@@ -311,6 +309,7 @@ module Opam_ext : sig
   val add : ('a -> Sexplib0.Sexp.t) -> 'a field -> 'a -> OpamFile.OPAM.t -> OpamFile.OPAM.t
   val get :
     ?file: string ->
+    ?default: 'a ->
     (Sexplib0.Sexp.t -> 'a) ->
     'a field ->
     OpamFile.OPAM.t ->
@@ -325,13 +324,15 @@ end = struct
   let add sexp_of field a opam =
     OpamFile.OPAM.add_extension opam field (Opam_value.from_sexp (sexp_of a))
 
-  let get ?file of_sexp field opam =
+  let get ?file ?default of_sexp field opam =
     let open Result.O in
-    match OpamFile.OPAM.extended opam field (fun i -> i) with
-    | None ->
-      let file = Option.(value ~default:"" (map ~f:(Printf.sprintf " in %s") file)) in
-      Error (`Msg (Printf.sprintf "Missing %s field%s" field file))
-    | Some ov -> Opam_value.to_sexp_strict ov >>| of_sexp
+    match OpamFile.OPAM.extended opam field (fun i -> i), default with
+    | None, Some default -> Ok default
+    | None, None ->
+      let file_suffix_opt = Option.map ~f:(Printf.sprintf " in %s") file in
+      let file_suffix = Option.value ~default:"" file_suffix_opt in
+      Error (`Msg (Printf.sprintf "Missing %s field%s" field file_suffix))
+    | Some ov, _ -> Opam_value.to_sexp_strict ov >>| of_sexp
 end
 
 let to_opam t =
@@ -353,6 +354,7 @@ let to_opam t =
     List.concat_map t.deps.duniverse ~f:Deps.Source.to_opam_pin_deps
     |> List.sort ~compare:(fun (p, _) (p', _) -> Ordering.of_int (OpamPackage.compare p p'))
   in
+  let t = sort t in
   let open OpamFile.OPAM in
   empty
   |> with_maintainer ["duniverse"]
@@ -369,7 +371,26 @@ let from_opam ?file opam =
   let open OpamFile.OPAM in
   let depexts = depexts opam in
   Opam_ext.(get ?file Config.t_of_sexp config_field opam) >>= fun config ->
-  Opam_ext.(get ?file opamverse_of_sexp opamverse_field opam) >>= fun opamverse ->
-  Opam_ext.(get ?file duniverse_of_sexp duniverse_field opam) >>= fun duniverse ->
+  Opam_ext.(get ?file ~default:[] opamverse_of_sexp opamverse_field opam) >>= fun opamverse ->
+  Opam_ext.(get ?file ~default:[] duniverse_of_sexp duniverse_field opam) >>= fun duniverse ->
   let deps = { Deps.opamverse; duniverse } in
   Ok { config; deps; depexts }
+
+let save ~file t =
+  let open Result.O in
+  let opam = to_opam t in
+  Bos.OS.File.with_oc file (fun oc () ->
+      OpamFile.OPAM.write_to_channel oc opam;
+      Ok ())
+    ()
+  >>= fun res -> res
+
+let load ~file =
+  let open Result.O in
+  let filename = Fpath.to_string file in
+  Bos.OS.File.with_ic file (fun ic () ->
+      let filename = OpamFile.make (OpamFilename.of_string filename) in
+      OpamFile.OPAM.read_from_channel ~filename ic)
+    ()
+  >>= fun opam ->
+  from_opam ~file:filename opam

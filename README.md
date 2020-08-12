@@ -47,12 +47,16 @@ COMMANDS
            print external packages required to build this duniverse
 
        init
-           analyse opam files to generate an initial dune-get
+           analyse opam files to generate an initial
+           duniverse-lock.opam.locked
+
+       migrate-dune-get
+           convert a legacy dune-get file to an opam lock file
 
        opam-install
            install packages that are not duniverse-compatible via opam
 
-       pin Add a pinned package dependency to dune-get
+       pin Add a pinned package dependency to duniverse-lock.opam.locked
 
        print-ocaml-compilers
            print OCaml compilers that are supported for this duniverse
@@ -60,14 +64,11 @@ COMMANDS
        pull
            fetch the latest archives of the vendored libraries
 
-       to-opam
-           convert a dune-get file to an opam lock file
-
        tools
            Make all the tools needed to build the project available
 
        unpin
-           Remove a pinned package dependency from dune-get
+           Remove a pinned package dependency from duniverse-lock.opam.locked
 
        update
            update the commit hash corresponding to the tracked branch/tag for

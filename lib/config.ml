@@ -29,9 +29,9 @@ let base_packages =
 
 let duniverse_opam_repo = "https://github.com/dune-universe/opam-repository.git#duniverse"
 
-let duniverse_file = Fpath.v "dune-get"
+let dune_get = Fpath.v "dune-get"
 
-let duniverse_opam_file = Fpath.v "duniverse-lock.opam.locked"
+let duniverse_file = Fpath.v "duniverse-lock.opam.locked"
 
 let vendor_dir = Fpath.v "duniverse"
 

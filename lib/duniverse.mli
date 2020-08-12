@@ -140,3 +140,8 @@ val from_opam : ?file: string -> OpamFile.OPAM.t -> (t, [> `Msg of string]) resu
 val load : file:Fpath.t -> (t, [> `Msg of string ]) result
 
 val save : file:Fpath.t -> t -> (unit, [> `Msg of string ]) result
+
+(* Load a [t] from a legacy dune-get file.
+   Should be used for migration to the .opam.locked format only. *)
+val load_dune_get : file:Fpath.t -> (t, [> `Msg of string ]) result
+[@@deprecated "dune-get files are a legacy format, you should use load instead"]
