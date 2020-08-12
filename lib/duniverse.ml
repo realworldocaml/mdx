@@ -265,6 +265,12 @@ let sort ({ deps = { opamverse; duniverse }; _ } as t) =
 
 let save ~file t = Persist.save_sexp "duniverse" sexp_of_t file (sort t)
 
+let sexp_of_opamverse opamverse =
+  Sexplib0.Sexp_conv.sexp_of_list Deps.Opam.sexp_of_t opamverse
+
+let sexp_of_duniverse duniverse =
+  Sexplib0.Sexp_conv.sexp_of_list (Deps.Source.sexp_of_t Git.Ref.sexp_of_resolved) duniverse
+
 let to_opam t =
   let deps =
     let packages =
@@ -292,3 +298,5 @@ let to_opam t =
   |> with_depends deps
   |> with_pin_depends pin_deps
   |> add_ext "x-duniverse-config" (Opam_value.from_sexp (Config.sexp_of_t t.config))
+  |> add_ext "x-duniverse-opamverse" (Opam_value.from_sexp (sexp_of_opamverse t.deps.opamverse))
+  |> add_ext "x-duniverse-duniverse" (Opam_value.from_sexp (sexp_of_duniverse t.deps.duniverse))
