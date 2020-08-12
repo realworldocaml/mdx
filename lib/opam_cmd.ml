@@ -134,8 +134,7 @@ let compute_depexts ~get_opam_path pkgs =
     let opam_file = get_opam_path pkg in
     Bos.OS.File.read opam_file >>| fun opam_contents ->
     let opam = OpamFile.OPAM.read_from_string opam_contents in
-    OpamFile.OPAM.depexts opam |>
-    List.map (fun (s, f) -> (s, OpamFilter.to_string f))
+    OpamFile.OPAM.depexts opam
   in
   let open Rresult.R in
   Exec.map opam_depexts_of_pkg pkgs >>| fun depexts ->

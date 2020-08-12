@@ -82,7 +82,7 @@ module Deps : sig
 end
 
 module Depexts : sig
-  type t = (string list * string) list [@@deriving sexp]
+  type t = (string list * OpamTypes.filter) list [@@deriving sexp]
 end
 
 module Tools : sig

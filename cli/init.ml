@@ -76,7 +76,10 @@ let run (`Repo repo)
         (List.length depexts)
         Fmt.(styled `Green int)
         (List.length opam_entries));
-  List.iter (fun (k, v) -> Logs.info (fun l -> l "depext %s %s" (String.concat ~sep:"," k) v)) depexts;
+  List.iter
+    (fun (k, v) ->
+       Logs.info (fun l -> l "depext %s %s" (String.concat ~sep:"," k) (OpamFilter.to_string v)))
+    depexts;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor source code.");
   compute_deps ~opam_entries >>= resolve_ref >>= fun deps ->
   let deps = { deps with duniverse = deps.duniverse @ pin_deps } in

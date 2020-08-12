@@ -178,7 +178,31 @@ module Deps = struct
 end
 
 module Depexts = struct
-  type t = (string list * string) list [@@deriving sexp]
+  module Repr = struct
+    type t = (string list * string) list [@@deriving sexp]
+  end
+
+  type t = (string list * OpamTypes.filter) list
+
+  let to_repr t = List.map ~f:(fun (l, filter) -> (l, OpamFilter.to_string filter)) t
+
+  let of_repr repr =
+    let minimal_opam_str =
+      let b = Buffer.create 1024 in
+      Buffer.add_string b "opam-version: \"2.0\"\ndepexts: [\n";
+      List.iter repr
+        ~f:(fun (s, f) ->
+            let quoted = List.map s ~f:(Printf.sprintf "%S") in
+            let tags = String.concat ~sep:" " quoted in
+            Printf.bprintf b " [ %s ] {%s}\n" tags f);
+      Buffer.add_string b "]\n";
+      Buffer.contents b
+    in
+    let minimal_opam = OpamFile.OPAM.read_from_string minimal_opam_str in
+    OpamFile.OPAM.depexts minimal_opam
+
+  let sexp_of_t t = Repr.sexp_of_t (to_repr t)
+  let t_of_sexp sexp = of_repr (Repr.t_of_sexp sexp)
 end
 
 (** duniverse knows about which tools to use, and can calculate a set of allowable versions
