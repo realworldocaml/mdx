@@ -292,8 +292,47 @@ let save ~file t = Persist.save_sexp "duniverse" sexp_of_t file (sort t)
 let sexp_of_opamverse opamverse =
   Sexplib0.Sexp_conv.sexp_of_list Deps.Opam.sexp_of_t opamverse
 
+let opamverse_of_sexp sexp =
+  Sexplib0.Sexp_conv.list_of_sexp Deps.Opam.t_of_sexp sexp
+
 let sexp_of_duniverse duniverse =
   Sexplib0.Sexp_conv.sexp_of_list (Deps.Source.sexp_of_t Git.Ref.sexp_of_resolved) duniverse
+
+let duniverse_of_sexp sexp =
+  Sexplib0.Sexp_conv.list_of_sexp (Deps.Source.t_of_sexp Git.Ref.resolved_of_sexp) sexp
+
+module Opam_ext : sig
+  type 'a field
+
+  val duniverse_field : Git.Ref.resolved Deps.Source.t list field
+  val opamverse_field : Deps.Opam.t list field
+  val config_field : Config.t field
+
+  val add : ('a -> Sexplib0.Sexp.t) -> 'a field -> 'a -> OpamFile.OPAM.t -> OpamFile.OPAM.t
+  val get :
+    ?file: string ->
+    (Sexplib0.Sexp.t -> 'a) ->
+    'a field ->
+    OpamFile.OPAM.t ->
+    ('a, [> `Msg of string]) result
+end = struct
+  type _ field = string
+
+  let duniverse_field = "x-duniverse-duniverse"
+  let opamverse_field = "x-duniverse-opamverse"
+  let config_field = "x-duniverse-config"
+
+  let add sexp_of field a opam =
+    OpamFile.OPAM.add_extension opam field (Opam_value.from_sexp (sexp_of a))
+
+  let get ?file of_sexp field opam =
+    let open Result.O in
+    match OpamFile.OPAM.extended opam field (fun i -> i) with
+    | None ->
+      let file = Option.(value ~default:"" (map ~f:(Printf.sprintf " in %s") file)) in
+      Error (`Msg (Printf.sprintf "Missing %s field%s" field file))
+    | Some ov -> Opam_value.to_sexp_strict ov >>| of_sexp
+end
 
 let to_opam t =
   let deps =
@@ -315,13 +354,22 @@ let to_opam t =
     |> List.sort ~compare:(fun (p, _) (p', _) -> Ordering.of_int (OpamPackage.compare p p'))
   in
   let open OpamFile.OPAM in
-  let add_ext field value opam = add_extension opam field value in
   empty
   |> with_maintainer ["duniverse"]
   |> with_synopsis "duniverse generated lockfile"
   |> with_depends deps
   |> with_pin_depends pin_deps
   |> with_depexts t.depexts
-  |> add_ext "x-duniverse-config" (Opam_value.from_sexp (Config.sexp_of_t t.config))
-  |> add_ext "x-duniverse-opamverse" (Opam_value.from_sexp (sexp_of_opamverse t.deps.opamverse))
-  |> add_ext "x-duniverse-duniverse" (Opam_value.from_sexp (sexp_of_duniverse t.deps.duniverse))
+  |> Opam_ext.(add Config.sexp_of_t config_field t.config)
+  |> Opam_ext.(add sexp_of_opamverse opamverse_field t.deps.opamverse)
+  |> Opam_ext.(add sexp_of_duniverse duniverse_field t.deps.duniverse)
+
+let from_opam ?file opam =
+  let open Result.O in
+  let open OpamFile.OPAM in
+  let depexts = depexts opam in
+  Opam_ext.(get ?file Config.t_of_sexp config_field opam) >>= fun config ->
+  Opam_ext.(get ?file opamverse_of_sexp opamverse_field opam) >>= fun opamverse ->
+  Opam_ext.(get ?file duniverse_of_sexp duniverse_field opam) >>= fun duniverse ->
+  let deps = { Deps.opamverse; duniverse } in
+  Ok { config; deps; depexts }

@@ -126,7 +126,16 @@ end
 
 type t = { config : Config.t; deps : resolved Deps.t; depexts : Depexts.t } [@@deriving sexp]
 
+(* Converts a [t] to an opam file.
+   Extensions are used to store extra information and depends, pin-depends and depexts
+   fields are properly set so that the resulting lockfile can be reproducibly
+   opam-installed. *)
 val to_opam : t -> OpamFile.OPAM.t
+
+(* Parses a duniverse generated opam lockfile to a [t] value.
+   The optional [file] argument is used for improved error reporting only, it should
+   be passed when available. *)
+val from_opam : ?file: string -> OpamFile.OPAM.t -> (t, [> `Msg of string]) result
 
 val load : file:Fpath.t -> (t, [> `Msg of string ]) result
 
