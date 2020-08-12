@@ -321,6 +321,7 @@ let to_opam t =
   |> with_synopsis "duniverse generated lockfile"
   |> with_depends deps
   |> with_pin_depends pin_deps
+  |> with_depexts t.depexts
   |> add_ext "x-duniverse-config" (Opam_value.from_sexp (Config.sexp_of_t t.config))
   |> add_ext "x-duniverse-opamverse" (Opam_value.from_sexp (sexp_of_opamverse t.deps.opamverse))
   |> add_ext "x-duniverse-duniverse" (Opam_value.from_sexp (sexp_of_duniverse t.deps.duniverse))
