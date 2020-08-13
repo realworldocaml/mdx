@@ -37,3 +37,5 @@ val output : [> `Output of output option ] t
     manpage *)
 
 val setup : [> `Setup of unit ] t
+
+val suppress : [> `Suppress of [ `Nothing | `Types | `Signatures ] ] t

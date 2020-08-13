@@ -53,5 +53,5 @@ let cmd : int Term.t * Term.info =
       pure run $ Cli.setup $ Cli.non_deterministic $ Cli.silent_eval
       $ Cli.syntax $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude
       $ Cli.prelude_str $ Cli.file $ Cli.section $ Cli.root $ Cli.force_output
-      $ Cli.output),
+      $ Cli.output $ Cli.suppress),
     Term.info "test" ~doc )

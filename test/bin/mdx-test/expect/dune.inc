@@ -456,6 +456,30 @@
  (action (diff spaces/test-case.md spaces.actual)))
 
 (rule
+ (target suppress-signatures.actual)
+ (deps (package mdx) (source_tree suppress-signatures))
+ (action
+  (with-stdout-to %{target}
+   (chdir suppress-signatures
+    (run ocaml-mdx test --output - --suppress=signatures test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff suppress-signatures/test-case.md suppress-signatures.actual)))
+
+(rule
+ (target suppress-types.actual)
+ (deps (package mdx) (source_tree suppress-types))
+ (action
+  (with-stdout-to %{target}
+   (chdir suppress-types
+    (run ocaml-mdx test --output - --suppress=types test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff suppress-types/test-case.md suppress-types.actual)))
+
+(rule
  (target sync-from-subdir.actual)
  (deps (package mdx) (source_tree sync-from-subdir))
  (action
