@@ -65,7 +65,7 @@ let pull ~pull_mode ~repo ~pinned_paths pins =
   Ok duniverse
 
 let init ~repo ~pull_mode ~pins =
-  Opam_cmd.find_local_opam_packages Config.pins_dir >>= fun pinned_paths ->
+  Repo.local_packages Config.pins_dir >>= fun pinned_paths ->
   remove_stale_pins ~pinned_paths pins >>= fun () ->
   pull ~pull_mode ~repo ~pinned_paths pins >>= fun src_deps ->
   copy_opam_files ~pinned_paths src_deps >>= fun () ->
