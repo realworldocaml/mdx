@@ -33,7 +33,7 @@ let duniverse_file = Fpath.v "dune-get"
 
 let vendor_dir = Fpath.v "duniverse"
 
-let pins_dir = Fpath.v "duniverse/.pins"
+let pins_dir = Fpath.(vendor_dir / ".pins")
 
 let duniverse_log = Fpath.v ".duniverse-log"
 

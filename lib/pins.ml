@@ -65,7 +65,8 @@ let pull ~pull_mode ~repo ~pinned_paths pins =
   Ok duniverse
 
 let init ~repo ~pull_mode ~pins =
-  Repo.local_packages Config.pins_dir >>= fun pinned_paths ->
+  let pins_dir = Fpath.(repo // Config.pins_dir) in
+  Repo.local_packages pins_dir >>= fun pinned_paths ->
   remove_stale_pins ~pinned_paths pins >>= fun () ->
   pull ~pull_mode ~repo ~pinned_paths pins >>= fun src_deps ->
   copy_opam_files ~pinned_paths src_deps >>= fun () ->
