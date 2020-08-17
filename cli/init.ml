@@ -44,14 +44,15 @@ let run (`Repo repo)
   let open Rresult.R.Infix in
   init_local_opam_repo opam_repo >>= fun local_opam_repo ->
   Repo.local_packages repo >>= fun local_paths ->
-  Pins.read_from_config Fpath.(repo // Config.duniverse_file) >>= fun pins ->
+  Repo.duniverse_file ~local_packages:local_paths repo >>= fun duniverse_file ->
+  Pins.read_from_config duniverse_file >>= fun pins ->
   let local_packages = List.map fst (String.Map.bindings local_paths) in
   build_config ~local_packages ~pins ~pull_mode ~opam_repo
   >>= fun config ->
   if pins <> [] then
     Common.Logs.app (fun l -> l "Using %a pins from %a: %a."
         Fmt.(styled `Green int) (List.length pins)
-        Styled_pp.path (Fpath.normalize Config.duniverse_file)
+        Styled_pp.path (Fpath.normalize duniverse_file)
         Fmt.(list ~sep:(unit " ") (styled `Yellow string))
         (List.map (fun pin -> pin.Types.Opam.pin) pins));
   Pins.init ~repo ~pull_mode ~pins >>= fun pin_deps ->
@@ -84,13 +85,12 @@ let run (`Repo repo)
   compute_deps ~opam_entries >>= resolve_ref >>= fun deps ->
   let deps = { deps with duniverse = deps.duniverse @ pin_deps } in
   let duniverse = { Duniverse.config; deps; depexts } in
-  let file = Fpath.(repo // Config.duniverse_file) in
-  Duniverse.save ~file duniverse >>= fun () ->
+  Duniverse.save ~file:duniverse_file duniverse >>= fun () ->
   Common.Logs.app (fun l ->
       l "Wrote duniverse file with %a entries to %a. You can now run %a to fetch the sources."
         Fmt.(styled `Green int)
         (Duniverse.Deps.count duniverse.deps)
-        Styled_pp.path (Fpath.normalize file)
+        Styled_pp.path (Fpath.normalize duniverse_file)
         Fmt.(styled `Blue string)
         "duniverse pull");
   Ok ()
@@ -113,9 +113,7 @@ let pull_mode =
 
 let info =
   let exits = Term.default_exits in
-  let doc =
-    Fmt.strf "analyse opam files to generate an initial $(b,%a)" Fpath.pp Config.duniverse_file
-  in
+  let doc = Fmt.strf "analyse opam files to generate an initial lock file" in
   let man = [] in
   Term.info "init" ~doc ~exits ~man ~envs:Common.Arg.caches
 

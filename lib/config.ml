@@ -31,8 +31,6 @@ let duniverse_opam_repo = "https://github.com/dune-universe/opam-repository.git#
 
 let dune_get = Fpath.v "dune-get"
 
-let duniverse_file = Fpath.v "duniverse-lock.opam.locked"
-
 let vendor_dir = Fpath.v "duniverse"
 
 let pins_dir = Fpath.(vendor_dir / ".pins")

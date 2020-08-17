@@ -3,7 +3,7 @@ open Duniverse_lib
 
 let run (`Repo repo) () =
   let open Rresult.R in
-  let duniverse_file = Fpath.(repo // Config.duniverse_file) in
+  Repo.duniverse_file repo >>= fun duniverse_file ->
   Duniverse.load ~file:duniverse_file >>= fun config ->
   print_endline (String.concat ~sep:" " config.Duniverse.config.ocaml_compilers);
   Ok ()

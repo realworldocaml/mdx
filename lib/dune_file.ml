@@ -35,6 +35,14 @@ module Lang = struct
 end
 
 module Raw = struct
+  let as_sexps path =
+    try Ok (Sexplib.Sexp.load_sexps (Fpath.to_string path))
+    with
+    | Sexplib.Sexp.Parse_error pe ->
+      Error (`Msg (Format.asprintf "Failed to parse dune file %a: %s" Fpath.pp path pe.err_msg))
+    | Failure _ ->
+      Error (`Msg (Format.asprintf "Failed to parse dune file %a: Invalid sexp" Fpath.pp path))
+
   let comment s = Printf.sprintf "; %s" s
 
   let vendored_dirs glob = Printf.sprintf "(vendored_dirs %s)" glob
@@ -53,10 +61,13 @@ end
 module Project = struct
   module OV = Ocaml_version
 
-  let load_dune_project () =
-    match Sexplib.Sexp.load_sexps "dune-project" with
-    | v -> Ok v
-    | exception exn -> Error (`Msg (Printexc.to_string exn))
+  let rec name sexps =
+    match (sexps : Sexplib0.Sexp.t list) with
+    | [] -> Error (`Msg "Missing a name field in the dune-project file")
+    | (List [Atom "name"; Atom name])::_ -> Ok name
+    | _::tl -> name tl
+
+  let load_dune_project () = Raw.as_sexps (Fpath.v "dune-project")
 
   let check_opam_generation =
     let open Sexplib.Sexp in

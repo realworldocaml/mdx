@@ -5,7 +5,7 @@ let run (`Repo repo) () =
   let dune_get = Fpath.(repo // Config.dune_get) in
   let duniverse_res = Duniverse.load_dune_get ~file:dune_get [@warning "-3"] in
   duniverse_res >>= fun duniverse ->
-  let file = Fpath.(repo // Config.duniverse_file) in
+  Repo.duniverse_file repo >>= fun file ->
   Duniverse.save ~file duniverse
 
 let info =

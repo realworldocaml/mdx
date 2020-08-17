@@ -192,7 +192,7 @@ let install_local_tools repo opam_repo config cache strategy =
 
 let tools (`Repo repo) (`Opam_repo opam_repo) (`No_cache no_cache) () =
   let open R.Infix in
-  let duniverse_file = Fpath.(repo // Config.duniverse_file) in
+  Repo.duniverse_file repo >>= fun duniverse_file ->
   Duniverse.load ~file:duniverse_file >>= fun config -> (* TODO better error handling if no dune-get file *)
   (* Check for OCaml *)
   Common.get_cache ~no_cache >>= fun cache ->

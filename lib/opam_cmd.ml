@@ -282,11 +282,11 @@ let choose_root_packages ~local_packages =
       Ok local_packages
 
 let install_incompatible_packages yes repo =
+  Repo.duniverse_file repo >>= fun file ->
   Logs.app (fun l ->
       l "%aGathering dune-incompatible packages from %a." pp_header header
         Fmt.(styled `Cyan Fpath.pp)
-        Config.duniverse_file);
-  let file = Fpath.(repo // Config.duniverse_file) in
+        file);
   Duniverse.load ~file >>= fun { deps = { opamverse; _ }; _ } ->
   match opamverse with
   | [] ->

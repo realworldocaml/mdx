@@ -9,7 +9,7 @@ let show_opam_depexts config env =
 
 let run (`Repo repo) () =
   let open Rresult.R in
-  let duniverse_file = Fpath.(repo // Config.duniverse_file) in
+  Repo.duniverse_file repo >>= fun duniverse_file ->
   Duniverse.load ~file:duniverse_file >>= fun config ->
   Osrelease.Distro.v () >>= fun distro ->
   Osrelease.Version.v () >>= fun version ->

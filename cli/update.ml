@@ -27,7 +27,7 @@ let update ~total ~updated ~to_update src_dep =
 
 let run (`Repo repo) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
-  let duniverse_file = Fpath.(repo // Config.duniverse_file) in
+  Repo.duniverse_file repo >>= fun duniverse_file ->
   Common.Logs.app (fun l ->
       l "Updating %a to track the latest commits" Styled_pp.path duniverse_file);
   Duniverse.load ~file:duniverse_file >>= function

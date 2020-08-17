@@ -58,7 +58,7 @@ let check_dune_lang_version ~yes ~repo =
 
 let run (`Yes yes) (`No_cache no_cache) (`Repo repo) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
-  let duniverse_file = Fpath.(repo // Config.duniverse_file) in
+  Repo.duniverse_file repo >>= fun duniverse_file ->
   Duniverse.load ~file:duniverse_file >>= function
   | { deps = { duniverse = []; _ }; _ } ->
       Common.Logs.app (fun l -> l "No dependencies to pull, there's nothing to be done here!");

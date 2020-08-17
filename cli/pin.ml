@@ -7,7 +7,7 @@ let confirm_replace_pin name ~yes () =
       Fmt.(styled `Yellow string) name)
 
 let pin (`Pin_name pin_name) (`Pin_uri uri) (`Repo repo) (`Yes yes) () =
-  let file = Fpath.(repo // Config.duniverse_file) in
+  Repo.duniverse_file repo >>= fun file ->
   Bos.OS.File.exists file >>= fun exists ->
   if not exists then
     Rresult.R.error_msgf
@@ -37,7 +37,7 @@ let pin (`Pin_name pin_name) (`Pin_uri uri) (`Repo repo) (`Yes yes) () =
     Init.run (`Repo repo) (`Opam_repo opam_repo) (`Pull_mode pull_mode) ()
 
 let unpin (`Pin_name pin_name) (`Repo repo) () =
-  let file = Fpath.(repo // Config.duniverse_file) in
+  Repo.duniverse_file repo >>= fun file ->
   Bos.OS.File.exists file >>= fun exists ->
   if not exists then
     Rresult.R.error_msgf
@@ -67,7 +67,7 @@ open Cmdliner
 
 let pin_name =
   let docv = "PACKAGE_NAME" in
-  let doc = "The $(docv) to be added to the " ^ Fpath.to_string Config.duniverse_file ^ " file." in
+  let doc = "The $(docv) to be added to the lock file." in
   Common.Arg.named
     (fun x -> `Pin_name x)
     Arg.(required & pos 0 (some string) None & info [] ~docv ~doc)
@@ -87,7 +87,7 @@ let pin_cmd =
   let info =
     let exits = Term.default_exits in
     let doc =
-      Fmt.strf "Add a pinned package dependency to $(b,%a)" Fpath.pp Config.duniverse_file
+      Fmt.strf "Add a pinned package dependency to the lock file"
     in
     let man = [] in
     Term.info "pin" ~doc ~exits ~man ~envs:Common.Arg.caches in
@@ -100,9 +100,7 @@ let unpin_cmd =
       ( const unpin $ pin_name $ Common.Arg.repo $ Common.Arg.setup_logs () ) in
   let info =
     let exits = Term.default_exits in
-    let doc =
-      Fmt.strf "Remove a pinned package dependency from $(b,%a)" Fpath.pp Config.duniverse_file
-    in
+    let doc = Fmt.strf "Remove a pinned package dependency from the lock file" in
     let man = [] in
     Term.info "unpin" ~doc ~exits ~man ~envs:Common.Arg.caches in
   (term, info)
