@@ -33,6 +33,13 @@ module Header = struct
     | "bash" -> Some (Shell `Bash)
     | "ocaml" -> Some OCaml
     | s -> Some (Other s)
+
+  let infer_from_file file =
+    match Filename.(remove_extension (basename file), extension file) with
+    | ("dune" | "dune-project"), _ -> Some (Other "scheme")
+    | _, (".ml" | ".mli" | ".mlt" | ".eliom" | ".eliomi") -> Some OCaml
+    | _, ".sh" -> Some (Shell `Sh)
+    | _ -> None
 end
 
 type section = int * string
@@ -461,6 +468,14 @@ let mk ~line ~file ~column ~section ~labels ~legacy_labels ~header ~contents
     unset_variables = config.unset_variables;
     value;
   }
+
+let mk_include ~line ~file ~column ~section ~labels =
+  match get_label (function File x -> Some x | _ -> None) labels with
+  | Some file_inc ->
+      let header = Header.infer_from_file file_inc in
+      mk ~line ~file ~column ~section ~labels ~legacy_labels:false ~header
+        ~contents:[] ~errors:[]
+  | None -> label_required ~label:"file" ~kind:"include"
 
 let is_active ?section:s t =
   let active =

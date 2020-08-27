@@ -22,6 +22,8 @@ module Header : sig
   val pp : Format.formatter -> t -> unit
 
   val of_string : string -> t option
+
+  val infer_from_file : string -> t option
 end
 
 (** Code blocks. *)
@@ -103,6 +105,16 @@ val mk :
   contents:string list ->
   errors:Output.t list ->
   (t, [ `Msg of string ]) Result.result
+
+val mk_include :
+  line:int ->
+  file:string ->
+  column:int ->
+  section:section option ->
+  labels:Label.t list ->
+  (t, [ `Msg of string ]) Result.result
+(** [mk_include] builds an include block from a comment [<!-- $MDX ... -->]
+    that is not followed by a code block [``` ... ```]. *)
 
 (** {2 Printers} *)
 

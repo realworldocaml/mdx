@@ -1,3 +1,22 @@
+let test_infer_from_file =
+  let make_test ~file ~expected =
+    let test_name = Printf.sprintf "Header.infer_from_file: %S" file in
+    let test_fun () =
+      let actual = Mdx.Block.Header.infer_from_file file in
+      Alcotest.(check (option Testable.header)) test_name expected actual
+    in
+    (test_name, `Quick, test_fun)
+  in
+  [
+    make_test ~file:"" ~expected:None;
+    make_test ~file:"foo" ~expected:None;
+    make_test ~file:"foo.bar" ~expected:None;
+    make_test ~file:"dune" ~expected:(Some (Other "scheme"));
+    make_test ~file:"dune-project" ~expected:(Some (Other "scheme"));
+    make_test ~file:"foo.sh" ~expected:(Some (Shell `Sh));
+    make_test ~file:"foo/foo/foo.ml" ~expected:(Some OCaml);
+  ]
+
 let test_require_from_line =
   let make_test ~line ~expected () =
     let open Mdx.Util.Result.Infix in
@@ -51,4 +70,4 @@ let test_mk =
       ~expected:(Error (`Msg "invalid toplevel syntax in toplevel blocks."));
   ]
 
-let suite = ("Block", test_require_from_line @ test_mk)
+let suite = ("Block", test_infer_from_file @ test_require_from_line @ test_mk)
