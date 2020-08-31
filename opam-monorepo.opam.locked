@@ -1,6 +1,6 @@
 x-duniverse-config: [
   ["version" "1"]
-  ["root_packages" [[["name" "duniverse"]]]]
+  ["root_packages" [[["name" "opam-monorepo"]]]]
   [
     "pins"
     [[["pin" "osrelease"] ["url" ["https://github.com/avsm/osrelease.git"]]]]

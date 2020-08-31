@@ -1,6 +1,6 @@
 (lang dune 2.0)
 (generate_opam_files true)
-(name duniverse)
+(name opam-monorepo)
 
 (source (github ocamllabs/duniverse))
 (license ISC)
@@ -8,9 +8,9 @@
 (maintainers "anil@recoil.org")
 
 (package
- (name duniverse)
+ (name opam-monorepo)
  (synopsis "Assemble and manage fully vendored Dune repositories")
- (description "The duniverse tool provides a convenient interface to bridge the
+ (description "The opam monorepo plugin provides a convenient interface to bridge the
 opam package manager with having a local copy of all the source
 code required to build a project using the dune build tool.")
  (depends

@@ -3,7 +3,7 @@
  (action
   (with-stdout-to
    %{targets}
-   (run ../bin/duniverse.exe --help=plain))))
+   (run opam-monorepo --help=plain))))
 
 (executable
  (name gen_readme)

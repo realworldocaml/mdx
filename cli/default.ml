@@ -9,7 +9,7 @@ let info =
     [
       `S Manpage.s_description;
       `P
-        "The $(tname) tool provides a convenient interface to bridge the $(b,opam) package manager \
+        "The $(tname) plugin provides a convenient interface to bridge the $(b,opam) package manager \
          with having a local copy of all the source code required to build a project using the \
          $(b,dune) build tool.";
       `P
@@ -20,14 +20,14 @@ let info =
          a particularly convenient way of publishing CLI tools to users who do not need the full \
          power of opam.";
       `P
-        "You can access the functionality directly via the $(i,duniverse-init), \
-         $(i,duniverse-opam-install) and $(i,duniverse-pull) commands,";
+        "You can access the functionality directly via the $(i,monorepo-init), \
+         $(i,monorepo-opam-install) and $(i,monorepo-pull) commands,";
       `P
         "Also see $(i,https://github.com/avsm/platform) for an example of a fully bootstrapping \
          use of this tool.";
     ]
   in
-  Term.info "duniverse" ~version:Common.Arg.version ~doc ~man_xrefs ~sdocs ~man
+  Term.info "opam-monorepo" ~version:Common.Arg.version ~doc ~man_xrefs ~sdocs ~man
 
 let term = Cmdliner.Term.(ret (const run $ pure ()))
 

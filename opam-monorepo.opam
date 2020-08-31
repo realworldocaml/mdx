@@ -2,7 +2,7 @@
 opam-version: "2.0"
 synopsis: "Assemble and manage fully vendored Dune repositories"
 description: """
-The duniverse tool provides a convenient interface to bridge the
+The opam monorepo plugin provides a convenient interface to bridge the
 opam package manager with having a local copy of all the source
 code required to build a project using the dune build tool."""
 maintainer: ["anil@recoil.org"]
@@ -35,4 +35,4 @@ depends: [
 ]
 dev-repo: "git+https://github.com/ocamllabs/duniverse.git"
 build: [ "dune" "build" "-p" name "-j" jobs "@install" "@runtest" {with-test} "@doc" {with-doc} ]
-
+flags: [ plugin ]
