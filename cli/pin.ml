@@ -34,7 +34,7 @@ let pin (`Pin_name pin_name) (`Pin_uri uri) (`Repo repo) (`Yes yes) () =
     Common.Logs.app (fun l -> l "Updating dependencies...");
     let opam_repo = duniverse.config.opam_repo in
     let pull_mode = duniverse.config.pull_mode in
-    Init.run (`Repo repo) (`Opam_repo opam_repo) (`Pull_mode pull_mode) ()
+    Lock.run (`Repo repo) (`Opam_repo opam_repo) (`Pull_mode pull_mode) ()
 
 let unpin (`Pin_name pin_name) (`Repo repo) () =
   Repo.duniverse_file repo >>= fun file ->
@@ -61,7 +61,7 @@ let unpin (`Pin_name pin_name) (`Repo repo) () =
     Common.Logs.app (fun l -> l "Updating dependencies...");
     let opam_repo = duniverse.config.opam_repo in
     let pull_mode = duniverse.config.pull_mode in
-    Init.run (`Repo repo) (`Opam_repo opam_repo) (`Pull_mode pull_mode) ()
+    Lock.run (`Repo repo) (`Opam_repo opam_repo) (`Pull_mode pull_mode) ()
 
 open Cmdliner
 

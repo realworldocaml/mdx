@@ -46,7 +46,7 @@ COMMANDS
        depext
            print external packages required to build this duniverse
 
-       init
+       lock
            analyse opam files to generate an initial lock file
 
        migrate-dune-get

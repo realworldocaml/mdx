@@ -115,7 +115,7 @@ let info =
   let exits = Term.default_exits in
   let doc = Fmt.strf "analyse opam files to generate an initial lock file" in
   let man = [] in
-  Term.info "init" ~doc ~exits ~man ~envs:Common.Arg.caches
+  Term.info "lock" ~doc ~exits ~man ~envs:Common.Arg.caches
 
 let term =
   let open Term in
