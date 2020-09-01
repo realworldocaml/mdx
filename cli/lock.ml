@@ -16,8 +16,7 @@ let build_config ~local_packages ~pins ~pull_mode ~opam_repo =
   let root_packages =
     List.map Opam_cmd.split_opam_name_and_version root_packages |> Opam.sort_uniq
   in
-  let tools = Duniverse.Tools.of_repo () in
-  Ok { Duniverse.Config.version; root_packages; pins; pull_mode; ocaml_compilers; opam_repo; tools }
+  Ok { Duniverse.Config.version; root_packages; pins; pull_mode; ocaml_compilers; opam_repo }
 
 let compute_deps ~opam_entries =
   Dune_cmd.log_invalid_packages opam_entries;
@@ -69,22 +68,10 @@ let run (`Repo repo)
   let packages = config.root_packages @ List.map Pins.to_package pins in
   Opam_cmd.calculate_opam ~packages ~get_opam_path ~local_opam_repo >>= fun opam_entries ->
   Opam_cmd.report_packages_stats opam_entries;
-  Opam_cmd.compute_depexts ~get_opam_path (List.map (fun entry -> entry.Types.Opam.package) opam_entries)
-  >>= fun depexts ->
-  Common.Logs.app (fun l ->
-      l "Recording %a depext formulae for %a packages."
-        Fmt.(styled `Green int)
-        (List.length depexts)
-        Fmt.(styled `Green int)
-        (List.length opam_entries));
-  List.iter
-    (fun (k, v) ->
-       Logs.info (fun l -> l "depext %s %s" (String.concat ~sep:"," k) (OpamFilter.to_string v)))
-    depexts;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor source code.");
   compute_deps ~opam_entries >>= resolve_ref >>= fun deps ->
   let deps = { deps with duniverse = deps.duniverse @ pin_deps } in
-  let duniverse = { Duniverse.config; deps; depexts } in
+  let duniverse = { Duniverse.config; deps } in
   Duniverse.save ~file:duniverse_file duniverse >>= fun () ->
   Common.Logs.app (fun l ->
       l "Wrote duniverse file with %a entries to %a. You can now run %a to fetch the sources."

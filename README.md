@@ -43,9 +43,6 @@ DESCRIPTION
        bootstrapping use of this tool.
 
 COMMANDS
-       depext
-           print external packages required to build this duniverse
-
        lock
            analyse opam files to generate an initial lock file
 
@@ -62,9 +59,6 @@ COMMANDS
 
        pull
            fetch the latest archives of the vendored libraries
-
-       tools
-           Make all the tools needed to build the project available
 
        unpin
            Remove a pinned package dependency from the lock file

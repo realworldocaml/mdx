@@ -7,18 +7,6 @@ x-duniverse-config: [
   ]
   ["pull_mode" "Source"]
   ["ocaml_compilers" ["4.07.1" "4.08.1" "4.09.1" "4.10.0"]]
-  [
-    "tools"
-    [
-      ["opam" "Latest"]
-      ["ocamlformat" ["Eq" "0.13.0"]]
-      ["dune" "Latest"]
-      ["odoc" "Latest"]
-      ["mdx" "Latest"]
-      ["lsp" "Latest"]
-      ["merlin" "Latest"]
-    ]
-  ]
 ]
 x-duniverse-duniverse: [
   [

@@ -177,83 +177,6 @@ module Deps = struct
     >>= fun duniverse -> Ok { t with duniverse }
 end
 
-module Depexts = struct
-  module Repr = struct
-    type t = (string list * string) list [@@deriving sexp]
-  end
-
-  type t = (string list * OpamTypes.filter) list
-
-  let to_repr t = List.map ~f:(fun (l, filter) -> (l, OpamFilter.to_string filter)) t
-
-  let of_repr repr =
-    let minimal_opam_str =
-      let b = Buffer.create 1024 in
-      Buffer.add_string b "opam-version: \"2.0\"\ndepexts: [\n";
-      List.iter repr
-        ~f:(fun (s, f) ->
-            let quoted = List.map s ~f:(Printf.sprintf "%S") in
-            let tags = String.concat ~sep:" " quoted in
-            Printf.bprintf b " [ %s ] {%s}\n" tags f);
-      Buffer.add_string b "]\n";
-      Buffer.contents b
-    in
-    let minimal_opam = OpamFile.OPAM.read_from_string minimal_opam_str in
-    OpamFile.OPAM.depexts minimal_opam
-
-  let sexp_of_t t = Repr.sexp_of_t (to_repr t)
-  let t_of_sexp sexp = of_repr (Repr.t_of_sexp sexp)
-end
-
-(** duniverse knows about which tools to use, and can calculate a set of allowable versions
-    by inspecting the repo metadata *)
-module Tools = struct
-
-  type version =
-     | Eq of string
-     | Latest
-     | Min of string
-  [@@deriving sexp]
-
-  type t = {
-    opam: version;
-    ocamlformat: version;
-    dune: version;
-    odoc: version;
-    mdx: version;
-    lsp: version;
-    merlin: version;
-   } [@@deriving sexp]
-
-  let tools = [
-    ("base", ["opam"; "odoc"; "mdx"]);
-    ("ocamlformat", ["ocamlformat"]);
-    (* ("lsp", ["ocaml-lsp-server"]); TODO broken *)
-    ("merlin", ["merlin"])]
-
-  (** Calculate a version of this tool by looking at repo metadata *)
-  let of_repo () = (* TODO expose CLI overrides *)
-     let ocamlformat =
-       match Bos.OS.File.read_lines (Fpath.v ".ocamlformat") with
-       | Ok f -> begin
-               List.filter_map ~f:(Astring.String.cut ~sep:"=") f |>
-               List.assoc_opt "version" |> begin
-                function
-               | Some v -> Eq v
-               | None -> Latest
-               end
-              end
-       | Error (`Msg _) -> Latest
-     in
-    let dune = Latest in (* TODO check for minimum in dune-project *)
-    let odoc = Latest in (* No real version constraints on odoc *)
-    let opam = Latest in (* No real version constraints on opam *)
-    let mdx = Latest in 
-    let lsp = Latest in
-    let merlin = Latest in
-    { ocamlformat; dune; odoc; opam; mdx; lsp; merlin }
-end
-
 module Config = struct
   type pull_mode = Submodules | Source [@@deriving sexp]
 
@@ -265,12 +188,11 @@ module Config = struct
     opam_repo : Uri_sexp.t;
         [@default Uri.of_string Config.duniverse_opam_repo] [@sexp_drop_default.sexp]
     ocaml_compilers : string list; [@default []]
-    tools: Tools.t;
   }
   [@@deriving sexp] [@@sexp.allow_extra_fields]
 end
 
-type t = { config : Config.t; deps : resolved Deps.t; depexts : Depexts.t } [@@deriving sexp]
+type t = { config : Config.t; deps : resolved Deps.t } [@@deriving sexp]
 
 let load_dune_get ~file = Persist.load_sexp "duniverse" t_of_sexp file
 
@@ -361,20 +283,17 @@ let to_opam t =
   |> with_synopsis "duniverse generated lockfile"
   |> with_depends deps
   |> with_pin_depends pin_deps
-  |> with_depexts t.depexts
   |> Opam_ext.(add Config.sexp_of_t config_field t.config)
   |> Opam_ext.(add sexp_of_opamverse opamverse_field t.deps.opamverse)
   |> Opam_ext.(add sexp_of_duniverse duniverse_field t.deps.duniverse)
 
 let from_opam ?file opam =
   let open Result.O in
-  let open OpamFile.OPAM in
-  let depexts = depexts opam in
   Opam_ext.(get ?file Config.t_of_sexp config_field opam) >>= fun config ->
   Opam_ext.(get ?file ~default:[] opamverse_of_sexp opamverse_field opam) >>= fun opamverse ->
   Opam_ext.(get ?file ~default:[] duniverse_of_sexp duniverse_field opam) >>= fun duniverse ->
   let deps = { Deps.opamverse; duniverse } in
-  Ok { config; deps; depexts }
+  Ok { config; deps }
 
 let save ~file t =
   let open Result.O in
