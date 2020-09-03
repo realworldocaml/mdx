@@ -1,7 +1,21 @@
 (library
  (name duniverse_lib)
- (libraries dune-private-libs.stdune bos fmt threads logs opam-format
-   opam-file-format rresult sexplib uri uri-sexp ocaml-version opam-0install
-   lwt.unix osrelease)
+ (libraries
+  bos
+  dune-private-libs.stdune
+  fmt
+  logs
+  lwt.unix
+  ocaml-version
+  opam-0install
+  opam-file-format
+  opam-format
+  osrelease
+  rresult
+  sexplib
+  stdext
+  threads
+  uri
+  uri-sexp)
  (preprocess
   (pps ppx_sexp_conv)))

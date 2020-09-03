@@ -129,62 +129,34 @@ let classify_package ~package ~dev_repo ~archive () =
             (kind, tag)
         | x -> (x, None) )
 
-let get_opam_info ~get_opam_path packages =
-  List.map
-    (fun pkg ->
-      let opam_file = get_opam_path pkg in
-      Logs.info (fun l -> l "processing %a" Fpath.pp opam_file);
-      let open OpamParserTypes in
-      OpamParser.file (Fpath.to_string opam_file) |> fun { file_contents; _ } ->
-      let archive =
-        List.filter_map
-          (function
-            | Section (_, { section_kind = "url"; section_items; _ }) ->
-                Some
-                  (List.filter_map
-                     (function Variable (_, "src", String (_, v)) -> Some v | _ -> None)
-                     section_items)
-            | _ -> None)
-          file_contents
-        |> List.flatten
-        |> function
-        | [ hd ] -> Some hd
-        | _ -> None
-      in
-      let dev_repo =
-        List.filter_map
-          (function Variable (_, "dev-repo", String (_, v)) -> Some v | _ -> None)
-          file_contents
-        |> function
-        | [ hd ] -> Some hd
-        | _ -> None
-      in
-      let depends =
-        List.filter_map
-          (function
-            | Variable (_, "depends", List (_, v)) ->
-                Some
-                  (List.filter_map
-                     (function
-                       | Option (_, String (_, v), _) -> Some v
-                       | String (_, v) -> Some v
-                       | _ -> None)
-                     v)
-            | _ -> None)
-          file_contents
-        |> List.flatten
-      in
-      let dev_repo, tag = classify_package ~package:pkg ~dev_repo ~archive () in
-      let is_dune = List.exists (fun l -> l = "jbuilder" || l = "dune") depends in
-      Logs.info (fun l ->
-          l "Classified %a as %a with tag %a"
-            Fmt.(styled `Yellow pp_package)
-            pkg pp_repo dev_repo
-            Fmt.(option string)
-            tag);
-      { package = pkg; dev_repo; tag; is_dune })
-    packages
-  |> fun v -> Ok v
+let depends_on_dune (formula : OpamTypes.filtered_formula) =
+  let dune = OpamPackage.Name.of_string "dune" in
+  let jbuilder = OpamPackage.Name.of_string "jbuilder" in
+  let is_duneish name =
+    let eq n n' = OpamPackage.Name.compare n n' = 0 in
+    eq dune name || eq jbuilder name
+  in
+  OpamFormula.fold_left (fun acc (name, _) -> acc || is_duneish name) false formula
+
+let get_opam_info ~switch_state package =
+  let opam_pkg =  Types.Opam.package_to_opam package in
+  let opam_file = OpamSwitchState.opam switch_state opam_pkg in
+  let archive =
+    Stdune.Option.map
+      ~f:(fun x -> OpamUrl.to_string (OpamFile.URL.url x))
+    (OpamFile.OPAM.url opam_file)
+  in
+  let dev_repo = Stdune.Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file) in
+  let depends = OpamFile.OPAM.depends opam_file in
+  let dev_repo, tag = classify_package ~package ~dev_repo ~archive () in
+  let is_dune = depends_on_dune depends in
+  Logs.info (fun l ->
+      l "Classified %a as %a with tag %a"
+        Fmt.(styled `Yellow pp_package)
+        package pp_repo dev_repo
+        Fmt.(option string)
+        tag);
+  { package; dev_repo; tag; is_dune }
 
 (* TODO catch exceptions and turn to error *)
 
@@ -202,13 +174,28 @@ let filter_duniverse_packages pkgs =
   in
   fn [] pkgs
 
-let calculate_opam ~packages ~get_opam_path ~local_opam_repo =
-  let opam_files =
-    List.map (fun pkg -> Fpath.to_string (get_opam_path pkg)) packages in
-  Opam_solve.calculate ~opam_repo:local_opam_repo ~opam_files
-  >>| List.map OpamPackage.to_string
-  >>| List.map split_opam_name_and_version
+let read_opam fpath =
+  let filename = OpamFile.make (OpamFilename.of_string (Fpath.to_string fpath)) in
+  Bos.OS.File.with_ic fpath
+    (fun ic () -> OpamFile.OPAM.read_from_channel ~filename ic)
+    ()
+
+let local_paths_to_opam_map local_paths =
+  let open Rresult.R.Infix in
+  let bindings = String.Map.bindings local_paths in
+  Stdext.Result.List.map bindings
+    ~f:(fun (name, path) ->
+        read_opam path >>| fun opam_file ->
+        (OpamPackage.Name.of_string name, opam_file))
+  >>| OpamPackage.Name.Map.of_list
+
+let calculate_opam ~local_paths ~local_packages switch_state =
+  let open Rresult.R.Infix in
+  local_paths_to_opam_map local_paths >>= fun local_packages_opam ->
+  Opam_solve.calculate ~local_packages:local_packages_opam switch_state
+  >>| List.map Types.Opam.package_from_opam
   >>= fun deps ->
+  let packages = List.map (fun name -> {Types.Opam.name; version = None}) local_packages in
   Logs.app (fun l ->
       l "%aFound %a opam dependencies for %a." pp_header header
         Fmt.(styled `Green int)
@@ -223,7 +210,7 @@ let calculate_opam ~packages ~get_opam_path ~local_opam_repo =
         deps);
   Logs.app (fun l ->
       l "%aQuerying opam database for their metadata and Dune compatibility." pp_header header);
-  get_opam_info ~get_opam_path deps
+  Ok (List.map (get_opam_info ~switch_state) deps)
 
 type packages_stats = { total : int; dune : int; not_dune : entry list }
 

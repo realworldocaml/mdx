@@ -2,7 +2,7 @@ open Duniverse_lib
 open Duniverse_lib.Types
 open Astring
 
-let build_config ~local_packages ~pull_mode ~opam_repo =
+let build_config ~local_packages ~pull_mode =
   let open Rresult.R.Infix in
   Opam_cmd.choose_root_packages ~local_packages >>= fun root_packages ->
   let ocaml_compilers =
@@ -16,7 +16,7 @@ let build_config ~local_packages ~pull_mode ~opam_repo =
   let root_packages =
     List.map Opam_cmd.split_opam_name_and_version root_packages |> Opam.sort_uniq
   in
-  Ok { Duniverse.Config.version; root_packages; pull_mode; ocaml_compilers; opam_repo }
+  Ok { Duniverse.Config.version; root_packages; pull_mode; ocaml_compilers }
 
 let compute_deps ~opam_entries =
   Dune_cmd.log_invalid_packages opam_entries;
@@ -27,35 +27,18 @@ let resolve_ref deps =
   let resolve_ref ~upstream ~ref = Exec.git_resolve ~remote:upstream ~ref in
   Duniverse.Deps.resolve ~resolve_ref deps
 
-let init_local_opam_repo opam_repo =
-  let open Rresult.R.Infix in
-  (match Cloner.get_cache_dir () with
-  | None -> Ok (Fpath.v ".")
-  | Some t -> t) >>= fun cache_dir ->
-  let local_opam_repo = Fpath.(cache_dir / "opam-repository.git") in
-  let opam_repo_url = Uri.with_fragment opam_repo None |> Uri.to_string in
-  let opam_repo_branch = match Uri.fragment opam_repo with None -> "master" | Some b -> b in
-  Exec.git_clone_or_pull ~remote:opam_repo_url ~branch:opam_repo_branch ~output_dir:local_opam_repo >>= fun () ->
-  Ok local_opam_repo
+let calculate_opam ~local_paths ~local_packages =
+  OpamGlobalState.with_ `Lock_none (fun global_state ->
+      OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
+          Opam_cmd.calculate_opam ~local_paths ~local_packages switch_state))
 
-let run (`Repo repo)
-    (`Opam_repo opam_repo) (`Pull_mode pull_mode) () =
+let run (`Repo repo) (`Pull_mode pull_mode) () =
   let open Rresult.R.Infix in
-  init_local_opam_repo opam_repo >>= fun local_opam_repo ->
   Repo.local_packages repo >>= fun local_paths ->
   Repo.duniverse_file ~local_packages:local_paths repo >>= fun duniverse_file ->
   let local_packages = List.map fst (String.Map.bindings local_paths) in
-  build_config ~local_packages ~pull_mode ~opam_repo
-  >>= fun config ->
-  let get_opam_path {Types.Opam.name; version} =
-    match String.Map.find name local_paths with
-    | Some path -> path
-    | None ->
-      let version = match version with None -> "dev" | Some v -> v in
-      Fpath.(local_opam_repo / "packages" / name / (name ^ "." ^ version) / "opam")
-  in
-  let packages = config.root_packages in
-  Opam_cmd.calculate_opam ~packages ~get_opam_path ~local_opam_repo >>= fun opam_entries ->
+  build_config ~local_packages ~pull_mode >>= fun config ->
+  calculate_opam ~local_paths ~local_packages >>= fun opam_entries ->
   Opam_cmd.report_packages_stats opam_entries;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor source code.");
   compute_deps ~opam_entries >>= resolve_ref >>= fun deps ->
@@ -95,7 +78,6 @@ let info =
 let term =
   let open Term in
   term_result
-    ( const run $ Common.Arg.repo $ Common.Arg.opam_repo $ pull_mode
-    $ Common.Arg.setup_logs () )
+    ( const run $ Common.Arg.repo $ pull_mode $ Common.Arg.setup_logs () )
 
 let cmd = (term, info)

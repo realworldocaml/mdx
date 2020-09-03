@@ -20,4 +20,15 @@ let cmds =
   [ Lock.cmd; Update.cmd; Pull.cmd; Opam_install.cmd;
     Print_ocaml_compilers.cmd; Migrate_dune_get.cmd ]
 
-let () = Cmdliner.Term.(exit @@ eval_choice Default.cmd cmds)
+let init_opam () =
+  OpamSystem.init ();
+  let root = OpamStateConfig.opamroot () in
+  ignore (OpamStateConfig.load_defaults root);
+  OpamFormatConfig.init ();
+  OpamStd.Config.init ~safe_mode:true ();
+  OpamRepositoryConfig.init ();
+  OpamStateConfig.init ()
+
+let () =
+  init_opam ();
+  Cmdliner.Term.(exit @@ eval_choice Default.cmd cmds)

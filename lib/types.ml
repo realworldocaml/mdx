@@ -41,6 +41,21 @@ module Opam = struct
   }
   [@@deriving sexp]
 
+  let explicit_version p =
+    match p.version with
+    | Some v -> v
+    | None -> "zdev"
+
+  let package_to_opam p =
+    OpamPackage.create
+      (OpamPackage.Name.of_string p.name)
+      (OpamPackage.Version.of_string (explicit_version p))
+
+  let package_from_opam o =
+    let name = OpamPackage.(Name.to_string (name o)) in
+    let version = Some OpamPackage.(Version.to_string (version o)) in
+    { name; version }
+
   type entry = {
     package : package;
     dev_repo : repo;

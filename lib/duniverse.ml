@@ -184,8 +184,6 @@ module Config = struct
     version: string;
     root_packages : Types.Opam.package list;
     pull_mode : pull_mode; [@default Source]
-    opam_repo : Uri_sexp.t;
-        [@default Uri.of_string Config.duniverse_opam_repo] [@sexp_drop_default.sexp]
     ocaml_compilers : string list; [@default []]
   }
   [@@deriving sexp] [@@sexp.allow_extra_fields]
