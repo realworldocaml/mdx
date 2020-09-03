@@ -2,7 +2,7 @@ open Duniverse_lib
 open Duniverse_lib.Types
 open Astring
 
-let build_config ~local_packages ~pins ~pull_mode ~opam_repo =
+let build_config ~local_packages ~pull_mode ~opam_repo =
   let open Rresult.R.Infix in
   Opam_cmd.choose_root_packages ~local_packages >>= fun root_packages ->
   let ocaml_compilers =
@@ -16,7 +16,7 @@ let build_config ~local_packages ~pins ~pull_mode ~opam_repo =
   let root_packages =
     List.map Opam_cmd.split_opam_name_and_version root_packages |> Opam.sort_uniq
   in
-  Ok { Duniverse.Config.version; root_packages; pins; pull_mode; ocaml_compilers; opam_repo }
+  Ok { Duniverse.Config.version; root_packages; pull_mode; ocaml_compilers; opam_repo }
 
 let compute_deps ~opam_entries =
   Dune_cmd.log_invalid_packages opam_entries;
@@ -44,33 +44,21 @@ let run (`Repo repo)
   init_local_opam_repo opam_repo >>= fun local_opam_repo ->
   Repo.local_packages repo >>= fun local_paths ->
   Repo.duniverse_file ~local_packages:local_paths repo >>= fun duniverse_file ->
-  Pins.read_from_config duniverse_file >>= fun pins ->
   let local_packages = List.map fst (String.Map.bindings local_paths) in
-  build_config ~local_packages ~pins ~pull_mode ~opam_repo
+  build_config ~local_packages ~pull_mode ~opam_repo
   >>= fun config ->
-  if pins <> [] then
-    Common.Logs.app (fun l -> l "Using %a pins from %a: %a."
-        Fmt.(styled `Green int) (List.length pins)
-        Styled_pp.path (Fpath.normalize duniverse_file)
-        Fmt.(list ~sep:(unit " ") (styled `Yellow string))
-        (List.map (fun pin -> pin.Types.Opam.pin) pins));
-  Pins.init ~repo ~pull_mode ~pins >>= fun pin_deps ->
-  let opam_paths =
-    List.fold_left (fun acc pin -> String.Map.add (pin.Types.Opam.pin) (Pins.path pin) acc)
-      local_paths pins in
   let get_opam_path {Types.Opam.name; version} =
-    match String.Map.find name opam_paths with
+    match String.Map.find name local_paths with
     | Some path -> path
     | None ->
       let version = match version with None -> "dev" | Some v -> v in
       Fpath.(local_opam_repo / "packages" / name / (name ^ "." ^ version) / "opam")
   in
-  let packages = config.root_packages @ List.map Pins.to_package pins in
+  let packages = config.root_packages in
   Opam_cmd.calculate_opam ~packages ~get_opam_path ~local_opam_repo >>= fun opam_entries ->
   Opam_cmd.report_packages_stats opam_entries;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor source code.");
   compute_deps ~opam_entries >>= resolve_ref >>= fun deps ->
-  let deps = { deps with duniverse = deps.duniverse @ pin_deps } in
   let duniverse = { Duniverse.config; deps } in
   Duniverse.save ~file:duniverse_file duniverse >>= fun () ->
   Common.Logs.app (fun l ->

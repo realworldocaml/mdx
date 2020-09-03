@@ -17,7 +17,7 @@
 open Duniverse_cli
 
 let cmds =
-  [ Lock.cmd; Pin.pin_cmd; Pin.unpin_cmd; Update.cmd; Pull.cmd; Opam_install.cmd;
+  [ Lock.cmd; Update.cmd; Pull.cmd; Opam_install.cmd;
     Print_ocaml_compilers.cmd; Migrate_dune_get.cmd ]
 
 let () = Cmdliner.Term.(exit @@ eval_choice Default.cmd cmds)

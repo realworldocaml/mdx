@@ -183,7 +183,6 @@ module Config = struct
   type t = {
     version: string;
     root_packages : Types.Opam.package list;
-    pins : Types.Opam.pin list; [@default []] [@sexp_drop_default.sexp]
     pull_mode : pull_mode; [@default Source]
     opam_repo : Uri_sexp.t;
         [@default Uri.of_string Config.duniverse_opam_repo] [@sexp_drop_default.sexp]

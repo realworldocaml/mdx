@@ -52,16 +52,11 @@ COMMANDS
        opam-install
            install packages that are not duniverse-compatible via opam
 
-       pin Add a pinned package dependency to the lock file
-
        print-ocaml-compilers
            print OCaml compilers that are supported for this duniverse
 
        pull
            fetch the latest archives of the vendored libraries
-
-       unpin
-           Remove a pinned package dependency from the lock file
 
        update
            update the commit hash corresponding to the tracked branch/tag for
