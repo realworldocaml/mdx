@@ -29,6 +29,7 @@ depends: [
   "odoc"
   "lwt" {with-test}
   "alcotest" {with-test}
+  "ppx_show" {with-test}
 ]
 
 synopsis: "Executable code blocks inside markdown files"

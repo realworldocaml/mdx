@@ -3,6 +3,7 @@
 #### Added
 
 - Allow to explicitly set the kind of blocks in labels: `ocaml`, `cram`, `toplevel` or `include`. (#237, @gpetiot)
+- Allow suppressing throwback of type definitions (#284, @gpetiot)
 
 #### Changed
 
