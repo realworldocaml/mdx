@@ -27,9 +27,34 @@ let resolve_ref deps =
   let resolve_ref ~upstream ~ref = Exec.git_resolve ~remote:upstream ~ref in
   Duniverse.Deps.resolve ~resolve_ref deps
 
+let current_repos ~repo_state ~switch_state =
+  let switch_repos = OpamSwitchState.repos_list switch_state in
+  List.map (OpamRepositoryState.get_repo repo_state) switch_repos
+
+let is_duniverse_repo (repo : OpamTypes.repository) =
+  let url = OpamUrl.to_string repo.repo_url in
+  String.equal url Config.duniverse_opam_repo
+
+let check_repo_config ~global_state ~switch_state =
+  OpamRepositoryState.with_ `Lock_none global_state (fun repo_state ->
+      let repos = current_repos ~repo_state ~switch_state in
+      let dune_universe_is_configured = List.exists is_duniverse_repo repos in
+      if not dune_universe_is_configured then
+        Logs.warn
+          (fun l ->
+             l
+               "The dune-universe opam-repository isn't set in the current switch. \
+                For %a to behave properly you should add it to the list of the configured \
+                repos for this switch by running:\n\
+                opam repository add dune-universe %s"
+               Fmt.(styled `Bold string)
+               "opam monorepo lock"
+               Config.duniverse_opam_repo))
+
 let calculate_opam ~local_paths ~local_packages =
   OpamGlobalState.with_ `Lock_none (fun global_state ->
       OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
+          check_repo_config ~global_state ~switch_state;
           Opam_cmd.calculate_opam ~local_paths ~local_packages switch_state))
 
 let run (`Repo repo) (`Pull_mode pull_mode) () =

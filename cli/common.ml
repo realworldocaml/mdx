@@ -29,20 +29,9 @@ module Arg = struct
       (fun x -> `Duniverse_repos x)
       Term.(non_empty_list_opt $ Arg.(value & pos_all string [] & info ~doc ~docv []))
 
-let no_cache =
-  let doc = "Run without using the duniverse global cache" in
-  named (fun x -> `No_cache x) Cmdliner.Arg.(value & flag & info ~doc [ "no-cache" ])
-
-let opam_repo =
-  let open Cmdliner in
-  let doc =
-    "URL or path to the Duniverse opam-repository that has overrides for packages that have not \
-     yet been ported to Dune upstream."
-  in
-  named
-    (fun x -> `Opam_repo (Uri.of_string x))
-    Arg.(
-      value & opt string Config.duniverse_opam_repo & info [ "opam-repo" ] ~docv:"OPAM_REPO" ~doc)
+  let no_cache =
+    let doc = "Run without using the duniverse global cache" in
+    named (fun x -> `No_cache x) Cmdliner.Arg.(value & flag & info ~doc [ "no-cache" ])
 
   let cache_env_var ?(windows_only = false) ~priority ~extra_path ~var () =
     let windows_only = if windows_only then " (only on Windows)" else "" in

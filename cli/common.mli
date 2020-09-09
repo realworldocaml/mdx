@@ -26,9 +26,6 @@ module Arg : sig
   (** CLI arguments consisting of the list of source deps repo to process. If [None],
       the whole duniverse should be processed. If [Some l] then [l] is non empty. *)
 
-  val opam_repo : [ `Opam_repo of Uri.t ] Cmdliner.Term.t
-  (** Opam repository holding the duniversed packages *)
-  
   val no_cache : [> `No_cache of bool ] Cmdliner.Term.t
   (** Disable the duniverse global git cache *)
 
