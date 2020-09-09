@@ -247,22 +247,22 @@ x-duniverse-duniverse: [
     ["provided_packages" [[["name" "opam-0install"] ["version" ["0.2"]]]]]
   ]
   [
-    ["dir" "opam-core.2.0.7+dune"]
-    ["upstream" "git://github.com/dune-universe/opam.git"]
+    ["dir" "opam-core.2.1.0-beta"]
+    ["upstream" "git://github.com/ocaml/opam.git"]
     [
       "ref"
       [
-        ["t" "duniverse-2.0.7"]
-        ["commit" "98605c52251efebcf2b52e4ba5cb16e306f01642"]
+        ["t" "2.1.0-beta"]
+        ["commit" "13fd00a2299de7a2fc69a2001d5538f06bf2e7d5"]
       ]
     ]
     [
       "provided_packages"
       [
-        [["name" "opam-state"] ["version" ["2.0.7+dune"]]]
-        [["name" "opam-repository"] ["version" ["2.0.7+dune"]]]
-        [["name" "opam-format"] ["version" ["2.0.7+dune"]]]
-        [["name" "opam-core"] ["version" ["2.0.7+dune"]]]
+        [["name" "opam-state"] ["version" ["2.1.0-beta"]]]
+        [["name" "opam-repository"] ["version" ["2.1.0-beta"]]]
+        [["name" "opam-format"] ["version" ["2.1.0-beta"]]]
+        [["name" "opam-core"] ["version" ["2.1.0-beta"]]]
       ]
     ]
   ]
@@ -469,11 +469,11 @@ depends: [
   "ocamlgraph" {= "1.8.8+dune"}
   "ocplib-endian" {= "1.1"}
   "opam-0install" {= "0.2"}
-  "opam-core" {= "2.0.7+dune"}
+  "opam-core" {= "2.1.0-beta"}
   "opam-file-format" {= "2.0.0+dune"}
-  "opam-format" {= "2.0.7+dune"}
-  "opam-repository" {= "2.0.7+dune"}
-  "opam-state" {= "2.0.7+dune"}
+  "opam-format" {= "2.1.0-beta"}
+  "opam-repository" {= "2.1.0-beta"}
+  "opam-state" {= "2.1.0-beta"}
   "osrelease" {= "zdev"}
   "parsexp" {= "v0.14.0"}
   "ppx_derivers" {= "1.2.1"}
@@ -590,24 +590,24 @@ pin-depends: [
     "git+https://github.com/talex5/opam-0install-solver.git#bd2df903a079e46aa9934f3349ed358afa1a5105"
   ]
   [
-    "opam-core.2.0.7+dune"
-    "git://github.com/dune-universe/opam.git#98605c52251efebcf2b52e4ba5cb16e306f01642"
+    "opam-core.2.1.0-beta"
+    "git://github.com/ocaml/opam.git#13fd00a2299de7a2fc69a2001d5538f06bf2e7d5"
   ]
   [
     "opam-file-format.2.0.0+dune"
     "git://github.com/dune-universe/opam-file-format.git#ec0db8081136a93f4d6873dba90e0f0d29d1b43b"
   ]
   [
-    "opam-format.2.0.7+dune"
-    "git://github.com/dune-universe/opam.git#98605c52251efebcf2b52e4ba5cb16e306f01642"
+    "opam-format.2.1.0-beta"
+    "git://github.com/ocaml/opam.git#13fd00a2299de7a2fc69a2001d5538f06bf2e7d5"
   ]
   [
-    "opam-repository.2.0.7+dune"
-    "git://github.com/dune-universe/opam.git#98605c52251efebcf2b52e4ba5cb16e306f01642"
+    "opam-repository.2.1.0-beta"
+    "git://github.com/ocaml/opam.git#13fd00a2299de7a2fc69a2001d5538f06bf2e7d5"
   ]
   [
-    "opam-state.2.0.7+dune"
-    "git://github.com/dune-universe/opam.git#98605c52251efebcf2b52e4ba5cb16e306f01642"
+    "opam-state.2.1.0-beta"
+    "git://github.com/ocaml/opam.git#13fd00a2299de7a2fc69a2001d5538f06bf2e7d5"
   ]
   [
     "osrelease.zdev"
