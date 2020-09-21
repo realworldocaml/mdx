@@ -3,12 +3,22 @@ open Astring
 
 type t = Fpath.t
 
-let local_packages t =
-  Bos.OS.Dir.exists t >>= fun exists -> if not exists then Ok String.Map.empty else
-  Bos.OS.Dir.contents ~rel:true t
-  >>| List.filter (Fpath.has_ext ".opam")
-  >>| List.map (fun path -> Fpath.(to_string (rem_ext path), t // path))
-  >>| String.Map.of_list
+let local_packages ~recurse t =
+  Bos.OS.Dir.exists t >>= fun exists ->
+  if not exists then Ok String.Map.empty
+  else
+    let traverse =
+      if recurse then
+        `Sat (fun p -> Ok (Fpath.to_string p <> "duniverse"))
+      else
+        `None
+    in
+    Bos.OS.Path.fold
+      ~elements:(`Sat (fun p -> Ok (Fpath.has_ext ".opam" p)))
+      ~traverse
+      (fun path acc -> Fpath.(basename (rem_ext path), t // path) :: acc)
+      [] [ t ]
+    >>| String.Map.of_list
 
 let dune_project t = Fpath.(t / "dune-project")
 
@@ -23,7 +33,7 @@ let duniverse_file ?local_packages:lp t =
   let local_packages =
     match lp with
     | Some lp -> Ok lp
-    | None -> local_packages t
+    | None -> local_packages ~recurse:false t
   in
   local_packages >>= fun pkgs ->
   match String.Map.bindings pkgs with

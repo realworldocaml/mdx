@@ -57,9 +57,9 @@ let calculate_opam ~local_paths ~local_packages =
           check_repo_config ~global_state ~switch_state;
           Opam_cmd.calculate_opam ~local_paths ~local_packages switch_state))
 
-let run (`Repo repo) (`Pull_mode pull_mode) () =
+let run (`Repo repo) (`Pull_mode pull_mode) (`Recurse_opam recurse) () =
   let open Rresult.R.Infix in
-  Repo.local_packages repo >>= fun local_paths ->
+  Repo.local_packages ~recurse repo >>= fun local_paths ->
   Repo.duniverse_file ~local_packages:local_paths repo >>= fun duniverse_file ->
   let local_packages = List.map fst (String.Map.bindings local_paths) in
   build_config ~local_packages ~pull_mode >>= fun config ->
@@ -94,15 +94,40 @@ let pull_mode =
           Duniverse.Config.Source
       & info [ "pull-mode" ] ~docv:"PULL_MODE" ~doc)
 
+let recurse_opam =
+  let doc =
+    "Recursively look for opam files to include as local packages in subdirectories \
+     instead of only picking the ones at the repository's root."
+  in
+  Common.Arg.named
+    (fun x -> `Recurse_opam x)
+    Arg.(value & flag & info ~doc ["recurse-opam"])
+
 let info =
   let exits = Term.default_exits in
   let doc = Fmt.strf "analyse opam files to generate an initial lock file" in
-  let man = [] in
+  let man =
+    [ `S Manpage.s_description
+    ; `P "This command computes a lockfile for all the repository's local packages \
+          dependencies and test dependencies."
+    ; `P ""
+    ; `P "All dependencies in the lockfile are pinned so that you can install them \
+          through opam even if the upstream opam repositories have been modified since \
+          you last run $(b,opam monorepo lock)."
+    ; `P "Locally set opam repositories and pins will be taken into account. \
+          The solver is run everytime you run this command to compute a fixed \
+          set of packages meeting the repo's dependencies from scratch. Packages \
+          installed in your current switch are simply ignored."
+    ; `P "Since this lockfile must be compatible with $(b,opam monorepo pull) all the \
+          dependencies must use dune or jbuilder as their build system. If this \
+          requirement isn't met the command will fail."
+    ]
+  in
   Term.info "lock" ~doc ~exits ~man ~envs:Common.Arg.caches
 
 let term =
   let open Term in
   term_result
-    ( const run $ Common.Arg.repo $ pull_mode $ Common.Arg.setup_logs () )
+    ( const run $ Common.Arg.repo $ pull_mode $ recurse_opam $ Common.Arg.setup_logs () )
 
 let cmd = (term, info)

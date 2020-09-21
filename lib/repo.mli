@@ -4,8 +4,11 @@ type t = Fpath.t
 
 (** Returns the locally defined opam packages as a map from package names to
     to the corresponding .opam file path.
-    Only considers packages defined at the repo's root. *)
-val local_packages : t -> (Fpath.t Astring.String.Map.t, [> `Msg of string]) result
+    Only considers packages defined at the repo's root unless [recurse] is [true]. *)
+val local_packages :
+  recurse: bool ->
+  t ->
+  (Fpath.t Astring.String.Map.t, [> `Msg of string]) result
 
 (** Returns the path to the dune-project file. *)
 val dune_project : t -> Fpath.t
