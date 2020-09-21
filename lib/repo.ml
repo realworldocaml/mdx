@@ -11,7 +11,7 @@ let local_packages ~recurse t =
       if recurse then
         `Sat (fun p -> Ok (Fpath.to_string p <> "duniverse"))
       else
-        `None
+        `Sat (fun p -> Ok (Fpath.equal p t))
     in
     Bos.OS.Path.fold
       ~elements:(`Sat (fun p -> Ok (Fpath.has_ext ".opam" p)))
