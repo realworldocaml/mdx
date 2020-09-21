@@ -57,9 +57,17 @@ let calculate_opam ~local_paths ~local_packages =
           check_repo_config ~global_state ~switch_state;
           Opam_cmd.calculate_opam ~local_paths ~local_packages switch_state))
 
-let run (`Repo repo) (`Pull_mode pull_mode) (`Recurse_opam recurse) () =
+let local_packages ~recurse ~explicit_list repo =
   let open Rresult.R.Infix in
-  Repo.local_packages ~recurse repo >>= fun local_paths ->
+  match explicit_list with
+  | [] -> Repo.local_packages ~recurse repo
+  | _ ->
+    Repo.local_packages ~recurse:true repo >>| fun local_paths ->
+    String.Map.filter (fun name _ -> List.mem name explicit_list) local_paths
+
+let run (`Repo repo) (`Pull_mode pull_mode) (`Recurse_opam recurse) (`Local_packages lp) () =
+  let open Rresult.R.Infix in
+  local_packages ~recurse ~explicit_list:lp repo >>= fun local_paths ->
   Repo.duniverse_file ~local_packages:local_paths repo >>= fun duniverse_file ->
   let local_packages = List.map fst (String.Map.bindings local_paths) in
   build_config ~local_packages ~pull_mode >>= fun config ->
@@ -97,11 +105,23 @@ let pull_mode =
 let recurse_opam =
   let doc =
     "Recursively look for opam files to include as local packages in subdirectories \
-     instead of only picking the ones at the repository's root."
+     instead of only picking the ones at the repository's root. \
+     When an explicit list of local packages is passed, this flag is implied."
   in
   Common.Arg.named
     (fun x -> `Recurse_opam x)
     Arg.(value & flag & info ~doc ["recurse-opam"])
+
+let packages =
+  let doc =
+    "Explicit list of local packages to compute the lockfile from. \
+     When none are provided, all packages that have an opam file at the root \
+     of the repository are used."
+  in
+  let docv = "LOCAL_PACKAGE" in
+  Common.Arg.named
+    (fun x -> `Local_packages x)
+    Arg.(value & pos_all string [] & info ~doc ~docv [])
 
 let info =
   let exits = Term.default_exits in
@@ -110,8 +130,7 @@ let info =
     [ `S Manpage.s_description
     ; `P "This command computes a lockfile for all the repository's local packages \
           dependencies and test dependencies."
-    ; `P ""
-    ; `P "All dependencies in the lockfile are pinned so that you can install them \
+    ; `P "All dependencies in the lockfile are pin-depends so that you can install them \
           through opam even if the upstream opam repositories have been modified since \
           you last run $(b,opam monorepo lock)."
     ; `P "Locally set opam repositories and pins will be taken into account. \
@@ -128,6 +147,6 @@ let info =
 let term =
   let open Term in
   term_result
-    ( const run $ Common.Arg.repo $ pull_mode $ recurse_opam $ Common.Arg.setup_logs () )
+    ( const run $ Common.Arg.repo $ pull_mode $ recurse_opam $ packages $ Common.Arg.setup_logs () )
 
 let cmd = (term, info)
