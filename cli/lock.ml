@@ -51,11 +51,11 @@ let check_repo_config ~global_state ~switch_state =
                "opam monorepo lock"
                Config.duniverse_opam_repo))
 
-let calculate_opam ~local_paths ~local_packages =
+let calculate_opam ~build_only ~local_paths ~local_packages =
   OpamGlobalState.with_ `Lock_none (fun global_state ->
       OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
           check_repo_config ~global_state ~switch_state;
-          Opam_cmd.calculate_opam ~local_paths ~local_packages switch_state))
+          Opam_cmd.calculate_opam ~build_only ~local_paths ~local_packages switch_state))
 
 let local_packages ~recurse ~explicit_list repo =
   let open Rresult.R.Infix in
@@ -65,13 +65,20 @@ let local_packages ~recurse ~explicit_list repo =
     Repo.local_packages ~recurse:true repo >>| fun local_paths ->
     String.Map.filter (fun name _ -> List.mem name explicit_list) local_paths
 
-let run (`Repo repo) (`Pull_mode pull_mode) (`Recurse_opam recurse) (`Local_packages lp) () =
+let run
+    (`Repo repo)
+    (`Pull_mode pull_mode)
+    (`Recurse_opam recurse)
+    (`Build_only build_only)
+    (`Local_packages lp)
+    ()
+  =
   let open Rresult.R.Infix in
   local_packages ~recurse ~explicit_list:lp repo >>= fun local_paths ->
   Repo.duniverse_file ~local_packages:local_paths repo >>= fun duniverse_file ->
   let local_packages = List.map fst (String.Map.bindings local_paths) in
   build_config ~local_packages ~pull_mode >>= fun config ->
-  calculate_opam ~local_paths ~local_packages >>= fun opam_entries ->
+  calculate_opam ~build_only ~local_paths ~local_packages >>= fun opam_entries ->
   Opam_cmd.report_packages_stats opam_entries;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor source code.");
   compute_deps ~opam_entries >>= resolve_ref >>= fun deps ->
@@ -112,6 +119,12 @@ let recurse_opam =
     (fun x -> `Recurse_opam x)
     Arg.(value & flag & info ~doc ["recurse-opam"])
 
+let build_only =
+  let doc = "Only lock build dependencies, i.e. ignore the test deps." in
+  Common.Arg.named
+    (fun x -> `Build_only x)
+    Arg.(value & flag & info ~doc ["build-only"])
+
 let packages =
   let doc =
     "Explicit list of local packages to compute the lockfile from. \
@@ -147,6 +160,12 @@ let info =
 let term =
   let open Term in
   term_result
-    ( const run $ Common.Arg.repo $ pull_mode $ recurse_opam $ packages $ Common.Arg.setup_logs () )
+    ( const run
+      $ Common.Arg.repo
+      $ pull_mode
+      $ recurse_opam
+      $ build_only
+      $ packages
+      $ Common.Arg.setup_logs () )
 
 let cmd = (term, info)

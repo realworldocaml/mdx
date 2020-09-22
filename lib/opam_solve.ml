@@ -68,12 +68,13 @@ end
 
 module Local_solver = Opam_0install.Solver.Make(Switch_and_local_packages_context)
 
-let calculate ~local_packages switch_state =
+let calculate ~build_only ~local_packages switch_state =
   let local_packages_names = OpamPackage.Name.Map.keys local_packages in
   let names_set = OpamPackage.Name.Set.of_list local_packages_names in
+  let test = if build_only then OpamPackage.Name.Set.empty else names_set in
   let context =
     Switch_and_local_packages_context.create
-      ~test:names_set
+      ~test
       ~constraints:OpamPackage.Name.Map.empty
       ~local_packages
       switch_state

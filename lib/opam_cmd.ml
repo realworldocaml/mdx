@@ -80,10 +80,10 @@ let local_paths_to_opam_map local_paths =
         (OpamPackage.Name.of_string name, opam_file))
   >>| OpamPackage.Name.Map.of_list
 
-let calculate_opam ~local_paths ~local_packages switch_state =
+let calculate_opam ~build_only ~local_paths ~local_packages switch_state =
   let open Rresult.R.Infix in
   local_paths_to_opam_map local_paths >>= fun local_packages_opam ->
-  Opam_solve.calculate ~local_packages:local_packages_opam switch_state
+  Opam_solve.calculate ~build_only ~local_packages:local_packages_opam switch_state
   >>| List.map Types.Opam.package_from_opam
   >>= fun deps ->
   let packages = List.map (fun name -> {Types.Opam.name; version = None}) local_packages in
