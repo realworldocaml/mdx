@@ -3,13 +3,19 @@ open Astring
 
 type t = Fpath.t
 
+let folder_blacklist =
+  [ "_build"
+  ; "_opam"
+  ; Fpath.to_string Config.vendor_dir
+  ]
+
 let local_packages ~recurse t =
   Bos.OS.Dir.exists t >>= fun exists ->
   if not exists then Ok String.Map.empty
   else
     let traverse =
       if recurse then
-        `Sat (fun p -> Ok (Fpath.to_string p <> "duniverse"))
+        `Sat (fun p -> Ok (not (List.mem (Fpath.to_string p) folder_blacklist)))
       else
         `Sat (fun p -> Ok (Fpath.equal p t))
     in
