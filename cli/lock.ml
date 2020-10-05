@@ -57,13 +57,34 @@ let calculate_opam ~build_only ~local_paths ~local_packages =
           check_repo_config ~global_state ~switch_state;
           Opam_cmd.calculate_opam ~build_only ~local_paths ~local_packages switch_state))
 
+let filter_local_packages ~explicit_list local_paths =
+  let res =
+  List.fold_left
+    (fun acc name ->
+       match acc, String.Map.find_opt name local_paths with
+       | Error _, Some _ -> acc
+       | Error l, None -> Error (name::l)
+       | Ok _, None -> Error [name]
+       | Ok filtered, Some path -> Ok (String.Map.add name path filtered))
+    (Ok String.Map.empty)
+    explicit_list
+  in
+  Stdext.Result.map_error res
+    ~f:(fun l ->
+        let msg =
+          Fmt.str
+            "The following packages have no local opam files: %a"
+            Fmt.(list ~sep:sp string) l
+        in
+        `Msg msg)
+
 let local_packages ~recurse ~explicit_list repo =
   let open Rresult.R.Infix in
   match explicit_list with
   | [] -> Repo.local_packages ~recurse repo
   | _ ->
-    Repo.local_packages ~recurse:true repo >>| fun local_paths ->
-    String.Map.filter (fun name _ -> List.mem name explicit_list) local_paths
+    Repo.local_packages ~recurse:true repo >>= fun local_paths ->
+    filter_local_packages ~explicit_list local_paths
 
 let run
     (`Repo repo)

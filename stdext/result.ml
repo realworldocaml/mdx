@@ -1,3 +1,7 @@
+let map_error ~f = function
+  | Ok x -> Ok x
+  | Error e -> Error (f e)
+
 module List = struct
   let map ~f l =
     let rec aux acc = function
