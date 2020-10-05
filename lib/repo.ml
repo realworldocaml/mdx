@@ -33,11 +33,15 @@ let duniverse_file ?local_packages:lp t =
   let local_packages =
     match lp with
     | Some lp -> Ok lp
-    | None -> local_packages ~recurse:false t
+    | None ->
+      local_packages ~recurse:false t >>| fun lp ->
+      List.map
+        (fun (name, _) -> {Types.Opam.name; version = None})
+        (String.Map.bindings lp)
   in
   local_packages >>= fun pkgs ->
-  match String.Map.bindings pkgs with
-  | [(name, _)] -> Ok (duniverse_file ~name t)
+  match pkgs with
+  | [{name; _}] -> Ok (duniverse_file ~name t)
   | _ ->
     project_name t >>= fun name ->
     Ok (duniverse_file ~name t)

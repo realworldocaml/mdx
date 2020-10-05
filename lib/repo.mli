@@ -23,6 +23,6 @@ val project_name : t -> (string, [> `Msg of string]) result
     at the root of the repo.
     One can provide [local_packages] if they were already computed. *)
 val duniverse_file :
-  ?local_packages: Fpath.t Astring.String.Map.t ->
+  ?local_packages: Types.Opam.package list ->
   t ->
   (Fpath.t, [> `Msg of string]) result

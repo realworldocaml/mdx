@@ -3,14 +3,14 @@ module Switch_and_local_packages_context : sig
 
   val create :
     ?test:OpamPackage.Name.Set.t ->
-    local_packages:OpamFile.OPAM.t OpamPackage.Name.Map.t ->
+    local_packages:(OpamPackage.Version.t * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     constraints:OpamFormula.version_constraint OpamTypes.name_map ->
     OpamStateTypes.unlocked OpamStateTypes.switch_state ->
     t
 end = struct
   type t =
     { switch_context : Opam_0install.Switch_context.t
-    ; local_packages : OpamFile.OPAM.t OpamPackage.Name.Map.t
+    ; local_packages : (OpamPackage.Version.t * OpamFile.OPAM.t) OpamPackage.Name.Map.t
     }
 
   type rejection =
@@ -53,8 +53,8 @@ end = struct
 
   let candidates {switch_context; local_packages} name =
     match OpamPackage.Name.Map.find_opt name local_packages with
-    | Some opam_file ->
-      [ OpamPackage.Version.of_string "zdev", Ok opam_file ]
+    | Some (version, opam_file) ->
+      [ version, Ok opam_file ]
     | None ->
       Opam_0install.Switch_context.candidates switch_context name
       |> filter_candidates ~name

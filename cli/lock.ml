@@ -2,9 +2,25 @@ open Duniverse_lib
 open Duniverse_lib.Types
 open Astring
 
+let check_root_packages ~local_packages =
+  match local_packages with
+  | [] ->
+    Rresult.R.error_msg
+      "Cannot find any packages to vendor.\n\
+       Either create some *.opam files in the local repository, or specify them manually via \
+       'duniverse opam <packages>'."
+  | local_packages ->
+    let pp_package_name fmt {Opam.name; _} = Fmt.string fmt name in
+    Common.Logs.app (fun l ->
+        l "Using locally scanned package%a '%a' as the root%a."
+          Pp.plural local_packages
+          Fmt.(list ~sep:(unit ",@ ") (styled `Yellow pp_package_name))
+          local_packages Pp.plural local_packages);
+    Ok local_packages
+
 let build_config ~local_packages ~pull_mode =
   let open Rresult.R.Infix in
-  Opam_cmd.choose_root_packages ~local_packages >>= fun root_packages ->
+  check_root_packages ~local_packages >>= fun root_packages ->
   let ocaml_compilers =
     match Dune_file.Project.supported_ocaml_compilers () with
     | Ok l -> List.map Ocaml_version.to_string l
@@ -13,9 +29,7 @@ let build_config ~local_packages ~pull_mode =
         []
   in
   let version = "1" in
-  let root_packages =
-    List.map Opam_cmd.split_opam_name_and_version root_packages |> Opam.sort_uniq
-  in
+  let root_packages = Opam.sort_uniq root_packages in
   Ok { Duniverse.Config.version; root_packages; pull_mode; ocaml_compilers }
 
 let compute_deps ~opam_entries =
@@ -60,12 +74,12 @@ let calculate_opam ~build_only ~local_paths ~local_packages =
 let filter_local_packages ~explicit_list local_paths =
   let res =
   List.fold_left
-    (fun acc name ->
+    (fun acc {Opam.name; version} ->
        match acc, String.Map.find_opt name local_paths with
        | Error _, Some _ -> acc
        | Error l, None -> Error (name::l)
        | Ok _, None -> Error [name]
-       | Ok filtered, Some path -> Ok (String.Map.add name path filtered))
+       | Ok filtered, Some path -> Ok (String.Map.add name (version, path) filtered))
     (Ok String.Map.empty)
     explicit_list
   in
@@ -81,7 +95,9 @@ let filter_local_packages ~explicit_list local_paths =
 let local_packages ~recurse ~explicit_list repo =
   let open Rresult.R.Infix in
   match explicit_list with
-  | [] -> Repo.local_packages ~recurse repo
+  | [] ->
+    Repo.local_packages ~recurse repo >>| fun local_paths ->
+    String.Map.map (fun path -> (None, path)) local_paths
   | _ ->
     Repo.local_packages ~recurse:true repo >>= fun local_paths ->
     filter_local_packages ~explicit_list local_paths
@@ -96,8 +112,11 @@ let run
   =
   let open Rresult.R.Infix in
   local_packages ~recurse ~explicit_list:lp repo >>= fun local_paths ->
-  Repo.duniverse_file ~local_packages:local_paths repo >>= fun duniverse_file ->
-  let local_packages = List.map fst (String.Map.bindings local_paths) in
+  let local_packages =
+    let open Types.Opam in
+    List.map (fun (name, (version, _)) -> {name; version}) (String.Map.bindings local_paths)
+  in
+  Repo.duniverse_file ~local_packages repo >>= fun duniverse_file ->
   build_config ~local_packages ~pull_mode >>= fun config ->
   calculate_opam ~build_only ~local_paths ~local_packages >>= fun opam_entries ->
   Opam_cmd.report_packages_stats opam_entries;
@@ -155,7 +174,7 @@ let packages =
   let docv = "LOCAL_PACKAGE" in
   Common.Arg.named
     (fun x -> `Local_packages x)
-    Arg.(value & pos_all string [] & info ~doc ~docv [])
+    Arg.(value & pos_all Common.Arg.package [] & info ~doc ~docv [])
 
 let info =
   let exits = Term.default_exits in

@@ -18,11 +18,6 @@ open Types.Opam
 open Rresult
 open Astring
 
-let split_opam_name_and_version name =
-  match String.cut ~sep:"." name with
-  | None -> { name; version = None }
-  | Some (name, version) -> { name; version = Some version }
-
 let get_opam_info ~switch_state package =
   let opam_pkg =  Types.Opam.package_to_opam package in
   let opam_file = OpamSwitchState.opam switch_state opam_pkg in
@@ -69,9 +64,14 @@ let local_paths_to_opam_map local_paths =
   let open Rresult.R.Infix in
   let bindings = String.Map.bindings local_paths in
   Stdext.Result.List.map bindings
-    ~f:(fun (name, path) ->
+    ~f:(fun (name, (version, path)) ->
         read_opam path >>| fun opam_file ->
-        (OpamPackage.Name.of_string name, opam_file))
+        let name = OpamPackage.Name.of_string name in
+        let version =
+          OpamPackage.Version.of_string
+            (Stdext.Option.value ~default:Types.Opam.default_version version)
+        in
+        (name, (version, opam_file)))
   >>| OpamPackage.Name.Map.of_list
 
 let calculate_opam ~build_only ~local_paths ~local_packages switch_state =
@@ -80,17 +80,16 @@ let calculate_opam ~build_only ~local_paths ~local_packages switch_state =
   Opam_solve.calculate ~build_only ~local_packages:local_packages_opam switch_state
   >>| List.map Types.Opam.package_from_opam
   >>= fun deps ->
-  let packages = List.map (fun name -> {Types.Opam.name; version = None}) local_packages in
   Logs.app (fun l ->
       l "%aFound %a opam dependencies for %a." Pp.Styled.header ()
         Fmt.(styled `Green int)
         (List.length deps)
         Fmt.(list ~sep:(unit " ") Pp.Styled.package)
-        packages);
+        local_packages);
   Logs.info (fun l ->
       l "The dependencies for %a are: %a"
         Fmt.(list ~sep:(unit ",@ ") pp_package)
-        packages
+        local_packages
         Fmt.(list ~sep:(unit ",@ ") pp_package)
         deps);
   Logs.app (fun l ->
@@ -126,21 +125,6 @@ let report_packages_stats packages =
         l "%aAll %a opam packages are Dune compatible! It's a spicy miracle!" Pp.Styled.header ()
           Fmt.(styled `Green int)
           packages_stats.total)
-
-let choose_root_packages ~local_packages =
-  match local_packages with
-  | [] ->
-      R.error_msg
-        "Cannot find any packages to vendor.\n\
-         Either create some *.opam files in the local repository, or specify them manually via \
-         'duniverse opam <packages>'."
-  | local_packages ->
-      Logs.app (fun l ->
-          l "%aUsing locally scanned package%a '%a' as the root%a." Pp.Styled.header ()
-            Pp.plural local_packages
-            Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
-            local_packages Pp.plural local_packages);
-      Ok local_packages
 
 let install_incompatible_packages yes repo =
   Repo.duniverse_file repo >>= fun file ->
