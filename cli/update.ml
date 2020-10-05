@@ -8,8 +8,8 @@ let debug_update ~src_dep ~new_ref =
   let old_commit = src_dep.ref.commit in
   let new_commit = new_ref.Git.Ref.commit in
   Logs.debug (fun l ->
-      l "Updated %a#%a from %a to %a" Styled_pp.package_name repo Styled_pp.branch ref
-        Styled_pp.commit old_commit Styled_pp.commit new_commit)
+      l "Updated %a#%a from %a to %a" Pp.Styled.package_name repo Pp.Styled.branch ref
+        Pp.Styled.commit old_commit Pp.Styled.commit new_commit)
 
 let should_update ~to_update src_dep =
   match to_update with None -> true | Some set -> List.mem ~set src_dep
@@ -29,7 +29,7 @@ let run (`Repo repo) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
   Repo.duniverse_file repo >>= fun duniverse_file ->
   Common.Logs.app (fun l ->
-      l "Updating %a to track the latest commits" Styled_pp.path duniverse_file);
+      l "Updating %a to track the latest commits" Pp.Styled.path duniverse_file);
   Duniverse.load ~file:duniverse_file >>= function
   | { deps = { duniverse = []; _ }; _ } ->
       Common.Logs.app (fun l -> l "No source dependencies, nothing to be done here!");
@@ -43,11 +43,11 @@ let run (`Repo repo) (`Duniverse_repos duniverse_repos) () =
       >>= fun to_update ->
       Result.List.map ~f:(update ~total ~updated ~to_update) duniverse >>= fun duniverse ->
       if !updated = 0 then (
-        Common.Logs.app (fun l -> l "%a is already up-to-date!" Styled_pp.path duniverse_file);
+        Common.Logs.app (fun l -> l "%a is already up-to-date!" Pp.Styled.path duniverse_file);
         Ok () )
       else (
         Common.Logs.app (fun l ->
-            l "%a/%a source repositories tracked branch were updated" (Styled_pp.good Fmt_ext.int)
+            l "%a/%a source repositories tracked branch were updated" (Pp.Styled.good Fmt_ext.int)
               !updated
               Fmt_ext.(styled `Blue int)
               !total);

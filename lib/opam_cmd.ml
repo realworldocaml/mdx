@@ -18,12 +18,6 @@ open Types.Opam
 open Rresult
 open Astring
 
-let pp_header = Fmt.(styled `Blue string)
-
-let header = "==> "
-
-let pp_plural = Fmt.using (function _ :: _ :: _ -> "s" | _ -> "") Fmt.string
-
 let split_opam_name_and_version name =
   match String.cut ~sep:"." name with
   | None -> { name; version = None }
@@ -53,7 +47,7 @@ let get_opam_info ~switch_state package =
 
 let filter_duniverse_packages pkgs =
   Logs.info (fun l ->
-      l "%aFiltering out packages that are irrelevant to the Duniverse." pp_header header);
+      l "%aFiltering out packages that are irrelevant to the Duniverse." Pp.Styled.header ());
   let rec fn acc = function
     | hd :: tl ->
         let filter =
@@ -88,10 +82,10 @@ let calculate_opam ~build_only ~local_paths ~local_packages switch_state =
   >>= fun deps ->
   let packages = List.map (fun name -> {Types.Opam.name; version = None}) local_packages in
   Logs.app (fun l ->
-      l "%aFound %a opam dependencies for %a." pp_header header
+      l "%aFound %a opam dependencies for %a." Pp.Styled.header ()
         Fmt.(styled `Green int)
         (List.length deps)
-        Fmt.(list ~sep:(unit " ") Styled_pp.package)
+        Fmt.(list ~sep:(unit " ") Pp.Styled.package)
         packages);
   Logs.info (fun l ->
       l "The dependencies for %a are: %a"
@@ -100,7 +94,7 @@ let calculate_opam ~build_only ~local_paths ~local_packages switch_state =
         Fmt.(list ~sep:(unit ",@ ") pp_package)
         deps);
   Logs.app (fun l ->
-      l "%aQuerying opam database for their metadata and Dune compatibility." pp_header header);
+      l "%aQuerying opam database for their metadata and Dune compatibility." Pp.Styled.header ());
   Ok (List.map (get_opam_info ~switch_state) deps)
 
 type packages_stats = { total : int; dune : int; not_dune : entry list }
@@ -120,7 +114,7 @@ let report_packages_stats packages =
           "%aThe good news is that %a/%a are Dune compatible.\n\
            The bad news is that you will have to fork these to the Duniverse or port them \
            upstream: %a.\n\
-           In the meantime you can install them using `duniverse opam-install`." pp_header header
+           In the meantime you can install them using `duniverse opam-install`." Pp.Styled.header ()
           Fmt.(styled `Green int)
           packages_stats.dune
           Fmt.(styled `Cyan int)
@@ -129,7 +123,7 @@ let report_packages_stats packages =
           packages_stats.not_dune)
   else
     Logs.app (fun l ->
-        l "%aAll %a opam packages are Dune compatible! It's a spicy miracle!" pp_header header
+        l "%aAll %a opam packages are Dune compatible! It's a spicy miracle!" Pp.Styled.header ()
           Fmt.(styled `Green int)
           packages_stats.total)
 
@@ -142,26 +136,26 @@ let choose_root_packages ~local_packages =
          'duniverse opam <packages>'."
   | local_packages ->
       Logs.app (fun l ->
-          l "%aUsing locally scanned package%a '%a' as the root%a." pp_header header
-            pp_plural local_packages
+          l "%aUsing locally scanned package%a '%a' as the root%a." Pp.Styled.header ()
+            Pp.plural local_packages
             Fmt.(list ~sep:(unit ",@ ") (styled `Yellow string))
-            local_packages pp_plural local_packages);
+            local_packages Pp.plural local_packages);
       Ok local_packages
 
 let install_incompatible_packages yes repo =
   Repo.duniverse_file repo >>= fun file ->
   Logs.app (fun l ->
-      l "%aGathering dune-incompatible packages from %a." pp_header header
+      l "%aGathering dune-incompatible packages from %a." Pp.Styled.header ()
         Fmt.(styled `Cyan Fpath.pp)
         file);
   Duniverse.load ~file >>= fun { deps = { opamverse; _ }; _ } ->
   match opamverse with
   | [] ->
-      Logs.app (fun l -> l "%aGood news! There is no package to install!" pp_header header);
+      Logs.app (fun l -> l "%aGood news! There is no package to install!" Pp.Styled.header ());
       Ok ()
   | opamverse ->
       Logs.app (fun l ->
-          l "%aInstalling these packages with opam:\n%a" pp_header header
+          l "%aInstalling these packages with opam:\n%a" Pp.Styled.header ()
             Fmt.(list ~sep:sp Duniverse.Deps.Opam.pp)
             opamverse);
       Exec.run_opam_install ~yes opamverse

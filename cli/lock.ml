@@ -109,7 +109,7 @@ let run
       l "Wrote duniverse file with %a entries to %a. You can now run %a to fetch the sources."
         Fmt.(styled `Green int)
         (Duniverse.Deps.count duniverse.deps)
-        Styled_pp.path (Fpath.normalize duniverse_file)
+        Pp.Styled.path (Fpath.normalize duniverse_file)
         Fmt.(styled `Blue string)
         "duniverse pull");
   Ok ()

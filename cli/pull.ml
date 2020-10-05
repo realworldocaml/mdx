@@ -15,11 +15,11 @@ let should_update_lang ~yes () =
 let log_version_update ~dune_project_path =
   Common.Logs.app (fun l ->
       l "Setting dune language version to %a in %a" Dune_file.Lang.pp_version min_dune_ver
-        Styled_pp.path dune_project_path)
+        Pp.Styled.path dune_project_path)
 
 let suggest_updating_version ~yes ~version ~dune_project_path ~content =
-  let pp_current = Styled_pp.bad Dune_file.Lang.pp_version in
-  let pp_required = Styled_pp.good Dune_file.Lang.pp_version in
+  let pp_current = Pp.Styled.bad Dune_file.Lang.pp_version in
+  let pp_required = Pp.Styled.good Dune_file.Lang.pp_version in
   Common.Logs.app (fun l -> l "You are using version %a of the dune language" pp_current version);
   Common.Logs.app (fun l -> l "Duniverse requires version %a or above" pp_required min_dune_ver);
   if should_update_lang ~yes () then (
@@ -39,7 +39,7 @@ let suggest_setting_version ~yes ~dune_project_path ~content =
 let check_dune_lang_version ~yes ~repo =
   let open Result.O in
   let dune_project_path = Fpath.(repo / "dune-project") in
-  Logs.debug (fun l -> l "Looking for dune-project file in %a" Styled_pp.path dune_project_path);
+  Logs.debug (fun l -> l "Looking for dune-project file in %a" Pp.Styled.path dune_project_path);
   Bos.OS.File.exists dune_project_path >>= fun found_dune_project ->
   if found_dune_project then
     Bos.OS.File.read_lines dune_project_path >>= fun content ->

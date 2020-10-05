@@ -99,7 +99,7 @@ end
 module Logs = struct
   let app ?src f =
     Logs.app ?src (fun l ->
-        f (fun ?header ?tags fmt -> l ?header ?tags ("%a" ^^ fmt) Duniverse_lib.Styled_pp.header ()))
+        f (fun ?header ?tags fmt -> l ?header ?tags ("%a" ^^ fmt) Duniverse_lib.Pp.Styled.header ()))
 end
 
 (** Filters the duniverse according to the CLI provided list of repos *)
