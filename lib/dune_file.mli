@@ -1,7 +1,7 @@
 open Stdune
 
 module Raw : sig
-  val as_sexps : Fpath.t -> (Sexplib0.Sexp.t list, [> `Msg of string]) result
+  val as_sexps : Fpath.t -> (Sexplib0.Sexp.t list, [> `Msg of string ]) result
   (** Parses a dune file as a list of S-expressions. *)
 
   val comment : string -> string
@@ -36,7 +36,7 @@ module Lang : sig
 end
 
 module Project : sig
-  val name : Sexplib0.Sexp.t list -> (string, [> `Msg of string]) result
+  val name : Sexplib0.Sexp.t list -> (string, [> `Msg of string ]) result
   (** Returns the dune-project's name given the content of the file as a list of S-expressions,
       if any. *)
 

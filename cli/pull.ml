@@ -55,7 +55,6 @@ let check_dune_lang_version ~yes ~repo =
     Logs.debug (fun l -> l "No dune-project found");
     Ok () )
 
-
 let run (`Yes yes) (`No_cache no_cache) (`Repo repo) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
   Repo.duniverse_file repo >>= fun duniverse_file ->
@@ -97,7 +96,7 @@ let info =
 let term =
   Cmdliner.Term.(
     term_result
-      ( const run $ Common.Arg.yes $ Common.Arg.no_cache $ Common.Arg.repo $ Common.Arg.duniverse_repos
-      $ Common.Arg.setup_logs () ))
+      ( const run $ Common.Arg.yes $ Common.Arg.no_cache $ Common.Arg.repo
+      $ Common.Arg.duniverse_repos $ Common.Arg.setup_logs () ))
 
 let cmd = (term, info)

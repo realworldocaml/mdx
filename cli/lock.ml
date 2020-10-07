@@ -5,18 +5,17 @@ open Astring
 let check_root_packages ~local_packages =
   match local_packages with
   | [] ->
-    Rresult.R.error_msg
-      "Cannot find any packages to vendor.\n\
-       Either create some *.opam files in the local repository, or specify them manually via \
-       'duniverse opam <packages>'."
+      Rresult.R.error_msg
+        "Cannot find any packages to vendor.\n\
+         Either create some *.opam files in the local repository, or specify them manually via \
+         'duniverse opam <packages>'."
   | local_packages ->
-    let pp_package_name fmt {Opam.name; _} = Fmt.string fmt name in
-    Common.Logs.app (fun l ->
-        l "Using locally scanned package%a '%a' as the root%a."
-          Pp.plural local_packages
-          Fmt.(list ~sep:(unit ",@ ") (styled `Yellow pp_package_name))
-          local_packages Pp.plural local_packages);
-    Ok local_packages
+      let pp_package_name fmt { Opam.name; _ } = Fmt.string fmt name in
+      Common.Logs.app (fun l ->
+          l "Using locally scanned package%a '%a' as the root%a." Pp.plural local_packages
+            Fmt.(list ~sep:(unit ",@ ") (styled `Yellow pp_package_name))
+            local_packages Pp.plural local_packages);
+      Ok local_packages
 
 let build_config ~local_packages ~pull_mode =
   let open Rresult.R.Infix in
@@ -54,16 +53,14 @@ let check_repo_config ~global_state ~switch_state =
       let repos = current_repos ~repo_state ~switch_state in
       let dune_universe_is_configured = List.exists is_duniverse_repo repos in
       if not dune_universe_is_configured then
-        Logs.warn
-          (fun l ->
-             l
-               "The dune-universe opam-repository isn't set in the current switch. \
-                For %a to behave properly you should add it to the list of the configured \
-                repos for this switch by running:\n\
-                opam repository add dune-universe %s"
-               Fmt.(styled `Bold string)
-               "opam monorepo lock"
-               Config.duniverse_opam_repo))
+        Logs.warn (fun l ->
+            l
+              "The dune-universe opam-repository isn't set in the current switch. For %a to behave \
+               properly you should add it to the list of the configured repos for this switch by \
+               running:\n\
+               opam repository add dune-universe %s"
+              Fmt.(styled `Bold string)
+              "opam monorepo lock" Config.duniverse_opam_repo))
 
 let calculate_opam ~build_only ~local_paths ~local_packages =
   OpamGlobalState.with_ `Lock_none (fun global_state ->
@@ -73,48 +70,38 @@ let calculate_opam ~build_only ~local_paths ~local_packages =
 
 let filter_local_packages ~explicit_list local_paths =
   let res =
-  List.fold_left
-    (fun acc {Opam.name; version} ->
-       match acc, String.Map.find_opt name local_paths with
-       | Error _, Some _ -> acc
-       | Error l, None -> Error (name::l)
-       | Ok _, None -> Error [name]
-       | Ok filtered, Some path -> Ok (String.Map.add name (version, path) filtered))
-    (Ok String.Map.empty)
-    explicit_list
+    List.fold_left
+      (fun acc { Opam.name; version } ->
+        match (acc, String.Map.find_opt name local_paths) with
+        | Error _, Some _ -> acc
+        | Error l, None -> Error (name :: l)
+        | Ok _, None -> Error [ name ]
+        | Ok filtered, Some path -> Ok (String.Map.add name (version, path) filtered))
+      (Ok String.Map.empty) explicit_list
   in
-  Stdext.Result.map_error res
-    ~f:(fun l ->
-        let msg =
-          Fmt.str
-            "The following packages have no local opam files: %a"
-            Fmt.(list ~sep:sp string) l
-        in
-        `Msg msg)
+  Stdext.Result.map_error res ~f:(fun l ->
+      let msg =
+        Fmt.str "The following packages have no local opam files: %a" Fmt.(list ~sep:sp string) l
+      in
+      `Msg msg)
 
 let local_packages ~recurse ~explicit_list repo =
   let open Rresult.R.Infix in
   match explicit_list with
   | [] ->
-    Repo.local_packages ~recurse repo >>| fun local_paths ->
-    String.Map.map (fun path -> (None, path)) local_paths
+      Repo.local_packages ~recurse repo >>| fun local_paths ->
+      String.Map.map (fun path -> (None, path)) local_paths
   | _ ->
-    Repo.local_packages ~recurse:true repo >>= fun local_paths ->
-    filter_local_packages ~explicit_list local_paths
+      Repo.local_packages ~recurse:true repo >>= fun local_paths ->
+      filter_local_packages ~explicit_list local_paths
 
-let run
-    (`Repo repo)
-    (`Pull_mode pull_mode)
-    (`Recurse_opam recurse)
-    (`Build_only build_only)
-    (`Local_packages lp)
-    ()
-  =
+let run (`Repo repo) (`Pull_mode pull_mode) (`Recurse_opam recurse) (`Build_only build_only)
+    (`Local_packages lp) () =
   let open Rresult.R.Infix in
   local_packages ~recurse ~explicit_list:lp repo >>= fun local_paths ->
   let local_packages =
     let open Types.Opam in
-    List.map (fun (name, (version, _)) -> {name; version}) (String.Map.bindings local_paths)
+    List.map (fun (name, (version, _)) -> { name; version }) (String.Map.bindings local_paths)
   in
   Repo.duniverse_file ~local_packages repo >>= fun duniverse_file ->
   build_config ~local_packages ~pull_mode >>= fun config ->
@@ -151,25 +138,20 @@ let pull_mode =
 
 let recurse_opam =
   let doc =
-    "Recursively look for opam files to include as local packages in subdirectories \
-     instead of only picking the ones at the repository's root. \
-     When an explicit list of local packages is passed, this flag is implied."
+    "Recursively look for opam files to include as local packages in subdirectories instead of \
+     only picking the ones at the repository's root. When an explicit list of local packages is \
+     passed, this flag is implied."
   in
-  Common.Arg.named
-    (fun x -> `Recurse_opam x)
-    Arg.(value & flag & info ~doc ["recurse-opam"])
+  Common.Arg.named (fun x -> `Recurse_opam x) Arg.(value & flag & info ~doc [ "recurse-opam" ])
 
 let build_only =
   let doc = "Only lock build dependencies, i.e. ignore the test deps." in
-  Common.Arg.named
-    (fun x -> `Build_only x)
-    Arg.(value & flag & info ~doc ["build-only"])
+  Common.Arg.named (fun x -> `Build_only x) Arg.(value & flag & info ~doc [ "build-only" ])
 
 let packages =
   let doc =
-    "Explicit list of local packages to compute the lockfile from. \
-     When none are provided, all packages that have an opam file at the root \
-     of the repository are used."
+    "Explicit list of local packages to compute the lockfile from. When none are provided, all \
+     packages that have an opam file at the root of the repository are used."
   in
   let docv = "LOCAL_PACKAGE" in
   Common.Arg.named
@@ -180,19 +162,23 @@ let info =
   let exits = Term.default_exits in
   let doc = Fmt.strf "analyse opam files to generate an initial lock file" in
   let man =
-    [ `S Manpage.s_description
-    ; `P "This command computes a lockfile for all the repository's local packages \
-          dependencies and test dependencies."
-    ; `P "All dependencies in the lockfile are pin-depends so that you can install them \
-          through opam even if the upstream opam repositories have been modified since \
-          you last run $(b,opam monorepo lock)."
-    ; `P "Locally set opam repositories and pins will be taken into account. \
-          The solver is run everytime you run this command to compute a fixed \
-          set of packages meeting the repo's dependencies from scratch. Packages \
-          installed in your current switch are simply ignored."
-    ; `P "Since this lockfile must be compatible with $(b,opam monorepo pull) all the \
-          dependencies must use dune or jbuilder as their build system. If this \
-          requirement isn't met the command will fail."
+    [
+      `S Manpage.s_description;
+      `P
+        "This command computes a lockfile for all the repository's local packages dependencies and \
+         test dependencies.";
+      `P
+        "All dependencies in the lockfile are pin-depends so that you can install them through \
+         opam even if the upstream opam repositories have been modified since you last run \
+         $(b,opam monorepo lock).";
+      `P
+        "Locally set opam repositories and pins will be taken into account. The solver is run \
+         everytime you run this command to compute a fixed set of packages meeting the repo's \
+         dependencies from scratch. Packages installed in your current switch are simply ignored.";
+      `P
+        "Since this lockfile must be compatible with $(b,opam monorepo pull) all the dependencies \
+         must use dune or jbuilder as their build system. If this requirement isn't met the \
+         command will fail.";
     ]
   in
   Term.info "lock" ~doc ~exits ~man ~envs:Common.Arg.caches
@@ -200,12 +186,7 @@ let info =
 let term =
   let open Term in
   term_result
-    ( const run
-      $ Common.Arg.repo
-      $ pull_mode
-      $ recurse_opam
-      $ build_only
-      $ packages
-      $ Common.Arg.setup_logs () )
+    ( const run $ Common.Arg.repo $ pull_mode $ recurse_opam $ build_only $ packages
+    $ Common.Arg.setup_logs () )
 
 let cmd = (term, info)

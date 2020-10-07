@@ -21,5 +21,6 @@ module Styled = struct
 
   let bad pp = Fmt.(styled `Red pp)
 
-  let cached fmt cached = if cached then Fmt.(styled `Green (const string " [CACHED]")) fmt () else ()
+  let cached fmt cached =
+    if cached then Fmt.(styled `Green (const string " [CACHED]")) fmt () else ()
 end

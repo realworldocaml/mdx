@@ -85,12 +85,11 @@ module Config : sig
   type pull_mode = Submodules | Source [@@deriving sexp]
 
   type t = {
-    version: string;
+    version : string;
     root_packages : Types.Opam.package list;
     pull_mode : pull_mode; [@default Submodules]
     ocaml_compilers : string list; [@default []]
   }
-
   [@@deriving sexp]
 end
 
@@ -105,7 +104,7 @@ val to_opam : t -> OpamFile.OPAM.t
 (* Parses a duniverse generated opam lockfile to a [t] value.
    The optional [file] argument is used for improved error reporting only, it should
    be passed when available. *)
-val from_opam : ?file: string -> OpamFile.OPAM.t -> (t, [> `Msg of string]) result
+val from_opam : ?file:string -> OpamFile.OPAM.t -> (t, [> `Msg of string ]) result
 
 val load : file:Fpath.t -> (t, [> `Msg of string ]) result
 
@@ -114,4 +113,4 @@ val save : file:Fpath.t -> t -> (unit, [> `Msg of string ]) result
 (* Load a [t] from a legacy dune-get file.
    Should be used for migration to the .opam.locked format only. *)
 val load_dune_get : file:Fpath.t -> (t, [> `Msg of string ]) result
-[@@deprecated "dune-get files are a legacy format, you should use load instead"]
+  [@@deprecated "dune-get files are a legacy format, you should use load instead"]

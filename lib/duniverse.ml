@@ -20,13 +20,12 @@ module Deps = struct
       let open Pp_combinators.Ocaml in
       Format.fprintf fmt "@[<hov 2>{ name = %S;@ version = %a }@]" name (option string) version
 
-    let explicit_version t =
-      Option.value ~default:"zdev" t.version
+    let explicit_version t = Option.value ~default:"zdev" t.version
 
     let to_opam_dep t : OpamTypes.filtered_formula =
       let version = explicit_version t in
       let name = OpamPackage.Name.of_string t.name in
-      Atom (name, Atom (Constraint (`Eq, (FString version))))
+      Atom (name, Atom (Constraint (`Eq, FString version)))
   end
 
   module Source = struct
@@ -106,11 +105,10 @@ module Deps = struct
 
     let to_opam_pin_deps (t : resolved t) =
       let url = OpamUrl.of_string (Printf.sprintf "git+%s#%s" t.upstream t.ref.commit) in
-      List.map t.provided_packages
-        ~f:(fun pkg ->
-            let version = Opam.explicit_version pkg in
-            let opam_pkg = OpamPackage.of_string (Printf.sprintf "%s.%s" pkg.name version) in
-            (opam_pkg, url))
+      List.map t.provided_packages ~f:(fun pkg ->
+          let version = Opam.explicit_version pkg in
+          let opam_pkg = OpamPackage.of_string (Printf.sprintf "%s.%s" pkg.name version) in
+          (opam_pkg, url))
   end
 
   module Classified = struct
@@ -181,7 +179,7 @@ module Config = struct
   type pull_mode = Submodules | Source [@@deriving sexp]
 
   type t = {
-    version: string;
+    version : string;
     root_packages : Types.Opam.package list;
     pull_mode : pull_mode; [@default Source]
     ocaml_compilers : string list; [@default []]
@@ -206,11 +204,9 @@ let sort ({ deps = { opamverse; duniverse }; _ } as t) =
   in
   { t with deps = { opamverse = sorted_opamverse; duniverse = sorted_duniverse } }
 
-let sexp_of_opamverse opamverse =
-  Sexplib0.Sexp_conv.sexp_of_list Deps.Opam.sexp_of_t opamverse
+let sexp_of_opamverse opamverse = Sexplib0.Sexp_conv.sexp_of_list Deps.Opam.sexp_of_t opamverse
 
-let opamverse_of_sexp sexp =
-  Sexplib0.Sexp_conv.list_of_sexp Deps.Opam.t_of_sexp sexp
+let opamverse_of_sexp sexp = Sexplib0.Sexp_conv.list_of_sexp Deps.Opam.t_of_sexp sexp
 
 let sexp_of_duniverse duniverse =
   Sexplib0.Sexp_conv.sexp_of_list (Deps.Source.sexp_of_t Git.Ref.sexp_of_resolved) duniverse
@@ -222,22 +218,27 @@ module Opam_ext : sig
   type 'a field
 
   val duniverse_field : Git.Ref.resolved Deps.Source.t list field
+
   val opamverse_field : Deps.Opam.t list field
+
   val config_field : Config.t field
 
   val add : ('a -> Sexplib0.Sexp.t) -> 'a field -> 'a -> OpamFile.OPAM.t -> OpamFile.OPAM.t
+
   val get :
-    ?file: string ->
-    ?default: 'a ->
+    ?file:string ->
+    ?default:'a ->
     (Sexplib0.Sexp.t -> 'a) ->
     'a field ->
     OpamFile.OPAM.t ->
-    ('a, [> `Msg of string]) result
+    ('a, [> `Msg of string ]) result
 end = struct
   type _ field = string
 
   let duniverse_field = "x-duniverse-duniverse"
+
   let opamverse_field = "x-duniverse-opamverse"
+
   let config_field = "x-duniverse-config"
 
   let add sexp_of field a opam =
@@ -245,12 +246,12 @@ end = struct
 
   let get ?file ?default of_sexp field opam =
     let open Result.O in
-    match OpamFile.OPAM.extended opam field (fun i -> i), default with
+    match (OpamFile.OPAM.extended opam field (fun i -> i), default) with
     | None, Some default -> Ok default
     | None, None ->
-      let file_suffix_opt = Option.map ~f:(Printf.sprintf " in %s") file in
-      let file_suffix = Option.value ~default:"" file_suffix_opt in
-      Error (`Msg (Printf.sprintf "Missing %s field%s" field file_suffix))
+        let file_suffix_opt = Option.map ~f:(Printf.sprintf " in %s") file in
+        let file_suffix = Option.value ~default:"" file_suffix_opt in
+        Error (`Msg (Printf.sprintf "Missing %s field%s" field file_suffix))
     | Some ov, _ -> Opam_value.to_sexp_strict ov >>| of_sexp
 end
 
@@ -262,12 +263,11 @@ let to_opam t =
       List.sort ~compare:(fun o o' -> String.compare o.name o'.name) (opam @ source)
     in
     match packages with
-    | hd::tl ->
-      List.fold_left tl
-        ~f:(fun acc pkg -> OpamFormula.(And (acc, (Deps.Opam.to_opam_dep pkg))))
-        ~init:(Deps.Opam.to_opam_dep hd)
-    | [] ->
-      OpamFormula.Empty
+    | hd :: tl ->
+        List.fold_left tl
+          ~f:(fun acc pkg -> OpamFormula.(And (acc, Deps.Opam.to_opam_dep pkg)))
+          ~init:(Deps.Opam.to_opam_dep hd)
+    | [] -> OpamFormula.Empty
   in
   let pin_deps =
     List.concat_map t.deps.duniverse ~f:Deps.Source.to_opam_pin_deps
@@ -276,10 +276,9 @@ let to_opam t =
   let t = sort t in
   let open OpamFile.OPAM in
   empty
-  |> with_maintainer ["duniverse"]
+  |> with_maintainer [ "duniverse" ]
   |> with_synopsis "duniverse generated lockfile"
-  |> with_depends deps
-  |> with_pin_depends pin_deps
+  |> with_depends deps |> with_pin_depends pin_deps
   |> Opam_ext.(add Config.sexp_of_t config_field t.config)
   |> Opam_ext.(add sexp_of_opamverse opamverse_field t.deps.opamverse)
   |> Opam_ext.(add sexp_of_duniverse duniverse_field t.deps.duniverse)
@@ -295,7 +294,8 @@ let from_opam ?file opam =
 let save ~file t =
   let open Result.O in
   let opam = to_opam t in
-  Bos.OS.File.with_oc file (fun oc () ->
+  Bos.OS.File.with_oc file
+    (fun oc () ->
       OpamFile.OPAM.write_to_channel oc opam;
       Ok ())
     ()
@@ -304,9 +304,9 @@ let save ~file t =
 let load ~file =
   let open Result.O in
   let filename = Fpath.to_string file in
-  Bos.OS.File.with_ic file (fun ic () ->
+  Bos.OS.File.with_ic file
+    (fun ic () ->
       let filename = OpamFile.make (OpamFilename.of_string filename) in
       OpamFile.OPAM.read_from_channel ~filename ic)
     ()
-  >>= fun opam ->
-  from_opam ~file:filename opam
+  >>= fun opam -> from_opam ~file:filename opam

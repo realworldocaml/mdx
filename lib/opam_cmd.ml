@@ -19,12 +19,12 @@ open Rresult
 open Astring
 
 let get_opam_info ~switch_state package =
-  let opam_pkg =  Types.Opam.package_to_opam package in
+  let opam_pkg = Types.Opam.package_to_opam package in
   let opam_file = OpamSwitchState.opam switch_state opam_pkg in
   let archive =
     Stdune.Option.map
       ~f:(fun x -> OpamUrl.to_string (OpamFile.URL.url x))
-    (OpamFile.OPAM.url opam_file)
+      (OpamFile.OPAM.url opam_file)
   in
   let dev_repo = Stdune.Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file) in
   let depends = OpamFile.OPAM.depends opam_file in
@@ -45,10 +45,7 @@ let filter_duniverse_packages pkgs =
       l "%aFiltering out packages that are irrelevant to the Duniverse." Pp.Styled.header ());
   let rec fn acc = function
     | hd :: tl ->
-        let filter =
-             List.mem hd.package.name Config.base_packages
-          || hd.dev_repo = `Virtual
-        in
+        let filter = List.mem hd.package.name Config.base_packages || hd.dev_repo = `Virtual in
         if filter then fn acc tl else fn (hd :: acc) tl
     | [] -> List.rev acc
   in
@@ -56,22 +53,19 @@ let filter_duniverse_packages pkgs =
 
 let read_opam fpath =
   let filename = OpamFile.make (OpamFilename.of_string (Fpath.to_string fpath)) in
-  Bos.OS.File.with_ic fpath
-    (fun ic () -> OpamFile.OPAM.read_from_channel ~filename ic)
-    ()
+  Bos.OS.File.with_ic fpath (fun ic () -> OpamFile.OPAM.read_from_channel ~filename ic) ()
 
 let local_paths_to_opam_map local_paths =
   let open Rresult.R.Infix in
   let bindings = String.Map.bindings local_paths in
-  Stdext.Result.List.map bindings
-    ~f:(fun (name, (version, path)) ->
-        read_opam path >>| fun opam_file ->
-        let name = OpamPackage.Name.of_string name in
-        let version =
-          OpamPackage.Version.of_string
-            (Stdext.Option.value ~default:Types.Opam.default_version version)
-        in
-        (name, (version, opam_file)))
+  Stdext.Result.List.map bindings ~f:(fun (name, (version, path)) ->
+      read_opam path >>| fun opam_file ->
+      let name = OpamPackage.Name.of_string name in
+      let version =
+        OpamPackage.Version.of_string
+          (Stdext.Option.value ~default:Types.Opam.default_version version)
+      in
+      (name, (version, opam_file)))
   >>| OpamPackage.Name.Map.of_list
 
 let calculate_opam ~build_only ~local_paths ~local_packages switch_state =

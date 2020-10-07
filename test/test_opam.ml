@@ -82,7 +82,8 @@ let test_tag_from_archive =
     make_test ~archive:"https://other.domain.com/some/path/file-v1.2.3.tbz"
       ~expected:(Some "v1.2.3") ();
     make_test
-      ~archive:"https://ocaml.janestreet.com/ocaml-core/109.32.00/individual/async_core-109.32.00.tar.gz"
+      ~archive:
+        "https://ocaml.janestreet.com/ocaml-core/109.32.00/individual/async_core-109.32.00.tar.gz"
       ~expected:(Some "109.32.00") ();
   ]
 

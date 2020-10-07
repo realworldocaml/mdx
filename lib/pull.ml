@@ -43,8 +43,7 @@ let pull_source_dependencies ?trim_clone ~duniverse_dir ~cache src_deps =
   | [] ->
       let total = List.length src_deps in
       let pp_count = Pp.Styled.good Fmt.int in
-      Logs.app (fun l ->
-          l "Successfully pulled %a/%a repositories" pp_count total pp_count total);
+      Logs.app (fun l -> l "Successfully pulled %a/%a repositories" pp_count total pp_count total);
       Ok ()
   | commit_is_gone_repos ->
       report_commit_is_gone_repos commit_is_gone_repos;
@@ -89,14 +88,12 @@ let set_git_submodules ~repo ~duniverse_dir src_deps =
   Ok ()
 
 let duniverse ~cache ~pull_mode ~repo duniverse =
-  if List.is_empty duniverse then Ok () else
-  let open Result.O in
-  let duniverse_dir = Fpath.(repo // Config.vendor_dir) in
-  Bos.OS.Dir.create duniverse_dir >>= fun _created ->
-  mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
-  let sm = pull_mode = Duniverse.Config.Submodules in
-  pull_source_dependencies ~trim_clone:(not sm) ~duniverse_dir ~cache duniverse >>= fun () ->
-  if sm then set_git_submodules ~repo ~duniverse_dir duniverse else Ok ()
-
-
-
+  if List.is_empty duniverse then Ok ()
+  else
+    let open Result.O in
+    let duniverse_dir = Fpath.(repo // Config.vendor_dir) in
+    Bos.OS.Dir.create duniverse_dir >>= fun _created ->
+    mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
+    let sm = pull_mode = Duniverse.Config.Submodules in
+    pull_source_dependencies ~trim_clone:(not sm) ~duniverse_dir ~cache duniverse >>= fun () ->
+    if sm then set_git_submodules ~repo ~duniverse_dir duniverse else Ok ()

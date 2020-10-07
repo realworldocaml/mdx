@@ -17,8 +17,14 @@
 open Duniverse_cli
 
 let cmds =
-  [ Lock.cmd; Update.cmd; Pull.cmd; Opam_install.cmd;
-    Print_ocaml_compilers.cmd; Migrate_dune_get.cmd ]
+  [
+    Lock.cmd;
+    Update.cmd;
+    Pull.cmd;
+    Opam_install.cmd;
+    Print_ocaml_compilers.cmd;
+    Migrate_dune_get.cmd;
+  ]
 
 let init_opam () =
   OpamSystem.init ();

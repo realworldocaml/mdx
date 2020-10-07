@@ -43,10 +43,7 @@ module Opam = struct
 
   let default_version = "zdev"
 
-  let explicit_version p =
-    match p.version with
-    | Some v -> v
-    | None -> default_version
+  let explicit_version p = match p.version with Some v -> v | None -> default_version
 
   let package_to_opam p =
     OpamPackage.create

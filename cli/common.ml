@@ -14,7 +14,8 @@ module Arg = struct
     let doc = "Path to Git repository to store vendored code in." in
     named
       (fun x -> `Repo x)
-      Cmdliner.Arg.(value & opt fpath (Fpath.v (Sys.getcwd ())) & info [ "r"; "repo" ] ~docv:"TARGET_REPO" ~doc)
+      Cmdliner.Arg.(
+        value & opt fpath (Fpath.v (Sys.getcwd ())) & info [ "r"; "repo" ] ~docv:"TARGET_REPO" ~doc)
 
   let yes =
     let doc = "Do not prompt for confirmation and always assume yes" in
@@ -50,13 +51,13 @@ module Arg = struct
   let dev_repo =
     let parse s =
       match Opam.Dev_repo.from_string s with
-      | { vcs = Some Git; uri = dev_repo_uri } ->
-          (match Uri.host dev_repo_uri with
+      | { vcs = Some Git; uri = dev_repo_uri } -> (
+          match Uri.host dev_repo_uri with
           | Some _host -> Ok dev_repo_uri
-          | None -> Error (`Msg "dev-repo without host"))
-      | { vcs = None | Some (Other _); _ } -> Error (`Msg "dev-repo doesn't use git as a VCS") in
+          | None -> Error (`Msg "dev-repo without host") )
+      | { vcs = None | Some (Other _); _ } -> Error (`Msg "dev-repo doesn't use git as a VCS")
+    in
     Cmdliner.Arg.conv ~docv:"DEV_REPO" (parse, Uri.pp_hum)
-
 
   let caches =
     let duniverse_cache =
@@ -129,4 +130,3 @@ let filter_duniverse ~to_consider (src_deps : _ Duniverse.Deps.Source.t list) =
             unmatched )
 
 let get_cache ~no_cache = if no_cache then Ok Cloner.no_cache else Cloner.get_cache ()
-

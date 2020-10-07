@@ -95,8 +95,8 @@ let tag_from_archive archive =
           | _ -> if Uri.scheme uri = Some "git+https" then None else parse_err () )
       | Some "ocaml.janestreet.com" -> (
           match path with
-          | [ "ocaml-core"; _ver; "files"; f ]
-          | [ "ocaml-core"; _ver; "individual"; f ] -> tag_of_file f
+          | [ "ocaml-core"; _ver; "files"; f ] | [ "ocaml-core"; _ver; "individual"; f ] ->
+              tag_of_file f
           | [ "janestreet"; _r; "releases"; "download"; v; _f ] -> Some v
           | [ "janestreet"; _r; "archive"; f ] -> Some (strip_ext f)
           | _ -> parse_err () )

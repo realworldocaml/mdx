@@ -52,5 +52,4 @@ val filter_duniverse :
 (** Filters the duniverse according to the CLI provided list of repos or returns an error
     if some of the provided packages don't match any of the duniverse repositories. *)
 
-val get_cache : no_cache:bool ->
-    (Duniverse_lib.Cloner.cache, [> `Msg of string ]) result
+val get_cache : no_cache:bool -> (Duniverse_lib.Cloner.cache, [> `Msg of string ]) result

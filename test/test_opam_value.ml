@@ -7,17 +7,18 @@ let test_to_sexp_strict =
     in
     (test_name, `Quick, test_fun)
   in
-  let pos = "test.opam", 1, 2 in
-  [ make_test ~name:"String" ~input:(String (pos, "a")) ~expected:(Ok (Atom "a")) ()
-  ; make_test ~name:"List"
-      ~input:(List (pos, [String (pos, "a"); String (pos, "b")]))
-      ~expected:(Ok (List [Atom "a"; Atom "b"]))
-      ()
-  ; make_test ~name:"Error"
+  let pos = ("test.opam", 1, 2) in
+  [
+    make_test ~name:"String" ~input:(String (pos, "a")) ~expected:(Ok (Atom "a")) ();
+    make_test ~name:"List"
+      ~input:(List (pos, [ String (pos, "a"); String (pos, "b") ]))
+      ~expected:(Ok (List [ Atom "a"; Atom "b" ]))
+      ();
+    make_test ~name:"Error"
       ~input:(Bool (pos, true))
       ~expected:
         (Error (`Msg "Error in test.opam, line 1, col 2: Expected a sexp compatible opam value"))
-      ()
+      ();
   ]
 
 let suite = ("Opam_value", test_to_sexp_strict)

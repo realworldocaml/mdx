@@ -36,12 +36,11 @@ end
 
 module Raw = struct
   let as_sexps path =
-    try Ok (Sexplib.Sexp.load_sexps (Fpath.to_string path))
-    with
+    try Ok (Sexplib.Sexp.load_sexps (Fpath.to_string path)) with
     | Sexplib.Sexp.Parse_error pe ->
-      Error (`Msg (Format.asprintf "Failed to parse dune file %a: %s" Fpath.pp path pe.err_msg))
+        Error (`Msg (Format.asprintf "Failed to parse dune file %a: %s" Fpath.pp path pe.err_msg))
     | Failure _ ->
-      Error (`Msg (Format.asprintf "Failed to parse dune file %a: Invalid sexp" Fpath.pp path))
+        Error (`Msg (Format.asprintf "Failed to parse dune file %a: Invalid sexp" Fpath.pp path))
 
   let comment s = Printf.sprintf "; %s" s
 
@@ -64,8 +63,8 @@ module Project = struct
   let rec name sexps =
     match (sexps : Sexplib0.Sexp.t list) with
     | [] -> Error (`Msg "Missing a name field in the dune-project file")
-    | (List [Atom "name"; Atom name])::_ -> Ok name
-    | _::tl -> name tl
+    | List [ Atom "name"; Atom name ] :: _ -> Ok name
+    | _ :: tl -> name tl
 
   let load_dune_project () = Raw.as_sexps (Fpath.v "dune-project")
 
@@ -133,8 +132,6 @@ module Project = struct
           |> List.flatten
         in
         let constr = List (Atom "and" :: constr) in
-        let r =
-          List.filter ~f:(eval_ocaml_bcomp constr) OV.Releases.all
-        in
+        let r = List.filter ~f:(eval_ocaml_bcomp constr) OV.Releases.all in
         Ok r
 end
