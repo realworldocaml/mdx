@@ -20,8 +20,8 @@ let info =
          a particularly convenient way of publishing CLI tools to users who do not need the full \
          power of opam.";
       `P
-        "You can access the functionality directly via the $(i,monorepo-init), \
-         $(i,monorepo-opam-install) and $(i,monorepo-pull) commands,";
+        "You can access the functionality directly via the $(i,monorepo-lock) \
+         and $(i,monorepo-pull) commands,";
       `P
         "Also see $(i,https://github.com/avsm/platform) for an example of a fully bootstrapping \
          use of this tool.";
