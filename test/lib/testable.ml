@@ -32,3 +32,5 @@ let library_set =
   Alcotest.testable pp equal
 
 let block = Alcotest.testable Mdx.Block.dump ( = )
+
+let header = Alcotest.testable Mdx.Block.Header.pp ( = )

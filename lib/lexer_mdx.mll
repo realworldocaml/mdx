@@ -69,6 +69,19 @@ rule text section = parse
            List.iter (fun _ -> newline lexbuf) errors;
            newline lexbuf);
         `Block block :: text section lexbuf }
+  | "<!--" ws* "$MDX" ws* ([^' ' '\n']* as label_cmt) ws* "-->" ws* eol
+      { let labels = labels label_cmt in
+        let file = lexbuf.Lexing.lex_start_p.Lexing.pos_fname in
+        let column = lexbuf.Lexing.lex_start_p.Lexing.pos_cnum in
+        newline lexbuf;
+        let line = !line_ref in
+        newline lexbuf;
+        let block =
+          match Block.mk_include ~file ~line ~column ~section ~labels with
+          | Ok block -> block
+          | Error (`Msg msg) -> failwith msg
+        in
+        `Block block :: text section lexbuf }
   | ([^'\n']* as str) eol
       { newline lexbuf;
         `Text str :: text section lexbuf }

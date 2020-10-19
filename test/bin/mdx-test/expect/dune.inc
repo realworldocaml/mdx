@@ -204,6 +204,18 @@
  (action (diff heredoc/test-case.md heredoc.actual)))
 
 (rule
+ (target include-block.actual)
+ (deps (package mdx) (source_tree include-block))
+ (action
+  (with-stdout-to %{target}
+   (chdir include-block
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff include-block/test-case.md.expected include-block.actual)))
+
+(rule
  (target labels-syntax.actual)
  (deps (package mdx) (source_tree labels-syntax))
  (action
