@@ -154,10 +154,16 @@ let eval_ocaml ~block ?syntax ?root c ppf cmd errors =
     (* [eval_ocaml] only called on OCaml blocks *)
     | _ -> assert false
   in
-  match eval_test ?root ~block c cmd with
-  | Ok _ -> Block.pp ?syntax ppf (update ~errors:[] block)
-  | Error lines ->
-      let errors =
+  let contains_warnings = String.is_infix ~affix:"Warning" in
+  let lines =
+    match eval_test ?root ~block c cmd with
+    | Ok lines -> List.filter contains_warnings lines
+    | Error lines -> lines
+  in
+  let errors =
+    match lines with
+    | [] -> []
+    | lines ->
         let lines = split_lines lines in
         let output = List.map output_from_line lines in
         if Output.equal output errors then errors
@@ -167,8 +173,8 @@ let eval_ocaml ~block ?syntax ?root c ppf cmd errors =
               | `Ellipsis -> `Ellipsis
               | `Output x -> `Output (ansi_color_strip x))
             (Output.merge output errors)
-      in
-      Block.pp ?syntax ppf (update ~errors block)
+  in
+  Block.pp ?syntax ppf (update ~errors block)
 
 let lines = function Ok x | Error x -> x
 

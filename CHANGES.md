@@ -2,6 +2,8 @@
 
 #### Added
 
+- Display OCaml warnings in mdx-error blocks (#293, @gpetiot)
+
 #### Changed
 
 #### Deprecated
