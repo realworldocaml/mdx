@@ -16,6 +16,7 @@
 #### Fixed
 
 - Report `#require` directive errors (#276, @gpetiot)
+- Handle no such file exception: the input file and the values of options `--root` and `--prelude` are checked (#292, @gpetiot)
 
 #### Security
 
