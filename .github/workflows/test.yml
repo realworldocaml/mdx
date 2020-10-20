@@ -53,4 +53,4 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: ${{ matrix.artifact-name }}
-        path: _build/default/bin/duniverse.exe
+        path: _build/default/bin/opam_monorepo.exe

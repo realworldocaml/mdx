@@ -15,11 +15,11 @@ let should_update_lang ~yes () =
 let log_version_update ~dune_project_path =
   Common.Logs.app (fun l ->
       l "Setting dune language version to %a in %a" Dune_file.Lang.pp_version min_dune_ver
-        Styled_pp.path dune_project_path)
+        Pp.Styled.path dune_project_path)
 
 let suggest_updating_version ~yes ~version ~dune_project_path ~content =
-  let pp_current = Styled_pp.bad Dune_file.Lang.pp_version in
-  let pp_required = Styled_pp.good Dune_file.Lang.pp_version in
+  let pp_current = Pp.Styled.bad Dune_file.Lang.pp_version in
+  let pp_required = Pp.Styled.good Dune_file.Lang.pp_version in
   Common.Logs.app (fun l -> l "You are using version %a of the dune language" pp_current version);
   Common.Logs.app (fun l -> l "Duniverse requires version %a or above" pp_required min_dune_ver);
   if should_update_lang ~yes () then (
@@ -39,7 +39,7 @@ let suggest_setting_version ~yes ~dune_project_path ~content =
 let check_dune_lang_version ~yes ~repo =
   let open Result.O in
   let dune_project_path = Fpath.(repo / "dune-project") in
-  Logs.debug (fun l -> l "Looking for dune-project file in %a" Styled_pp.path dune_project_path);
+  Logs.debug (fun l -> l "Looking for dune-project file in %a" Pp.Styled.path dune_project_path);
   Bos.OS.File.exists dune_project_path >>= fun found_dune_project ->
   if found_dune_project then
     Bos.OS.File.read_lines dune_project_path >>= fun content ->
@@ -55,10 +55,9 @@ let check_dune_lang_version ~yes ~repo =
     Logs.debug (fun l -> l "No dune-project found");
     Ok () )
 
-
 let run (`Yes yes) (`No_cache no_cache) (`Repo repo) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
-  let duniverse_file = Fpath.(repo // Config.duniverse_file) in
+  Repo.duniverse_file repo >>= fun duniverse_file ->
   Duniverse.load ~file:duniverse_file >>= function
   | { deps = { duniverse = []; _ }; _ } ->
       Common.Logs.app (fun l -> l "No dependencies to pull, there's nothing to be done here!");
@@ -97,7 +96,7 @@ let info =
 let term =
   Cmdliner.Term.(
     term_result
-      ( const run $ Common.Arg.yes $ Common.Arg.no_cache $ Common.Arg.repo $ Common.Arg.duniverse_repos
-      $ Common.Arg.setup_logs () ))
+      ( const run $ Common.Arg.yes $ Common.Arg.no_cache $ Common.Arg.repo
+      $ Common.Arg.duniverse_repos $ Common.Arg.setup_logs () ))
 
 let cmd = (term, info)

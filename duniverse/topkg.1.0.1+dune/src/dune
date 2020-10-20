@@ -1,6 +1,0 @@
-(library
- (name topkg)
- (public_name topkg)
- (libraries result)
- (flags :standard -w -3-6-27-32-33-39)
- (wrapped false))

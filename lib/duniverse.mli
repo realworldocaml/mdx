@@ -81,51 +81,36 @@ module Deps : sig
   (**/**)
 end
 
-module Depexts : sig
-  type t = (string list * string) list [@@deriving sexp]
-end
-
-module Tools : sig
-  type version =
-  | Eq of string
-  | Latest
-  | Min of string
-  [@@deriving sexp]
-
-  type t = {
-    opam: version;
-    ocamlformat: version;
-    dune: version;
-    odoc: version;
-    mdx: version;
-    lsp: version;
-    merlin: version;
-  } [@@deriving sexp]
-
-  val of_repo : unit -> t
-
-  (** List of all the tool packages *)
-  val tools : (string * string list) list
-end
-
 module Config : sig
   type pull_mode = Submodules | Source [@@deriving sexp]
 
   type t = {
-    version: string;
+    version : string;
     root_packages : Types.Opam.package list;
-    pins : Types.Opam.pin list;
     pull_mode : pull_mode; [@default Submodules]
-    opam_repo : Uri_sexp.t;
     ocaml_compilers : string list; [@default []]
-    tools : Tools.t;
   }
-
   [@@deriving sexp]
 end
 
-type t = { config : Config.t; deps : resolved Deps.t; depexts : Depexts.t } [@@deriving sexp]
+type t = { config : Config.t; deps : resolved Deps.t } [@@deriving sexp]
+
+(* Converts a [t] to an opam file.
+   Extensions are used to store extra information and depends, pin-depends and depexts
+   fields are properly set so that the resulting lockfile can be reproducibly
+   opam-installed. *)
+val to_opam : t -> OpamFile.OPAM.t
+
+(* Parses a duniverse generated opam lockfile to a [t] value.
+   The optional [file] argument is used for improved error reporting only, it should
+   be passed when available. *)
+val from_opam : ?file:string -> OpamFile.OPAM.t -> (t, [> `Msg of string ]) result
 
 val load : file:Fpath.t -> (t, [> `Msg of string ]) result
 
 val save : file:Fpath.t -> t -> (unit, [> `Msg of string ]) result
+
+(* Load a [t] from a legacy dune-get file.
+   Should be used for migration to the .opam.locked format only. *)
+val load_dune_get : file:Fpath.t -> (t, [> `Msg of string ]) result
+  [@@deprecated "dune-get files are a legacy format, you should use load instead"]

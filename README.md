@@ -18,14 +18,14 @@ Contact `@avsm` if you have any queries.
 
 ```
 NAME
-       duniverse - the spice of build life
+       opam-monorepo - the spice of build life
 
 SYNOPSIS
-       duniverse COMMAND ...
+       opam-monorepo COMMAND ...
 
 DESCRIPTION
-       The duniverse tool provides a convenient interface to bridge the opam
-       package manager with having a local copy of all the source code
+       The opam-monorepo plugin provides a convenient interface to bridge the
+       opam package manager with having a local copy of all the source code
        required to build a project using the dune build tool.
 
        It works by analysing opam package metadata and calculating a set of
@@ -36,35 +36,27 @@ DESCRIPTION
        This is a particularly convenient way of publishing CLI tools to users
        who do not need the full power of opam.
 
-       You can access the functionality directly via the duniverse-init,
-       duniverse-opam-install and duniverse-pull commands,
+       You can access the functionality directly via the monorepo-init,
+       monorepo-opam-install and monorepo-pull commands,
 
        Also see https://github.com/avsm/platform for an example of a fully
        bootstrapping use of this tool.
 
 COMMANDS
-       depext
-           print external packages required to build this duniverse
+       lock
+           analyse opam files to generate an initial lock file
 
-       init
-           analyse opam files to generate an initial dune-get
+       migrate-dune-get
+           convert a legacy dune-get file to an opam lock file
 
        opam-install
            install packages that are not duniverse-compatible via opam
-
-       pin Add a pinned package dependency to dune-get
 
        print-ocaml-compilers
            print OCaml compilers that are supported for this duniverse
 
        pull
            fetch the latest archives of the vendored libraries
-
-       tools
-           Make all the tools needed to build the project available
-
-       unpin
-           Remove a pinned package dependency from dune-get
 
        update
            update the commit hash corresponding to the tracked branch/tag for

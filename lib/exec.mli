@@ -22,12 +22,16 @@ val opam_version : unit -> (string, [> Rresult.R.msg ]) result
 
 val ocaml_version : ?ocamlc:Fpath.t -> unit -> (Ocaml_version.t, [> Rresult.R.msg ]) result
 
-val dune_version: unit -> (string, [> Rresult.R.msg ]) result
+val dune_version : unit -> (string, [> Rresult.R.msg ]) result
 
 val dune_build : root:Fpath.t -> ?profile:string -> string list -> (unit, [> Rresult.R.msg ]) result
 
-val dune_install : root:Fpath.t -> prefix:Fpath.t -> sections:string list ->
-  string list -> (unit, [> Rresult.R.msg ]) result
+val dune_install :
+  root:Fpath.t ->
+  prefix:Fpath.t ->
+  sections:string list ->
+  string list ->
+  (unit, [> Rresult.R.msg ]) result
 
 val install_ocaml_to : prefix:Fpath.t -> src:Fpath.t -> unit -> (unit, [> Rresult.R.msg ]) result
 

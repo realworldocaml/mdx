@@ -19,6 +19,13 @@ module Deps = struct
     let raw_pp fmt { name; version } =
       let open Pp_combinators.Ocaml in
       Format.fprintf fmt "@[<hov 2>{ name = %S;@ version = %a }@]" name (option string) version
+
+    let explicit_version t = Option.value ~default:"zdev" t.version
+
+    let to_opam_dep t : OpamTypes.filtered_formula =
+      let version = explicit_version t in
+      let name = OpamPackage.Name.of_string t.name in
+      Atom (name, Atom (Constraint (`Eq, FString version)))
   end
 
   module Source = struct
@@ -95,6 +102,13 @@ module Deps = struct
     let resolve ~resolve_ref ({ upstream; ref; _ } as t) =
       let open Result.O in
       resolve_ref ~upstream ~ref >>= fun resolved_ref -> Ok { t with ref = resolved_ref }
+
+    let to_opam_pin_deps (t : resolved t) =
+      let url = OpamUrl.of_string (Printf.sprintf "git+%s#%s" t.upstream t.ref.commit) in
+      List.map t.provided_packages ~f:(fun pkg ->
+          let version = Opam.explicit_version pkg in
+          let opam_pkg = OpamPackage.of_string (Printf.sprintf "%s.%s" pkg.name version) in
+          (opam_pkg, url))
   end
 
   module Classified = struct
@@ -161,78 +175,21 @@ module Deps = struct
     >>= fun duniverse -> Ok { t with duniverse }
 end
 
-module Depexts = struct
-  type t = (string list * string) list [@@deriving sexp]
-end
-
-(** duniverse knows about which tools to use, and can calculate a set of allowable versions
-    by inspecting the repo metadata *)
-module Tools = struct
-
-  type version =
-     | Eq of string
-     | Latest
-     | Min of string
-  [@@deriving sexp]
-
-  type t = {
-    opam: version;
-    ocamlformat: version;
-    dune: version;
-    odoc: version;
-    mdx: version;
-    lsp: version;
-    merlin: version;
-   } [@@deriving sexp]
-
-  let tools = [
-    ("base", ["opam"; "odoc"; "mdx"]);
-    ("ocamlformat", ["ocamlformat"]);
-    (* ("lsp", ["ocaml-lsp-server"]); TODO broken *)
-    ("merlin", ["merlin"])]
-
-  (** Calculate a version of this tool by looking at repo metadata *)
-  let of_repo () = (* TODO expose CLI overrides *)
-     let ocamlformat =
-       match Bos.OS.File.read_lines (Fpath.v ".ocamlformat") with
-       | Ok f -> begin
-               List.filter_map ~f:(Astring.String.cut ~sep:"=") f |>
-               List.assoc_opt "version" |> begin
-                function
-               | Some v -> Eq v
-               | None -> Latest
-               end
-              end
-       | Error (`Msg _) -> Latest
-     in
-    let dune = Latest in (* TODO check for minimum in dune-project *)
-    let odoc = Latest in (* No real version constraints on odoc *)
-    let opam = Latest in (* No real version constraints on opam *)
-    let mdx = Latest in 
-    let lsp = Latest in
-    let merlin = Latest in
-    { ocamlformat; dune; odoc; opam; mdx; lsp; merlin }
-end
-
 module Config = struct
   type pull_mode = Submodules | Source [@@deriving sexp]
 
   type t = {
-    version: string;
+    version : string;
     root_packages : Types.Opam.package list;
-    pins : Types.Opam.pin list; [@default []] [@sexp_drop_default.sexp]
     pull_mode : pull_mode; [@default Source]
-    opam_repo : Uri_sexp.t;
-        [@default Uri.of_string Config.duniverse_opam_repo] [@sexp_drop_default.sexp]
     ocaml_compilers : string list; [@default []]
-    tools: Tools.t;
   }
   [@@deriving sexp] [@@sexp.allow_extra_fields]
 end
 
-type t = { config : Config.t; deps : resolved Deps.t; depexts : Depexts.t } [@@deriving sexp]
+type t = { config : Config.t; deps : resolved Deps.t } [@@deriving sexp]
 
-let load ~file = Persist.load_sexp "duniverse" t_of_sexp file
+let load_dune_get ~file = Persist.load_sexp "duniverse" t_of_sexp file
 
 let sort ({ deps = { opamverse; duniverse }; _ } as t) =
   let sorted_opamverse =
@@ -247,4 +204,109 @@ let sort ({ deps = { opamverse; duniverse }; _ } as t) =
   in
   { t with deps = { opamverse = sorted_opamverse; duniverse = sorted_duniverse } }
 
-let save ~file t = Persist.save_sexp "duniverse" sexp_of_t file (sort t)
+let sexp_of_opamverse opamverse = Sexplib0.Sexp_conv.sexp_of_list Deps.Opam.sexp_of_t opamverse
+
+let opamverse_of_sexp sexp = Sexplib0.Sexp_conv.list_of_sexp Deps.Opam.t_of_sexp sexp
+
+let sexp_of_duniverse duniverse =
+  Sexplib0.Sexp_conv.sexp_of_list (Deps.Source.sexp_of_t Git.Ref.sexp_of_resolved) duniverse
+
+let duniverse_of_sexp sexp =
+  Sexplib0.Sexp_conv.list_of_sexp (Deps.Source.t_of_sexp Git.Ref.resolved_of_sexp) sexp
+
+module Opam_ext : sig
+  type 'a field
+
+  val duniverse_field : Git.Ref.resolved Deps.Source.t list field
+
+  val opamverse_field : Deps.Opam.t list field
+
+  val config_field : Config.t field
+
+  val add : ('a -> Sexplib0.Sexp.t) -> 'a field -> 'a -> OpamFile.OPAM.t -> OpamFile.OPAM.t
+
+  val get :
+    ?file:string ->
+    ?default:'a ->
+    (Sexplib0.Sexp.t -> 'a) ->
+    'a field ->
+    OpamFile.OPAM.t ->
+    ('a, [> `Msg of string ]) result
+end = struct
+  type _ field = string
+
+  let duniverse_field = "x-duniverse-duniverse"
+
+  let opamverse_field = "x-duniverse-opamverse"
+
+  let config_field = "x-duniverse-config"
+
+  let add sexp_of field a opam =
+    OpamFile.OPAM.add_extension opam field (Opam_value.from_sexp (sexp_of a))
+
+  let get ?file ?default of_sexp field opam =
+    let open Result.O in
+    match (OpamFile.OPAM.extended opam field (fun i -> i), default) with
+    | None, Some default -> Ok default
+    | None, None ->
+        let file_suffix_opt = Option.map ~f:(Printf.sprintf " in %s") file in
+        let file_suffix = Option.value ~default:"" file_suffix_opt in
+        Error (`Msg (Printf.sprintf "Missing %s field%s" field file_suffix))
+    | Some ov, _ -> Opam_value.to_sexp_strict ov >>| of_sexp
+end
+
+let to_opam t =
+  let deps =
+    let packages =
+      let opam = t.deps.opamverse in
+      let source = List.concat_map t.deps.duniverse ~f:(fun s -> s.provided_packages) in
+      List.sort ~compare:(fun o o' -> String.compare o.name o'.name) (opam @ source)
+    in
+    match packages with
+    | hd :: tl ->
+        List.fold_left tl
+          ~f:(fun acc pkg -> OpamFormula.(And (acc, Deps.Opam.to_opam_dep pkg)))
+          ~init:(Deps.Opam.to_opam_dep hd)
+    | [] -> OpamFormula.Empty
+  in
+  let pin_deps =
+    List.concat_map t.deps.duniverse ~f:Deps.Source.to_opam_pin_deps
+    |> List.sort ~compare:(fun (p, _) (p', _) -> Ordering.of_int (OpamPackage.compare p p'))
+  in
+  let t = sort t in
+  let open OpamFile.OPAM in
+  empty
+  |> with_maintainer [ "duniverse" ]
+  |> with_synopsis "duniverse generated lockfile"
+  |> with_depends deps |> with_pin_depends pin_deps
+  |> Opam_ext.(add Config.sexp_of_t config_field t.config)
+  |> Opam_ext.(add sexp_of_opamverse opamverse_field t.deps.opamverse)
+  |> Opam_ext.(add sexp_of_duniverse duniverse_field t.deps.duniverse)
+
+let from_opam ?file opam =
+  let open Result.O in
+  Opam_ext.(get ?file Config.t_of_sexp config_field opam) >>= fun config ->
+  Opam_ext.(get ?file ~default:[] opamverse_of_sexp opamverse_field opam) >>= fun opamverse ->
+  Opam_ext.(get ?file ~default:[] duniverse_of_sexp duniverse_field opam) >>= fun duniverse ->
+  let deps = { Deps.opamverse; duniverse } in
+  Ok { config; deps }
+
+let save ~file t =
+  let open Result.O in
+  let opam = to_opam t in
+  Bos.OS.File.with_oc file
+    (fun oc () ->
+      OpamFile.OPAM.write_to_channel oc opam;
+      Ok ())
+    ()
+  >>= fun res -> res
+
+let load ~file =
+  let open Result.O in
+  let filename = Fpath.to_string file in
+  Bos.OS.File.with_ic file
+    (fun ic () ->
+      let filename = OpamFile.make (OpamFilename.of_string filename) in
+      OpamFile.OPAM.read_from_channel ~filename ic)
+    ()
+  >>= fun opam -> from_opam ~file:filename opam

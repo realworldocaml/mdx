@@ -72,28 +72,33 @@ let opam_version () =
 let ocaml_version ?ocamlc () =
   let oc = match ocamlc with None -> Cmd.v "ocamlc" | Some x -> Cmd.(v @@ p x) in
   match run_and_log_s ~ignore_error:false Cmd.(oc % "-version") with
-  | Ok s -> begin
+  | Ok s -> (
       match Ocaml_version.of_string s with
       | Ok v -> Ok v
-      | Error (`Msg _) -> Error (`Msg "unable to parse OCaml string from ocamlc")
-  end
+      | Error (`Msg _) -> Error (`Msg "unable to parse OCaml string from ocamlc") )
   | Error (`Msg _) -> Error (`Msg "unable to find an installed ocamlc")
 
 let install_ocaml_to ~prefix ~src () =
-  OS.Dir.with_current src (fun () ->
-    run_and_log Cmd.(v "./configure" % "--prefix" % p prefix) >>= fun () ->
-    run_and_log Cmd.(v "make" % "-j" % "world.opt") >>= fun () ->
-    run_and_log Cmd.(v "make" % "install")
-  ) () >>= fun x -> x
+  OS.Dir.with_current src
+    (fun () ->
+      run_and_log Cmd.(v "./configure" % "--prefix" % p prefix) >>= fun () ->
+      run_and_log Cmd.(v "make" % "-j" % "world.opt") >>= fun () ->
+      run_and_log Cmd.(v "make" % "install"))
+    ()
+  >>= fun x -> x
 
 let install_dune_to ~prefix ~src () =
-  OS.Dir.with_current src (fun () ->
-    OS.File.write Fpath.(v "dune-workspace") "(lang dune 1.0)" >>= fun () ->
-    run_and_log Cmd.(v "ocaml" % "configure.ml" % "--libdir" % p prefix) >>= fun () ->
-    run_and_log Cmd.(v "ocaml" % "bootstrap.ml") >>= fun () ->
-    run_and_log Cmd.(v "./dune.exe" % "build" % "-p" % "dune" % "--profile" % "dune-bootstrap") >>= fun () ->
-    run_and_log Cmd.(v "./dune.exe" % "install" % "--root" % p src % "--prefix" % p prefix % "dune")
-  ) () >>= fun x -> x
+  OS.Dir.with_current src
+    (fun () ->
+      OS.File.write Fpath.(v "dune-workspace") "(lang dune 1.0)" >>= fun () ->
+      run_and_log Cmd.(v "ocaml" % "configure.ml" % "--libdir" % p prefix) >>= fun () ->
+      run_and_log Cmd.(v "ocaml" % "bootstrap.ml") >>= fun () ->
+      run_and_log Cmd.(v "./dune.exe" % "build" % "-p" % "dune" % "--profile" % "dune-bootstrap")
+      >>= fun () ->
+      run_and_log
+        Cmd.(v "./dune.exe" % "install" % "--root" % p src % "--prefix" % p prefix % "dune"))
+    ()
+  >>= fun x -> x
 
 let run_git ?(ignore_error = false) ~repo args =
   run_and_log ~ignore_error Cmd.(v "git" % "-C" % p repo %% args)
@@ -104,20 +109,30 @@ let dune_version () =
   | Error _ -> Error (`Msg "unable to find an installed dune")
 
 let dune_build ~root ?profile targets =
-  let parg = match profile with None -> Cmd.empty | Some "release" -> Cmd.(v "--profile=release" % "--ignore-promoted-rules" % "--no-config") | Some x -> Cmd.(v ("--profile=" ^ x)) in
+  let parg =
+    match profile with
+    | None -> Cmd.empty
+    | Some "release" -> Cmd.(v "--profile=release" % "--ignore-promoted-rules" % "--no-config")
+    | Some x -> Cmd.(v ("--profile=" ^ x))
+  in
   run_and_log Cmd.(v "dune" % "build" % "--root" % p root %% parg %% of_list targets)
 
 let dune_install ~root ~prefix ~sections targets =
   let sections = String.concat ~sep:"," sections in
-  run_and_log Cmd.(v "dune" % "install" % "--root" % p root % "--prefix" %
-                   p prefix % "--sections" % sections %% of_list targets)
+  run_and_log
+    Cmd.(
+      v "dune" % "install" % "--root" % p root % "--prefix" % p prefix % "--sections" % sections
+      %% of_list targets)
 
 let is_git_repo_clean ~repo () =
   let cmd = Cmd.(v "git" % "-C" % p repo % "diff" % "--quiet") in
   match OS.Cmd.(run_out ~err:err_log cmd |> to_string) with Ok _ -> Ok true | Error _ -> Ok false
 
 let git_shallow_clone ~output_dir ~remote ~ref () =
-  let cmd = Cmd.(v "git" % "clone" % "--recurse-submodules" % "--depth=1" % "-b" % ref % remote % p output_dir) in
+  let cmd =
+    Cmd.(
+      v "git" % "clone" % "--recurse-submodules" % "--depth=1" % "-b" % ref % remote % p output_dir)
+  in
   run_and_log cmd
 
 let git_rev_parse ~repo ~ref () =
@@ -199,7 +214,9 @@ let git_init_bare ~repo = run_and_log Cmd.(v "git" % "init" % "--bare" % p repo)
 
 let git_clone ~branch ~remote ~output_dir =
   run_and_log
-    Cmd.(v "git" % "clone" % "--recurse-submodules" % "--depth" % "1" % "--branch" % branch % remote % p output_dir)
+    Cmd.(
+      v "git" % "clone" % "--recurse-submodules" % "--depth" % "1" % "--branch" % branch % remote
+      % p output_dir)
 
 let git_clone_or_pull ~branch ~remote ~output_dir =
   OS.Dir.exists output_dir >>= function

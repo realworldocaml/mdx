@@ -14,6 +14,8 @@ module Arg : sig
 
   val fpath : Fpath.t Cmdliner.Arg.converter
 
+  val package : Types.Opam.package Cmdliner.Arg.converter
+
   val repo : [ `Repo of Fpath.t ] Cmdliner.Term.t
   (** CLI option to specify the root directory of the project. Used to find root packages,
       duniverse files and directories. Defaults to the current directory. *)
@@ -26,9 +28,6 @@ module Arg : sig
   (** CLI arguments consisting of the list of source deps repo to process. If [None],
       the whole duniverse should be processed. If [Some l] then [l] is non empty. *)
 
-  val opam_repo : [ `Opam_repo of Uri.t ] Cmdliner.Term.t
-  (** Opam repository holding the duniversed packages *)
-  
   val no_cache : [> `No_cache of bool ] Cmdliner.Term.t
   (** Disable the duniverse global git cache *)
 
@@ -53,5 +52,4 @@ val filter_duniverse :
 (** Filters the duniverse according to the CLI provided list of repos or returns an error
     if some of the provided packages don't match any of the duniverse repositories. *)
 
-val get_cache : no_cache:bool ->
-    (Duniverse_lib.Cloner.cache, [> `Msg of string ]) result
+val get_cache : no_cache:bool -> (Duniverse_lib.Cloner.cache, [> `Msg of string ]) result

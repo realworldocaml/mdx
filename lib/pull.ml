@@ -1,12 +1,14 @@
+module Duniverse_pp = Pp
 open Stdune
+module Pp = Duniverse_pp
 
 let report_commit_is_gone_repos repos =
   let sep fmt () =
     Format.pp_print_newline fmt ();
-    Styled_pp.header_indent fmt ();
+    Pp.Styled.header_indent fmt ();
     Fmt.(const string "  - ") fmt ()
   in
-  let fmt_repos = Fmt.(list ~sep Styled_pp.package_name) in
+  let fmt_repos = Fmt.(list ~sep Pp.Styled.package_name) in
   Logs.app (fun l ->
       l "The following repos could not be pulled as the commit we want is gone:%a%a" sep ()
         fmt_repos repos);
@@ -23,7 +25,7 @@ let pull ?(trim_clone = false) ~duniverse_dir ~cache src_dep =
   |> Rresult.R.reword_error (fun (`Msg _) -> `Commit_is_gone dir)
   >>= fun _cached ->
   (* Common.Logs.app (fun l ->
-      l "Pulled sources for %a.%a" Styled_pp.path output_dir Styled_pp.cached cached); *)
+      l "Pulled sources for %a.%a" Pp.Styled.path output_dir Pp.Styled.cached cached); *)
   if trim_clone then
     Bos.OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
     Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
@@ -40,9 +42,8 @@ let pull_source_dependencies ?trim_clone ~duniverse_dir ~cache src_deps =
   >>= function
   | [] ->
       let total = List.length src_deps in
-      let pp_count = Styled_pp.good Fmt.int in
-      Logs.app (fun l ->
-          l "Successfully pulled %a/%a repositories" pp_count total pp_count total);
+      let pp_count = Pp.Styled.good Fmt.int in
+      Logs.app (fun l -> l "Successfully pulled %a/%a repositories" pp_count total pp_count total);
       Ok ()
   | commit_is_gone_repos ->
       report_commit_is_gone_repos commit_is_gone_repos;
@@ -53,9 +54,9 @@ let mark_duniverse_content_as_vendored ~duniverse_dir =
   let dune_file = Fpath.(duniverse_dir / "dune") in
   let content = Dune_file.Raw.duniverse_dune_content in
   Logs.debug (fun l ->
-      l "Writing %a:\n %s" Styled_pp.path dune_file (String.concat ~sep:"\n" content));
+      l "Writing %a:\n %s" Pp.Styled.path dune_file (String.concat ~sep:"\n" content));
   Persist.write_lines_hum dune_file content >>= fun () ->
-  Logs.debug (fun l -> l "Successfully wrote %a" Styled_pp.path dune_file);
+  Logs.debug (fun l -> l "Successfully wrote %a" Pp.Styled.path dune_file);
   Ok ()
 
 let submodule_add ~repo ~duniverse_dir src_dep =
@@ -87,14 +88,12 @@ let set_git_submodules ~repo ~duniverse_dir src_deps =
   Ok ()
 
 let duniverse ~cache ~pull_mode ~repo duniverse =
-  if List.is_empty duniverse then Ok () else
-  let open Result.O in
-  let duniverse_dir = Fpath.(repo // Config.vendor_dir) in
-  Bos.OS.Dir.create duniverse_dir >>= fun _created ->
-  mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
-  let sm = pull_mode = Duniverse.Config.Submodules in
-  pull_source_dependencies ~trim_clone:(not sm) ~duniverse_dir ~cache duniverse >>= fun () ->
-  if sm then set_git_submodules ~repo ~duniverse_dir duniverse else Ok ()
-
-
-
+  if List.is_empty duniverse then Ok ()
+  else
+    let open Result.O in
+    let duniverse_dir = Fpath.(repo // Config.vendor_dir) in
+    Bos.OS.Dir.create duniverse_dir >>= fun _created ->
+    mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
+    let sm = pull_mode = Duniverse.Config.Submodules in
+    pull_source_dependencies ~trim_clone:(not sm) ~duniverse_dir ~cache duniverse >>= fun () ->
+    if sm then set_git_submodules ~repo ~duniverse_dir duniverse else Ok ()

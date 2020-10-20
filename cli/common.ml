@@ -6,11 +6,16 @@ module Arg = struct
 
   let fpath = Cmdliner.Arg.conv ~docv:"PATH" (Fpath.of_string, Fpath.pp)
 
+  let package =
+    let parse s = Ok (Types.Opam.package_from_string s) in
+    Cmdliner.Arg.conv ~docv:"PACKAGE" (parse, Types.Opam.pp_package)
+
   let repo =
     let doc = "Path to Git repository to store vendored code in." in
     named
       (fun x -> `Repo x)
-      Cmdliner.Arg.(value & opt fpath (Fpath.v (Sys.getcwd ())) & info [ "r"; "repo" ] ~docv:"TARGET_REPO" ~doc)
+      Cmdliner.Arg.(
+        value & opt fpath (Fpath.v (Sys.getcwd ())) & info [ "r"; "repo" ] ~docv:"TARGET_REPO" ~doc)
 
   let yes =
     let doc = "Do not prompt for confirmation and always assume yes" in
@@ -29,20 +34,9 @@ module Arg = struct
       (fun x -> `Duniverse_repos x)
       Term.(non_empty_list_opt $ Arg.(value & pos_all string [] & info ~doc ~docv []))
 
-let no_cache =
-  let doc = "Run without using the duniverse global cache" in
-  named (fun x -> `No_cache x) Cmdliner.Arg.(value & flag & info ~doc [ "no-cache" ])
-
-let opam_repo =
-  let open Cmdliner in
-  let doc =
-    "URL or path to the Duniverse opam-repository that has overrides for packages that have not \
-     yet been ported to Dune upstream."
-  in
-  named
-    (fun x -> `Opam_repo (Uri.of_string x))
-    Arg.(
-      value & opt string Config.duniverse_opam_repo & info [ "opam-repo" ] ~docv:"OPAM_REPO" ~doc)
+  let no_cache =
+    let doc = "Run without using the duniverse global cache" in
+    named (fun x -> `No_cache x) Cmdliner.Arg.(value & flag & info ~doc [ "no-cache" ])
 
   let cache_env_var ?(windows_only = false) ~priority ~extra_path ~var () =
     let windows_only = if windows_only then " (only on Windows)" else "" in
@@ -57,13 +51,13 @@ let opam_repo =
   let dev_repo =
     let parse s =
       match Opam.Dev_repo.from_string s with
-      | { vcs = Some Git; uri = dev_repo_uri } ->
-          (match Uri.host dev_repo_uri with
+      | { vcs = Some Git; uri = dev_repo_uri } -> (
+          match Uri.host dev_repo_uri with
           | Some _host -> Ok dev_repo_uri
-          | None -> Error (`Msg "dev-repo without host"))
-      | { vcs = None | Some (Other _); _ } -> Error (`Msg "dev-repo doesn't use git as a VCS") in
+          | None -> Error (`Msg "dev-repo without host") )
+      | { vcs = None | Some (Other _); _ } -> Error (`Msg "dev-repo doesn't use git as a VCS")
+    in
     Cmdliner.Arg.conv ~docv:"DEV_REPO" (parse, Uri.pp_hum)
-
 
   let caches =
     let duniverse_cache =
@@ -110,7 +104,7 @@ end
 module Logs = struct
   let app ?src f =
     Logs.app ?src (fun l ->
-        f (fun ?header ?tags fmt -> l ?header ?tags ("%a" ^^ fmt) Duniverse_lib.Styled_pp.header ()))
+        f (fun ?header ?tags fmt -> l ?header ?tags ("%a" ^^ fmt) Duniverse_lib.Pp.Styled.header ()))
 end
 
 (** Filters the duniverse according to the CLI provided list of repos *)
@@ -136,4 +130,3 @@ let filter_duniverse ~to_consider (src_deps : _ Duniverse.Deps.Source.t list) =
             unmatched )
 
 let get_cache ~no_cache = if no_cache then Ok Cloner.no_cache else Cloner.get_cache ()
-

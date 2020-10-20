@@ -1,5 +1,7 @@
 open Bos
+module Duniverse_pp = Pp
 open Stdune
+module Pp = Duniverse_pp
 
 type cache = { cache_dir : Fpath.t option }
 
@@ -112,7 +114,7 @@ end
 module Uncached = struct
   let warn_about_head_commit ~ref ~commit () =
     Logs.info (fun l ->
-        l "%a is not the HEAD commit for %a anymore" Styled_pp.commit commit Styled_pp.branch ref);
+        l "%a is not the HEAD commit for %a anymore" Pp.Styled.commit commit Pp.Styled.branch ref);
     Logs.info (fun l -> l "You might want to consider running 'duniverse update'");
     ()
 
