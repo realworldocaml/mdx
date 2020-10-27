@@ -55,9 +55,10 @@ let check_repo_config ~global_state ~switch_state =
       if not dune_universe_is_configured then
         Logs.warn (fun l ->
             l
-              "The dune-universe opam-repository isn't set in the current switch. For %a to behave \
-               properly you should add it to the list of the configured repos for this switch by \
-               running:\n\
+              "The dune-universe opam-repository isn't set in the current switch. It contains dune \
+               ports for some opam packages. Note that %a will fail if not all of the project \
+               dependencies use dune as their build system. Adding this opam-repository to your \
+               current switch will help with that. If you wish to do so, run the following command:\n\
                opam repository add dune-universe %s"
               Fmt.(styled `Bold string)
               "opam monorepo lock" Config.duniverse_opam_repo))
