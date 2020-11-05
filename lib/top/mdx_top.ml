@@ -126,14 +126,14 @@ module Phrase = struct
             | Some error ->
                 Location.Error (Lexbuf.shift_location_error startpos error)
           in
-          ( if lexbuf.Lexing.lex_last_action <> Lexbuf.semisemi_action then
-            let rec aux () =
-              match Lexer.token lexbuf with
-              | Parser.SEMISEMI | Parser.EOF -> ()
-              | exception Lexer.Error (_, _) -> ()
-              | _ -> aux ()
-            in
-            aux () );
+          (if lexbuf.Lexing.lex_last_action <> Lexbuf.semisemi_action then
+           let rec aux () =
+             match Lexer.token lexbuf with
+             | Parser.SEMISEMI | Parser.EOF -> ()
+             | exception Lexer.Error (_, _) -> ()
+             | _ -> aux ()
+           in
+           aux ());
           Error exn
     in
     let endpos = lexbuf.Lexing.lex_curr_p in
@@ -214,7 +214,7 @@ module Rewrite = struct
     | { Types.type_manifest = Some ty; _ } -> (
         match Ctype.expand_head env ty with
         | { Types.desc = Types.Tconstr (path, _, _); _ } -> path
-        | _ -> path )
+        | _ -> path)
     | _ -> path
 
   let is_persistent_value env longident =
@@ -244,7 +244,7 @@ module Rewrite = struct
         Typedtree.Tstr_eval ({ Typedtree.exp_type = typ; _ }, _) ) -> (
         match (Ctype.repr typ).Types.desc with
         | Types.Tconstr (path, _, _) -> apply ts env pstr_item path e
-        | _ -> pstr_item )
+        | _ -> pstr_item)
     | _ -> pstr_item
 
   let active_rewriters () =
@@ -273,7 +273,7 @@ module Rewrite = struct
             with _ -> pstr
           in
           Btype.backtrack snap;
-          Ptop_def pstr )
+          Ptop_def pstr)
     | _ -> phrase
 
   let preload verbose ppf =
@@ -407,14 +407,14 @@ let eval t cmd =
     in
     Oprint.out_phrase := out_phrase;
     let restore () = Oprint.out_phrase := out_phrase' in
-    ( match toplevel_exec_phrase t ppf phrase with
+    (match toplevel_exec_phrase t ppf phrase with
     | ok ->
         errors := (not ok) || !errors;
         restore ()
     | exception exn ->
         errors := true;
         restore ();
-        Location.report_exception ppf exn );
+        Location.report_exception ppf exn);
     Format.pp_print_flush ppf ();
     capture ();
     if
@@ -558,7 +558,7 @@ let monkey_patch (type a) (m : a) (type b) (prj : unit -> b) (v : b) =
         if Obj.field m i == v' then (
           Obj.set_field m i v;
           if Obj.repr (prj ()) == v then raise Exit;
-          Obj.set_field m i v' )
+          Obj.set_field m i v')
       done;
       invalid_arg "monkey_patch: field not found"
     with Exit -> ()
@@ -679,7 +679,7 @@ let in_env e f =
     (* We will start from the *correct* initial environment with
        everything loaded, for each environment. *)
     default_env := !Toploop.toplevel_env;
-    first_call := false );
+    first_call := false);
   let env, names, objs =
     try Hashtbl.find envs env_name with Not_found -> env_deps !default_env
   in
