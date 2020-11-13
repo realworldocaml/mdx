@@ -81,7 +81,7 @@ let run_test ?root blacklist temp_file t =
         Unix.create_process_env "sh" [| "sh"; "-c"; cmd |] env Unix.stdin fd fd)
   in
   Unix.close fd;
-  match snd (Unix.waitpid [] pid) with WEXITED n -> n | _ -> 255
+  Util.Process.wait ~pid
 
 let root_dir ?root ?block () =
   match (block : Block.t option) with
