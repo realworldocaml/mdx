@@ -29,3 +29,12 @@ let partition_map l ~f =
   (rev l, rev r)
 
 let filter_opt l = filter_map ~f:(fun x -> x) l
+
+let concat_map ~f l =
+  let rec aux f acc = function
+    | [] -> rev acc
+    | x :: l ->
+        let xs = f x in
+        aux f (rev_append xs acc) l
+  in
+  aux f [] l
