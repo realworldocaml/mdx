@@ -1,6 +1,5 @@
-open Duniverse_lib
-open Duniverse_lib.Types
-open Astring
+open Import
+open Types
 
 let check_root_packages ~local_packages =
   match local_packages with
@@ -22,7 +21,7 @@ let build_config ~local_packages ~pull_mode =
   check_root_packages ~local_packages >>= fun root_packages ->
   let ocaml_compilers =
     match Dune_file.Project.supported_ocaml_compilers () with
-    | Ok l -> List.map Ocaml_version.to_string l
+    | Ok l -> List.map ~f:Ocaml_version.to_string l
     | Error (`Msg msg) ->
         Logs.warn (fun l -> l "%s" msg);
         []
@@ -42,7 +41,7 @@ let resolve_ref deps =
 
 let current_repos ~repo_state ~switch_state =
   let switch_repos = OpamSwitchState.repos_list switch_state in
-  List.map (OpamRepositoryState.get_repo repo_state) switch_repos
+  List.map ~f:(OpamRepositoryState.get_repo repo_state) switch_repos
 
 let is_duniverse_repo (repo : OpamTypes.repository) =
   let url = OpamUrl.to_string repo.repo_url in
@@ -51,7 +50,7 @@ let is_duniverse_repo (repo : OpamTypes.repository) =
 let check_repo_config ~global_state ~switch_state =
   OpamRepositoryState.with_ `Lock_none global_state (fun repo_state ->
       let repos = current_repos ~repo_state ~switch_state in
-      let dune_universe_is_configured = List.exists is_duniverse_repo repos in
+      let dune_universe_is_configured = List.exists ~f:is_duniverse_repo repos in
       if not dune_universe_is_configured then
         Logs.warn (fun l ->
             l
@@ -72,15 +71,15 @@ let calculate_opam ~build_only ~local_paths ~local_packages =
 let filter_local_packages ~explicit_list local_paths =
   let res =
     List.fold_left
-      (fun acc { Opam.name; version } ->
-        match (acc, String.Map.find_opt name local_paths) with
+      ~f:(fun acc { Opam.name; version } ->
+        match (acc, String.Map.find local_paths name) with
         | Error _, Some _ -> acc
         | Error l, None -> Error (name :: l)
         | Ok _, None -> Error [ name ]
-        | Ok filtered, Some path -> Ok (String.Map.add name (version, path) filtered))
-      (Ok String.Map.empty) explicit_list
+        | Ok filtered, Some path -> Ok (String.Map.set filtered name (version, path)))
+      ~init:(Ok String.Map.empty) explicit_list
   in
-  Stdext.Result.map_error res ~f:(fun l ->
+  Result.map_error res ~f:(fun l ->
       let msg =
         Fmt.str "The following packages have no local opam files: %a" Fmt.(list ~sep:sp string) l
       in
@@ -91,7 +90,7 @@ let local_packages ~recurse ~explicit_list repo =
   match explicit_list with
   | [] ->
       Repo.local_packages ~recurse repo >>| fun local_paths ->
-      String.Map.map (fun path -> (None, path)) local_paths
+      String.Map.map ~f:(fun path -> (None, path)) local_paths
   | _ ->
       Repo.local_packages ~recurse:true repo >>= fun local_paths ->
       filter_local_packages ~explicit_list local_paths
@@ -102,7 +101,7 @@ let run (`Repo repo) (`Pull_mode pull_mode) (`Recurse_opam recurse) (`Build_only
   local_packages ~recurse ~explicit_list:lp repo >>= fun local_paths ->
   let local_packages =
     let open Types.Opam in
-    List.map (fun (name, (version, _)) -> { name; version }) (String.Map.bindings local_paths)
+    List.map ~f:(fun (name, (version, _)) -> { name; version }) (String.Map.bindings local_paths)
   in
   Repo.duniverse_file ~local_packages repo >>= fun duniverse_file ->
   build_config ~local_packages ~pull_mode >>= fun config ->

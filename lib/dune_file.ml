@@ -1,18 +1,18 @@
-open Stdune
+open Import
 
 module Lang = struct
   type version = int * int
 
   let compare_version (major, minor) (major', minor') =
-    match Int.compare major major' with Eq -> Int.compare minor minor' | _ as ord -> ord
+    match Int.compare major major' with 0 -> Int.compare minor minor' | _ as ord -> ord
 
   let pp_version fmt (major, minor) = Format.fprintf fmt "%d.%d" major minor
 
   let parse_version s =
     let err () = Error (`Msg (Printf.sprintf "Invalid dune lang version: %s" s)) in
-    match String.split ~on:'.' s with
+    match String.split_on_char ~sep:'.' s with
     | [ major; minor ] -> (
-        match (Int.of_string major, Int.of_string minor) with
+        match (int_of_string_opt major, int_of_string_opt minor) with
         | Some major, Some minor -> Ok (major, minor)
         | _ -> err () )
     | _ -> err ()
@@ -21,7 +21,7 @@ module Lang = struct
     let content =
       let open Option.O in
       String.drop_prefix ~prefix:"(" s >>= String.drop_suffix ~suffix:")" >>| fun content ->
-      String.split ~on:' ' content
+      String.split_on_char ~sep:' ' content
     in
     match content with
     | Some [ "lang"; "dune"; version ] -> parse_version version

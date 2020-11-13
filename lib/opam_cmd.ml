@@ -14,19 +14,16 @@
  *
  *)
 
+open Import
 open Types.Opam
-open Rresult
-open Astring
 
 let get_opam_info ~switch_state package =
   let opam_pkg = Types.Opam.package_to_opam package in
   let opam_file = OpamSwitchState.opam switch_state opam_pkg in
   let archive =
-    Stdune.Option.map
-      ~f:(fun x -> OpamUrl.to_string (OpamFile.URL.url x))
-      (OpamFile.OPAM.url opam_file)
+    Option.map ~f:(fun x -> OpamUrl.to_string (OpamFile.URL.url x)) (OpamFile.OPAM.url opam_file)
   in
-  let dev_repo = Stdune.Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file) in
+  let dev_repo = Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file) in
   let depends = OpamFile.OPAM.depends opam_file in
   let dev_repo, tag = Opam.classify_package ~package ~dev_repo ~archive () in
   let is_dune = Opam.depends_on_dune depends in
@@ -45,7 +42,7 @@ let filter_duniverse_packages pkgs =
       l "%aFiltering out packages that are irrelevant to the Duniverse." Pp.Styled.header ());
   let rec fn acc = function
     | hd :: tl ->
-        let filter = List.mem hd.package.name Config.base_packages || hd.dev_repo = `Virtual in
+        let filter = List.mem hd.package.name ~set:Config.base_packages || hd.dev_repo = `Virtual in
         if filter then fn acc tl else fn (hd :: acc) tl
     | [] -> List.rev acc
   in
@@ -56,14 +53,13 @@ let read_opam fpath =
   Bos.OS.File.with_ic fpath (fun ic () -> OpamFile.OPAM.read_from_channel ~filename ic) ()
 
 let local_paths_to_opam_map local_paths =
-  let open Rresult.R.Infix in
+  let open Result.O in
   let bindings = String.Map.bindings local_paths in
-  Stdext.Result.List.map bindings ~f:(fun (name, (version, path)) ->
+  Result.List.map bindings ~f:(fun (name, (version, path)) ->
       read_opam path >>| fun opam_file ->
       let name = OpamPackage.Name.of_string name in
       let version =
-        OpamPackage.Version.of_string
-          (Stdext.Option.value ~default:Types.Opam.default_version version)
+        OpamPackage.Version.of_string (Option.value ~default:Types.Opam.default_version version)
       in
       (name, (version, opam_file)))
   >>| OpamPackage.Name.Map.of_list
@@ -72,7 +68,7 @@ let calculate_opam ~build_only ~local_paths ~local_packages switch_state =
   let open Rresult.R.Infix in
   local_paths_to_opam_map local_paths >>= fun local_packages_opam ->
   Opam_solve.calculate ~build_only ~local_packages:local_packages_opam switch_state
-  >>| List.map Types.Opam.package_from_opam
+  >>| List.map ~f:Types.Opam.package_from_opam
   >>= fun deps ->
   Logs.app (fun l ->
       l "%aFound %a opam dependencies for %a." Pp.Styled.header ()
@@ -88,13 +84,13 @@ let calculate_opam ~build_only ~local_paths ~local_packages switch_state =
         deps);
   Logs.app (fun l ->
       l "%aQuerying opam database for their metadata and Dune compatibility." Pp.Styled.header ());
-  Ok (List.map (get_opam_info ~switch_state) deps)
+  Ok (List.map ~f:(get_opam_info ~switch_state) deps)
 
 type packages_stats = { total : int; dune : int; not_dune : entry list }
 
 let packages_stats packages =
   filter_duniverse_packages packages |> fun packages ->
-  let dune, not_dune = List.partition (fun { is_dune; _ } -> is_dune) packages in
+  let dune, not_dune = List.partition ~f:(fun { is_dune; _ } -> is_dune) packages in
   let dune = List.length dune in
   let total = List.length packages in
   { total; dune; not_dune }
@@ -121,6 +117,7 @@ let report_packages_stats packages =
           packages_stats.total)
 
 let install_incompatible_packages yes repo =
+  let open Result.O in
   Repo.duniverse_file repo >>= fun file ->
   Logs.app (fun l ->
       l "%aGathering dune-incompatible packages from %a." Pp.Styled.header ()

@@ -1,5 +1,3 @@
-open Stdune
-
 module Raw : sig
   val as_sexps : Fpath.t -> (Sexplib0.Sexp.t list, [> `Msg of string ]) result
   (** Parses a dune file as a list of S-expressions. *)
@@ -19,7 +17,7 @@ end
 module Lang : sig
   type version = int * int
 
-  val compare_version : version -> version -> Ordering.t
+  val compare_version : version -> version -> int
 
   val pp_version : version Fmt.t
 

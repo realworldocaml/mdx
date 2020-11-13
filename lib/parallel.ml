@@ -1,4 +1,4 @@
-open Stdune
+open Import
 
 let n_threads = 24
 
@@ -27,7 +27,7 @@ let map ~f l =
         result := f hd :: !result;
         worker result
   in
-  List.init n_threads ~f:(fun _ ->
+  List.init ~len:n_threads ~f:(fun _ ->
       let result = ref [] in
       (Thread.create worker result, result))
   |> List.fold_left

@@ -1,6 +1,4 @@
-module Fmt_ext = Fmt
-open Stdune
-open Duniverse_lib
+open Import
 
 let debug_update ~src_dep ~new_ref =
   let repo = src_dep.Duniverse.Deps.Source.dir in
@@ -47,9 +45,9 @@ let run (`Repo repo) (`Duniverse_repos duniverse_repos) () =
         Ok () )
       else (
         Common.Logs.app (fun l ->
-            l "%a/%a source repositories tracked branch were updated" (Pp.Styled.good Fmt_ext.int)
+            l "%a/%a source repositories tracked branch were updated" (Pp.Styled.good Fmt.int)
               !updated
-              Fmt_ext.(styled `Blue int)
+              Fmt.(styled `Blue int)
               !total);
         let dune_get = { dune_get with deps = { dune_get.deps with duniverse } } in
         Duniverse.save ~file:duniverse_file dune_get )

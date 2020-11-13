@@ -1,7 +1,4 @@
-module Fmt_ext = Fmt
-open Stdune
-open Duniverse_lib
-open Rresult
+open Import
 
 let min_dune_ver = Dune_file.Lang.duniverse_minimum_version
 
@@ -43,12 +40,13 @@ let check_dune_lang_version ~yes ~repo =
   Bos.OS.File.exists dune_project_path >>= fun found_dune_project ->
   if found_dune_project then
     Bos.OS.File.read_lines dune_project_path >>= fun content ->
-    let lang_stanza = List.find ~f:Dune_file.Lang.is_stanza content in
+    let lang_stanza = List.find_opt ~f:Dune_file.Lang.is_stanza content in
     match lang_stanza with
     | None -> suggest_setting_version ~yes ~dune_project_path ~content
     | Some s -> (
         Dune_file.Lang.parse_stanza s >>= fun version ->
-        match Dune_file.Lang.(compare_version version duniverse_minimum_version) with
+        let compared = Dune_file.Lang.(compare_version version duniverse_minimum_version) in
+        match Ordering.of_int compared with
         | Eq | Gt -> Ok ()
         | Lt -> suggest_updating_version ~yes ~version ~dune_project_path ~content )
   else (
