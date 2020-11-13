@@ -1,4 +1,0 @@
-(executable
- (name toto)
- (modes exe byte)
- (public_name toto))

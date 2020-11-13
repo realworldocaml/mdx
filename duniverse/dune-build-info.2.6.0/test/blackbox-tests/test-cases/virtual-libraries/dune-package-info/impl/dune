@@ -1,4 +1,0 @@
-(library
- (name impl)
- (public_name foo.impl)
- (implements vlib))

@@ -1,3 +1,0 @@
-(test
- (name convert)
- (libraries osrelease opam-format))

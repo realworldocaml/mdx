@@ -21,9 +21,9 @@ code required to build a project using the dune build tool.")
   cmdliner
   fmt
   logs
-  opam-file-format
-  opam-format
-  opam-state
+  (opam-file-format (>= 2.1.0~beta))
+  (opam-format (>= 2.1.0~beta))
+  (opam-state (>= 2.1.0~beta))
   opam-0install
   ocaml-version
   uri
