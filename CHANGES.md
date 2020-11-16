@@ -18,7 +18,7 @@
 - Report `#require` directive errors (#276, @gpetiot)
 - Handle no such file exception: the input file and the values of options `--root` and `--prelude` are checked (#292, @gpetiot)
 - Keep locations from parsing instead of recomputing the lines, providing better error messages (#241, @gpetiot)
-- Fix the unit tests on Windows (#301 @tmattio)
+- Use with-accepted-exit-codes in tests instead of system (#301 @tmattio)
 
 #### Security
 
