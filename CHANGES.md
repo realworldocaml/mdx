@@ -9,6 +9,10 @@
 
 - Improve error message of cram test exceptions due to empty lines in a block (#270, @pitag-ha)
 
+#### Fixed
+
+- Fix the unit tests on Windows (#301 @tmattio)
+
 #### Deprecated
 
 #### Removed
