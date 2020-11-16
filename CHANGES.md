@@ -9,10 +9,6 @@
 
 - Improve error message of cram test exceptions due to empty lines in a block (#270, @pitag-ha)
 
-#### Fixed
-
-- Fix the unit tests on Windows (#301 @tmattio)
-
 #### Deprecated
 
 #### Removed
@@ -22,6 +18,7 @@
 - Report `#require` directive errors (#276, @gpetiot)
 - Handle no such file exception: the input file and the values of options `--root` and `--prelude` are checked (#292, @gpetiot)
 - Keep locations from parsing instead of recomputing the lines, providing better error messages (#241, @gpetiot)
+- Fix the unit tests on Windows (#301 @tmattio)
 
 #### Security
 
