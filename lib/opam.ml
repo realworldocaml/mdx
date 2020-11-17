@@ -158,3 +158,16 @@ let classify_package ~package ~dev_repo ~archive () =
                 l "Mapped %s -> %s" archive (match tag with None -> "??" | Some v -> v));
             (kind, tag)
         | x -> (x, None) )
+
+let pull_tree ~url ~dir global_state =
+  let cache_dir = OpamRepositoryPath.download_cache global_state.OpamStateTypes.root in
+  let label = url in
+  (* Opam requires a label for the pull, it's only used for logging *)
+  let opam_dir = OpamFilename.Dir.of_string (Fpath.to_string dir) in
+  let opam_url = OpamUrl.parse ~from_file:false url in
+  let checksums = [] in
+  let job = OpamRepository.pull_tree ~cache_dir label opam_dir checksums [ opam_url ] in
+  let result = OpamProcess.Job.run job in
+  match result with
+  | Result _ | Up_to_date _ -> Ok ()
+  | Not_available (_, long_msg) -> Error (`Msg long_msg)

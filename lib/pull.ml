@@ -13,15 +13,14 @@ let report_commit_is_gone_repos repos =
   Logs.app (fun l ->
       l "You should run 'duniverse update' to fix the commits associated with the tracked refs")
 
-let pull ?(trim_clone = false) ~duniverse_dir ~cache src_dep =
+let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
   let open Result.O in
   let open Duniverse.Deps.Source in
-  let { dir; upstream; ref = { Git.Ref.t = ref; commit }; _ } = src_dep in
+  let { dir; upstream; ref = { Git.Ref.commit; _ }; _ } = src_dep in
   let output_dir = Fpath.(duniverse_dir / dir) in
   Bos.OS.Dir.delete ~must_exist:false ~recurse:true output_dir >>= fun () ->
-  Cloner.clone_to ~output_dir ~remote:upstream ~ref ~commit cache
-  |> Rresult.R.reword_error (fun (`Msg _) -> `Commit_is_gone dir)
-  >>= fun _cached ->
+  let url = Printf.sprintf "git+%s#%s" upstream commit in
+  Opam.pull_tree ~url ~dir:output_dir global_state >>= fun () ->
   (* Common.Logs.app (fun l ->
       l "Pulled sources for %a.%a" Pp.Styled.path output_dir Pp.Styled.cached cached); *)
   if trim_clone then
@@ -29,13 +28,12 @@ let pull ?(trim_clone = false) ~duniverse_dir ~cache src_dep =
     Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
   else Ok ()
 
-let pull_source_dependencies ?trim_clone ~duniverse_dir ~cache src_deps =
+let pull_source_dependencies ?trim_clone ~global_state ~duniverse_dir src_deps =
   let open Result.O in
-  List.map ~f:(pull ?trim_clone ~duniverse_dir ~cache) src_deps
+  List.map ~f:(pull ?trim_clone ~global_state ~duniverse_dir) src_deps
   |> Result.List.fold_left ~init:[] ~f:(fun acc res ->
          match res with
          | Ok () -> Ok acc
-         | Error (`Commit_is_gone dir) -> Ok (dir :: acc)
          | Error (`Msg _ as err) -> Error (err :> [> `Msg of string ]))
   >>= function
   | [] ->
@@ -85,7 +83,7 @@ let set_git_submodules ~repo ~duniverse_dir src_deps =
   (* Common.Logs.app (fun l -> l "Successfully wrote gitmodules."); *)
   Ok ()
 
-let duniverse ~cache ~pull_mode ~repo duniverse =
+let duniverse ~pull_mode ~repo ~global_state duniverse =
   if List.is_empty duniverse then Ok ()
   else
     let open Result.O in
@@ -93,5 +91,5 @@ let duniverse ~cache ~pull_mode ~repo duniverse =
     Bos.OS.Dir.create duniverse_dir >>= fun _created ->
     mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
     let sm = pull_mode = Duniverse.Config.Submodules in
-    pull_source_dependencies ~trim_clone:(not sm) ~duniverse_dir ~cache duniverse >>= fun () ->
-    if sm then set_git_submodules ~repo ~duniverse_dir duniverse else Ok ()
+    pull_source_dependencies ~global_state ~trim_clone:(not sm) ~duniverse_dir duniverse
+    >>= fun () -> if sm then set_git_submodules ~repo ~duniverse_dir duniverse else Ok ()

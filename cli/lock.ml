@@ -181,7 +181,7 @@ let info =
          command will fail.";
     ]
   in
-  Term.info "lock" ~doc ~exits ~man ~envs:Common.Arg.caches
+  Term.info "lock" ~doc ~exits ~man
 
 let term =
   let open Term in
