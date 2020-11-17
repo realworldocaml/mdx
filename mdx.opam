@@ -15,7 +15,7 @@ build: [
 
 depends: [
   "ocaml" {>= "4.02.3"}
-  "dune" {>= "2.0"}
+  "dune" {>= "2.2"}
   "ocamlfind"
   "fmt"
   "cppo" {build}
