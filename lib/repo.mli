@@ -1,8 +1,9 @@
+open Import
 (** Utility functions to extract repository specific path and values *)
 
 type t = Fpath.t
 
-val local_packages : recurse:bool -> t -> (Fpath.t Astring.String.Map.t, [> `Msg of string ]) result
+val local_packages : recurse:bool -> t -> (Fpath.t String.Map.t, [> `Msg of string ]) result
 (** Returns the locally defined opam packages as a map from package names to
     to the corresponding .opam file path.
     Only considers packages defined at the repo's root unless [recurse] is [true]. *)

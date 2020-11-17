@@ -1,3 +1,5 @@
+open Import
+
 module Switch_and_local_packages_context : sig
   include Opam_0install.S.CONTEXT
 
@@ -27,18 +29,16 @@ end = struct
     let opackage = OpamPackage.create name version in
     let package = Types.Opam.package_from_opam opackage in
     let archive =
-      Stdext.Option.map
-        ~f:(fun x -> OpamUrl.to_string (OpamFile.URL.url x))
-        (OpamFile.OPAM.url opam_file)
+      Option.map ~f:(fun x -> OpamUrl.to_string (OpamFile.URL.url x)) (OpamFile.OPAM.url opam_file)
     in
-    let dev_repo = Stdext.Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file) in
+    let dev_repo = Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file) in
     match Opam.classify_package ~package ~archive ~dev_repo () with
     | `Virtual, _ -> true
     | _, _ -> Opam.depends_on_dune (OpamFile.OPAM.depends opam_file)
 
   let filter_candidates ~name versions =
     List.map
-      (fun (version, result) ->
+      ~f:(fun (version, result) ->
         match result with
         | Error r -> (version, Error (Switch_rejection r))
         | Ok opam_file ->
@@ -75,7 +75,7 @@ let calculate ~build_only ~local_packages switch_state =
       let packages = Local_solver.packages_of_result selections in
       let deps =
         List.filter
-          (fun pkg ->
+          ~f:(fun pkg ->
             let name = OpamPackage.name pkg in
             not (OpamPackage.Name.Set.mem name names_set))
           packages

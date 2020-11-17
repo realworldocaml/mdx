@@ -1,5 +1,4 @@
-module Ffmt = Fmt
-open Duniverse_lib
+open Import
 
 module Arg = struct
   let named f = Cmdliner.Term.(app (const f))
@@ -109,8 +108,6 @@ end
 
 (** Filters the duniverse according to the CLI provided list of repos *)
 let filter_duniverse ~to_consider (src_deps : _ Duniverse.Deps.Source.t list) =
-  let open Stdune in
-  let open Rresult in
   match to_consider with
   | None -> Ok src_deps
   | Some to_consider -> (
@@ -124,9 +121,9 @@ let filter_duniverse ~to_consider (src_deps : _ Duniverse.Deps.Source.t list) =
       match unmatched with
       | [] -> Ok found
       | _ ->
-          let sep fmt () = Ffmt.pf fmt " " in
+          let sep fmt () = Fmt.pf fmt " " in
           Rresult.R.error_msgf "The following repos are not in your duniverse: %a"
-            Ffmt.(list ~sep string)
+            Fmt.(list ~sep string)
             unmatched )
 
 let get_cache ~no_cache = if no_cache then Ok Cloner.no_cache else Cloner.get_cache ()

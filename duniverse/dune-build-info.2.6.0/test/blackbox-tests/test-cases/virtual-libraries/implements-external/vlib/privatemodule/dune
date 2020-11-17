@@ -1,5 +1,0 @@
-(library
- (name vlib_privatemodule)
- (public_name vlib.privatemodule)
- (virtual_modules virt_module)
- (private_modules privatemodule))

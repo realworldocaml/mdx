@@ -1,6 +1,0 @@
-(library
- (name foobar_impl)
- (wrapped false)
- (public_name foobar.impl))
-
-(rule (copy# %{lib:foobar:foobar.mli} foobar.mli))

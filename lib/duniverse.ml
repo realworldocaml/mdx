@@ -1,4 +1,4 @@
-open Stdune
+open Import
 open Sexplib.Conv
 
 type unresolved = Git.Ref.t
@@ -74,7 +74,7 @@ module Deps = struct
     let aggregate t package =
       let package_name = package.Package.opam.name in
       let new_dir =
-        match String.compare t.dir package_name with
+        match Ordering.of_int (String.compare t.dir package_name) with
         | Lt | Eq -> t.dir
         | Gt -> dir_name_from_package package.Package.opam
       in
@@ -194,13 +194,13 @@ let load_dune_get ~file = Persist.load_sexp "duniverse" t_of_sexp file
 let sort ({ deps = { opamverse; duniverse }; _ } as t) =
   let sorted_opamverse =
     let open Deps.Opam in
-    let compare opam opam' = String.compare opam.name opam'.name in
-    List.sort ~compare opamverse
+    let cmp opam opam' = String.compare opam.name opam'.name in
+    List.sort ~cmp opamverse
   in
   let sorted_duniverse =
     let open Deps.Source in
-    let compare source source' = String.compare source.dir source'.dir in
-    List.sort ~compare duniverse
+    let cmp source source' = String.compare source.dir source'.dir in
+    List.sort ~cmp duniverse
   in
   { t with deps = { opamverse = sorted_opamverse; duniverse = sorted_duniverse } }
 
@@ -255,12 +255,14 @@ end = struct
     | Some ov, _ -> Opam_value.to_sexp_strict ov >>| of_sexp
 end
 
-let to_opam t =
+let to_opam (t : t) =
   let deps =
     let packages =
       let opam = t.deps.opamverse in
+      let open Deps.Source in
       let source = List.concat_map t.deps.duniverse ~f:(fun s -> s.provided_packages) in
-      List.sort ~compare:(fun o o' -> String.compare o.name o'.name) (opam @ source)
+      let open Deps.Opam in
+      List.sort ~cmp:(fun o o' -> String.compare o.name o'.name) (opam @ source)
     in
     match packages with
     | hd :: tl ->
@@ -271,7 +273,7 @@ let to_opam t =
   in
   let pin_deps =
     List.concat_map t.deps.duniverse ~f:Deps.Source.to_opam_pin_deps
-    |> List.sort ~compare:(fun (p, _) (p', _) -> Ordering.of_int (OpamPackage.compare p p'))
+    |> List.sort ~cmp:(fun (p, _) (p', _) -> OpamPackage.compare p p')
   in
   let t = sort t in
   let open OpamFile.OPAM in

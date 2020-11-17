@@ -1,4 +1,0 @@
-(library
- (name a_default)
- (public_name a.default-impl)
- (implements a))

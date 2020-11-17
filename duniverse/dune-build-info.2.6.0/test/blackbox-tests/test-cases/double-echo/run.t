@@ -1,2 +1,0 @@
-  $ dune build
-  foobar

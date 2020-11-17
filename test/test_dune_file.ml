@@ -1,5 +1,3 @@
-open Stdune
-
 module Lang = struct
   let parse_version =
     let make_test ~version ~expected () =

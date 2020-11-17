@@ -1,6 +1,4 @@
-module Duniverse_pp = Pp
-open Stdune
-module Pp = Duniverse_pp
+open Import
 
 let report_commit_is_gone_repos repos =
   let sep fmt () =

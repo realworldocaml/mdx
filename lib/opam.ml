@@ -1,4 +1,4 @@
-open Astring
+open Import
 
 let depends_on_dune (formula : OpamTypes.filtered_formula) =
   let dune = OpamPackage.Name.of_string "dune" in
@@ -10,8 +10,6 @@ let depends_on_dune (formula : OpamTypes.filtered_formula) =
   OpamFormula.fold_left (fun acc (name, _) -> acc || is_duneish name) false formula
 
 module Dev_repo = struct
-  open Stdune
-
   type vcs = Git | Other of string
 
   let equal_vcs vcs vcs' =
@@ -66,13 +64,16 @@ let strip_ext fname =
 
 let tag_from_archive archive =
   let uri = Uri.of_string archive in
-  let path = String.cuts ~empty:false ~sep:"/" (Uri.path uri) in
+  let path =
+    String.split_on_char ~sep:'/' (Uri.path uri)
+    |> List.filter ~f:(fun s -> not (String.equal "" s))
+  in
   let parse_err () =
     Logs.err (fun l -> l "Unable to classify archive %s" archive);
     None
   in
   let tag_of_file ?(prefix = "") f =
-    match strip_ext f |> String.cut ~rev:true ~sep:"-" with
+    match strip_ext f |> String.rsplit2 ~on:'-' with
     | None -> parse_err ()
     | Some (_n, v) -> Some (prefix ^ v)
   in
@@ -81,7 +82,7 @@ let tag_from_archive archive =
   in
   match Uri.scheme uri with
   | Some "git+http" | Some "git+https" | Some "git+ssh" | Some "git" -> (
-      match String.cuts ~empty:false ~sep:"#" archive with
+      match String.split_on_char ~sep:'#' archive with
       | [ _repo; tag ] -> Some tag
       | _ -> Some "master" )
   | Some "git+file" -> None
@@ -110,7 +111,7 @@ let tag_from_archive archive =
           tag_of_last_path () )
 
 let classify_from_url_src src =
-  let src = match String.cut ~sep:"#" src with None -> src | Some (src, _) -> src in
+  let src = match String.lsplit2 ~on:'#' src with None -> src | Some (src, _) -> src in
   match src with
   | "" -> None
   | src -> (
@@ -143,7 +144,7 @@ let get_git_url ~src ~dev_repo ~name =
       classify_from_dev_repo ~name dev_repo
 
 let classify_package ~package ~dev_repo ~archive () =
-  if List.mem package.Types.Opam.name Config.base_packages then (`Virtual, None)
+  if List.mem package.Types.Opam.name ~set:Config.base_packages then (`Virtual, None)
   else
     match archive with
     | None ->

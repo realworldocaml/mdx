@@ -1,7 +1,5 @@
+open Import
 open Bos
-module Duniverse_pp = Pp
-open Stdune
-module Pp = Duniverse_pp
 
 type cache = { cache_dir : Fpath.t option }
 
