@@ -19,16 +19,9 @@ let check_root_packages ~local_packages =
 let build_config ~local_packages ~pull_mode =
   let open Rresult.R.Infix in
   check_root_packages ~local_packages >>= fun root_packages ->
-  let ocaml_compilers =
-    match Dune_file.Project.supported_ocaml_compilers () with
-    | Ok l -> List.map ~f:Ocaml_version.to_string l
-    | Error (`Msg msg) ->
-        Logs.warn (fun l -> l "%s" msg);
-        []
-  in
   let version = "1" in
   let root_packages = Opam.sort_uniq root_packages in
-  Ok { Duniverse.Config.version; root_packages; pull_mode; ocaml_compilers }
+  Ok { Duniverse.Config.version; root_packages; pull_mode }
 
 let compute_deps ~opam_entries =
   Dune_cmd.log_invalid_packages opam_entries;

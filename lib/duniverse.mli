@@ -88,7 +88,6 @@ module Config : sig
     version : string;
     root_packages : Types.Opam.package list;
     pull_mode : pull_mode; [@default Submodules]
-    ocaml_compilers : string list; [@default []]
   }
   [@@deriving sexp]
 end

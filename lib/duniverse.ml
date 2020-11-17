@@ -182,7 +182,6 @@ module Config = struct
     version : string;
     root_packages : Types.Opam.package list;
     pull_mode : pull_mode; [@default Source]
-    ocaml_compilers : string list; [@default []]
   }
   [@@deriving sexp] [@@sexp.allow_extra_fields]
 end
