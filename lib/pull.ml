@@ -55,41 +55,11 @@ let mark_duniverse_content_as_vendored ~duniverse_dir =
   Logs.debug (fun l -> l "Successfully wrote %a" Pp.Styled.path dune_file);
   Ok ()
 
-let submodule_add ~repo ~duniverse_dir src_dep =
-  let open Result.O in
-  let open Duniverse.Deps.Source in
-  let { dir; upstream; ref = { Git.Ref.t = _ref; commit }; _ } = src_dep in
-  let remote_name = match Astring.String.cut ~sep:"." dir with Some (p, _) -> p | None -> dir in
-  let target_path = Fpath.(normalize (duniverse_dir / dir)) in
-  let frag =
-    Printf.sprintf "[submodule %S]\n  path=%s\n  url=%s" remote_name (Fpath.to_string target_path)
-      upstream
-  in
-  let cacheinfo = (160000, commit, target_path) in
-  Exec.git_update_index ~repo ~add:true ~cacheinfo () >>= fun () ->
-  (* Common.Logs.app (fun l -> l "Added submodule for %s." dir); *)
-  Ok frag
-
-let set_git_submodules ~repo ~duniverse_dir src_deps =
-  let open Result.O in
-  List.map ~f:(submodule_add ~repo ~duniverse_dir) src_deps
-  |> Result.List.fold_left ~init:[] ~f:(fun acc res ->
-         match res with
-         | Ok frag -> Ok (frag :: acc)
-         | Error (`Msg _ as err) -> Error (err :> [> `Msg of string ]))
-  >>= fun git_sm_frags ->
-  let git_sm = String.concat ~sep:"\n" git_sm_frags in
-  Bos.OS.File.write Fpath.(repo / ".gitmodules") git_sm >>= fun () ->
-  (* Common.Logs.app (fun l -> l "Successfully wrote gitmodules."); *)
-  Ok ()
-
-let duniverse ~pull_mode ~repo ~global_state duniverse =
+let duniverse ~repo ~global_state duniverse =
   if List.is_empty duniverse then Ok ()
   else
     let open Result.O in
     let duniverse_dir = Fpath.(repo // Config.vendor_dir) in
     Bos.OS.Dir.create duniverse_dir >>= fun _created ->
     mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
-    let sm = pull_mode = Duniverse.Config.Submodules in
-    pull_source_dependencies ~global_state ~trim_clone:(not sm) ~duniverse_dir duniverse
-    >>= fun () -> if sm then set_git_submodules ~repo ~duniverse_dir duniverse else Ok ()
+    pull_source_dependencies ~global_state ~trim_clone:true ~duniverse_dir duniverse

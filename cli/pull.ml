@@ -60,14 +60,11 @@ let run (`Yes yes) (`Repo repo) (`Duniverse_repos duniverse_repos) () =
   | { deps = { duniverse = []; _ }; _ } ->
       Common.Logs.app (fun l -> l "No dependencies to pull, there's nothing to be done here!");
       Ok ()
-  | { deps = { duniverse; _ }; config; _ } ->
+  | { deps = { duniverse; _ }; _ } ->
       Common.filter_duniverse ~to_consider:duniverse_repos duniverse >>= fun duniverse ->
-      Common.Logs.app (fun l ->
-          l "Using pull mode %s"
-            (Sexplib.Sexp.to_string_hum Duniverse.Config.(sexp_of_pull_mode config.pull_mode)));
       check_dune_lang_version ~yes ~repo >>= fun () ->
       OpamGlobalState.with_ `Lock_none (fun global_state ->
-          Pull.duniverse ~global_state ~pull_mode:config.Duniverse.Config.pull_mode ~repo duniverse)
+          Pull.duniverse ~global_state ~repo duniverse)
 
 let info =
   let open Cmdliner in

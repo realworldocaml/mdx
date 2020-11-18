@@ -16,12 +16,12 @@ let check_root_packages ~local_packages =
             local_packages Pp.plural local_packages);
       Ok local_packages
 
-let build_config ~local_packages ~pull_mode =
+let build_config ~local_packages =
   let open Rresult.R.Infix in
   check_root_packages ~local_packages >>= fun root_packages ->
   let version = "1" in
   let root_packages = Opam.sort_uniq root_packages in
-  Ok { Duniverse.Config.version; root_packages; pull_mode }
+  Ok { Duniverse.Config.version; root_packages }
 
 let compute_deps ~opam_entries =
   Dune_cmd.log_invalid_packages opam_entries;
@@ -88,8 +88,7 @@ let local_packages ~recurse ~explicit_list repo =
       Repo.local_packages ~recurse:true repo >>= fun local_paths ->
       filter_local_packages ~explicit_list local_paths
 
-let run (`Repo repo) (`Pull_mode pull_mode) (`Recurse_opam recurse) (`Build_only build_only)
-    (`Local_packages lp) () =
+let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only) (`Local_packages lp) () =
   let open Rresult.R.Infix in
   local_packages ~recurse ~explicit_list:lp repo >>= fun local_paths ->
   let local_packages =
@@ -97,7 +96,7 @@ let run (`Repo repo) (`Pull_mode pull_mode) (`Recurse_opam recurse) (`Build_only
     List.map ~f:(fun (name, (version, _)) -> { name; version }) (String.Map.bindings local_paths)
   in
   Repo.duniverse_file ~local_packages repo >>= fun duniverse_file ->
-  build_config ~local_packages ~pull_mode >>= fun config ->
+  build_config ~local_packages >>= fun config ->
   calculate_opam ~build_only ~local_paths ~local_packages >>= fun opam_entries ->
   Opam_cmd.report_packages_stats opam_entries;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor source code.");
@@ -114,20 +113,6 @@ let run (`Repo repo) (`Pull_mode pull_mode) (`Recurse_opam recurse) (`Build_only
   Ok ()
 
 open Cmdliner
-
-let pull_mode =
-  let doc =
-    "How to pull the sources. If $(i,submodules), the pull command will initialise them as git \
-     submodules.  If $(i,source) then the source code will directly be cloned to the source tree."
-  in
-  Common.Arg.named
-    (fun x -> `Pull_mode x)
-    Arg.(
-      value
-      & opt
-          (enum [ ("submodule", Duniverse.Config.Submodules); ("source", Duniverse.Config.Source) ])
-          Duniverse.Config.Source
-      & info [ "pull-mode" ] ~docv:"PULL_MODE" ~doc)
 
 let recurse_opam =
   let doc =
@@ -179,7 +164,6 @@ let info =
 let term =
   let open Term in
   term_result
-    ( const run $ Common.Arg.repo $ pull_mode $ recurse_opam $ build_only $ packages
-    $ Common.Arg.setup_logs () )
+    (const run $ Common.Arg.repo $ recurse_opam $ build_only $ packages $ Common.Arg.setup_logs ())
 
 let cmd = (term, info)
