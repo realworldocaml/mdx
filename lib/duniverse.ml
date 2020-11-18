@@ -178,11 +178,7 @@ end
 module Config = struct
   type pull_mode = Submodules | Source [@@deriving sexp]
 
-  type t = {
-    version : string;
-    root_packages : Types.Opam.package list;
-    pull_mode : pull_mode; [@default Source]
-  }
+  type t = { version : string; root_packages : Types.Opam.package list }
   [@@deriving sexp] [@@sexp.allow_extra_fields]
 end
 

@@ -1,5 +1,4 @@
 val duniverse :
-  pull_mode:Duniverse.Config.pull_mode ->
   repo:Fpath.t ->
   global_state:OpamStateTypes.unlocked OpamStateTypes.global_state ->
   Duniverse.resolved Duniverse.Deps.Source.t list ->

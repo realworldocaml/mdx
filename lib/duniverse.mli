@@ -84,12 +84,7 @@ end
 module Config : sig
   type pull_mode = Submodules | Source [@@deriving sexp]
 
-  type t = {
-    version : string;
-    root_packages : Types.Opam.package list;
-    pull_mode : pull_mode; [@default Submodules]
-  }
-  [@@deriving sexp]
+  type t = { version : string; root_packages : Types.Opam.package list } [@@deriving sexp]
 end
 
 type t = { config : Config.t; deps : resolved Deps.t } [@@deriving sexp]
