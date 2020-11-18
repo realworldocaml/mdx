@@ -49,15 +49,8 @@ COMMANDS
        migrate-dune-get
            convert a legacy dune-get file to an opam lock file
 
-       opam-install
-           install packages that are not duniverse-compatible via opam
-
        pull
            fetch the latest archives of the vendored libraries
-
-       update
-           update the commit hash corresponding to the tracked branch/tag for
-           each source dependency
 
 COMMON OPTIONS
        --help[=FMT] (default=auto)
