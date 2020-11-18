@@ -1,7 +1,7 @@
 val duniverse :
-  cache:Cloner.cache ->
   pull_mode:Duniverse.Config.pull_mode ->
   repo:Fpath.t ->
+  global_state:OpamStateTypes.unlocked OpamStateTypes.global_state ->
   Duniverse.resolved Duniverse.Deps.Source.t list ->
   (unit, [> Rresult.R.msg ]) result
 (** Pulls resolved source dependencies into [Config.vendor_dir] using the provided [cache].

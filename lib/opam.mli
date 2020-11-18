@@ -27,3 +27,11 @@ val classify_package :
   unit ->
   Types.Opam.repo * string option
 (** Returns the repo and tag from the given package, dev-repo and url.src fields *)
+
+val pull_tree :
+  url:string ->
+  dir:Fpath.t ->
+  OpamStateTypes.unlocked OpamStateTypes.global_state ->
+  (unit, [ `Msg of string ]) result
+(** Pulls the sources from [url] to [dir] using opam's library.
+    This benefits from opam's global cache *)

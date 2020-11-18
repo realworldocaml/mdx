@@ -53,7 +53,7 @@ let check_dune_lang_version ~yes ~repo =
     Logs.debug (fun l -> l "No dune-project found");
     Ok () )
 
-let run (`Yes yes) (`No_cache no_cache) (`Repo repo) (`Duniverse_repos duniverse_repos) () =
+let run (`Yes yes) (`Repo repo) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
   Repo.duniverse_file repo >>= fun duniverse_file ->
   Duniverse.load ~file:duniverse_file >>= function
@@ -66,8 +66,8 @@ let run (`Yes yes) (`No_cache no_cache) (`Repo repo) (`Duniverse_repos duniverse
           l "Using pull mode %s"
             (Sexplib.Sexp.to_string_hum Duniverse.Config.(sexp_of_pull_mode config.pull_mode)));
       check_dune_lang_version ~yes ~repo >>= fun () ->
-      Common.get_cache ~no_cache >>= fun cache ->
-      Pull.duniverse ~cache ~pull_mode:config.Duniverse.Config.pull_mode ~repo duniverse
+      OpamGlobalState.with_ `Lock_none (fun global_state ->
+          Pull.duniverse ~global_state ~pull_mode:config.Duniverse.Config.pull_mode ~repo duniverse)
 
 let info =
   let open Cmdliner in
@@ -80,21 +80,14 @@ let info =
         "This command reads the Git metadata calculated with $(i,duniverse lock) and fetches them \
          from their respective Git remotes and stores them in the $(b,duniverse/) directory in the \
          repository.";
-      `P
-        "This command uses a global duniverse cache to avoid repeated downloads. To determine \
-         where the cache should be located it reads a few environment variables. If none of those \
-         are set, a warning will be displayed and the cache will be disabled. To learn more about \
-         which variables are used and their priority go to the $(b,ENVIRONMENT) section. Note that \
-         you can also manually disable the cache using the $(b,--no-cache) CLI flag documented in \
-         the $(b,OPTIONS) section below.";
     ]
   in
-  Term.info "pull" ~doc ~exits ~man ~envs:Common.Arg.caches
+  Term.info "pull" ~doc ~exits ~man
 
 let term =
   Cmdliner.Term.(
     term_result
-      ( const run $ Common.Arg.yes $ Common.Arg.no_cache $ Common.Arg.repo
-      $ Common.Arg.duniverse_repos $ Common.Arg.setup_logs () ))
+      ( const run $ Common.Arg.yes $ Common.Arg.repo $ Common.Arg.duniverse_repos
+      $ Common.Arg.setup_logs () ))
 
 let cmd = (term, info)

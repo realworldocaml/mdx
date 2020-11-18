@@ -28,13 +28,7 @@ module Arg : sig
   (** CLI arguments consisting of the list of source deps repo to process. If [None],
       the whole duniverse should be processed. If [Some l] then [l] is non empty. *)
 
-  val no_cache : [> `No_cache of bool ] Cmdliner.Term.t
-  (** Disable the duniverse global git cache *)
-
   val dev_repo : Uri.t Cmdliner.Arg.converter
-  (** Cache selection environment variables for use in terms. *)
-
-  val caches : Cmdliner.Term.env_info list
   (** Cache selection environment variables for use in terms. *)
 
   val setup_logs : unit -> unit Cmdliner.Term.t
@@ -51,5 +45,3 @@ val filter_duniverse :
   ('a Duniverse.Deps.Source.t list, Rresult.R.msg) result
 (** Filters the duniverse according to the CLI provided list of repos or returns an error
     if some of the provided packages don't match any of the duniverse repositories. *)
-
-val get_cache : no_cache:bool -> (Duniverse_lib.Cloner.cache, [> `Msg of string ]) result
