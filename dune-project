@@ -31,10 +31,8 @@
   (re
    (>= 1.7.2))
   result
-  (ocaml-migrate-parsetree
-   (and
-    (>= 1.0.6)
-    (< 2.0.0)))
+  (ppxlib
+   (>= 0.18.0))
   (ocaml-version
    (>= 2.3.0))
   odoc

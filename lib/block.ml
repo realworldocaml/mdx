@@ -114,7 +114,7 @@ let dump ppf ({ loc; section; labels; contents; value; _ } as b) =
   Fmt.pf ppf
     "{@[loc: %a;@ section: %a;@ labels: %a;@ header: %a;@ contents: %a;@ \
      value: %a@]}"
-    Location.print_loc loc
+    Location.print loc
     Fmt.(Dump.option dump_section)
     section
     Fmt.Dump.(list Label.pp)

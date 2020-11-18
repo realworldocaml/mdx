@@ -67,20 +67,20 @@ val extension_constructor :
   ext_type_params:Types.type_expr list ->
   ext_args:Types.type_expr list ->
   ext_ret_type:Types.type_expr option ->
-  ext_private:Asttypes_.private_flag ->
+  ext_private:Asttypes.private_flag ->
   ext_loc:Location.t ->
-  ext_attributes:Parsetree_.attributes ->
+  ext_attributes:Parsetree.attributes ->
   Types.extension_constructor
 
 val is_predef_or_global : Ident.t -> bool
 
 val map_sig_attributes :
-  f:(Parsetree_.attributes -> Parsetree_.attributes) ->
+  f:(Parsetree.attributes -> Parsetree.attributes) ->
   Types.signature ->
   Types.signature
 
 val attribute :
-  name:string Location.loc -> payload:Parsetree_.payload -> Parsetree_.attribute
+  name:string Location.loc -> payload:Parsetree.payload -> Parsetree.attribute
 
 val match_env :
   value:(Env.summary -> Ident.t -> 'a) ->

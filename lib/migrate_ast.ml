@@ -26,81 +26,16 @@
 
 open Compat
 
-(* original modules *)
-module Asttypes_ = Asttypes
-module Parsetree_ = Parsetree
-
-include (
-  Migrate_parsetree.Ast_408 :
-  module type of struct
-      include Migrate_parsetree.Ast_408
-    end
-    with module Location := Migrate_parsetree.Ast_408.Location
-     and module Outcometree := Migrate_parsetree.Ast_408.Outcometree
-     and module Asttypes := Migrate_parsetree.Ast_408.Asttypes
-     and module Ast_helper := Migrate_parsetree.Ast_408.Ast_helper
-     and module Parsetree := Migrate_parsetree.Ast_408.Parsetree
- )
-
-module Asttypes = Migrate_parsetree.Ast_408.Asttypes
-module Ast_helper = Migrate_parsetree.Ast_408.Ast_helper
-module Parsetree = Migrate_parsetree.Ast_408.Parsetree
+module Ast_helper = Ppxlib.Ast_helper
+module Asttypes = Ppxlib.Asttypes
+module Parsetree = Ppxlib.Parsetree
 
 module Parse = struct
-  open Migrate_parsetree
+  let toplevel_phrase = Ppxlib_ast.Parse.toplevel_phrase
 
-  let toplevel_phrase lexbuf =
-    Parse.toplevel_phrase Versions.ocaml_408 lexbuf
+  let implementation = Ppxlib_ast.Parse.implementation
 
-  let implementation lexbuf =
-    Parse.implementation Versions.ocaml_408 lexbuf
-
-  let interface lexbuf =
-    Parse.interface Versions.ocaml_408 lexbuf
-end
-
-let to_current =
-  Migrate_parsetree.Versions.(migrate ocaml_408 ocaml_current)
-
-let to_408 =
-  Migrate_parsetree.Versions.(migrate ocaml_current ocaml_408)
-
-module Typemod = struct
-  open Typemod
-
-  let type_structure e s l =
-    type_structure e (to_current.copy_structure s) l
-end
-
-module Printast = struct
-  open Printast
-
-  let top_phrase f x = top_phrase f (to_current.copy_toplevel_phrase x)
-end
-
-module Pprintast = struct
-  open Pprintast
-
-  let top_phrase f x = top_phrase f (to_current.copy_toplevel_phrase x)
-end
-
-module Printtyp = struct
-  include Printtyp
-
-  let wrap_printing_env e f =
-    wrap_printing_env
-#if OCAML_VERSION >= (4, 7, 0)
-      ~error:false
-#endif
-      e f
-end
-
-module Pparse = struct
-  open Pparse
-
-  let apply_rewriters_str ~tool_name s =
-    apply_rewriters_str ~tool_name (to_current.copy_structure s)
-    |> to_408.copy_structure
+  let interface = Ppxlib_ast.Parse.interface
 end
 
 module Position = struct
@@ -127,7 +62,7 @@ module Position = struct
 end
 
 module Location = struct
-  include Migrate_parsetree.Ast_408.Location
+  include Ppxlib.Location
 
   let fmt fs {loc_start; loc_end; loc_ghost} =
     Format.fprintf fs "(%a..%a)%s" Position.fmt loc_start Position.fmt
@@ -159,50 +94,20 @@ module Location = struct
 
   let compare_width_decreasing l1 l2 = (width l2) - (width l1)
 
-  let print_loc ppf loc =
-    (*setup_colors ();*)
-    let file_valid = function
-      | "_none_" ->
-        (* This is a dummy placeholder, but we print it anyway to please editors
-           that parse locations in error messages (e.g. Emacs). *)
-        true
-      | "" | "//toplevel//" -> false
-      | _ -> true
-    in
-    let line_valid line = line > 0 in
+  let mkloc = Location.mkloc
 
-    let file =
-      (* According to the comment in location.mli, if [pos_fname] is "", we must
-         use [!input_name]. *)
-      if loc.loc_start.pos_fname = "" then !input_name
-      else loc.loc_start.pos_fname
-    in
-    let startline = loc.loc_start.pos_lnum in
-    let endline = loc.loc_end.pos_lnum in
+  let mknoloc = Location.mknoloc
 
-    let first = ref true in
-    let capitalize s =
-      if !first then (first := false; String.capitalize_ascii s)
-      else s in
-    let comma () =
-      if !first then () else Format.fprintf ppf ", " in
+  let formatter_for_warnings = Location.formatter_for_warnings
 
-    Format.fprintf ppf "@{<loc>";
+  type msg = Location.msg
 
-    if file_valid file then
-      Format.fprintf ppf "%s \"%a\"" (capitalize "file") print_filename file;
+  type report = Location.report =
+    { kind : Location.report_kind; main : msg; sub : msg list }
 
-    (* Print "line 1" in the case of a dummy line number. This is to please the
-       existing setup of editors that parse locations in error messages (e.g.
-       Emacs). *)
-    comma ();
-    let startline = if line_valid startline then startline else 1 in
-    let endline = if line_valid endline then endline else startline in
-    begin if startline = endline then
-        Format.fprintf ppf "%s %i" (capitalize "line") startline
-      else
-        Format.fprintf ppf "%s %i-%i" (capitalize "lines") startline endline
-    end;
+  type error = report
 
-    Format.fprintf ppf "@}"
+  let error_of_exn = Location.error_of_exn
+
+  exception Error = Location.Error
 end

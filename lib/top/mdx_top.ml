@@ -19,13 +19,6 @@ open Mdx.Migrate_ast
 open Mdx.Compat
 open Compat_top
 
-module Toploop = struct
-  include Toploop
-
-  let execute_phrase verbose ppf p =
-    execute_phrase verbose ppf (to_current.copy_toplevel_phrase p)
-end
-
 let redirect ~f =
   let stdout_backup = Unix.dup Unix.stdout in
   let stderr_backup = Unix.dup Unix.stdout in
@@ -287,6 +280,7 @@ module Rewrite = struct
             pdir_loc = Location.none;
           }
       in
+      let p = Ppxlib.Selected_ast.to_ocaml Toplevel_phrase p in
       let _ = Toploop.execute_phrase verbose ppf p in
       ()
     in
@@ -324,17 +318,18 @@ let toplevel_exec_phrase t ppf p =
       let mapper = Lexbuf.position_mapper (Phrase.start p) in
       let phrase =
         match phrase with
-        | Ptop_def str -> Ptop_def (mapper.Ast_mapper.structure mapper str)
+        | Ptop_def str ->
+          Ptop_def
+            ( str
+            |> Ppxlib.Selected_ast.to_ocaml Structure
+            |> mapper.Ast_mapper.structure mapper
+            |> Pparse.apply_rewriters_str ~tool_name:"ocaml-mdx"
+            |> Ppxlib.Selected_ast.of_ocaml Structure )
         | Ptop_dir _ as x -> x
-      in
-      let phrase =
-        match phrase with
-        | Ptop_dir _ as x -> x
-        | Ptop_def s ->
-            Ptop_def (Pparse.apply_rewriters_str ~tool_name:"ocaml-mdx" s)
       in
       Rewrite.preload t.verbose_findlib ppf;
       let phrase = Rewrite.phrase phrase in
+      let phrase = Ppxlib.Selected_ast.to_ocaml Toplevel_phrase phrase in
       if !Clflags.dump_parsetree then Printast.top_phrase ppf phrase;
       if !Clflags.dump_source then Pprintast.top_phrase ppf phrase;
       Env.reset_cache_toplevel ();
@@ -473,7 +468,7 @@ let show_exception () =
       let ext =
         extension_constructor ~ext_type_path:Predef.path_exn ~ext_type_params:[]
           ~ext_args:desc.cstr_args ~ext_ret_type:ret_type
-          ~ext_private:Asttypes_.Public ~ext_loc:desc.cstr_loc
+          ~ext_private:Asttypes.Public ~ext_loc:desc.cstr_loc
           ~ext_attributes:desc.cstr_attributes
       in
       [ sig_typext id ext ])
@@ -486,7 +481,7 @@ let show_module () =
         Mty_signature
           (map_sig_attributes sg ~f:(fun attrs ->
                attribute ~name:(Location.mknoloc "...")
-                 ~payload:(Parsetree_.PStr [])
+                 ~payload:(Parsetree.PStr [])
                :: attrs))
     | mty -> mty
   in

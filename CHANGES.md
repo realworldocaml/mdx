@@ -8,6 +8,7 @@
 #### Changed
 
 - Improve error message of cram test exceptions due to empty lines in a block (#270, @pitag-ha)
+- Use ppxlib instead of ocaml-migrate-parsetree (#306, @gpetiot)
 
 #### Deprecated
 

@@ -46,7 +46,7 @@ rule text section = parse
         in
         newline lexbuf;
         List.iter (fun _ -> newline lexbuf) contents;
-        let loc = Location.curr lexbuf in
+        let loc = Location.of_lexbuf lexbuf in
         newline lexbuf;
         let block =
           match
@@ -66,7 +66,7 @@ rule text section = parse
   | "<!--" ws* "$MDX" ws* ([^' ' '\n']* as label_cmt) ws* "-->" ws* eol
       { let labels = labels label_cmt in
         newline lexbuf;
-        let loc = Location.curr lexbuf in
+        let loc = Location.of_lexbuf lexbuf in
         let block =
           match Block.mk_include ~loc ~section ~labels with
           | Ok block -> block
@@ -96,7 +96,7 @@ and cram_text section = parse
         let contents = first_line :: contents in
         let labels = [] in
         let legacy_labels = false in
-        let loc = Location.curr lexbuf in
+        let loc = Location.of_lexbuf lexbuf in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
         let block =
@@ -119,7 +119,7 @@ and cram_text section = parse
         in
         let legacy_labels = false in
         newline lexbuf;
-        let loc = Location.curr lexbuf in
+        let loc = Location.of_lexbuf lexbuf in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
         let block =
@@ -148,15 +148,15 @@ and cram_block = parse
     try Ok (text None lexbuf)
     with
     | Failure e ->
-      let loc = Location.curr lexbuf in
+      let loc = Location.of_lexbuf lexbuf in
       let msg =
-        Format.asprintf "%a: invalid code block: %s" Location.print_loc loc e
+        Format.asprintf "%a: invalid code block: %s" Location.print loc e
       in
       Util.Result.errorf "%s" msg
     | exn ->
-      let loc = Location.curr lexbuf in
+      let loc = Location.of_lexbuf lexbuf in
       let msg =
-        Format.asprintf "%a: %s" Location.print_loc loc (Printexc.to_string exn)
+        Format.asprintf "%a: %s" Location.print loc (Printexc.to_string exn)
       in
       Util.Result.errorf "%s" msg
 
@@ -165,15 +165,15 @@ let cram_token lexbuf =
     try Ok (cram_text None lexbuf)
     with
     | Failure e ->
-      let loc = Location.curr lexbuf in
+      let loc = Location.of_lexbuf lexbuf in
       let msg =
-        Format.asprintf "%a: invalid code block: %s" Location.print_loc loc e
+        Format.asprintf "%a: invalid code block: %s" Location.print loc e
       in
       Util.Result.errorf "%s" msg
     | exn ->
-      let loc = Location.curr lexbuf in
+      let loc = Location.of_lexbuf lexbuf in
       let msg =
-        Format.asprintf "%a: %s" Location.print_loc loc (Printexc.to_string exn)
+        Format.asprintf "%a: %s" Location.print loc (Printexc.to_string exn)
       in
       Util.Result.errorf "%s" msg
 }

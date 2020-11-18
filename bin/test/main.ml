@@ -53,7 +53,7 @@ let report_error_in_block block msg =
     | Cram _ -> "cram "
     | Toplevel _ -> "toplevel "
   in
-  Fmt.epr "%a: Error in the %scode block@]\n%s\n" Location.print_loc block.loc
+  Fmt.epr "%a: Error in the %scode block@]\n%s\n" Location.print block.loc
     kind msg
 
 let run setup non_deterministic silent_eval record_backtrace syntax silent

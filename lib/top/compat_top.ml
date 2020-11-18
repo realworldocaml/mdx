@@ -22,14 +22,10 @@ let map_error_loc ~f (error : Location.error) =
 #endif
 
 let error_of_exn exn =
-#if OCAML_VERSION >= (4, 6, 0)
   match Location.error_of_exn exn with
-    | None -> None
-    | Some `Already_displayed -> None
-    | Some (`Ok error) -> Some error
-#else
-  Location.error_of_exn exn
-#endif
+  | None -> None
+  | Some `Already_displayed -> None
+  | Some (`Ok error) -> Some error
 
 let rec get_id_in_path = function
   | Path.Pident id -> id
@@ -106,12 +102,8 @@ let find_class_type env loc id =
 #endif
 
 let type_structure env str loc =
-#if OCAML_VERSION >= (4, 8, 0)
   let tstr, _, _, env =
-#else
-  let tstr, _, env =
-#endif
-    Typemod.type_structure env str loc
+    Typemod.type_structure env (Ppxlib.Selected_ast.to_ocaml Structure str) loc
   in
   tstr, env
 
@@ -196,7 +188,7 @@ let add_directive ~name ~doc kind =
             in
             let id = Ident.create_persistent s in
             let sg = to_sig env loc id lid in
-            Printtyp.wrap_printing_env env (fun () ->
+            Printtyp.wrap_printing_env ~error:false env (fun () ->
                 Format.printf "@[%a@]@." Printtyp.signature sg
               )
           with
@@ -272,14 +264,10 @@ let map_sig_attributes ~f =
 )
 
 let attribute ~name ~payload =
-#if OCAML_VERSION >= (4, 8, 0)
-  { Parsetree_.attr_name = name
+  { Parsetree.attr_name = name
   ; attr_payload = payload
   ; attr_loc = Location.none
   }
-#else
-  (name, payload)
-#endif
 
 module Linked = struct
   include (Topdirs : sig end)
