@@ -37,9 +37,4 @@ module Project : sig
   val name : Sexplib0.Sexp.t list -> (string, [> `Msg of string ]) result
   (** Returns the dune-project's name given the content of the file as a list of S-expressions,
       if any. *)
-
-  val supported_ocaml_compilers : unit -> (Ocaml_version.t list, [> `Msg of string ]) result
-  (** Enumerate the supported released OCaml compilers that match the specification
-      in the [dune-project] file. If no [dune-project] file is present then an error is
-      returned. *)
 end

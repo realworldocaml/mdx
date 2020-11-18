@@ -52,9 +52,6 @@ COMMANDS
        opam-install
            install packages that are not duniverse-compatible via opam
 
-       print-ocaml-compilers
-           print OCaml compilers that are supported for this duniverse
-
        pull
            fetch the latest archives of the vendored libraries
 
