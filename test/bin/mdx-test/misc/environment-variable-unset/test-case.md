@@ -1,4 +1,4 @@
-Environment variables can be blacklisted in an shell and bash blocks.
+Environment variables can be unset in an shell and bash blocks.
 
 ```sh
   $ echo $VAR

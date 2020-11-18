@@ -61,19 +61,19 @@ let with_dir root f =
         Sys.chdir old_d;
         raise e )
 
-let get_env blacklist =
+let get_env unset_variables =
   let env = Array.to_list (Unix.environment ()) in
   let env = List.map (String.cuts ~sep:"=") env in
   let f env var =
     let g l = String.compare (List.nth l 0) var <> 0 in
     List.filter g env
   in
-  let env = List.fold_left f env blacklist in
+  let env = List.fold_left f env unset_variables in
   Array.of_list (List.map (String.concat ~sep:"=") env)
 
-let run_test ?root blacklist temp_file t =
+let run_test ?root unset_variables temp_file t =
   let cmd = Cram.command_line t in
-  let env = get_env blacklist in
+  let env = get_env unset_variables in
   Log.info (fun l -> l "exec: %S" cmd);
   let fd = Unix.openfile temp_file [ O_WRONLY; O_TRUNC ] 0 in
   let pid =
@@ -101,8 +101,8 @@ let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
   List.iter
     (fun test ->
       let root = root_dir ?root ~block:t () in
-      let blacklist = Block.unset_variables t in
-      let n = run_test ?root blacklist temp_file test in
+      let unset_variables = Block.unset_variables t in
+      let n = run_test ?root unset_variables temp_file test in
       let lines = Mdx.Util.File.read_lines temp_file in
       let output =
         let output = List.map output_from_line lines in
@@ -304,9 +304,9 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
           with_non_det non_deterministic non_det ~command:print_block
             ~output:(fun () ->
               print_block ();
-              let blacklist = Block.unset_variables t in
+              let unset_variables = Block.unset_variables t in
               List.iter
-                (fun t -> ignore (run_test ?root blacklist temp_file t))
+                (fun t -> ignore (run_test ?root unset_variables temp_file t))
                 tests)
             ~det:(fun () ->
               run_cram_tests ?syntax t ?root ppf temp_file pad tests)
