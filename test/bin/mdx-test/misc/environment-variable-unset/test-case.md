@@ -1,11 +1,11 @@
 Environment variables can be blacklisted in an shell and bash blocks.
 
 ```sh
-  $ echo $HOME
-  ...
+  $ echo $VAR
+  val
 ```
 
-```sh unset-HOME
-  $ echo $HOME
+```sh unset-VAR
+  $ echo $VAR
   
 ```
