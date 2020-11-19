@@ -21,8 +21,6 @@
  (depends
   (ocaml
    (>= 4.02.3))
-  (dune
-   (>= 2.0))
   ocamlfind
   fmt
   (cppo :build)
