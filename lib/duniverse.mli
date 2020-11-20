@@ -1,10 +1,12 @@
+module O = Opam
+
 type unresolved = Git.Ref.t
 
 type resolved = Git.Ref.resolved
 
 module Deps : sig
   module Opam : sig
-    type t = { name : string; version : string option }
+    type t = { name : string; version : string }
     (** Type of dependencies to install through opam *)
 
     val equal : t -> t -> bool
@@ -13,7 +15,23 @@ module Deps : sig
   end
 
   module Source : sig
-    type 'ref t = { dir : string; upstream : string; ref : 'ref; provided_packages : Opam.t list }
+    module Url : sig
+      type 'ref t = Git of { repo : string; ref : 'ref } | Other of string
+
+      val equal : ('ref -> 'ref -> bool) -> 'ref t -> 'ref t -> bool
+
+      val pp : 'ref Fmt.t -> 'ref t Fmt.t
+
+      val to_opam_url : resolved t -> OpamUrl.t
+    end
+
+    type 'ref t = {
+      dir : string;
+      version : string;
+      dev_repo : string;
+      url : 'ref Url.t;
+      provided_packages : Opam.t list;
+    }
     (** Type of dependencies to clone in the duniverse *)
 
     val equal : ('ref -> 'ref -> bool) -> 'ref t -> 'ref t -> bool
@@ -25,7 +43,7 @@ module Deps : sig
     val raw_pp : 'ref Fmt.t -> 'ref t Fmt.t
 
     module Package : sig
-      type t = { opam : Opam.t; upstream : string; ref : unresolved }
+      type t = { opam : Opam.t; dev_repo : string; url : unresolved Url.t }
     end
 
     val aggregate : unresolved t -> Package.t -> unresolved t
@@ -42,15 +60,15 @@ module Deps : sig
 
   val equal : ('ref -> 'ref -> bool) -> 'ref t -> 'ref t -> bool
 
-  val from_opam_entries :
+  val from_package_summaries :
     get_default_branch:(string -> (string, Rresult.R.msg) result) ->
-    Types.Opam.entry list ->
+    O.Package_summary.t list ->
     (unresolved t, [ `Msg of string ]) result
   (** Build opamverse and duniverse from a list of [Types.Opam.entry] values.
       It filters out virtual packages and packages with unknown dev-repo.  *)
 
   val resolve :
-    resolve_ref:(upstream:string -> ref:unresolved -> (resolved, Rresult.R.msg) result) ->
+    resolve_ref:(repo:string -> ref:unresolved -> (resolved, Rresult.R.msg) result) ->
     unresolved t ->
     (resolved t, Rresult.R.msg) result
   (** Apply the given [resolve_ref] function to bind each source repo to a specific commit
@@ -72,9 +90,9 @@ module Deps : sig
 
     val raw_pp : t Fmt.t
 
-    val from_opam_entry :
+    val from_package_summary :
       get_default_branch:(string -> (string, Rresult.R.msg) result) ->
-      Types.Opam.entry ->
+      O.Package_summary.t ->
       (t option, [ `Msg of string ]) result
   end
 

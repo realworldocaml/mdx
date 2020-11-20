@@ -4,6 +4,8 @@ module Ocaml : sig
   val string : string Fmt.t
   (** [string fmt s] pretty prints [s], with quotes *)
 
+  val bool : bool Fmt.t
+
   val option : ?brackets:bool -> 'a Fmt.t -> 'a option Fmt.t
   (** [ocaml_option ~brackets pp_a fmt a_option] pretty prints an ocaml option as
       ["None"], ["Some %a"] or ["Some (%a)"] if [brackets] is true. It uses [pp_a] to print

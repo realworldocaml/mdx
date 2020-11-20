@@ -26,15 +26,11 @@ end = struct
     { switch_context; local_packages }
 
   let is_valid_candidate ~name ~version opam_file =
-    let opackage = OpamPackage.create name version in
-    let package = Types.Opam.package_from_opam opackage in
-    let archive =
-      Option.map ~f:(fun x -> OpamUrl.to_string (OpamFile.URL.url x)) (OpamFile.OPAM.url opam_file)
-    in
-    let dev_repo = Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file) in
-    match Opam.classify_package ~package ~archive ~dev_repo () with
-    | `Virtual, _ -> true
-    | _, _ -> Opam.depends_on_dune (OpamFile.OPAM.depends opam_file)
+    let pkg = OpamPackage.create name version in
+    let summary = Opam.Package_summary.from_opam ~pkg opam_file in
+    Opam.Package_summary.is_base_package summary
+    || Opam.Package_summary.is_virtual summary
+    || Opam.Package_summary.uses_dune summary
 
   let filter_candidates ~name versions =
     List.map

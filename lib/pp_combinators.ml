@@ -1,6 +1,8 @@
 module Ocaml = struct
   let string fmt s = Format.fprintf fmt "%S" s
 
+  let bool fmt b = Format.fprintf fmt "%B" b
+
   let option ?(brackets = true) pp_a fmt = function
     | None -> Format.fprintf fmt "None"
     | Some a when brackets -> Format.fprintf fmt "Some (%a)" pp_a a

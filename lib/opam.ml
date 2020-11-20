@@ -160,14 +160,92 @@ let classify_package ~package ~dev_repo ~archive () =
         | x -> (x, None) )
 
 let pull_tree ~url ~dir global_state =
+  let dir_str = Fpath.to_string dir in
   let cache_dir = OpamRepositoryPath.download_cache global_state.OpamStateTypes.root in
-  let label = url in
+  let label = dir_str in
   (* Opam requires a label for the pull, it's only used for logging *)
-  let opam_dir = OpamFilename.Dir.of_string (Fpath.to_string dir) in
-  let opam_url = OpamUrl.parse ~from_file:false url in
+  let opam_dir = OpamFilename.Dir.of_string dir_str in
   let checksums = [] in
-  let job = OpamRepository.pull_tree ~cache_dir label opam_dir checksums [ opam_url ] in
+  let job = OpamRepository.pull_tree ~cache_dir label opam_dir checksums [ url ] in
   let result = OpamProcess.Job.run job in
   match result with
   | Result _ | Up_to_date _ -> Ok ()
   | Not_available (_, long_msg) -> Error (`Msg long_msg)
+
+module Url = struct
+  type t = Git of { repo : string; ref : string option } | Other of string
+
+  (* This includes archives, other VCS and rsync opam src URLs *)
+
+  let equal t t' =
+    match (t, t') with
+    | Git { repo; ref }, Git { repo = repo'; ref = ref' } ->
+        String.equal repo repo' && Option.equal String.equal ref ref'
+    | Other s, Other s' -> String.equal s s'
+    | _ -> false
+
+  let pp fmt t =
+    let open Pp_combinators.Ocaml in
+    match t with
+    | Git { repo; ref } ->
+        Format.fprintf fmt "@[<hov 2>Git@ @[<hov 2>{ repo = %a;@ ref = %a }@]@]" string repo
+          (option ~brackets:true string) ref
+    | Other s -> Format.fprintf fmt "@[<hov 2>Other@ %a@]" string s
+
+  let from_opam url =
+    let url = OpamFile.URL.url url in
+    match url.backend with
+    | `git -> (
+        let str_url = OpamUrl.to_string url in
+        match String.lsplit2 ~on:'#' str_url with
+        | Some (repo, ref) -> Git { repo; ref = Some ref }
+        | None -> Git { repo = str_url; ref = None } )
+    | _ -> Other (OpamUrl.to_string url)
+end
+
+module Package_summary = struct
+  type t = {
+    name : string;
+    version : string;
+    url_src : Url.t option;
+    dev_repo : string option;
+    uses_dune : bool;
+  }
+
+  let equal t t' =
+    String.equal t.name t'.name && String.equal t.version t'.version
+    && Option.equal Url.equal t.url_src t'.url_src
+    && Option.equal String.equal t.dev_repo t'.dev_repo
+    && Bool.equal t.uses_dune t'.uses_dune
+
+  let pp fmt t =
+    let open Pp_combinators.Ocaml in
+    Format.fprintf fmt
+      "@[<hov 2>{ name = %a;@ version = %a;@ url_src = %a;@ dev_repo = %a;@ uses_dune = %a }@]"
+      string t.name string t.version (option ~brackets:true Url.pp) t.url_src
+      (option ~brackets:true string) t.dev_repo bool t.uses_dune
+
+  let from_opam ~pkg opam_file =
+    let name = OpamPackage.name_to_string pkg in
+    let version = OpamPackage.version_to_string pkg in
+    let url_src = Option.map ~f:Url.from_opam (OpamFile.OPAM.url opam_file) in
+    let dev_repo = Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file) in
+    let depends = OpamFile.OPAM.depends opam_file in
+    let uses_dune = depends_on_dune depends in
+    { name; version; url_src; dev_repo; uses_dune }
+
+  let is_virtual = function
+    | { url_src = None; _ } -> true
+    | { dev_repo = None | Some ""; _ } -> true
+    | _ -> false
+
+  let is_base_package = function
+    | { name; _ } when List.mem name ~set:Config.base_packages -> true
+    | _ -> false
+
+  let uses_dune t = t.uses_dune
+end
+
+module Pp = struct
+  let package fmt p = Format.fprintf fmt "%s" (OpamPackage.to_string p)
+end

@@ -100,10 +100,6 @@ val git_update_index :
 (** [git_update_index] will add the [cacheinfo] (a tuple of mode, hash and target path)
   to the index, and append it to the cache if [add] is [true]. *)
 
-val run_opam_install : yes:bool -> Duniverse.Deps.Opam.t list -> (unit, [> Rresult.R.msg ]) result
-(** [run_opam_install ~yes packages] launch an opam command to install the given packages. If yes is
-    set to true, it doesn't prompt the user for confirmation. *)
-
 val git_remote_add :
   repo:Fpath.t -> remote_url:string -> remote_name:string -> (unit, [> Rresult.R.msg ]) result
 (** Uses git remote add in repo **)
