@@ -237,12 +237,3 @@ let git_branch_exists ~repo ~branch =
   with
   | Ok (`Exited 0) -> true
   | _ -> false
-
-let run_opam_install ~yes opam_deps =
-  let packages =
-    List.map
-      (fun (pkg : Duniverse.Deps.Opam.t) ->
-        match pkg.version with Some v -> pkg.name ^ "." ^ v | None -> pkg.name)
-      opam_deps
-  in
-  OS.Cmd.run Cmd.(v "opam" % "install" %% on yes (v "-y") %% of_list packages)

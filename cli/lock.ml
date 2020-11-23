@@ -23,13 +23,12 @@ let build_config ~local_packages =
   let root_packages = Opam.sort_uniq root_packages in
   Ok { Duniverse.Config.version; root_packages }
 
-let compute_deps ~opam_entries =
-  Dune_cmd.log_invalid_packages opam_entries;
+let compute_deps ~package_summaries =
   let get_default_branch remote = Exec.git_default_branch ~remote () in
-  Duniverse.Deps.from_opam_entries ~get_default_branch opam_entries
+  Duniverse.Deps.from_package_summaries ~get_default_branch package_summaries
 
 let resolve_ref deps =
-  let resolve_ref ~upstream ~ref = Exec.git_resolve ~remote:upstream ~ref in
+  let resolve_ref ~repo ~ref = Exec.git_resolve ~remote:repo ~ref in
   Duniverse.Deps.resolve ~resolve_ref deps
 
 let current_repos ~repo_state ~switch_state =
@@ -97,10 +96,10 @@ let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only) (`Local_pa
   in
   Repo.duniverse_file ~local_packages repo >>= fun duniverse_file ->
   build_config ~local_packages >>= fun config ->
-  calculate_opam ~build_only ~local_paths ~local_packages >>= fun opam_entries ->
-  Opam_cmd.report_packages_stats opam_entries;
+  calculate_opam ~build_only ~local_paths ~local_packages >>= fun package_summaries ->
+  Opam_cmd.report_packages_stats package_summaries;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor source code.");
-  compute_deps ~opam_entries >>= resolve_ref >>= fun deps ->
+  compute_deps ~package_summaries >>= resolve_ref >>= fun deps ->
   let duniverse = { Duniverse.config; deps } in
   Duniverse.save ~file:duniverse_file duniverse >>= fun () ->
   Common.Logs.app (fun l ->

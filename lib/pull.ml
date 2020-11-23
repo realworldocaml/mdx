@@ -16,15 +16,15 @@ let report_commit_is_gone_repos repos =
 let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
   let open Result.O in
   let open Duniverse.Deps.Source in
-  let { dir; upstream; ref = { Git.Ref.commit; _ }; _ } = src_dep in
+  let { dir; url; _ } = src_dep in
   let output_dir = Fpath.(duniverse_dir / dir) in
   Bos.OS.Dir.delete ~must_exist:false ~recurse:true output_dir >>= fun () ->
-  let url = Printf.sprintf "git+%s#%s" upstream commit in
+  let url = Url.to_opam_url url in
   Opam.pull_tree ~url ~dir:output_dir global_state >>= fun () ->
   (* Common.Logs.app (fun l ->
       l "Pulled sources for %a.%a" Pp.Styled.path output_dir Pp.Styled.cached cached); *)
   if trim_clone then
-    Bos.OS.Dir.delete ~must_exist:true ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
+    Bos.OS.Dir.delete ~must_exist:false ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
     Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
   else Ok ()
 

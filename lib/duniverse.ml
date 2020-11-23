@@ -1,5 +1,6 @@
 open Import
 open Sexplib.Conv
+module O = Opam
 
 type unresolved = Git.Ref.t
 
@@ -7,69 +8,101 @@ type resolved = Git.Ref.resolved [@@deriving sexp]
 
 module Deps = struct
   module Opam = struct
-    type t = { name : string; version : string option [@default None] [@sexp_drop_default.sexp] }
-    [@@deriving sexp]
+    type t = { name : string; version : string } [@@deriving sexp]
 
-    let equal t t' = String.equal t.name t'.name && Option.equal String.equal t.version t'.version
+    let equal t t' =
+      let { name; version } = t in
+      let { name = name'; version = version' } = t' in
+      String.equal name name' && String.equal version version'
 
-    let pp fmt = function
-      | { name; version = None } -> Format.fprintf fmt "%s" name
-      | { name; version = Some v } -> Format.fprintf fmt "%s.%s" name v
+    let pp fmt { name; version } = Format.fprintf fmt "%s.%s" name version
 
     let raw_pp fmt { name; version } =
       let open Pp_combinators.Ocaml in
-      Format.fprintf fmt "@[<hov 2>{ name = %S;@ version = %a }@]" name (option string) version
-
-    let explicit_version t = Option.value ~default:"zdev" t.version
+      Format.fprintf fmt "@[<hov 2>{ name = %a;@ version = %a }@]" string name string version
 
     let to_opam_dep t : OpamTypes.filtered_formula =
-      let version = explicit_version t in
       let name = OpamPackage.Name.of_string t.name in
-      Atom (name, Atom (Constraint (`Eq, FString version)))
+      Atom (name, Atom (Constraint (`Eq, FString t.version)))
   end
 
   module Source = struct
+    module Url = struct
+      type 'ref t = Git of { repo : string; ref : 'ref } | Other of string [@@deriving sexp]
+
+      let equal equal_ref t t' =
+        match (t, t') with
+        | Git { repo; ref }, Git { repo = repo'; ref = ref' } ->
+            String.equal repo repo' && equal_ref ref ref'
+        | Other s, Other s' -> String.equal s s'
+        | _ -> false
+
+      let pp pp_ref fmt t =
+        let open Pp_combinators.Ocaml in
+        match t with
+        | Git { repo; ref } ->
+            Format.fprintf fmt "@[<hov 2>Git@ @[<hov 2>{ repo = %a;@ ref = %a }@]@]" string repo
+              pp_ref ref
+        | Other s -> Format.fprintf fmt "@[<hov 2>Other@ %a@]" string s
+
+      let opam_url_from_string s = OpamUrl.parse ~from_file:true ~handle_suffix:false s
+
+      let to_string : resolved t -> string = function
+        | Other s -> s
+        | Git { repo; ref = { Git.Ref.commit; _ } } -> Printf.sprintf "%s#%s" repo commit
+
+      let to_opam_url t = opam_url_from_string (to_string t)
+    end
+
     module Package = struct
-      type t = { opam : Opam.t; upstream : string; ref : Git.Ref.t }
+      type t = { opam : Opam.t; dev_repo : string; url : unresolved Url.t }
 
       let equal t t' =
         Opam.equal t.opam t'.opam
-        && String.equal t.upstream t'.upstream
-        && Git.Ref.equal t.ref t'.ref
+        && String.equal t.dev_repo t'.dev_repo
+        && Url.equal Git.Ref.equal t.url t'.url
 
-      let raw_pp fmt { opam; upstream; ref } =
-        Format.fprintf fmt "@[<hov 2>{ opam = %a;@ upstream = %S;@ ref = %S }@]" Opam.raw_pp opam
-          upstream ref
+      let raw_pp fmt { opam; dev_repo; url } =
+        Format.fprintf fmt "@[<hov 2>{ opam = %a;@ upstream = %S;@ ref = %a }@]" Opam.raw_pp opam
+          dev_repo (Url.pp Git.Ref.pp) url
     end
 
     type 'ref t = {
       dir : string;
-      upstream : string;
-      ref : 'ref;
+      version : string;
+      dev_repo : string;
+      url : 'ref Url.t;
       provided_packages : Opam.t list; [@default []] [@sexp_drop_default.sexp]
     }
     [@@deriving sexp]
 
     let equal equal_ref t t' =
-      let { dir; upstream; ref; provided_packages } = t in
-      let { dir = dir'; upstream = upstream'; ref = ref'; provided_packages = provided_packages' } =
+      let { dir; version; dev_repo; url; provided_packages } = t in
+      let {
+        dir = dir';
+        version = version';
+        dev_repo = dev_repo';
+        url = url';
+        provided_packages = provided_packages';
+      } =
         t'
       in
-      String.equal dir dir' && String.equal upstream upstream' && equal_ref ref ref'
+      String.equal dir dir' && String.equal version version' && String.equal dev_repo dev_repo'
+      && Url.equal equal_ref url url'
       && List.equal Opam.equal provided_packages provided_packages'
 
-    let raw_pp pp_ref fmt { dir; upstream; ref; provided_packages } =
+    let raw_pp pp_ref fmt { dir; version; dev_repo; url; provided_packages } =
       let open Pp_combinators.Ocaml in
       Format.fprintf fmt
-        "@[<hov 2>{ dir = %S;@ upstream = %S;@ ref = %a;@ provided_packages = %a }@]" dir upstream
-        pp_ref ref (list Opam.raw_pp) provided_packages
+        "@[<hov 2>{ dir = %a;@ version = %a;@ dev_repo = %a;@ ref = %a;@ provided_packages = %a }@]"
+        string dir string version string dev_repo (Url.pp pp_ref) url (list Opam.raw_pp)
+        provided_packages
 
-    let dir_name_from_package { Opam.name; version } =
-      Printf.sprintf "%s.%s" name (match version with None -> "zdev" | Some x -> x)
+    let dir_name_from_package { Opam.name; version } = Printf.sprintf "%s.%s" name version
 
-    let from_package { Package.opam; upstream; ref } =
+    let from_package { Package.opam; dev_repo; url } =
       let dir = dir_name_from_package opam in
-      { dir; upstream; ref; provided_packages = [ opam ] }
+      { dir; version = opam.version; dev_repo; url; provided_packages = [ opam ] }
 
     let aggregate t package =
       let package_name = package.Package.opam.name in
@@ -78,36 +111,41 @@ module Deps = struct
         | Lt | Eq -> t.dir
         | Gt -> dir_name_from_package package.Package.opam
       in
-      let new_ref =
-        match Ordering.of_int (OpamVersionCompare.compare t.ref package.ref) with
-        | Gt | Eq -> t.ref
-        | Lt -> package.ref
+      let new_url, new_version =
+        match Ordering.of_int (OpamVersionCompare.compare t.version package.opam.version) with
+        | Gt | Eq -> (t.url, t.version)
+        | Lt -> (package.url, package.opam.version)
       in
       {
         t with
         dir = new_dir;
-        ref = new_ref;
+        version = new_version;
+        url = new_url;
         provided_packages = package.opam :: t.provided_packages;
       }
 
     let aggregate_packages l =
-      let update map ({ Package.upstream; _ } as package) =
-        String.Map.update map upstream ~f:(function
+      let update map ({ Package.dev_repo; _ } as package) =
+        String.Map.update map dev_repo ~f:(function
           | None -> Some (from_package package)
           | Some t -> Some (aggregate t package))
       in
       let aggregated_map = List.fold_left ~init:String.Map.empty ~f:update l in
       String.Map.values aggregated_map
 
-    let resolve ~resolve_ref ({ upstream; ref; _ } as t) =
+    let resolve ~resolve_ref ({ url; _ } as t) =
       let open Result.O in
-      resolve_ref ~upstream ~ref >>= fun resolved_ref -> Ok { t with ref = resolved_ref }
+      match (url : unresolved Url.t) with
+      | Git { repo; ref } ->
+          resolve_ref ~repo ~ref >>= fun resolved_ref ->
+          let resolved_url = Url.Git { repo; ref = resolved_ref } in
+          Ok { t with url = resolved_url }
+      | Other s -> Ok { t with url = Other s }
 
     let to_opam_pin_deps (t : resolved t) =
-      let url = OpamUrl.of_string (Printf.sprintf "git+%s#%s" t.upstream t.ref.commit) in
-      List.map t.provided_packages ~f:(fun pkg ->
-          let version = Opam.explicit_version pkg in
-          let opam_pkg = OpamPackage.of_string (Printf.sprintf "%s.%s" pkg.name version) in
+      let url = Url.to_opam_url t.url in
+      List.map t.provided_packages ~f:(fun { Opam.name; version } ->
+          let opam_pkg = OpamPackage.of_string (Printf.sprintf "%s.%s" name version) in
           (opam_pkg, url))
   end
 
@@ -125,17 +163,22 @@ module Deps = struct
       | Opam opam -> Format.fprintf fmt "@[<hov 2>Opam@ %a@]" Opam.raw_pp opam
       | Source source -> Format.fprintf fmt "@[<hov 2>Source@ %a@]" Source.Package.raw_pp source
 
-    let from_opam_entry ~get_default_branch entry =
-      let open Types.Opam in
+    let from_package_summary ~get_default_branch ps =
+      let open O.Package_summary in
       let open Result.O in
-      match entry with
-      | { dev_repo = `Virtual; _ } | { dev_repo = `Error _; _ } -> Ok None
-      | { is_dune = false; package = { name; version }; _ } -> Ok (Some (Opam { name; version }))
-      | { is_dune = true; dev_repo = `Git upstream; tag = Some ref; package = { name; version } } ->
-          Ok (Some (Source { opam = { name; version }; upstream; ref }))
-      | { is_dune = true; dev_repo = `Git upstream; tag = None; package = { name; version } } ->
-          get_default_branch upstream >>= fun ref ->
-          Ok (Some (Source { opam = { name; version }; upstream; ref }))
+      let url ourl =
+        match (ourl : O.Url.t) with
+        | Other s -> Ok (Source.Url.Other s)
+        | Git { repo; ref = Some ref } -> Ok (Source.Url.Git { repo; ref })
+        | Git { repo; ref = None } ->
+            get_default_branch repo >>= fun ref -> Ok (Source.Url.Git { repo; ref })
+      in
+      match ps with
+      | _ when is_base_package ps -> Ok None
+      | { url_src = None; _ } | { dev_repo = None; _ } -> Ok None
+      | { uses_dune = false; name; version; _ } -> Ok (Some (Opam { name; version }))
+      | { uses_dune = true; url_src = Some url_src; name; version; dev_repo = Some dev_repo } ->
+          url url_src >>= fun url -> Ok (Some (Source { opam = { name; version }; dev_repo; url }))
   end
 
   type 'ref t = { opamverse : Opam.t list; duniverse : 'ref Source.t list } [@@deriving sexp]
@@ -160,10 +203,10 @@ module Deps = struct
 
   let classify ~get_default_branch entries =
     let open Result.O in
-    let results = List.map ~f:(Classified.from_opam_entry ~get_default_branch) entries in
+    let results = List.map ~f:(Classified.from_package_summary ~get_default_branch) entries in
     Result.List.all results >>= fun dep_options -> Ok (List.filter_opt dep_options)
 
-  let from_opam_entries ~get_default_branch entries =
+  let from_package_summaries ~get_default_branch entries =
     let open Result.O in
     classify ~get_default_branch entries >>= fun classified -> Ok (from_classified classified)
 

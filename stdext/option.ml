@@ -11,3 +11,5 @@ module O = struct
 
   let ( >>| ) opt f = map ~f opt
 end
+
+let map_default ~f ~default = function None -> default | Some x -> f x
