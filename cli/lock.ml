@@ -97,8 +97,7 @@ let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only) (`Local_pa
   Repo.duniverse_file ~local_packages repo >>= fun duniverse_file ->
   build_config ~local_packages >>= fun config ->
   calculate_opam ~build_only ~local_paths ~local_packages >>= fun package_summaries ->
-  Opam_cmd.report_packages_stats package_summaries;
-  Common.Logs.app (fun l -> l "Calculating Git repositories to vendor source code.");
+  Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
   compute_deps ~package_summaries >>= resolve_ref >>= fun deps ->
   let duniverse = { Duniverse.config; deps } in
   Duniverse.save ~file:duniverse_file duniverse >>= fun () ->

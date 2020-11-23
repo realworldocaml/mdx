@@ -4,5 +4,3 @@ val calculate_opam :
   local_packages:Types.Opam.package list ->
   OpamStateTypes.unlocked OpamStateTypes.switch_state ->
   (Opam.Package_summary.t list, [> `Msg of string ]) result
-
-val report_packages_stats : Opam.Package_summary.t list -> unit

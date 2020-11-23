@@ -21,8 +21,6 @@ let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
   Bos.OS.Dir.delete ~must_exist:false ~recurse:true output_dir >>= fun () ->
   let url = Url.to_opam_url url in
   Opam.pull_tree ~url ~dir:output_dir global_state >>= fun () ->
-  (* Common.Logs.app (fun l ->
-      l "Pulled sources for %a.%a" Pp.Styled.path output_dir Pp.Styled.cached cached); *)
   if trim_clone then
     Bos.OS.Dir.delete ~must_exist:false ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
     Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
