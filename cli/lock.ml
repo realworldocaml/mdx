@@ -104,8 +104,7 @@ let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only) (`Local_pa
   Common.Logs.app (fun l ->
       l "Wrote duniverse file with %a entries to %a. You can now run %a to fetch the sources."
         Fmt.(styled `Green int)
-        (Duniverse.Deps.count duniverse.deps)
-        Pp.Styled.path (Fpath.normalize duniverse_file)
+        (List.length duniverse.deps) Pp.Styled.path (Fpath.normalize duniverse_file)
         Fmt.(styled `Blue string)
         "duniverse pull");
   Ok ()

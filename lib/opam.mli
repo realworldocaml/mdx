@@ -11,13 +11,7 @@ module Url : sig
 end
 
 module Package_summary : sig
-  type t = {
-    name : string;
-    version : string;
-    url_src : Url.t option;
-    dev_repo : string option;
-    uses_dune : bool;
-  }
+  type t = { name : string; version : string; url_src : Url.t option; dev_repo : string option }
 
   val equal : t -> t -> bool
 
@@ -29,8 +23,6 @@ module Package_summary : sig
   (** A package is considered virtual if it has no url.src or no dev-repo. *)
 
   val is_base_package : t -> bool
-
-  val uses_dune : t -> bool
 end
 
 module Pp : sig

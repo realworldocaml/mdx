@@ -54,35 +54,25 @@ module Url = struct
 end
 
 module Package_summary = struct
-  type t = {
-    name : string;
-    version : string;
-    url_src : Url.t option;
-    dev_repo : string option;
-    uses_dune : bool;
-  }
+  type t = { name : string; version : string; url_src : Url.t option; dev_repo : string option }
 
   let equal t t' =
     String.equal t.name t'.name && String.equal t.version t'.version
     && Option.equal Url.equal t.url_src t'.url_src
     && Option.equal String.equal t.dev_repo t'.dev_repo
-    && Bool.equal t.uses_dune t'.uses_dune
 
   let pp fmt t =
     let open Pp_combinators.Ocaml in
-    Format.fprintf fmt
-      "@[<hov 2>{ name = %a;@ version = %a;@ url_src = %a;@ dev_repo = %a;@ uses_dune = %a }@]"
+    Format.fprintf fmt "@[<hov 2>{ name = %a;@ version = %a;@ url_src = %a;@ dev_repo = %a }@]"
       string t.name string t.version (option ~brackets:true Url.pp) t.url_src
-      (option ~brackets:true string) t.dev_repo bool t.uses_dune
+      (option ~brackets:true string) t.dev_repo
 
   let from_opam ~pkg opam_file =
     let name = OpamPackage.name_to_string pkg in
     let version = OpamPackage.version_to_string pkg in
     let url_src = Option.map ~f:Url.from_opam (OpamFile.OPAM.url opam_file) in
     let dev_repo = Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file) in
-    let depends = OpamFile.OPAM.depends opam_file in
-    let uses_dune = depends_on_dune depends in
-    { name; version; url_src; dev_repo; uses_dune }
+    { name; version; url_src; dev_repo }
 
   let is_virtual = function
     | { url_src = None; _ } -> true
@@ -92,8 +82,6 @@ module Package_summary = struct
   let is_base_package = function
     | { name; _ } when List.mem name ~set:Config.base_packages -> true
     | _ -> false
-
-  let uses_dune t = t.uses_dune
 end
 
 module Pp = struct

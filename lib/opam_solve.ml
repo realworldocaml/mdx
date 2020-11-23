@@ -27,10 +27,12 @@ end = struct
 
   let is_valid_candidate ~name ~version opam_file =
     let pkg = OpamPackage.create name version in
+    let depends = OpamFile.OPAM.depends opam_file in
+    let uses_dune = Opam.depends_on_dune depends in
     let summary = Opam.Package_summary.from_opam ~pkg opam_file in
     Opam.Package_summary.is_base_package summary
     || Opam.Package_summary.is_virtual summary
-    || Opam.Package_summary.uses_dune summary
+    || uses_dune
 
   let filter_candidates ~name versions =
     List.map
