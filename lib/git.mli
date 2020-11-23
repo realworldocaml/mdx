@@ -25,6 +25,8 @@ end
 module Ref : sig
   type t = string
 
+  val compare : t -> t -> int
+
   val equal : t -> t -> bool
 
   val pp : t Fmt.t

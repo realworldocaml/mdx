@@ -43,14 +43,17 @@ module Url = struct
     | Other s -> Format.fprintf fmt "@[<hov 2>Other@ %a@]" string s
 
   let from_opam url =
-    let url = OpamFile.URL.url url in
-    match url.backend with
+    match url.OpamUrl.backend with
     | `git -> (
         let str_url = OpamUrl.to_string url in
         match String.lsplit2 ~on:'#' str_url with
         | Some (repo, ref) -> Git { repo; ref = Some ref }
         | None -> Git { repo = str_url; ref = None } )
     | _ -> Other (OpamUrl.to_string url)
+
+  let from_opam_field url =
+    let url = OpamFile.URL.url url in
+    from_opam url
 end
 
 module Package_summary = struct
@@ -70,7 +73,7 @@ module Package_summary = struct
   let from_opam ~pkg opam_file =
     let name = OpamPackage.name_to_string pkg in
     let version = OpamPackage.version_to_string pkg in
-    let url_src = Option.map ~f:Url.from_opam (OpamFile.OPAM.url opam_file) in
+    let url_src = Option.map ~f:Url.from_opam_field (OpamFile.OPAM.url opam_file) in
     let dev_repo = Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file) in
     { name; version; url_src; dev_repo }
 

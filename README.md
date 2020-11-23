@@ -46,9 +46,6 @@ COMMANDS
        lock
            analyse opam files to generate an initial lock file
 
-       migrate-dune-get
-           convert a legacy dune-get file to an opam lock file
-
        pull
            fetch the latest archives of the vendored libraries
 

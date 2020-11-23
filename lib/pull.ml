@@ -15,7 +15,7 @@ let report_commit_is_gone_repos repos =
 
 let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
   let open Result.O in
-  let open Duniverse.Deps.Source in
+  let open Duniverse.Repo in
   let { dir; url; _ } = src_dep in
   let output_dir = Fpath.(duniverse_dir / dir) in
   Bos.OS.Dir.delete ~must_exist:false ~recurse:true output_dir >>= fun () ->

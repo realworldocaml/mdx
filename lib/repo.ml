@@ -27,9 +27,9 @@ let project_name t =
   let dune_project = dune_project t in
   Dune_file.Raw.as_sexps dune_project >>= Dune_file.Project.name
 
-let duniverse_file ~name t = Fpath.(t / (name ^ ".opam.locked"))
+let lockfile ~name t = Fpath.(t / (name ^ ".opam.locked"))
 
-let duniverse_file ?local_packages:lp t =
+let lockfile ?local_packages:lp t =
   let open Result.O in
   let local_packages =
     match lp with
@@ -40,5 +40,5 @@ let duniverse_file ?local_packages:lp t =
   in
   local_packages >>= fun pkgs ->
   match pkgs with
-  | [ { name; _ } ] -> Ok (duniverse_file ~name t)
-  | _ -> project_name t >>= fun name -> Ok (duniverse_file ~name t)
+  | [ { name; _ } ] -> Ok (lockfile ~name t)
+  | _ -> project_name t >>= fun name -> Ok (lockfile ~name t)
