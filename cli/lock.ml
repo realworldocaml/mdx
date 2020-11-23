@@ -58,7 +58,7 @@ let calculate_opam ~build_only ~local_paths ~local_packages =
   OpamGlobalState.with_ `Lock_none (fun global_state ->
       OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
           check_repo_config ~global_state ~switch_state;
-          Opam_cmd.calculate_opam ~build_only ~local_paths ~local_packages switch_state))
+          Opam_solve.calculate ~build_only ~local_paths ~local_packages switch_state))
 
 let filter_local_packages ~explicit_list local_paths =
   let res =
