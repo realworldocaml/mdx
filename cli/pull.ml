@@ -57,10 +57,10 @@ let run (`Yes yes) (`Repo repo) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
   Repo.duniverse_file repo >>= fun duniverse_file ->
   Duniverse.load ~file:duniverse_file >>= function
-  | { deps = { duniverse = []; _ }; _ } ->
+  | { deps = []; _ } ->
       Common.Logs.app (fun l -> l "No dependencies to pull, there's nothing to be done here!");
       Ok ()
-  | { deps = { duniverse; _ }; _ } ->
+  | { deps = duniverse; _ } ->
       Common.filter_duniverse ~to_consider:duniverse_repos duniverse >>= fun duniverse ->
       check_dune_lang_version ~yes ~repo >>= fun () ->
       OpamGlobalState.with_ `Lock_none (fun global_state ->

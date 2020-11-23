@@ -58,7 +58,7 @@ let calculate_opam ~build_only ~local_paths ~local_packages =
   OpamGlobalState.with_ `Lock_none (fun global_state ->
       OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
           check_repo_config ~global_state ~switch_state;
-          Opam_cmd.calculate_opam ~build_only ~local_paths ~local_packages switch_state))
+          Opam_solve.calculate ~build_only ~local_paths ~local_packages switch_state))
 
 let filter_local_packages ~explicit_list local_paths =
   let res =
@@ -97,16 +97,14 @@ let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only) (`Local_pa
   Repo.duniverse_file ~local_packages repo >>= fun duniverse_file ->
   build_config ~local_packages >>= fun config ->
   calculate_opam ~build_only ~local_paths ~local_packages >>= fun package_summaries ->
-  Opam_cmd.report_packages_stats package_summaries;
-  Common.Logs.app (fun l -> l "Calculating Git repositories to vendor source code.");
+  Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
   compute_deps ~package_summaries >>= resolve_ref >>= fun deps ->
   let duniverse = { Duniverse.config; deps } in
   Duniverse.save ~file:duniverse_file duniverse >>= fun () ->
   Common.Logs.app (fun l ->
       l "Wrote duniverse file with %a entries to %a. You can now run %a to fetch the sources."
         Fmt.(styled `Green int)
-        (Duniverse.Deps.count duniverse.deps)
-        Pp.Styled.path (Fpath.normalize duniverse_file)
+        (List.length duniverse.deps) Pp.Styled.path (Fpath.normalize duniverse_file)
         Fmt.(styled `Blue string)
         "duniverse pull");
   Ok ()
@@ -155,7 +153,11 @@ let info =
       `P
         "Since this lockfile must be compatible with $(b,opam monorepo pull) all the dependencies \
          must use dune or jbuilder as their build system. If this requirement isn't met the \
-         command will fail.";
+         command will fail. We maintain an opam repository with dune port of opam packages. We \
+         suggest you add it to your switch's repositories before running $(b, opam monorepo lock) \
+         if you know some of your dependencies don't use dune. If some of them haven't been ported \
+         yet, please head to dune-universe/opam-overlays on github.com. Feel free to follow the \
+         instructions there to add dune ports for the packages you need.";
     ]
   in
   Term.info "lock" ~doc ~exits ~man

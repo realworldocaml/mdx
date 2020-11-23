@@ -62,9 +62,25 @@ module Deps = struct
         && String.equal t.dev_repo t'.dev_repo
         && Url.equal Git.Ref.equal t.url t'.url
 
-      let raw_pp fmt { opam; dev_repo; url } =
+      let pp fmt { opam; dev_repo; url } =
         Format.fprintf fmt "@[<hov 2>{ opam = %a;@ upstream = %S;@ ref = %a }@]" Opam.raw_pp opam
           dev_repo (Url.pp Git.Ref.pp) url
+
+      let from_package_summary ~get_default_branch ps =
+        let open O.Package_summary in
+        let open Result.O in
+        let url ourl =
+          match (ourl : O.Url.t) with
+          | Other s -> Ok (Url.Other s)
+          | Git { repo; ref = Some ref } -> Ok (Url.Git { repo; ref })
+          | Git { repo; ref = None } ->
+              get_default_branch repo >>= fun ref -> Ok (Url.Git { repo; ref })
+        in
+        match ps with
+        | _ when is_base_package ps -> Ok None
+        | { url_src = None; _ } | { dev_repo = None; _ } -> Ok None
+        | { url_src = Some url_src; name; version; dev_repo = Some dev_repo } ->
+            url url_src >>= fun url -> Ok (Some { opam = { name; version }; dev_repo; url })
     end
 
     type 'ref t = {
@@ -149,73 +165,22 @@ module Deps = struct
           (opam_pkg, url))
   end
 
-  module Classified = struct
-    type t = Opam of Opam.t | Source of Source.Package.t
+  type 'ref t = 'ref Source.t list [@@deriving sexp]
 
-    let equal t t' =
-      match (t, t') with
-      | Opam opam, Opam opam' -> Opam.equal opam opam'
-      | Source source, Source source' -> Source.Package.equal source source'
-      | (Opam _ | Source _), _ -> false
-
-    let raw_pp fmt t =
-      match t with
-      | Opam opam -> Format.fprintf fmt "@[<hov 2>Opam@ %a@]" Opam.raw_pp opam
-      | Source source -> Format.fprintf fmt "@[<hov 2>Source@ %a@]" Source.Package.raw_pp source
-
-    let from_package_summary ~get_default_branch ps =
-      let open O.Package_summary in
-      let open Result.O in
-      let url ourl =
-        match (ourl : O.Url.t) with
-        | Other s -> Ok (Source.Url.Other s)
-        | Git { repo; ref = Some ref } -> Ok (Source.Url.Git { repo; ref })
-        | Git { repo; ref = None } ->
-            get_default_branch repo >>= fun ref -> Ok (Source.Url.Git { repo; ref })
-      in
-      match ps with
-      | _ when is_base_package ps -> Ok None
-      | { url_src = None; _ } | { dev_repo = None; _ } -> Ok None
-      | { uses_dune = false; name; version; _ } -> Ok (Some (Opam { name; version }))
-      | { uses_dune = true; url_src = Some url_src; name; version; dev_repo = Some dev_repo } ->
-          url url_src >>= fun url -> Ok (Some (Source { opam = { name; version }; dev_repo; url }))
-  end
-
-  type 'ref t = { opamverse : Opam.t list; duniverse : 'ref Source.t list } [@@deriving sexp]
-
-  let equal equal_ref t t' =
-    List.equal Opam.equal t.opamverse t'.opamverse
-    && List.equal (Source.equal equal_ref) t.duniverse t'.duniverse
+  let equal equal_ref t t' = List.equal (Source.equal equal_ref) t t'
 
   let raw_pp pp_ref fmt t =
     let open Pp_combinators.Ocaml in
-    Format.fprintf fmt "@[<hov 2>{ opamverse = %a;@ duniverse = %a}@]" (list Opam.raw_pp)
-      t.opamverse
-      (list (Source.raw_pp pp_ref))
-      t.duniverse
+    (list (Source.raw_pp pp_ref)) fmt t
 
-  let from_classified (l : Classified.t list) =
-    let opamverse, source_deps =
-      List.partition_map ~f:(function Opam o -> Left o | Source s -> Right s) l
-    in
-    let duniverse = Source.aggregate_packages source_deps in
-    { opamverse; duniverse }
-
-  let classify ~get_default_branch entries =
+  let from_package_summaries ~get_default_branch summaries =
     let open Result.O in
-    let results = List.map ~f:(Classified.from_package_summary ~get_default_branch) entries in
-    Result.List.all results >>= fun dep_options -> Ok (List.filter_opt dep_options)
+    let results = List.map ~f:(Source.Package.from_package_summary ~get_default_branch) summaries in
+    Result.List.all results >>= fun pkg_opts ->
+    let pkgs = List.filter_opt pkg_opts in
+    Ok (Source.aggregate_packages pkgs)
 
-  let from_package_summaries ~get_default_branch entries =
-    let open Result.O in
-    classify ~get_default_branch entries >>= fun classified -> Ok (from_classified classified)
-
-  let count { opamverse; duniverse } = List.length opamverse + List.length duniverse
-
-  let resolve ~resolve_ref t =
-    let open Result.O in
-    Parallel.map ~f:(Source.resolve ~resolve_ref) t.duniverse |> Result.List.all
-    >>= fun duniverse -> Ok { t with duniverse }
+  let resolve ~resolve_ref t = Parallel.map ~f:(Source.resolve ~resolve_ref) t |> Result.List.all
 end
 
 module Config = struct
@@ -227,22 +192,13 @@ type t = { config : Config.t; deps : resolved Deps.t } [@@deriving sexp]
 
 let load_dune_get ~file = Persist.load_sexp "duniverse" t_of_sexp file
 
-let sort ({ deps = { opamverse; duniverse }; _ } as t) =
-  let sorted_opamverse =
-    let open Deps.Opam in
-    let cmp opam opam' = String.compare opam.name opam'.name in
-    List.sort ~cmp opamverse
-  in
-  let sorted_duniverse =
+let sort ({ deps; _ } as t) =
+  let sorted_deps =
     let open Deps.Source in
     let cmp source source' = String.compare source.dir source'.dir in
-    List.sort ~cmp duniverse
+    List.sort ~cmp deps
   in
-  { t with deps = { opamverse = sorted_opamverse; duniverse = sorted_duniverse } }
-
-let sexp_of_opamverse opamverse = Sexplib0.Sexp_conv.sexp_of_list Deps.Opam.sexp_of_t opamverse
-
-let opamverse_of_sexp sexp = Sexplib0.Sexp_conv.list_of_sexp Deps.Opam.t_of_sexp sexp
+  { t with deps = sorted_deps }
 
 let sexp_of_duniverse duniverse =
   Sexplib0.Sexp_conv.sexp_of_list (Deps.Source.sexp_of_t Git.Ref.sexp_of_resolved) duniverse
@@ -254,8 +210,6 @@ module Opam_ext : sig
   type 'a field
 
   val duniverse_field : Git.Ref.resolved Deps.Source.t list field
-
-  val opamverse_field : Deps.Opam.t list field
 
   val config_field : Config.t field
 
@@ -272,8 +226,6 @@ end = struct
   type _ field = string
 
   let duniverse_field = "x-duniverse-duniverse"
-
-  let opamverse_field = "x-duniverse-opamverse"
 
   let config_field = "x-duniverse-config"
 
@@ -294,11 +246,10 @@ end
 let to_opam (t : t) =
   let deps =
     let packages =
-      let opam = t.deps.opamverse in
       let open Deps.Source in
-      let source = List.concat_map t.deps.duniverse ~f:(fun s -> s.provided_packages) in
+      let source = List.concat_map t.deps ~f:(fun s -> s.provided_packages) in
       let open Deps.Opam in
-      List.sort ~cmp:(fun o o' -> String.compare o.name o'.name) (opam @ source)
+      List.sort ~cmp:(fun o o' -> String.compare o.name o'.name) source
     in
     match packages with
     | hd :: tl ->
@@ -308,7 +259,7 @@ let to_opam (t : t) =
     | [] -> OpamFormula.Empty
   in
   let pin_deps =
-    List.concat_map t.deps.duniverse ~f:Deps.Source.to_opam_pin_deps
+    List.concat_map t.deps ~f:Deps.Source.to_opam_pin_deps
     |> List.sort ~cmp:(fun (p, _) (p', _) -> OpamPackage.compare p p')
   in
   let t = sort t in
@@ -318,15 +269,13 @@ let to_opam (t : t) =
   |> with_synopsis "duniverse generated lockfile"
   |> with_depends deps |> with_pin_depends pin_deps
   |> Opam_ext.(add Config.sexp_of_t config_field t.config)
-  |> Opam_ext.(add sexp_of_opamverse opamverse_field t.deps.opamverse)
-  |> Opam_ext.(add sexp_of_duniverse duniverse_field t.deps.duniverse)
+  |> Opam_ext.(add sexp_of_duniverse duniverse_field t.deps)
 
 let from_opam ?file opam =
   let open Result.O in
   Opam_ext.(get ?file Config.t_of_sexp config_field opam) >>= fun config ->
-  Opam_ext.(get ?file ~default:[] opamverse_of_sexp opamverse_field opam) >>= fun opamverse ->
   Opam_ext.(get ?file ~default:[] duniverse_of_sexp duniverse_field opam) >>= fun duniverse ->
-  let deps = { Deps.opamverse; duniverse } in
+  let deps = duniverse in
   Ok { config; deps }
 
 let save ~file t =
