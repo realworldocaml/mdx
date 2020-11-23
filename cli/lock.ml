@@ -155,7 +155,11 @@ let info =
       `P
         "Since this lockfile must be compatible with $(b,opam monorepo pull) all the dependencies \
          must use dune or jbuilder as their build system. If this requirement isn't met the \
-         command will fail.";
+         command will fail. We maintain an opam repository with dune port of opam packages. We \
+         suggest you add it to your switch's repositories before running $(b, opam monorepo lock) \
+         if you know some of your dependencies don't use dune. If some of them haven't been ported \
+         yet, please head to dune-universe/opam-overlays on github.com. Feel free to follow the \
+         instructions there to add dune ports for the packages you need.";
     ]
   in
   Term.info "lock" ~doc ~exits ~man
