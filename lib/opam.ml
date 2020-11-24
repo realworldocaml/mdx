@@ -20,7 +20,8 @@ let pull_tree ~url ~dir global_state =
   let result = OpamProcess.Job.run job in
   match result with
   | Result _ | Up_to_date _ -> Ok ()
-  | Not_available (_, long_msg) -> Error (`Msg long_msg)
+  | Not_available (_, long_msg) ->
+      Error (`Msg (Printf.sprintf "Failed to pull %s: %s" label long_msg))
 
 module Url = struct
   type t = Git of { repo : string; ref : string option } | Other of string

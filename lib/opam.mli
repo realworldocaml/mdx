@@ -38,6 +38,6 @@ val pull_tree :
   url:OpamUrl.t ->
   dir:Fpath.t ->
   OpamStateTypes.unlocked OpamStateTypes.global_state ->
-  (unit, [ `Msg of string ]) result
+  (unit, [> `Msg of string ]) result
 (** Pulls the sources from [url] to [dir] using opam's library.
     This benefits from opam's global cache *)

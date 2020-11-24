@@ -1,18 +1,5 @@
 open Import
 
-let report_commit_is_gone_repos repos =
-  let sep fmt () =
-    Format.pp_print_newline fmt ();
-    Pp.Styled.header_indent fmt ();
-    Fmt.(const string "  - ") fmt ()
-  in
-  let fmt_repos = Fmt.(list ~sep Pp.Styled.package_name) in
-  Logs.app (fun l ->
-      l "The following repos could not be pulled as the commit we want is gone:%a%a" sep ()
-        fmt_repos repos);
-  Logs.app (fun l ->
-      l "You should run 'duniverse update' to fix the commits associated with the tracked refs")
-
 let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
   let open Result.O in
   let open Duniverse.Repo in
@@ -28,20 +15,11 @@ let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
 
 let pull_source_dependencies ?trim_clone ~global_state ~duniverse_dir src_deps =
   let open Result.O in
-  List.map ~f:(pull ?trim_clone ~global_state ~duniverse_dir) src_deps
-  |> Result.List.fold_left ~init:[] ~f:(fun acc res ->
-         match res with
-         | Ok () -> Ok acc
-         | Error (`Msg _ as err) -> Error (err :> [> `Msg of string ]))
-  >>= function
-  | [] ->
-      let total = List.length src_deps in
-      let pp_count = Pp.Styled.good Fmt.int in
-      Logs.app (fun l -> l "Successfully pulled %a/%a repositories" pp_count total pp_count total);
-      Ok ()
-  | commit_is_gone_repos ->
-      report_commit_is_gone_repos commit_is_gone_repos;
-      Error (`Msg "Could not pull all the source dependencies")
+  Result.List.iter ~f:(pull ?trim_clone ~global_state ~duniverse_dir) src_deps >>= fun () ->
+  let total = List.length src_deps in
+  let pp_count = Pp.Styled.good Fmt.int in
+  Logs.app (fun l -> l "Successfully pulled %a/%a repositories" pp_count total pp_count total);
+  Ok ()
 
 let mark_duniverse_content_as_vendored ~duniverse_dir =
   let open Result.O in
