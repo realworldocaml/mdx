@@ -15,7 +15,6 @@ bug-reports: "https://github.com/ocamllabs/duniverse/issues"
 depends: [
   "dune" {>= "2.0"}
   "ocaml" {>= "4.08.0"}
-  "ppx_sexp_conv" {>= "v0.13.0"}
   "dune-build-info"
   "bos"
   "cmdliner"
@@ -26,9 +25,8 @@ depends: [
   "opam-state" {>= "2.1.0~beta"}
   "opam-0install"
   "ocaml-version"
-  "uri"
   "sexplib"
-  "uri-sexp"
+  "uri"
   "alcotest" {with-test}
 ]
 dev-repo: "git+https://github.com/ocamllabs/duniverse.git"

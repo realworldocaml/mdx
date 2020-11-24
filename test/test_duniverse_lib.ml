@@ -6,7 +6,6 @@ let () =
       Test_duniverse.suite;
       Test_git.suite;
       Test_opam.suite;
-      Test_opam_value.suite;
       Test_parallel.suite;
       Test_uri_utils.suite;
     ]
