@@ -16,9 +16,8 @@ let pull_tree ~url ~dir global_state =
   (* Opam requires a label for the pull, it's only used for logging *)
   let opam_dir = OpamFilename.Dir.of_string dir_str in
   let checksums = [] in
-  let job = OpamRepository.pull_tree ~cache_dir label opam_dir checksums [ url ] in
-  let result = OpamProcess.Job.run job in
-  match result with
+  let open OpamProcess.Job.Op in
+  OpamRepository.pull_tree ~cache_dir label opam_dir checksums [ url ] @@| function
   | Result _ | Up_to_date _ -> Ok ()
   | Not_available (_, long_msg) ->
       Error (`Msg (Printf.sprintf "Failed to pull %s: %s" label long_msg))

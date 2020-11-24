@@ -6,7 +6,9 @@ let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
   let { dir; url; _ } = src_dep in
   let output_dir = Fpath.(duniverse_dir / dir) in
   let url = Url.to_opam_url url in
-  Opam.pull_tree ~url ~dir:output_dir global_state >>= fun () ->
+  let open OpamProcess.Job.Op in
+  Opam.pull_tree ~url ~dir:output_dir global_state @@| fun result ->
+  result >>= fun () ->
   if trim_clone then
     Bos.OS.Dir.delete ~must_exist:false ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->
     Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
@@ -14,7 +16,10 @@ let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
 
 let pull_source_dependencies ?trim_clone ~global_state ~duniverse_dir src_deps =
   let open Result.O in
-  Result.List.iter ~f:(pull ?trim_clone ~global_state ~duniverse_dir) src_deps >>= fun () ->
+  let jobs = !OpamStateConfig.r.dl_jobs in
+  OpamParallel.map ~jobs ~command:(pull ?trim_clone ~global_state ~duniverse_dir) src_deps
+  |> Result.List.all
+  >>= fun _ ->
   let total = List.length src_deps in
   let pp_count = Pp.Styled.good Fmt.int in
   Logs.app (fun l -> l "Successfully pulled %a/%a repositories" pp_count total pp_count total);
