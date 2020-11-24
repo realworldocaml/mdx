@@ -5,7 +5,6 @@ let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
   let open Duniverse.Repo in
   let { dir; url; _ } = src_dep in
   let output_dir = Fpath.(duniverse_dir / dir) in
-  Bos.OS.Dir.delete ~must_exist:false ~recurse:true output_dir >>= fun () ->
   let url = Url.to_opam_url url in
   Opam.pull_tree ~url ~dir:output_dir global_state >>= fun () ->
   if trim_clone then
@@ -36,6 +35,7 @@ let duniverse ~repo ~global_state duniverse =
   else
     let open Result.O in
     let duniverse_dir = Fpath.(repo // Config.vendor_dir) in
+    Bos.OS.Dir.delete ~must_exist:false ~recurse:true duniverse_dir >>= fun () ->
     Bos.OS.Dir.create duniverse_dir >>= fun _created ->
     mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
     pull_source_dependencies ~global_state ~trim_clone:true ~duniverse_dir duniverse
