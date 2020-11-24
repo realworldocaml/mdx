@@ -91,6 +91,11 @@ module Repo = struct
         ~expected:
           { dir = "repo"; url = Other "u"; provided_packages = [ { name = "p"; version = "v" } ] }
         ();
+      make_test ~name:"Expection for dune" ~dev_repo:"https://github.com/ocaml/dune.git"
+        ~packages:[ package_factory ~name:"p" ~version:"v" ~url:(Other "u") () ]
+        ~expected:
+          { dir = "dune_"; url = Other "u"; provided_packages = [ { name = "p"; version = "v" } ] }
+        ();
       make_test ~name:"Add all to provided packages" ~dev_repo:"d"
         ~packages:
           [

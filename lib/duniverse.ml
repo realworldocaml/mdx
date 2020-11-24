@@ -126,9 +126,12 @@ module Repo = struct
     let compare = Url.compare Git.Ref.compare
   end)
 
+  let dir_name_from_dev_repo dev_repo =
+    match Dev_repo.repo_name dev_repo with "dune" -> "dune_" | name -> name
+
   let from_packages ~dev_repo (packages : Package.t list) =
     let provided_packages = List.map packages ~f:(fun p -> p.Package.opam) in
-    let dir = Dev_repo.repo_name dev_repo in
+    let dir = dir_name_from_dev_repo dev_repo in
     let urls =
       let add acc p = Unresolved_url_set.add p.Package.url acc in
       List.fold_left packages ~init:Unresolved_url_set.empty ~f:add |> Unresolved_url_set.elements
