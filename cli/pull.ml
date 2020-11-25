@@ -62,10 +62,11 @@ let run (`Yes yes) (`Repo repo) (`Duniverse_repos duniverse_repos) () =
       Common.Logs.app (fun l -> l "No dependencies to pull, there's nothing to be done here!");
       Ok ()
   | duniverse ->
+      let full = match duniverse_repos with None -> true | _ -> false in
       Common.filter_duniverse ~to_consider:duniverse_repos duniverse >>= fun duniverse ->
       check_dune_lang_version ~yes ~repo >>= fun () ->
       OpamGlobalState.with_ `Lock_none (fun global_state ->
-          Pull.duniverse ~global_state ~repo duniverse)
+          Pull.duniverse ~global_state ~repo ~full duniverse)
 
 let info =
   let open Cmdliner in

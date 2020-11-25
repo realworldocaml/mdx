@@ -35,12 +35,18 @@ let mark_duniverse_content_as_vendored ~duniverse_dir =
   Logs.debug (fun l -> l "Successfully wrote %a" Pp.Styled.path dune_file);
   Ok ()
 
-let duniverse ~repo ~global_state duniverse =
+let pre_pull_clean_up ~full ~duniverse_dir duniverse =
+  if full then Bos.OS.Dir.delete ~must_exist:false ~recurse:true duniverse_dir
+  else
+    Result.List.iter duniverse ~f:(fun { Duniverse.Repo.dir; _ } ->
+        Bos.OS.Dir.delete ~must_exist:false ~recurse:true Fpath.(duniverse_dir / dir))
+
+let duniverse ~full ~repo ~global_state duniverse =
   if List.is_empty duniverse then Ok ()
   else
     let open Result.O in
     let duniverse_dir = Fpath.(repo // Config.vendor_dir) in
-    Bos.OS.Dir.delete ~must_exist:false ~recurse:true duniverse_dir >>= fun () ->
+    pre_pull_clean_up ~full ~duniverse_dir duniverse >>= fun () ->
     Bos.OS.Dir.create duniverse_dir >>= fun _created ->
     mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
     pull_source_dependencies ~global_state ~trim_clone:true ~duniverse_dir duniverse
