@@ -4,116 +4,88 @@ type unresolved = Git.Ref.t
 
 type resolved = Git.Ref.resolved
 
-module Deps : sig
-  module Opam : sig
-    type t = { name : string; version : string }
-    (** Type of dependencies to install through opam *)
+module Opam : sig
+  type t = { name : string; version : string }
+  (** Type of dependencies to install through opam *)
 
-    val equal : t -> t -> bool
+  val equal : t -> t -> bool
 
-    val pp : t Fmt.t
-  end
+  val pp : t Fmt.t
 
-  module Source : sig
-    module Url : sig
-      type 'ref t = Git of { repo : string; ref : 'ref } | Other of string
+  val to_opam : t -> OpamPackage.t
 
-      val equal : ('ref -> 'ref -> bool) -> 'ref t -> 'ref t -> bool
+  val from_opam : OpamPackage.t -> t
+end
 
-      val pp : 'ref Fmt.t -> 'ref t Fmt.t
-
-      val to_opam_url : resolved t -> OpamUrl.t
-    end
-
-    type 'ref t = {
-      dir : string;
-      version : string;
-      dev_repo : string;
-      url : 'ref Url.t;
-      provided_packages : Opam.t list;
-    }
-    (** Type of dependencies to clone in the duniverse *)
+module Repo : sig
+  module Url : sig
+    type 'ref t = Git of { repo : string; ref : 'ref } | Other of string
 
     val equal : ('ref -> 'ref -> bool) -> 'ref t -> 'ref t -> bool
 
-    (**/**)
+    val pp : 'ref Fmt.t -> 'ref t Fmt.t
 
-    (* Exposed for test purposes only *)
+    val to_string : resolved t -> string
 
-    val raw_pp : 'ref Fmt.t -> 'ref t Fmt.t
+    val to_opam_url : resolved t -> OpamUrl.t
 
-    module Package : sig
-      type t = { opam : Opam.t; dev_repo : string; url : unresolved Url.t }
-
-      val equal : t -> t -> bool
-
-      val pp : t Fmt.t
-
-      val from_package_summary :
-        get_default_branch:(string -> (string, Rresult.R.msg) result) ->
-        O.Package_summary.t ->
-        (t option, [ `Msg of string ]) result
-    end
-
-    val aggregate : unresolved t -> Package.t -> unresolved t
-
-    val aggregate_packages : Package.t list -> unresolved t list
-
-    (**/**)
+    val from_opam_url : OpamUrl.t -> (resolved t, [ `Msg of string ]) result
+    (** Converts an [OpamUrl.t] to a resolved URL. Assumes the ref after the "#" is
+        a commit hash. Returns an error on git URLs with no such ref. *)
   end
 
-  type 'ref t = 'ref Source.t list
-  (** The type for dependencies of a project. The duniverse and opamverse are complementary,
-      that is a dependency either can be installed by pulling the sources and is in the duniverse
-      or has to be installed through opam and is in the opamverse. *)
+  type 'ref t = { dir : string; url : 'ref Url.t; provided_packages : Opam.t list }
+  (** Type of dependencies to clone in the duniverse *)
 
   val equal : ('ref -> 'ref -> bool) -> 'ref t -> 'ref t -> bool
-
-  val from_package_summaries :
-    get_default_branch:(string -> (string, Rresult.R.msg) result) ->
-    O.Package_summary.t list ->
-    (unresolved t, [ `Msg of string ]) result
-  (** Build opamverse and duniverse from a list of [Types.Opam.entry] values.
-      It filters out virtual packages and packages with unknown dev-repo.  *)
-
-  val resolve :
-    resolve_ref:(repo:string -> ref:unresolved -> (resolved, Rresult.R.msg) result) ->
-    unresolved t ->
-    (resolved t, Rresult.R.msg) result
-  (** Apply the given [resolve_ref] function to bind each source repo to a specific commit
-      rather than a "floating" ref. *)
 
   (**/**)
 
   (* Exposed for test purposes only *)
 
-  val raw_pp : 'ref Fmt.t -> 'ref t Fmt.t
+  val pp : 'ref Fmt.t -> 'ref t Fmt.t
+
+  module Package : sig
+    type t = { opam : Opam.t; dev_repo : string; url : unresolved Url.t }
+
+    val equal : t -> t -> bool
+
+    val pp : t Fmt.t
+
+    val from_package_summary :
+      get_default_branch:(string -> (string, Rresult.R.msg) result) ->
+      O.Package_summary.t ->
+      (t option, [ `Msg of string ]) result
+  end
+
+  val from_packages : dev_repo:Dev_repo.t -> Package.t list -> unresolved t
 
   (**/**)
 end
 
-module Config : sig
-  type t = { version : string; root_packages : Types.Opam.package list } [@@deriving sexp]
-end
+type t = resolved Repo.t list
+(** The type of dependencies to be pulled into the duniverse *)
 
-type t = { config : Config.t; deps : resolved Deps.t } [@@deriving sexp]
+val equal : t -> t -> bool
 
-(* Converts a [t] to an opam file.
-   Extensions are used to store extra information and depends, pin-depends and depexts
-   fields are properly set so that the resulting lockfile can be reproducibly
-   opam-installed. *)
-val to_opam : t -> OpamFile.OPAM.t
+val from_package_summaries :
+  get_default_branch:(string -> (string, Rresult.R.msg) result) ->
+  O.Package_summary.t list ->
+  (unresolved Repo.t list, [ `Msg of string ]) result
+(** Build opamverse and duniverse from a list of [Types.Opam.entry] values.
+    It filters out virtual packages and packages with unknown dev-repo.  *)
 
-(* Parses a duniverse generated opam lockfile to a [t] value.
-   The optional [file] argument is used for improved error reporting only, it should
-   be passed when available. *)
-val from_opam : ?file:string -> OpamFile.OPAM.t -> (t, [> `Msg of string ]) result
+val resolve :
+  resolve_ref:(repo:string -> ref:unresolved -> (resolved, Rresult.R.msg) result) ->
+  unresolved Repo.t list ->
+  (t, Rresult.R.msg) result
+(** Apply the given [resolve_ref] function to bind each source repo to a specific commit
+    rather than a "floating" ref. *)
 
-val load : file:Fpath.t -> (t, [> `Msg of string ]) result
+(**/**)
 
-val save : file:Fpath.t -> t -> (unit, [> `Msg of string ]) result
+(* Exposed for test purposes only *)
 
-(* Load a [t] from a legacy dune-get file.
-   Should be used for migration to the .opam.locked format only. *)
-val load_dune_get : file:Fpath.t -> (t, [> `Msg of string ]) result
-  [@@deprecated "dune-get files are a legacy format, you should use load instead"]
+val pp : t Fmt.t
+
+(**/**)

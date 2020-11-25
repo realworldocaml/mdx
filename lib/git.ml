@@ -1,5 +1,4 @@
 open Import
-open Sexplib.Conv
 
 module Ls_remote = struct
   let non_packed_suffix = "^{}"
@@ -46,13 +45,15 @@ module Ls_remote = struct
 end
 
 module Ref = struct
-  type t = string [@@deriving sexp]
+  type t = string
 
   let equal = String.equal
 
+  let compare = String.compare
+
   let pp = Format.pp_print_string
 
-  type resolved = { t : t; commit : string } [@@deriving sexp]
+  type resolved = { t : t; commit : string }
 
   let equal_resolved r r' = equal r.t r'.t && String.equal r.commit r'.commit
 

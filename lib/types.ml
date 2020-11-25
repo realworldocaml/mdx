@@ -14,16 +14,8 @@
  *
  *)
 
-open Sexplib.Conv
-
-let pp_sexp fn ppf v = Fmt.pf ppf "%s" (Sexplib.Sexp.to_string_hum (fn v))
-
 module Opam = struct
-  type package = {
-    name : string;
-    version : string option; [@default None] [@sexp_drop_default.sexp]
-  }
-  [@@deriving sexp]
+  type package = { name : string; version : string option }
 
   let default_version = "zdev"
 

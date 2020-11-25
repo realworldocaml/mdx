@@ -16,7 +16,7 @@
 
 open Duniverse_cli
 
-let cmds = [ Lock.cmd; Pull.cmd; Migrate_dune_get.cmd ]
+let cmds = [ Lock.cmd; Pull.cmd ]
 
 let init_opam () =
   OpamSystem.init ();

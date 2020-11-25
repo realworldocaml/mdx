@@ -11,6 +11,8 @@ module type S = sig
 
   val values : 'a t -> 'a list
 
+  val keys : 'a t -> key list
+
   val of_list : (key * 'a) list -> ('a t, key * 'a * 'a) Result.t
 
   val of_list_exn : (key * 'a) list -> 'a t

@@ -70,11 +70,11 @@ module Logs = struct
 end
 
 (** Filters the duniverse according to the CLI provided list of repos *)
-let filter_duniverse ~to_consider (src_deps : _ Duniverse.Deps.Source.t list) =
+let filter_duniverse ~to_consider (duniverse : Duniverse.t) =
   match to_consider with
-  | None -> Ok src_deps
+  | None -> Ok duniverse
   | Some to_consider -> (
-      let repos_map = String.Map.of_list_map_exn src_deps ~f:(fun src -> (src.dir, src)) in
+      let repos_map = String.Map.of_list_map_exn duniverse ~f:(fun src -> (src.dir, src)) in
       let unmatched, found =
         List.partition_map to_consider ~f:(fun asked ->
             match String.Map.find repos_map asked with

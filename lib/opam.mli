@@ -7,7 +7,9 @@ module Url : sig
 
   val pp : t Fmt.t
 
-  val from_opam : OpamFile.URL.t -> t
+  val from_opam_field : OpamFile.URL.t -> t
+
+  val from_opam : OpamUrl.t -> t
 end
 
 module Package_summary : sig

@@ -11,6 +11,8 @@ module type S = sig
 
   val values : 'a t -> 'a list
 
+  val keys : 'a t -> key list
+
   val of_list : (key * 'a) list -> ('a t, key * 'a * 'a) Result.t
 
   val of_list_exn : (key * 'a) list -> 'a t
@@ -36,6 +38,8 @@ module Make (Key : Key) : S with type key = Key.t = struct
   let foldi t ~init ~f = fold t ~init ~f:(fun ~key ~data acc -> f key data acc)
 
   let values t = foldi t ~init:[] ~f:(fun _ v l -> v :: l) |> List.rev
+
+  let keys t = foldi t ~init:[] ~f:(fun k _ l -> k :: l) |> List.rev
 
   let of_list =
     let rec loop acc = function

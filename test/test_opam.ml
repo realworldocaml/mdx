@@ -11,7 +11,7 @@ module Url = struct
     let make_test ~url_src ~expected () =
       let test_name = Printf.sprintf "Url.from_opam: %s" url_src in
       let test_fun () =
-        let url = OpamFile.URL.create (OpamUrl.parse url_src) in
+        let url = OpamUrl.parse url_src in
         let actual = Duniverse_lib.Opam.Url.from_opam url in
         Alcotest.(check Testable.Url.t) test_name expected actual
       in
