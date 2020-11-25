@@ -14,7 +14,7 @@ homepage: "https://github.com/ocamllabs/duniverse"
 bug-reports: "https://github.com/ocamllabs/duniverse/issues"
 depends: [
   "dune" {>= "2.0"}
-  "ocaml" {>= "4.08.0"}
+  "ocaml" {>= "4.08.0" & < "4.12"}
   "dune-build-info"
   "bos"
   "cmdliner"
