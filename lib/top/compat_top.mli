@@ -2,11 +2,6 @@ open Mdx.Migrate_ast
 
 val try_finally : always:(unit -> unit) -> (unit -> 'a) -> 'a
 
-val map_error_loc :
-  f:(Location.t -> Location.t) -> Location.error -> Location.error
-
-val error_of_exn : exn -> Location.error option
-
 val get_id_in_path : Path.t -> Ident.t
 
 val lookup_type : Longident.t -> Env.t -> Path.t

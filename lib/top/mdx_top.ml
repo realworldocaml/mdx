@@ -78,9 +78,6 @@ module Lexbuf = struct
     | Parser.SEMISEMI -> lexbuf.Lexing.lex_last_action
     | _ -> assert false
 
-  let shift_location_error start =
-    map_error_loc ~f:(shift_toplevel_location ~start)
-
   let position_mapper start =
     let open Ast_mapper in
     let start = { start with pos_fname = toplevel_fname } in
@@ -113,12 +110,6 @@ module Phrase = struct
       match Parse.toplevel_phrase lexbuf with
       | phrase -> Result.Ok phrase
       | exception exn ->
-          let exn =
-            match error_of_exn exn with
-            | None -> raise exn
-            | Some error ->
-                Location.Error (Lexbuf.shift_location_error startpos error)
-          in
           ( if lexbuf.Lexing.lex_last_action <> Lexbuf.semisemi_action then
             let rec aux () =
               match Lexer.token lexbuf with
@@ -409,7 +400,7 @@ let eval t cmd =
     | exception exn ->
         errors := true;
         restore ();
-        Location.report_exception ppf exn );
+        Ppxlib.Location.report_exception ppf exn );
     Format.pp_print_flush ppf ();
     capture ();
     if

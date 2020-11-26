@@ -6,27 +6,6 @@ let try_finally ~always f = Misc.try_finally f ~always
 let try_finally ~always f = Misc.try_finally f always
 #endif
 
-let map_error_loc ~f (error : Location.error) =
-#if OCAML_VERSION >= (4, 8, 0)
-  let f_msg (msg : Location.msg) =
-    { msg with loc = f msg.loc}
-  in
-  { error with main = f_msg error.main;
-                sub = List.map f_msg error.sub; }
-#else
-  let rec aux (error : Location.error) =
-     {error with sub = List.map aux error.sub;
-                 loc = f error.loc}
-  in
-  aux error
-#endif
-
-let error_of_exn exn =
-  match Location.error_of_exn exn with
-  | None -> None
-  | Some `Already_displayed -> None
-  | Some (`Ok error) -> Some error
-
 let rec get_id_in_path = function
   | Path.Pident id -> id
 #if OCAML_VERSION >= (4, 8, 0)

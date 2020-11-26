@@ -99,15 +99,4 @@ module Location = struct
   let mknoloc = Location.mknoloc
 
   let formatter_for_warnings = Location.formatter_for_warnings
-
-  type msg = Location.msg
-
-  type report = Location.report =
-    { kind : Location.report_kind; main : msg; sub : msg list }
-
-  type error = report
-
-  let error_of_exn = Location.error_of_exn
-
-  exception Error = Location.Error
 end
