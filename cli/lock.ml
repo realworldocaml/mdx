@@ -50,11 +50,11 @@ let check_repo_config ~global_state ~switch_state =
               Fmt.(styled `Bold string)
               "opam monorepo lock" Config.duniverse_opam_repo))
 
-let calculate_opam ~build_only ~local_paths ~local_packages =
+let calculate_opam ~build_only ~local_opam_files ~local_packages =
   OpamGlobalState.with_ `Lock_none (fun global_state ->
       OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
           check_repo_config ~global_state ~switch_state;
-          Opam_solve.calculate ~build_only ~local_paths ~local_packages switch_state))
+          Opam_solve.calculate ~build_only ~local_opam_files ~local_packages switch_state))
 
 let filter_local_packages ~explicit_list local_paths =
   let res =
@@ -83,6 +83,27 @@ let local_packages ~recurse ~explicit_list repo =
       Repo.local_packages ~recurse:true repo >>= fun local_paths ->
       filter_local_packages ~explicit_list local_paths
 
+let read_opam fpath =
+  let filename = OpamFile.make (OpamFilename.of_string (Fpath.to_string fpath)) in
+  Bos.OS.File.with_ic fpath (fun ic () -> OpamFile.OPAM.read_from_channel ~filename ic) ()
+
+let local_paths_to_opam_map local_paths =
+  let open Result.O in
+  let bindings = String.Map.bindings local_paths in
+  Result.List.map bindings ~f:(fun (name, (version, path)) ->
+      read_opam path >>| fun opam_file ->
+      let name = OpamPackage.Name.of_string name in
+      let version =
+        OpamPackage.Version.of_string (Option.value ~default:Types.Opam.default_version version)
+      in
+      (name, (version, opam_file)))
+  >>| OpamPackage.Name.Map.of_list
+
+let root_depexts local_opam_files =
+  OpamPackage.Name.Map.fold
+    (fun _pkg (_version, opam_file) acc -> OpamFile.OPAM.depexts opam_file :: acc)
+    local_opam_files []
+
 let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only) (`Local_packages lp) () =
   let open Rresult.R.Infix in
   local_packages ~recurse ~explicit_list:lp repo >>= fun local_paths ->
@@ -91,12 +112,14 @@ let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only) (`Local_pa
     List.map ~f:(fun (name, (version, _)) -> { name; version }) (String.Map.bindings local_paths)
   in
   check_root_packages ~local_packages >>= fun () ->
+  local_paths_to_opam_map local_paths >>= fun local_opam_files ->
   Repo.lockfile ~local_packages repo >>= fun lockfile_path ->
-  calculate_opam ~build_only ~local_paths ~local_packages >>= fun package_summaries ->
+  calculate_opam ~build_only ~local_opam_files ~local_packages >>= fun package_summaries ->
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
   compute_duniverse ~package_summaries >>= resolve_ref >>= fun duniverse ->
   let root_packages = String.Map.keys local_paths in
-  let lockfile = Lockfile.create ~root_packages ~package_summaries ~duniverse () in
+  let root_depexts = root_depexts local_opam_files in
+  let lockfile = Lockfile.create ~root_packages ~package_summaries ~root_depexts ~duniverse () in
   Lockfile.save ~file:lockfile_path lockfile >>= fun () ->
   Common.Logs.app (fun l ->
       l "Wrote lockfile with %a entries to %a. You can now run %a to fetch their sources."
