@@ -23,6 +23,8 @@ module List = struct
     in
     aux [] l
 
+  let rec iter ~f l = match l with [] -> Ok () | hd :: tl -> f hd >>= fun () -> iter ~f tl
+
   let all =
     let rec loop acc = function
       | [] -> Ok (List.rev acc)

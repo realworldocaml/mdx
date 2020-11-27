@@ -17,6 +17,8 @@ val map_error : f:('a -> 'b) -> ('ok, 'a) t -> ('ok, 'b) t
 module List : sig
   val map : f:('a -> ('b, 'err) t) -> 'a list -> ('b list, 'err) t
 
+  val iter : f:('a -> (unit, 'err) t) -> 'a list -> (unit, 'err) t
+
   val all : ('a, 'error) t list -> ('a list, 'error) t
 
   val fold_left : 'a list -> f:('acc -> 'a -> ('acc, 'c) t) -> init:'acc -> ('acc, 'c) t
