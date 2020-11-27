@@ -86,26 +86,9 @@ let get_opam_info ~switch_state pkg =
 
 (* TODO catch exceptions and turn to error *)
 
-let read_opam fpath =
-  let filename = OpamFile.make (OpamFilename.of_string (Fpath.to_string fpath)) in
-  Bos.OS.File.with_ic fpath (fun ic () -> OpamFile.OPAM.read_from_channel ~filename ic) ()
-
-let local_paths_to_opam_map local_paths =
-  let open Result.O in
-  let bindings = String.Map.bindings local_paths in
-  Result.List.map bindings ~f:(fun (name, (version, path)) ->
-      read_opam path >>| fun opam_file ->
-      let name = OpamPackage.Name.of_string name in
-      let version =
-        OpamPackage.Version.of_string (Option.value ~default:Types.Opam.default_version version)
-      in
-      (name, (version, opam_file)))
-  >>| OpamPackage.Name.Map.of_list
-
-let calculate ~build_only ~local_paths ~local_packages switch_state =
+let calculate ~build_only ~local_opam_files ~local_packages switch_state =
   let open Rresult.R.Infix in
-  local_paths_to_opam_map local_paths >>= fun local_packages_opam ->
-  calculate_raw ~build_only ~local_packages:local_packages_opam switch_state >>= fun deps ->
+  calculate_raw ~build_only ~local_packages:local_opam_files switch_state >>= fun deps ->
   Logs.app (fun l ->
       l "%aFound %a opam dependencies for %a." Pp.Styled.header ()
         Fmt.(styled `Green int)

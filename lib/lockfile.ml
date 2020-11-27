@@ -165,20 +165,32 @@ module Duniverse_dirs = struct
   let field = Extra_field.make ~name:"duniverse-dirs" ~to_opam_value ~from_opam_value
 end
 
+module Depexts = struct
+  type t = (OpamSysPkg.Set.t * OpamTypes.filter) list
+
+  let compare_elm (pkg_set, filter) (pkg_set', filter') =
+    let c = OpamSysPkg.Set.compare pkg_set pkg_set' in
+    if c = 0 then compare filter filter' else c
+
+  let from_root_packages_depexts l = List.concat l |> List.sort_uniq ~cmp:compare_elm
+end
+
 type t = {
   version : Version.t;
   root_packages : Root_packages.t;
   depends : Depends.t;
   pin_depends : Pin_depends.t;
   duniverse_dirs : Duniverse_dirs.t;
+  depexts : Depexts.t;
 }
 
-let create ~root_packages ~package_summaries ~duniverse () =
+let create ~root_packages ~package_summaries ~root_depexts ~duniverse () =
   let version = Version.current in
   let depends = Depends.from_package_summaries package_summaries in
   let pin_depends = Pin_depends.from_duniverse duniverse in
   let duniverse_dirs = Duniverse_dirs.from_duniverse duniverse in
-  { version; root_packages; depends; pin_depends; duniverse_dirs }
+  let depexts = Depexts.from_root_packages_depexts root_depexts in
+  { version; root_packages; depends; pin_depends; duniverse_dirs; depexts }
 
 let url_to_duniverse_url url =
   let url_res = Duniverse.Repo.Url.from_opam_url url in
@@ -214,6 +226,7 @@ let to_opam (t : t) =
   |> with_synopsis "opam-monorepo generated lockfile"
   |> with_depends (Depends.to_filtered_formula t.depends)
   |> with_pin_depends (Pin_depends.sort t.pin_depends)
+  |> with_depexts t.depexts
   |> Extra_field.add Version.field t.version
   |> Extra_field.add Root_packages.field t.root_packages
   |> Extra_field.add Duniverse_dirs.field t.duniverse_dirs
@@ -225,7 +238,8 @@ let from_opam ?file opam =
   Depends.from_filtered_formula (OpamFile.OPAM.depends opam) >>= fun depends ->
   let pin_depends = OpamFile.OPAM.pin_depends opam in
   Extra_field.get ?file Duniverse_dirs.field opam >>= fun duniverse_dirs ->
-  Ok { version; root_packages; depends; pin_depends; duniverse_dirs }
+  let depexts = OpamFile.OPAM.depexts opam in
+  Ok { version; root_packages; depends; pin_depends; duniverse_dirs; depexts }
 
 let save ~file t =
   let open Result.O in
