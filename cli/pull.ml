@@ -70,15 +70,18 @@ let run (`Yes yes) (`Repo repo) (`Duniverse_repos duniverse_repos) () =
 
 let info =
   let open Cmdliner in
-  let doc = "fetch the latest archives of the vendored libraries" in
+  let doc = "fetch the dependencies sources as specified by the lockfile" in
   let exits = Term.default_exits in
   let man =
     [
       `S Manpage.s_description;
       `P
-        "This command reads the Git metadata calculated with $(i,duniverse lock) and fetches them \
-         from their respective Git remotes and stores them in the $(b,duniverse/) directory in the \
-         repository.";
+        "This command fetches the sources of the dependencies according to the lockfile calculated \
+         with $(b,opam monorepo lock), stores them in the $(b,duniverse/) directory in the \
+         repository and set it up so they are treated as vendored code by dune.";
+      `P
+        "The previous content of the $(b,duniverse/) folder is deleted upon calling this command, \
+         unless a subset of repositories to pull is explicitly passed on the command line.";
     ]
   in
   Term.info "pull" ~doc ~exits ~man

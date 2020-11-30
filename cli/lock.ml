@@ -155,7 +155,7 @@ let packages =
 
 let info =
   let exits = Term.default_exits in
-  let doc = Fmt.strf "analyse opam files to generate an initial lock file" in
+  let doc = Fmt.strf "analyse opam files to generate a project-wide lock file" in
   let man =
     [
       `S Manpage.s_description;

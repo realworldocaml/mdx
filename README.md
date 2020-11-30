@@ -29,7 +29,7 @@ DESCRIPTION
        required to build a project using the dune build tool.
 
        It works by analysing opam package metadata and calculating a set of
-       git tags that can be cloned into the local repository into a
+       URLs that can be downloaded or cloned into the local repository into a
        duniverse/ subdirectory. Once the external code has been pulled into
        the repository, a single dune build command is sufficient to build the
        whole project in a standalone fashion, without opam being required.
@@ -44,10 +44,10 @@ DESCRIPTION
 
 COMMANDS
        lock
-           analyse opam files to generate an initial lock file
+           analyse opam files to generate a project-wide lock file
 
        pull
-           fetch the latest archives of the vendored libraries
+           fetch the dependencies sources as specified by the lockfile
 
 COMMON OPTIONS
        --help[=FMT] (default=auto)
