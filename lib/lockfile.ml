@@ -56,7 +56,17 @@ end
 module Version = struct
   type t = string
 
-  let current = "0.1.0"
+  let current = "0.1"
+
+  let compatible t =
+    if String.equal t current then Ok ()
+    else
+      Error
+        (`Msg
+          (Printf.sprintf
+             "Incompatible opam-monorepo lockfile version %s. Please upgrade your opam-monorepo \
+              plugin."
+             t))
 
   let to_opam_value t = OpamTypes.String (Pos.default, t)
 
@@ -253,6 +263,7 @@ let to_opam (t : t) =
 let from_opam ?file opam =
   let open Result.O in
   Extra_field.get ?file Version.field opam >>= fun version ->
+  Version.compatible version >>= fun () ->
   Extra_field.get ?file Root_packages.field opam >>= fun root_packages ->
   Depends.from_filtered_formula (OpamFile.OPAM.depends opam) >>= fun depends ->
   let pin_depends = OpamFile.OPAM.pin_depends opam in
