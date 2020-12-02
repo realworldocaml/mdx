@@ -17,8 +17,8 @@ module Testable = struct
   end
 end
 
-let summary_factory ?(name = "") ?(version = "") ?dev_repo ?url_src () =
-  { Opam.Package_summary.name; version; dev_repo; url_src }
+let summary_factory ?(name = "") ?(version = "") ?dev_repo ?url_src ?(hashes = []) () =
+  { Opam.Package_summary.name; version; dev_repo; url_src; hashes }
 
 module Repo = struct
   module Package = struct
@@ -43,16 +43,25 @@ module Repo = struct
           ~summary:(summary_factory ?dev_repo:None ())
           ~expected:(Ok None) ();
         make_test ~name:"Regular"
-          ~summary:(summary_factory ~dev_repo:"d" ~url_src:(Other "u") ~name:"y" ~version:"v" ())
+          ~summary:
+            (summary_factory ~dev_repo:"d" ~url_src:(Other "u") ~name:"y" ~version:"v" ~hashes:[]
+               ())
           ~expected:
-            (Ok (Some { opam = { name = "y"; version = "v" }; dev_repo = "d"; url = Other "u" }))
+            (Ok
+               (Some
+                  {
+                    opam = { name = "y"; version = "v" };
+                    dev_repo = "d";
+                    url = Other "u";
+                    hashes = [];
+                  }))
           ();
         make_test ~name:"Uses default branch when no tag"
           ~get_default_branch:(function "r" -> Ok "master" | _ -> assert false)
           ~summary:
             (summary_factory ~dev_repo:"d"
                ~url_src:(Git { repo = "r"; ref = None })
-               ~name:"y" ~version:"v" ())
+               ~name:"y" ~version:"v" ~hashes:[] ())
           ~expected:
             (Ok
                (Some
@@ -60,15 +69,16 @@ module Repo = struct
                     opam = { name = "y"; version = "v" };
                     dev_repo = "d";
                     url = Git { repo = "r"; ref = "master" };
+                    hashes = [];
                   }))
           ();
       ]
   end
 
   let package_factory ?(name = "") ?(version = "") ?(dev_repo = "")
-      ?(url = Duniverse.Repo.Url.Other "") () =
+      ?(url = Duniverse.Repo.Url.Other "") ?(hashes = []) () =
     let open Duniverse.Repo.Package in
-    { opam = { name; version }; dev_repo; url }
+    { opam = { name; version }; dev_repo; url; hashes }
 
   let test_from_packages =
     let make_test ~name ~dev_repo ~packages ~expected () =
@@ -82,30 +92,46 @@ module Repo = struct
     in
     [
       make_test ~name:"Simple" ~dev_repo:"d"
-        ~packages:[ package_factory ~name:"p" ~version:"v" ~url:(Other "u") () ]
+        ~packages:[ package_factory ~name:"p" ~version:"v" ~url:(Other "u") ~hashes:[] () ]
         ~expected:
-          { dir = "d"; url = Other "u"; provided_packages = [ { name = "p"; version = "v" } ] }
+          {
+            dir = "d";
+            url = Other "u";
+            hashes = [];
+            provided_packages = [ { name = "p"; version = "v" } ];
+          }
         ();
       make_test ~name:"Uses repository name as dir" ~dev_repo:"https://github.com/org/repo.git"
-        ~packages:[ package_factory ~name:"p" ~version:"v" ~url:(Other "u") () ]
+        ~packages:[ package_factory ~name:"p" ~version:"v" ~url:(Other "u") ~hashes:[] () ]
         ~expected:
-          { dir = "repo"; url = Other "u"; provided_packages = [ { name = "p"; version = "v" } ] }
+          {
+            dir = "repo";
+            url = Other "u";
+            hashes = [];
+            provided_packages = [ { name = "p"; version = "v" } ];
+          }
         ();
       make_test ~name:"Expection for dune" ~dev_repo:"https://github.com/ocaml/dune.git"
-        ~packages:[ package_factory ~name:"p" ~version:"v" ~url:(Other "u") () ]
+        ~packages:[ package_factory ~name:"p" ~version:"v" ~url:(Other "u") ~hashes:[] () ]
         ~expected:
-          { dir = "dune_"; url = Other "u"; provided_packages = [ { name = "p"; version = "v" } ] }
+          {
+            dir = "dune_";
+            url = Other "u";
+            hashes = [];
+            provided_packages = [ { name = "p"; version = "v" } ];
+          }
         ();
       make_test ~name:"Add all to provided packages" ~dev_repo:"d"
         ~packages:
           [
-            package_factory ~name:"d" ~version:"zdev" ~url:(Other "u") ();
-            package_factory ~name:"d-lwt" ~version:"zdev" ~url:(Other "u") ();
+            package_factory ~name:"d" ~version:"zdev" ~url:(Other "u") ~hashes:[] ();
+            package_factory ~name:"d-lwt" ~version:"zdev" ~url:(Other "u") ~hashes:[] ();
           ]
         ~expected:
           {
             dir = "d";
             url = Other "u";
+            hashes = [];
             provided_packages =
               [ { name = "d"; version = "zdev" }; { name = "d-lwt"; version = "zdev" } ];
           }
@@ -113,13 +139,14 @@ module Repo = struct
       make_test ~name:"Pick URL from highest version package" ~dev_repo:"d"
         ~packages:
           [
-            package_factory ~name:"d" ~version:"1" ~url:(Other "u1") ();
-            package_factory ~name:"d-lwt" ~version:"2" ~url:(Other "u2") ();
+            package_factory ~name:"d" ~version:"1" ~url:(Other "u1") ~hashes:[] ();
+            package_factory ~name:"d-lwt" ~version:"2" ~url:(Other "u2") ~hashes:[] ();
           ]
         ~expected:
           {
             dir = "d";
             url = Other "u2";
+            hashes = [];
             provided_packages = [ { name = "d"; version = "1" }; { name = "d-lwt"; version = "2" } ];
           }
         ();
@@ -145,16 +172,25 @@ let test_from_package_summaries =
       ~summaries:[ summary_factory ~dev_repo:"d" ~url_src:(Other "u") ~name:"dune" () ]
       ~expected:(Ok []) ();
     make_test ~name:"Simple"
-      ~summaries:[ summary_factory ~name:"x" ~version:"v" ~url_src:(Other "u") ~dev_repo:"d" () ]
+      ~summaries:
+        [ summary_factory ~name:"x" ~version:"v" ~url_src:(Other "u") ~dev_repo:"d" ~hashes:[] () ]
       ~expected:
         (Ok
-           [ { dir = "d"; url = Other "u"; provided_packages = [ { name = "x"; version = "v" } ] } ])
+           [
+             {
+               dir = "d";
+               url = Other "u";
+               hashes = [];
+               provided_packages = [ { name = "x"; version = "v" } ];
+             };
+           ])
       ();
     make_test ~name:"Aggregates repos"
       ~summaries:
         [
-          summary_factory ~name:"y" ~version:"v" ~url_src:(Other "u") ~dev_repo:"d" ();
-          summary_factory ~name:"y-lwt" ~version:"v" ~url_src:(Other "u") ~dev_repo:"d" ();
+          summary_factory ~name:"y" ~version:"v" ~url_src:(Other "u") ~dev_repo:"d" ~hashes:[] ();
+          summary_factory ~name:"y-lwt" ~version:"v" ~url_src:(Other "u") ~dev_repo:"d" ~hashes:[]
+            ();
         ]
       ~expected:
         (Ok
@@ -162,6 +198,7 @@ let test_from_package_summaries =
              {
                dir = "d";
                url = Other "u";
+               hashes = [];
                provided_packages =
                  [ { name = "y-lwt"; version = "v" }; { name = "y"; version = "v" } ];
              };
