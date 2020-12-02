@@ -10,14 +10,14 @@ authors: [
   "Anil Madhavapeddy" "Nathan Rebours" "Lucas Pluvinage" "Jules Aguillon"
 ]
 license: "ISC"
-homepage: "https://github.com/ocamllabs/duniverse"
-bug-reports: "https://github.com/ocamllabs/duniverse/issues"
+homepage: "https://github.com/ocamllabs/opam-monorepo"
+bug-reports: "https://github.com/ocamllabs/opam-monorepo/issues"
 depends: [
   "dune" {>= "2.0"}
   "ocaml" {>= "4.08.0" & < "4.12"}
   "conf-m4"
   "conf-pkg-config"
 ]
-dev-repo: "git+https://github.com/ocamllabs/duniverse.git"
+dev-repo: "git+https://github.com/ocamllabs/opam-monorepo.git"
 build: [ "dune" "build" "-p" name "-j" jobs "@install" "@runtest" {with-test} "@doc" {with-doc} ]
 flags: [ plugin ]

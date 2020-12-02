@@ -2,7 +2,7 @@
 (generate_opam_files true)
 (name opam-monorepo)
 
-(source (github ocamllabs/duniverse))
+(source (github ocamllabs/opam-monorepo))
 (license ISC)
 (authors "Anil Madhavapeddy" "Nathan Rebours" "Lucas Pluvinage" "Jules Aguillon")
 (maintainers "anil@recoil.org")
