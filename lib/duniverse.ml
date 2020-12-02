@@ -73,16 +73,17 @@ module Repo = struct
   end
 
   module Package = struct
-    type t = { opam : Opam.t; dev_repo : string; url : unresolved Url.t }
+    type t = { opam : Opam.t; dev_repo : string; url : unresolved Url.t; hashes : OpamHash.t list }
 
     let equal t t' =
       Opam.equal t.opam t'.opam
       && String.equal t.dev_repo t'.dev_repo
       && Url.equal Git.Ref.equal t.url t'.url
 
-    let pp fmt { opam; dev_repo; url } =
-      Format.fprintf fmt "@[<hov 2>{ opam = %a;@ upstream = %S;@ ref = %a }@]" Opam.raw_pp opam
-        dev_repo (Url.pp Git.Ref.pp) url
+    let pp fmt { opam; dev_repo; url; hashes } =
+      let open Pp_combinators.Ocaml in
+      Format.fprintf fmt "@[<hov 2>{ opam = %a;@ dev_repo = %a;@ url = %a;@ hashes = %a }@]"
+        Opam.raw_pp opam string dev_repo (Url.pp Git.Ref.pp) url (list O.Pp.hash) hashes
 
     let from_package_summary ~get_default_branch ps =
       let open O.Package_summary in
@@ -97,11 +98,16 @@ module Repo = struct
       match ps with
       | _ when is_base_package ps -> Ok None
       | { url_src = None; _ } | { dev_repo = None; _ } -> Ok None
-      | { url_src = Some url_src; name; version; dev_repo = Some dev_repo } ->
-          url url_src >>= fun url -> Ok (Some { opam = { name; version }; dev_repo; url })
+      | { url_src = Some url_src; name; version; dev_repo = Some dev_repo; hashes } ->
+          url url_src >>= fun url -> Ok (Some { opam = { name; version }; dev_repo; url; hashes })
   end
 
-  type 'ref t = { dir : string; url : 'ref Url.t; provided_packages : Opam.t list }
+  type 'ref t = {
+    dir : string;
+    url : 'ref Url.t;
+    hashes : OpamHash.t list;
+    provided_packages : Opam.t list;
+  }
 
   let log_url_selection ~dev_repo ~packages ~highest_version_package =
     let url_to_string : unresolved Url.t -> string = function
@@ -120,7 +126,7 @@ module Repo = struct
            The url for the highest versioned package was selected: %a" (Dev_repo.to_string dev_repo)
           (Fmt.list ~sep pp_package) packages pp_package highest_version_package)
 
-  module Unresolved_url_set = Set.Make (struct
+  module Unresolved_url_map = Map.Make (struct
     type t = unresolved Url.t
 
     let compare = Url.compare Git.Ref.compare
@@ -133,11 +139,11 @@ module Repo = struct
     let provided_packages = List.map packages ~f:(fun p -> p.Package.opam) in
     let dir = dir_name_from_dev_repo dev_repo in
     let urls =
-      let add acc p = Unresolved_url_set.add p.Package.url acc in
-      List.fold_left packages ~init:Unresolved_url_set.empty ~f:add |> Unresolved_url_set.elements
+      let add acc p = Unresolved_url_map.set acc p.Package.url p.Package.hashes in
+      List.fold_left packages ~init:Unresolved_url_map.empty ~f:add |> Unresolved_url_map.bindings
     in
     match urls with
-    | [ url ] -> { dir; url; provided_packages }
+    | [ (url, hashes) ] -> { dir; url; hashes; provided_packages }
     | _ ->
         (* If packages from the same repo were resolved to different URLs, we need to pick
            a single one. Here we decided to go with the one associated with the package
@@ -151,18 +157,21 @@ module Repo = struct
               OpamVersionCompare.compare p.Package.opam.version p'.opam.version)
         in
         log_url_selection ~dev_repo ~packages ~highest_version_package;
-        { dir; url = highest_version_package.url; provided_packages }
+        let url = highest_version_package.url in
+        let hashes = highest_version_package.hashes in
+        { dir; url; hashes; provided_packages }
 
   let equal equal_ref t t' =
-    let { dir; url; provided_packages } = t in
-    let { dir = dir'; url = url'; provided_packages = provided_packages' } = t' in
+    let { dir; url; hashes; provided_packages } = t in
+    let { dir = dir'; url = url'; hashes = hashes'; provided_packages = provided_packages' } = t' in
     String.equal dir dir' && Url.equal equal_ref url url'
+    && List.equal O.Hash.equal hashes hashes'
     && List.equal Opam.equal provided_packages provided_packages'
 
-  let pp pp_ref fmt { dir; url; provided_packages } =
+  let pp pp_ref fmt { dir; url; hashes; provided_packages } =
     let open Pp_combinators.Ocaml in
-    Format.fprintf fmt "@[<hov 2>{ dir = %a;@ url = %a;@ provided_packages = %a }@]" string dir
-      (Url.pp pp_ref) url (list Opam.raw_pp) provided_packages
+    Format.fprintf fmt "@[<hov 2>{ dir = %a;@ url = %a;@ hashes = %a;@ provided_packages = %a }@]"
+      string dir (Url.pp pp_ref) url (list O.Pp.hash) hashes (list Opam.raw_pp) provided_packages
 
   let resolve ~resolve_ref ({ url; _ } as t) =
     let open Result.O in

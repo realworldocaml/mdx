@@ -133,19 +133,32 @@ module Pin_depends = struct
 end
 
 module Duniverse_dirs = struct
-  type t = string OpamUrl.Map.t
+  type t = (string * OpamHash.t list) OpamUrl.Map.t
 
   let from_duniverse l =
     let open Duniverse.Repo in
-    List.fold_left l ~init:OpamUrl.Map.empty ~f:(fun acc { dir; url; _ } ->
-        OpamUrl.Map.add (Url.to_opam_url url) dir acc)
+    List.fold_left l ~init:OpamUrl.Map.empty ~f:(fun acc { dir; url; hashes; _ } ->
+        OpamUrl.Map.add (Url.to_opam_url url) (dir, hashes) acc)
+
+  let hash_to_opam_value hash : OpamTypes.value = String (Pos.default, OpamHash.to_string hash)
+
+  let hash_from_opam_value value =
+    match (value : OpamTypes.value) with
+    | String (pos, s) -> (
+        match OpamHash.of_string_opt s with
+        | Some hash -> Ok hash
+        | None -> Pos.errorf ~pos "Invalid hash: %s" s )
+    | _ -> value_errorf ~value "Expected a hash string representation"
 
   let from_opam_value value =
     let open Result.O in
     let elm_from_opam_value value =
       match (value : OpamTypes.value) with
-      | List (_, [ String (_, url); String (_, dir) ]) -> Ok (OpamUrl.of_string url, dir)
-      | _ -> value_errorf ~value "Expected a pair [ \"repository name\" \"url\" ]"
+      | List (_, [ String (_, url); String (_, dir) ]) -> Ok (OpamUrl.of_string url, (dir, []))
+      | List (_, [ String (_, url); String (_, dir); List (_, hashes) ]) ->
+          Result.List.map ~f:hash_from_opam_value hashes >>= fun hashes ->
+          Ok (OpamUrl.of_string url, (dir, hashes))
+      | _ -> value_errorf ~value "Expected a list [ \"url\" \"repo name\" [<hashes>] ]"
     in
     match (value : OpamTypes.value) with
     | List (_, l) ->
@@ -153,9 +166,14 @@ module Duniverse_dirs = struct
         Ok (OpamUrl.Map.of_list bindings)
     | _ -> value_errorf ~value "Expected a list"
 
-  let one_to_opam_value (url, dir) =
+  let one_to_opam_value (url, (dir, hashes)) =
     let open OpamTypes in
-    List (Pos.default, [ String (Pos.default, OpamUrl.to_string url); String (Pos.default, dir) ])
+    let url = String (Pos.default, OpamUrl.to_string url) in
+    let dir = String (Pos.default, dir) in
+    let hashes = List.map ~f:hash_to_opam_value hashes in
+    match hashes with
+    | [] -> List (Pos.default, [ url; dir ])
+    | _ -> List (Pos.default, [ url; dir; List (Pos.default, hashes) ])
 
   let to_opam_value t =
     let open OpamTypes in
@@ -215,9 +233,10 @@ let to_duniverse { duniverse_dirs; pin_depends; _ } =
               (OpamUrl.to_string url) Duniverse_dirs.field.name
           in
           Error (`Msg msg)
-      | Some dir ->
+      | Some (dir, hashes) ->
           let provided_packages = List.map packages ~f:Duniverse.Opam.from_opam in
-          url_to_duniverse_url url >>= fun url -> Ok { Duniverse.Repo.dir; url; provided_packages })
+          url_to_duniverse_url url >>= fun url ->
+          Ok { Duniverse.Repo.dir; url; hashes; provided_packages })
 
 let to_opam (t : t) =
   let open OpamFile.OPAM in

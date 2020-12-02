@@ -3,11 +3,11 @@ open Import
 let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
   let open Result.O in
   let open Duniverse.Repo in
-  let { dir; url; _ } = src_dep in
+  let { dir; url; hashes; _ } = src_dep in
   let output_dir = Fpath.(duniverse_dir / dir) in
   let url = Url.to_opam_url url in
   let open OpamProcess.Job.Op in
-  Opam.pull_tree ~url ~dir:output_dir global_state @@| fun result ->
+  Opam.pull_tree ~url ~hashes ~dir:output_dir global_state @@| fun result ->
   result >>= fun () ->
   if trim_clone then
     Bos.OS.Dir.delete ~must_exist:false ~recurse:true Fpath.(output_dir / ".git") >>= fun () ->

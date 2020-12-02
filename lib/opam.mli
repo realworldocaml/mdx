@@ -13,7 +13,13 @@ module Url : sig
 end
 
 module Package_summary : sig
-  type t = { name : string; version : string; url_src : Url.t option; dev_repo : string option }
+  type t = {
+    name : string;
+    version : string;
+    url_src : Url.t option;
+    hashes : OpamHash.t list;
+    dev_repo : string option;
+  }
 
   val equal : t -> t -> bool
 
@@ -27,8 +33,14 @@ module Package_summary : sig
   val is_base_package : t -> bool
 end
 
+module Hash : sig
+  val equal : OpamHash.t -> OpamHash.t -> bool
+end
+
 module Pp : sig
   val package : OpamPackage.t Fmt.t
+
+  val hash : OpamHash.t Fmt.t
 end
 
 val depends_on_dune : OpamTypes.filtered_formula -> bool
@@ -36,6 +48,7 @@ val depends_on_dune : OpamTypes.filtered_formula -> bool
 
 val pull_tree :
   url:OpamUrl.t ->
+  hashes:OpamHash.t list ->
   dir:Fpath.t ->
   OpamStateTypes.unlocked OpamStateTypes.global_state ->
   (unit, [> `Msg of string ]) result OpamProcess.job

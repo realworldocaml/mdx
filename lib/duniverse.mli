@@ -34,7 +34,12 @@ module Repo : sig
         a commit hash. Returns an error on git URLs with no such ref. *)
   end
 
-  type 'ref t = { dir : string; url : 'ref Url.t; provided_packages : Opam.t list }
+  type 'ref t = {
+    dir : string;
+    url : 'ref Url.t;
+    hashes : OpamHash.t list;
+    provided_packages : Opam.t list;
+  }
   (** Type of dependencies to clone in the duniverse *)
 
   val equal : ('ref -> 'ref -> bool) -> 'ref t -> 'ref t -> bool
@@ -46,7 +51,7 @@ module Repo : sig
   val pp : 'ref Fmt.t -> 'ref t Fmt.t
 
   module Package : sig
-    type t = { opam : Opam.t; dev_repo : string; url : unresolved Url.t }
+    type t = { opam : Opam.t; dev_repo : string; url : unresolved Url.t; hashes : OpamHash.t list }
 
     val equal : t -> t -> bool
 
