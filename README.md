@@ -77,7 +77,7 @@ regular opam workflow depending on the situation.
 
 ## Monorepo projects
 
-If you wish to use `opam-monorepo` to manage your dependencies, we suggest that you git verison the
+If you wish to use `opam-monorepo` to manage your dependencies, we suggest that you git version the
 lockfile but not the content of the `duniverse/`.
 
 If you use [ocaml-ci](https://github.com/ocurrent/ocaml-ci) and have an opam-monorepo lockfile at
