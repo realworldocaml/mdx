@@ -2,7 +2,7 @@
 
 `opam-monorepo` is an opam plugin designed to assemble standalone dune workspaces
 with your projects and all of their dependencies, letting you build it all from scratch
-using only `dune`.
+using only `dune` and `ocaml`.
 
 ## Installation
 
