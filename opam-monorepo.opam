@@ -15,8 +15,6 @@ bug-reports: "https://github.com/ocamllabs/opam-monorepo/issues"
 depends: [
   "dune" {>= "2.0"}
   "ocaml" {>= "4.08.0" & < "4.12"}
-  "conf-m4"
-  "conf-pkg-config"
 ]
 dev-repo: "git+https://github.com/ocamllabs/opam-monorepo.git"
 build: [ "dune" "build" "-p" name "-j" jobs "@install" "@runtest" {with-test} "@doc" {with-doc} ]
