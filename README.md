@@ -75,6 +75,11 @@ opam-repository) thanks to the `pin-depends`.
 You can use that property to your advantage by allowing one to choose between a "monorepo" or
 regular opam workflow depending on the situation.
 
+### opam monorepo pull
+
+The `pull` command fetches the sources using the URLs in the lockfile. It benefits from the opam
+cache but its outcome does not depend on your opam configuration.
+
 ## Monorepo projects
 
 If you wish to use `opam-monorepo` to manage your dependencies, we suggest that you git version the
