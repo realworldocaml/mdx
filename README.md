@@ -70,7 +70,7 @@ your project's dependencies.
 
 The generated lockfile is meant to be compatible with `opam` in such a way that running `opam
 install . --locked` should give you the same versions you would using `opam monorepo pull` in
-a reproducible way (i.e. independantly of any change that might have happened on the upstream
+a reproducible way (i.e. independently of any change that might have happened on the upstream
 opam-repository) thanks to the `pin-depends`.
 You can use that property to your advantage by allowing one to choose between a "monorepo" or
 regular opam workflow depending on the situation.
