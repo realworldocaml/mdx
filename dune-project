@@ -1,4 +1,4 @@
-(lang dune 2.0)
+(lang dune 2.7)
 (generate_opam_files true)
 (name opam-monorepo)
 
