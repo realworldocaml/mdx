@@ -144,18 +144,6 @@
  (action (diff environment-variable-set/test-case.md environment-variable-set.actual)))
 
 (rule
- (target environment-variable-unset.actual)
- (deps (package mdx) (source_tree environment-variable-unset))
- (action
-  (with-stdout-to %{target}
-   (chdir environment-variable-unset
-    (run ocaml-mdx test --output - test-case.md)))))
-
-(rule
- (alias runtest)
- (action (diff environment-variable-unset/test-case.md environment-variable-unset.actual)))
-
-(rule
  (target envs.actual)
  (deps (package mdx) (source_tree envs))
  (action
