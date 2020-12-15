@@ -27,6 +27,7 @@ depends: [
   "fmt"
   "cppo" {build}
   "astring"
+  "atdgen"
   "logs"
   "cmdliner" {>= "1.0.0"}
   "re" {>= "1.7.2"}
