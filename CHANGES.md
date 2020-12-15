@@ -18,6 +18,7 @@
 - Report `#require` directive errors (#276, @gpetiot)
 - Handle no such file exception: the input file and the values of options `--root` and `--prelude` are checked (#292, @gpetiot)
 - Keep locations from parsing instead of recomputing the lines, providing better error messages (#241, @gpetiot)
+- Use `create_process` instead of `execvp` to call `mdx-test` from `mdx`. This fixes running mdx from dune on Windows (#299, @emillon)
 - Fix parsing of Windows end-of-lines (#294, @julow)
 
 #### Security
