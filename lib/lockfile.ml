@@ -200,7 +200,12 @@ module Depexts = struct
     let c = OpamSysPkg.Set.compare pkg_set pkg_set' in
     if c = 0 then compare filter filter' else c
 
-  let from_root_packages_depexts l = List.concat l |> List.sort_uniq ~cmp:compare_elm
+  let all ~root_depexts ~package_summaries =
+    let transitive_depexts =
+      List.map ~f:(fun { Opam.Package_summary.depexts; _ } -> depexts) package_summaries
+    in
+    let all = root_depexts @ transitive_depexts in
+    List.concat all |> List.sort_uniq ~cmp:compare_elm
 end
 
 type t = {
@@ -217,7 +222,7 @@ let create ~root_packages ~package_summaries ~root_depexts ~duniverse () =
   let depends = Depends.from_package_summaries package_summaries in
   let pin_depends = Pin_depends.from_duniverse duniverse in
   let duniverse_dirs = Duniverse_dirs.from_duniverse duniverse in
-  let depexts = Depexts.from_root_packages_depexts root_depexts in
+  let depexts = Depexts.all ~root_depexts ~package_summaries in
   { version; root_packages; depends; pin_depends; duniverse_dirs; depexts }
 
 let url_to_duniverse_url url =

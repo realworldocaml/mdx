@@ -15,4 +15,6 @@ module Ocaml : sig
   val list : 'a Fmt.t -> 'a list Fmt.t
   (** [ocaml_list pp_a fmt l] pretty prints l as an ocaml looking list, using [pp_a] to format
       individual elements. *)
+
+  val pair : 'a Fmt.t -> 'b Fmt.t -> ('a * 'b) Fmt.t
 end
