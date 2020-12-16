@@ -78,7 +78,6 @@ type t = {
   loc : Location.t;
   section : section option;
   dir : string option;
-  source_trees : string list;
   required_packages : string list;
   labels : Label.t list;
   legacy_labels : bool;
@@ -138,10 +137,6 @@ val non_det : t -> Label.non_det option
 
 val directory : t -> string option
 (** [directory t] is the directory where [t] tests should be run. *)
-
-val source_trees : t -> string list
-(** [source_trees t] is the list of extra source-trees to add as
-   dependency of the code-block. *)
 
 val file : t -> string option
 (** [file t] is the name of the file to synchronize [t] with. *)
