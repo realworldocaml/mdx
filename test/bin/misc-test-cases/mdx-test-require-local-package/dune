@@ -1,9 +1,10 @@
 (rule
- (targets dune.inc.gen)
+ (alias runtest)
  (deps
-  (package mdx))
+  (package mdx)
+  (:x private_lib/require-package.md)
+  (package example_lib))
  (action
-  (with-stdout-to
-   %{targets}
-   (progn
-    (run ocaml-mdx rule %{dep:private_lib/require-package.md})))))
+  (progn
+   (run ocaml-mdx test %{x})
+   (diff? %{x} %{x}.corrected))))
