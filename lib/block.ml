@@ -211,26 +211,6 @@ let set_variables t = t.set_variables
 
 let unset_variables t = t.unset_variables
 
-let require_re =
-  let open Re in
-  seq [ str "#require \""; group (rep1 any); str "\"" ]
-
-let require_from_line line =
-  let open Util.Result.Infix in
-  let re = Re.compile require_re in
-  match Re.exec_opt re line with
-  | None -> Ok Library.Set.empty
-  | Some group ->
-      let matched = Re.Group.get group 1 in
-      let libs_str = String.split_on_char ',' matched in
-      Util.Result.List.map ~f:Library.from_string libs_str >>| fun libs ->
-      Library.Set.of_list libs
-
-let require_from_lines lines =
-  let open Util.Result.Infix in
-  Util.Result.List.map ~f:require_from_line lines >>| fun libs ->
-  List.fold_left Library.Set.union Library.Set.empty libs
-
 let value t = t.value
 
 let section t = t.section
