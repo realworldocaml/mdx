@@ -161,13 +161,3 @@ val executable_contents : syntax:Syntax.t -> t -> string list
    (e.g. the phrase result is discarded). *)
 
 val is_active : ?section:string -> t -> bool
-
-(** {2 Parsers} *)
-
-val require_from_line : string -> (Library.Set.t, string) Result.result
-(** [require_from_line line] returns the set of libraries imported by the
-    #require statement on [line] or an empty set if [line] is not a require
-    statement. *)
-
-val require_from_lines : string list -> (Library.Set.t, string) Result.result
-(** Same as [require_from_line] but aggregated over several lines *)
