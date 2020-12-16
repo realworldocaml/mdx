@@ -76,7 +76,6 @@ type t = {
   loc : Location.t;
   section : section option;
   dir : string option;
-  source_trees : string list;
   required_packages : string list;
   labels : Label.t list;
   legacy_labels : bool;
@@ -200,8 +199,6 @@ let directory t = t.dir
 
 let file t = match t.value with Include t -> Some t.file_included | _ -> None
 
-let source_trees t = t.source_trees
-
 let non_det t =
   match t.value with
   | OCaml b -> b.non_det
@@ -320,7 +317,6 @@ type block_config = {
   dir : string option;
   skip : bool;
   version : (Label.Relation.t * Ocaml_version.t) option;
-  source_trees : string list;
   required_packages : string list;
   set_variables : (string * string) list;
   unset_variables : string list;
@@ -341,8 +337,6 @@ let get_block_config l =
     dir = get_label (function Dir x -> Some x | _ -> None) l;
     skip = List.exists (function Label.Skip -> true | _ -> false) l;
     version = get_label (function Version (x, y) -> Some (x, y) | _ -> None) l;
-    source_trees =
-      List.filter_map (function Label.Source_tree x -> Some x | _ -> None) l;
     required_packages =
       List.filter_map
         (function Label.Require_package x -> Some x | _ -> None)
@@ -449,7 +443,6 @@ let mk ~loc ~section ~labels ~legacy_labels ~header ~contents ~errors =
     loc;
     section;
     dir = config.dir;
-    source_trees = config.source_trees;
     required_packages = config.required_packages;
     labels;
     legacy_labels;
