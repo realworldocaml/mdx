@@ -516,4 +516,4 @@ x-opam-monorepo-duniverse-dirs: [
   ]
 ]
 x-opam-monorepo-root-packages: ["opam-monorepo"]
-x-opam-monorepo-version: "0.2"
+x-opam-monorepo-version: "0.1"
