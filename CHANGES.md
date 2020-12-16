@@ -1,3 +1,9 @@
+### unreleased
+
+#### Removed
+
+- Remove deprecated `rule` command (#312, @gpetiot)
+
 ### 1.10.0
 
 #### Added
