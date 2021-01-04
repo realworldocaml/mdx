@@ -1,5 +1,25 @@
 (data_only_dirs sample-projects)
 
-(cram
+(rule
+ (alias runtest)
  (deps
-  (package dune)))
+  (package dune)
+  (source_tree sample-projects/hello_world))
+ (action
+  (chdir
+   sample-projects/hello_world
+   (progn
+    (run dune-cram run run.t)
+    (diff? run.t run.t.corrected)))))
+
+(rule
+ (alias runtest)
+ (deps
+  (package dune)
+  (source_tree sample-projects/with-configure-step))
+ (action
+  (chdir
+   sample-projects/with-configure-step
+   (progn
+    (run dune-cram run run.t)
+    (diff? run.t run.t.corrected)))))

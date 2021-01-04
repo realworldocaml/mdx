@@ -6,13 +6,13 @@ dune-project
 ============
 
 These files are used to mark the root of projects as well as define project-wide
-parameters. The first line of ``dune-project`` must be a ``lang`` stanza with no
-extra whitespace or comments. The ``lang`` stanza controls the names and
-contents of all configuration files read by Dune and looks like:
+parameters. These files are required to have a ``lang`` which controls the names
+and contents of all configuration files read by Dune. The ``lang`` stanza looks
+like:
 
 .. code:: scheme
 
-          (lang dune 2.7)
+          (lang dune 2.6)
 
 Additionally, they can contains the following stanzas.
 
@@ -55,19 +55,6 @@ recommend users to experiment with this mode and report any problems.
 Note that you must use ``threads.posix`` instead of ``threads`` when using this
 mode. This is not an important limitation as ``threads.vm`` are deprecated
 anyways.
-
-In some situations, it's desirable to selectively preserve the
-behavior of transitive dependencies being available to users of a
-library. For example, if we define a library ``foo_more``, that
-extends ``foo``, we might want users of ``foo_more`` to immediately
-have ``foo`` available as well. To do this, we must define the
-dependency on ``foo`` as re-exported:
-
-.. code:: scheme
-
-   (library
-    (name foo_more)
-    (libraries (re_export foo)))
 
 .. _wrapped-executables:
 
@@ -484,6 +471,10 @@ to use the :ref:`include_subdirs` stanza.
 - ``(allow_overlapping_dependencies)`` allows external dependencies to
   overlap with libraries that are present in the workspace
 
+- ``(no_keep_locs)`` does nothing. It used to be a necessary hack when
+  we were waiting for proper support for virtual libraries. Do not use
+  in new code, it will be deleted in dune 2.0
+
 - ``(enabled_if <blang expression>)`` conditionally disables
   a library. A disabled library cannot be built and will not be
   installed. The condition is specified using the :ref:`blang`, and the
@@ -776,7 +767,7 @@ is ``.dll``.
 
 Up to version 3.0 of the dune language, when ``byte`` is specified but
 none of ``native``, ``exe`` or ``byte_complete`` are specified Dune
-implicitly adds a linking mode that is the same as ``byte_complete``
+implicitely adds a linking mode that is the same as ``byte_complete``
 but using the extension ``.exe``. ``.bc`` files require additional
 files at runtime that are not currently tracked by Dune, so you should
 not run ``.bc`` files during the build. Run the ``.bc.exe`` or
@@ -897,7 +888,7 @@ There are two use cases for promote rules. The first one is when the
 generated code is easier to review than the generator, so it's easier
 to commit the generated code and review it. The second is to cut down
 dependencies during releases: by passing ``--ignore-promoted-rules``
-to dune, rules with ``(mode promote)`` will be ignored and the source
+to dune, rules will ``(mode promote)`` will be ignored and the source
 files will be used instead. The ``-p/--for-release-of-packages`` flag
 implies ``--ignore-promote-rules``. However, rules that promotes only
 a subset of their targets via ``(only ...)`` are never ignored.
@@ -1135,7 +1126,7 @@ Dune supports installing packages on the system, i.e. copying freshly built
 artifacts from the workspace to the system. The ``install`` stanza takes three
 pieces of information:
 
-- the list of files to install
+- the list of files the install
 - the package to attach these files to. This field is optional if your
   project contains a single package
 - the section in which the files will be installed
@@ -1213,31 +1204,10 @@ The syntax is as follows:
 
 .. code:: scheme
 
-    (copy_files
-     <optional-fields>
-     (files <glob>))
+    (copy_files <glob>)
 
 ``<glob>`` represents the set of files to copy, see the :ref:`glob
 <glob>` for details.
-
-``<optional-fields>`` are:
-
-- ``(alias <alias-name>)`` to specify an alias to which to attach the targets.
-
-- ``(mode <mode>)`` to specify how to handle the targets, see `modes`_
-  for details.
-
-The short form
-
-.. code:: scheme
-
-    (copy_files <glob>)
-
-is equivalent to
-
-.. code:: scheme
-
-    (copy_files (files <glob>))
 
 The difference between ``copy_files`` and ``copy_files#`` is the same
 as the difference between the ``copy`` and ``copy#`` action. See the
@@ -1374,9 +1344,6 @@ Fields supported in ``<settings>`` are:
 
 - ``(odoc <fields>)``. This allows to pass options to Odoc, see
   :ref:`odoc-options` for more details.
-
-- ``(coq (flags <flags>))``. This allows to pass options to Coq, see
-  :ref:`coq-theory` for more details.
 
 .. _dune-subdirs:
 
@@ -1716,8 +1683,8 @@ mdx (since 2.4)
 ---------------
 
 MDX is a tool that helps you keep your markdown documentation up to date by
-checking that the code examples it contains are correct. When setting an MDX
-stanza, the checks carried out by MDX are automatically attached to the
+checking that the code examples it contains are correct. When setting an MDX 
+stanza, the checks carried out by MDX are automatically attached to the 
 ``runtest`` alias of the stanza's directory.
 
 See `MDX's repository <https://github.com/realworldocaml/mdx>`__ for more details.
@@ -1776,7 +1743,7 @@ a typical ``dune-workspace`` file looks like:
 
 .. code:: scheme
 
-    (lang dune 2.7)
+    (lang dune 2.6)
     (context (opam (switch 4.02.3)))
     (context (opam (switch 4.03.0)))
     (context (opam (switch 4.04.0)))
@@ -1788,7 +1755,7 @@ containing exactly:
 
 .. code:: scheme
 
-    (lang dune 2.7)
+    (lang dune 2.6)
     (context default)
 
 This allows you to use an empty ``dune-workspace`` file to mark the root of your

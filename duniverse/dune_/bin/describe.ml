@@ -1,13 +1,6 @@
 open Stdune
 open Import
 
-(* This command is not yet versioned, but some people are using it in
-   non-released tools. If you change the format of the output, please contact:
-
-   - rotor people for "describe workspace"
-
-   - duniverse people for "describe opam-files" *)
-
 let doc = "Describe the workspace."
 
 let man =
@@ -30,8 +23,7 @@ let info = Term.info "describe" ~doc ~man
 
 (* Crawl the workspace to get all the data *)
 module Crawl = struct
-  open Dune_rules
-  open Dune_engine
+  open Dune
 
   let uid_of_library lib =
     Digest.generic
@@ -89,7 +81,7 @@ module Crawl = struct
                 ]
             ] ))
 
-  let workspace { Dune_rules.Main.workspace; scontexts } (context : Context.t) =
+  let workspace { Dune.Main.workspace; scontexts } (context : Context.t) =
     let sctx = Context_name.Map.find_exn scontexts context.name in
     let libs =
       List.fold_left workspace.conf.projects ~init:Lib.Set.empty
@@ -106,60 +98,27 @@ module Crawl = struct
     Dyn.List (Lib.Set.to_list libs |> List.filter_map ~f:(library sctx))
 end
 
-module Opam_files = struct
-  let get () =
-    let project =
-      Dune_engine.File_tree.root () |> Dune_engine.File_tree.Dir.project
-    in
-    let packages =
-      Dune_project.packages project |> Dune_engine.Package.Name.Map.values
-    in
-    Dyn.List
-      (List.map packages ~f:(fun pkg ->
-           let opam_file = Path.source (Dune_engine.Package.opam_file pkg) in
-           let contents =
-             if not (Dune_project.generate_opam_files project) then
-               Io.read_file opam_file
-             else
-               let template_file =
-                 Dune_rules.Opam_create.template_file opam_file
-               in
-               let template =
-                 if Path.exists template_file then
-                   Some (template_file, Io.read_file template_file)
-                 else
-                   None
-               in
-               Dune_rules.Opam_create.generate project pkg ~template
-           in
-           Dyn.Tuple [ String (Path.to_string opam_file); String contents ]))
-end
-
 (* What to describe. To determine what to describe, we convert the positional
    arguments of the command line to a list of atoms and we parse it using the
    regular [Dune_lang.Decoder].
 
-   This way we can reuse all the existing versioning, error reporting, etc...
+   This way we can reuse all the existing versionning, error reporting, etc...
    machinery. This also allow to easily extend this to arbitrary complex phrases
    without hassle. *)
 module What = struct
-  type t =
-    | Workspace
-    | Opam_files
+  type t = Workspace
 
   let default = Workspace
 
   let parse =
     let open Dune_lang.Decoder in
-    sum [ ("workspace", return Workspace); ("opam-files", return Opam_files) ]
+    sum [ ("workspace", return Workspace) ]
 
   let parse ~lang args =
     match args with
     | [] -> default
     | _ ->
-      let parse =
-        Dune_lang.Syntax.set Dune_engine.Stanza.syntax (Active lang) parse
-      in
+      let parse = Dune_lang.Syntax.set Dune.Stanza.syntax (Active lang) parse in
       let ast =
         Dune_lang.Ast.add_loc ~loc:Loc.none
           (List (List.map args ~f:Dune_lang.atom_or_quoted_string))
@@ -169,7 +128,6 @@ module What = struct
   let describe t setup context =
     match t with
     | Workspace -> Crawl.workspace setup context
-    | Opam_files -> Opam_files.get ()
 end
 
 module Format = struct
@@ -230,7 +188,7 @@ let print_as_sexp dyn =
     |> Dune_lang.Ast.add_loc ~loc:Loc.none
     |> Dune_lang.Cst.concrete
   in
-  Dune_engine.Format_dune_lang.pp_top_sexps Stdlib.Format.std_formatter [ cst ]
+  Dune.Format_dune_lang.pp_top_sexps Stdlib.Format.std_formatter [ cst ]
 
 let term =
   let+ common = Common.term

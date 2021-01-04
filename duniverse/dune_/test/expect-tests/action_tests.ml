@@ -1,6 +1,5 @@
 open Stdune
-open Dune_engine
-open Dune_rules
+open Dune
 open Action_unexpanded.Infer.Outcome
 open Dune_tests_common
 

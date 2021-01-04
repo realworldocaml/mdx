@@ -1,9 +1,9 @@
 open Stdune
-module Config = Dune_engine.Config
-module Colors = Dune_rules.Colors
-module Clflags = Dune_engine.Clflags
-module Package = Dune_engine.Package
-module Profile = Dune_rules.Profile
+module Config = Dune.Config
+module Colors = Dune.Colors
+module Clflags = Dune.Clflags
+module Package = Dune.Package
+module Profile = Dune.Profile
 module Term = Cmdliner.Term
 module Manpage = Cmdliner.Manpage
 
@@ -17,7 +17,7 @@ open Let_syntax
 
 module Only_packages = struct
   type t =
-    { names : Dune_engine.Package.Name.Set.t
+    { names : Dune.Package.Name.Set.t
     ; command_line_option : string
     }
 end
@@ -26,14 +26,13 @@ type t =
   { debug_dep_path : bool
   ; debug_findlib : bool
   ; debug_backtraces : bool
-  ; debug_artifact_substitution : bool
   ; profile : Profile.t option
   ; workspace_file : Arg.Path.t option
   ; root : Workspace_root.t
   ; target_prefix : string
   ; only_packages : Only_packages.t option
   ; capture_outputs : bool
-  ; x : Dune_engine.Context_name.t option
+  ; x : Dune.Context_name.t option
   ; diff_command : string option
   ; promote : Clflags.Promote.t option
   ; force : bool
@@ -43,13 +42,12 @@ type t =
   ; store_orig_src_dir : bool
   ; (* Original arguments for the external-lib-deps hint *)
     orig_args : string list
-  ; config : Dune_engine.Config.t
+  ; config : Dune.Config.t
   ; default_target : Arg.Dep.t (* For build & runtest only *)
   ; watch : bool
   ; stats_trace_file : string option
   ; always_show_command_line : bool
   ; promote_install_files : bool
-  ; instrument_with : Dune_engine.Lib_name.t list option
   }
 
 let workspace_file t = t.workspace_file
@@ -72,8 +70,6 @@ let default_target t = t.default_target
 
 let prefix_target common s = common.target_prefix ^ s
 
-let instrument_with t = t.instrument_with
-
 let set_dirs c =
   if c.root.dir <> Filename.current_dir_name then Sys.chdir c.root.dir;
   Path.set_root (Path.External.cwd ());
@@ -85,7 +81,6 @@ let set_common_other ?log_file c ~targets =
   Clflags.debug_dep_path := c.debug_dep_path;
   Clflags.debug_findlib := c.debug_findlib;
   Clflags.debug_backtraces c.debug_backtraces;
-  Clflags.debug_artifact_substitution := c.debug_artifact_substitution;
   Clflags.capture_outputs := c.capture_outputs;
   Clflags.diff_command := c.diff_command;
   Clflags.promote := c.promote;
@@ -102,7 +97,7 @@ let set_common_other ?log_file c ~targets =
       ];
   Clflags.always_show_command_line := c.always_show_command_line;
   Clflags.ignore_promoted_rules := c.ignore_promoted_rules;
-  Option.iter ~f:Dune_engine.Stats.enable c.stats_trace_file
+  Option.iter ~f:Dune.Stats.enable c.stats_trace_file
 
 let set_common ?log_file ?external_lib_deps_mode c ~targets =
   Option.iter external_lib_deps_mode ~f:(fun x ->
@@ -272,8 +267,7 @@ module Options_implied_by_dash_p = struct
       Arg.(
         value
         & opt dep
-            (Dep.alias ~dir:Stdune.Path.Local.root
-               Dune_engine.Alias.Name.default)
+            (Dep.alias ~dir:Stdune.Path.Local.root Dune.Alias.Name.default)
         & info [ "default-target" ] ~docs ~docv:"TARGET"
             ~doc:
               {|Set the default target that when none is specified to
@@ -306,7 +300,7 @@ module Options_implied_by_dash_p = struct
     ; config_file = No_config
     ; profile = Some Profile.Release
     ; default_target =
-        Arg.Dep.alias_rec ~dir:Path.Local.root Dune_engine.Alias.Name.install
+        Arg.Dep.alias_rec ~dir:Path.Local.root Dune.Alias.Name.install
     ; always_show_command_line = true
     ; promote_install_files = true
     }
@@ -386,7 +380,7 @@ module Options_implied_by_dash_p = struct
               (Printf.sprintf
                  "Select the build profile, for instance $(b,dev) or \
                   $(b,release). The default is $(b,%s)."
-                 (Profile.to_string Dune_rules.Profile.default)))
+                 (Profile.to_string Dune.Profile.default)))
     in
     match profile with
     | None -> t
@@ -425,11 +419,10 @@ let term =
     let arg =
       Arg.conv
         ( (fun s ->
-            Result.map_error (Dune_engine.Config.Concurrency.of_string s)
-              ~f:(fun s -> `Msg s))
+            Result.map_error (Dune.Config.Concurrency.of_string s) ~f:(fun s ->
+                `Msg s))
         , fun pp x ->
-            Format.pp_print_string pp
-              (Dune_engine.Config.Concurrency.to_string x) )
+            Format.pp_print_string pp (Dune.Config.Concurrency.to_string x) )
     in
     Arg.(
       value
@@ -440,10 +433,10 @@ let term =
     let arg =
       Arg.conv
         ( (fun s ->
-            Result.map_error (Dune_engine.Sandbox_mode.of_string s) ~f:(fun s ->
+            Result.map_error (Dune.Sandbox_mode.of_string s) ~f:(fun s ->
                 `Msg s))
-        , fun pp x ->
-            Format.pp_print_string pp (Dune_engine.Sandbox_mode.to_string x) )
+        , fun pp x -> Format.pp_print_string pp (Dune.Sandbox_mode.to_string x)
+        )
     in
     Arg.(
       value
@@ -459,8 +452,8 @@ let term =
                 certain sandboxing mode, so they will ignore this setting. The \
                 allowed values are: %s."
                (String.concat ~sep:", "
-                  (List.map Dune_engine.Sandbox_mode.all
-                     ~f:Dune_engine.Sandbox_mode.to_string))))
+                  (List.map Dune.Sandbox_mode.all
+                     ~f:Dune.Sandbox_mode.to_string))))
   and+ debug_dep_path =
     Arg.(
       value & flag
@@ -480,12 +473,6 @@ let term =
       value & flag
       & info [ "debug-backtraces" ] ~docs
           ~doc:{|Always print exception backtraces.|})
-  and+ debug_artifact_substitution =
-    Arg.(
-      value & flag
-      & info
-          [ "debug-artifact-substitution" ]
-          ~docs ~doc:"Print debugging info about artifact substitution")
   and+ terminal_persistence =
     Arg.(
       value
@@ -639,20 +626,7 @@ let term =
           ~docs
           ~env:(Arg.env_var ~doc "DUNE_CACHE_CHECK_PROBABILITY")
           ~doc)
-  and+ () = build_info
-  and+ instrument_with =
-    let doc =
-      {|"Enable instrumentation by $(b,BACKENDS).
-        $(b,BACKENDS) is a comma-separated list of library names,
-        each one of which must declare an instrumentation backend.|}
-    in
-    Arg.(
-      value
-      & opt (some (list lib_name)) None
-      & info [ "instrument-with" ] ~docs
-          ~env:(Arg.env_var ~doc "DUNE_INSTRUMENT_WITH")
-          ~docv:"BACKENDS" ~doc)
-  in
+  and+ () = build_info in
   let build_dir = Option.value ~default:default_build_dir build_dir in
   let root = Workspace_root.create ~specified_by_user:root in
   let config = config_of_file config_file in
@@ -678,7 +652,6 @@ let term =
   { debug_dep_path
   ; debug_findlib
   ; debug_backtraces
-  ; debug_artifact_substitution
   ; profile
   ; capture_outputs = not no_buffer
   ; workspace_file
@@ -701,7 +674,6 @@ let term =
   ; stats_trace_file
   ; always_show_command_line
   ; promote_install_files
-  ; instrument_with
   }
 
 let term =
@@ -715,5 +687,5 @@ let config_term =
 let context_arg ~doc =
   Arg.(
     value
-    & opt Arg.context_name Dune_engine.Context_name.default
+    & opt Arg.context_name Dune.Context_name.default
     & info [ "context" ] ~docv:"CONTEXT" ~doc)

@@ -3,8 +3,6 @@ module Var : sig
 
   val compare : t -> t -> Ordering.t
 
-  val temp_dir : t
-
   module Set : Set.S with type elt = t
 end
 

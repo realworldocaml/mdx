@@ -1,4 +1,4 @@
-(lang dune 2.7)
+(lang dune 2.6)
 (generate_opam_files true)
 (name opam-monorepo)
 
@@ -27,5 +27,7 @@ code required to build a project using the dune build tool.")
   ocaml-version
   sexplib
   uri
-  (alcotest :with-test)
-))
+  (alcotest :with-test))
+ (conflicts
+  (dune-build-info (or (= 2.7.0) (= 2.7.1)))
+  (dune-configurator (or (= 2.7.0) (= 2.7.1)))))

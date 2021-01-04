@@ -1,5 +1,5 @@
 open Stdune
-open Dune_rules
+open Dune
 
 type checked =
   | In_build_dir of (Context.t * Path.Source.t)
