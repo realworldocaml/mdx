@@ -4,6 +4,8 @@
 
 ### Changed
 
+- Include transitive depexts in the lockfile (#144, @NathanReb)
+
 ### Deprecated
 
 ### Fixed

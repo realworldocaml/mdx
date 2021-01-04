@@ -98,7 +98,7 @@ module Repo = struct
       match ps with
       | _ when is_base_package ps -> Ok None
       | { url_src = None; _ } | { dev_repo = None; _ } -> Ok None
-      | { url_src = Some url_src; name; version; dev_repo = Some dev_repo; hashes } ->
+      | { url_src = Some url_src; name; version; dev_repo = Some dev_repo; hashes; _ } ->
           url url_src >>= fun url -> Ok (Some { opam = { name; version }; dev_repo; url; hashes })
   end
 

@@ -54,25 +54,41 @@ module Extra_field = struct
 end
 
 module Version = struct
-  type t = string
+  type t = int * int
 
-  let current = "0.1"
+  let current = (0, 2)
+
+  let pp fmt (major, minor) = Format.fprintf fmt "%d.%d" major minor
+
+  let to_string (major, minor) = Printf.sprintf "%d.%d" major minor
+
+  let from_string s =
+    let err () = Error (`Msg (Format.sprintf "Invalid lockfile version: %S" s)) in
+    match String.lsplit2 ~on:'.' s with
+    | None -> err ()
+    | Some (major, minor) -> (
+        match (int_of_string_opt major, int_of_string_opt minor) with
+        | Some major, Some minor -> Ok (major, minor)
+        | _ -> err () )
+
+  let backward_compatible (major, minor) (major', minor') = major = major' && minor >= minor'
 
   let compatible t =
-    if String.equal t current then Ok ()
+    (* We still support 0.1 lockfiles but we'll need to update that if we stop doing so *)
+    if backward_compatible current t then Ok ()
     else
       Error
         (`Msg
-          (Printf.sprintf
-             "Incompatible opam-monorepo lockfile version %s. Please upgrade your opam-monorepo \
+          (Format.asprintf
+             "Incompatible opam-monorepo lockfile version %a. Please upgrade your opam-monorepo \
               plugin."
-             t))
+             pp t))
 
-  let to_opam_value t = OpamTypes.String (Pos.default, t)
+  let to_opam_value t = OpamTypes.String (Pos.default, to_string t)
 
   let from_opam_value value =
     match (value : OpamTypes.value) with
-    | String (_, s) -> Ok s
+    | String (_, s) -> from_string s
     | _ -> value_errorf ~value "Expected a string"
 
   let field = Extra_field.make ~name:"version" ~to_opam_value ~from_opam_value
@@ -200,7 +216,12 @@ module Depexts = struct
     let c = OpamSysPkg.Set.compare pkg_set pkg_set' in
     if c = 0 then compare filter filter' else c
 
-  let from_root_packages_depexts l = List.concat l |> List.sort_uniq ~cmp:compare_elm
+  let all ~root_depexts ~package_summaries =
+    let transitive_depexts =
+      List.map ~f:(fun { Opam.Package_summary.depexts; _ } -> depexts) package_summaries
+    in
+    let all = root_depexts @ transitive_depexts in
+    List.concat all |> List.sort_uniq ~cmp:compare_elm
 end
 
 type t = {
@@ -217,7 +238,7 @@ let create ~root_packages ~package_summaries ~root_depexts ~duniverse () =
   let depends = Depends.from_package_summaries package_summaries in
   let pin_depends = Pin_depends.from_duniverse duniverse in
   let duniverse_dirs = Duniverse_dirs.from_duniverse duniverse in
-  let depexts = Depexts.from_root_packages_depexts root_depexts in
+  let depexts = Depexts.all ~root_depexts ~package_summaries in
   { version; root_packages; depends; pin_depends; duniverse_dirs; depexts }
 
 let url_to_duniverse_url url =

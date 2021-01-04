@@ -17,8 +17,9 @@ module Testable = struct
   end
 end
 
-let summary_factory ?(name = "") ?(version = "") ?dev_repo ?url_src ?(hashes = []) () =
-  { Opam.Package_summary.name; version; dev_repo; url_src; hashes }
+let summary_factory ?(name = "") ?(version = "") ?dev_repo ?url_src ?(hashes = []) ?(depexts = [])
+    () =
+  { Opam.Package_summary.name; version; dev_repo; url_src; hashes; depexts }
 
 module Repo = struct
   module Package = struct

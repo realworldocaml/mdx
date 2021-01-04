@@ -19,6 +19,7 @@ module Package_summary : sig
     url_src : Url.t option;
     hashes : OpamHash.t list;
     dev_repo : string option;
+    depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
   }
 
   val equal : t -> t -> bool
