@@ -347,32 +347,6 @@ all the literals evaluate to true. It is an error if none of the clauses are
 selectable. You can add a fallback by adding a clause of the form ``(->
 <file>)`` at the end of the list.
 
-Re-exported dependencies
-------------------------
-
-A dependency ``foo`` may be marked as always *re-exported* using the
-following syntax:
-
-.. code:: scheme
-
-   (re_export foo)
-
-For insance:
-
-.. code:: scheme
-
-   (library
-    (name bar)
-    (libraries (re_export foo)))
-
-This states that this library explicitly re-exports the interface of
-``foo``.  Concretely, when something depends on ``bar`` it will also
-be able to see ``foo`` independently of whether :ref:`implicit
-transitive dependencies<implicit_transitive_deps>` are allowed or
-not. When they are allowed, which is the default, all transitive
-dependencies are visible whether they are marked as re-exported or
-not.
-
 .. _preprocessing-spec:
 
 Preprocessing specification
@@ -689,7 +663,7 @@ The following constructions are available:
 - ``(with-accepted-exit-codes <pred> <DSL>)`` specifies the list of expected exit codes
   for the programs executed in ``<DSL>``. ``<pred>`` is a predicate on integer
   values, and is specified using the :ref:`predicate-lang`. ``<DSL>`` can only
-  contain nested occurrences of ``run``, ``bash``, ``system``, ``chdir``,
+  contain nested occurences of ``run``, ``bash``, ``system``, ``chdir``,
   ``setenv``, ``ignore-<outputs>``, ``with-stdin-from`` and
   ``with-<outputs>-to``. This action is available since dune 2.0.
 - ``(progn <DSL>...)`` to execute several commands in sequence
@@ -716,9 +690,6 @@ The following constructions are available:
 - ``(no-infer <DSL>)`` to perform an action without inference of dependencies
   and targets. This is useful if you are generating dependencies in a way
   that Dune doesn't know about, for instance by calling an external build system.
-- ``(pipe-<outputs> <DSL> <DSL> <DSL>...)`` to execute several actions (at least two)
-  in sequence, piping the output of each one into the input of the next.
-  This action is available since dune 2.7.
 
 As mentioned ``copy#`` inserts a line directive at the beginning of
 the destination file. More precisely, it inserts the following line:
@@ -743,9 +714,9 @@ have this action in a ``src/foo/dune``:
 
 .. code:: lisp
 
-    (action (chdir ../../.. (echo %{dep:dune})))
+    (action (chdir ../../.. (echo %{path:dune})))
 
-Then ``%{dep:dune}`` will expand to ``src/foo/dune``. When you run various
+Then ``%{path:dune}`` will expand to ``src/foo/dune``. When you run various
 tools, they often use the filename given on the command line in error messages.
 As a result, if you execute the command from the original directory, it will
 only see the basename.
@@ -1029,7 +1000,7 @@ recommended to use this method in new projects as we expect to deprecate it in
 the future. The right way to define a package is with a ``package`` stanza in
 the ``dune-project`` file.
 
-See :ref:`opam-generation` for instructions on configuring dune to automatically
+See :ref:`opam-generation` for intructions on configuring dune to automatically
 generate ``.opam`` files based on the ``package`` stanzas.
 
 Attaching elements to a package

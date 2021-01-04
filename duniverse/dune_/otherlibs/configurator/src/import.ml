@@ -35,13 +35,7 @@ module Exn = struct
 
   let protect ~f ~finally = protectx () ~f ~finally
 
-  include struct
-    [@@@ocaml.warning "-32"]
-
-    let raise_with_backtrace exn _bt = reraise exn
-  end
-
-  include Printexc
+  let raise_with_backtrace = Printexc.raise_with_backtrace
 end
 
 module Option = struct
@@ -56,8 +50,6 @@ module Option = struct
     else
       None
 
-  let some x = Some x
-
   let try_with f =
     match f () with
     | exception _ -> None
@@ -69,12 +61,12 @@ module Option = struct
     | Some x -> f x
 
   module O = struct
-    let ( >>= ) x f =
+    let ( let* ) x f =
       match x with
       | None -> None
       | Some x -> f x
 
-    let ( >>| ) x f = map x ~f
+    let ( let+ ) x f = map x ~f
   end
 end
 
@@ -93,82 +85,54 @@ end
 module Array = ArrayLabels
 
 module Bool = struct
-  let of_string s =
-    match bool_of_string s with
-    | s -> Some s
-    | exception _ -> None
-end
-
-module Map (S : Map.OrderedType) = struct
-  module M = MoreLabels.Map.Make (S)
-  include M
-
-  let update (type a) (t : a t) (key : M.key) ~(f : a option -> a option) : a t
-      =
-    let v =
-      match find key t with
-      | exception Not_found -> None
-      | v -> Some v
-    in
-    match (f v, v) with
-    | None, None -> t
-    | None, Some _ -> remove key t
-    | Some data, _ -> add ~key ~data t
-
-  let find m k =
-    match find k m with
-    | exception Not_found -> None
-    | s -> Some s
-
-  let set t k v = add ~key:k ~data:v t
-
-  let of_list =
-    let rec loop acc = function
-      | [] -> Result.Ok acc
-      | (k, v) :: l -> (
-        match find acc k with
-        | None -> loop (set acc k v) l
-        | Some v_old -> Error (k, v_old, v) )
-    in
-    fun l -> loop empty l
-
-  let of_list_exn l =
-    match of_list l with
-    | Ok s -> s
-    | Error (_, _, _) -> failwith "Map.of_list_exn: duplicate key"
+  let of_string = bool_of_string_opt
 end
 
 module Int = struct
-  let of_string s =
-    match int_of_string s with
-    | s -> Some s
-    | exception _ -> None
+  let of_string = int_of_string_opt
 
   module Map = struct
-    include Map (struct
-      type t = int
+    include MoreLabels.Map.Make (struct
+        type t = int
+        let compare = compare
+      end)
 
-      let compare = compare
-    end)
+    let find m k =
+      match find k m with
+      | exception Not_found -> None
+      | s -> Some s
+
+    let of_list_exn l = of_seq (List.to_seq l)
   end
 end
 
-module Bytes = struct
-  include struct
-    [@@@ocaml.warning "-32"]
-
-    let blit_string ~(src : string) ~src_pos ~(dst : Bytes.t) ~dst_pos ~len =
-      for i = 0 to len - 1 do
-        Bytes.set dst (i + dst_pos) src.[i + src_pos]
-      done
-  end
-
-  include BytesLabels
-end
+module Bytes = StdLabels.Bytes
 
 module String = struct
   include StringLabels
-  module Map = Map (String)
+
+  module Map = struct
+    include MoreLabels.Map.Make (String)
+
+    let find m k =
+      match find k m with
+      | exception Not_found -> None
+      | s -> Some s
+
+    let set t k v = add ~key:k ~data:v t
+
+    let of_list =
+      let rec loop acc = function
+        | [] -> Result.Ok acc
+        | (k, v) :: l -> (
+          match find acc k with
+          | None -> loop (set acc k v) l
+          | Some v_old -> Error (k, v_old, v) )
+      in
+      fun l -> loop empty l
+
+    let of_list_exn l = of_seq (List.to_seq l)
+  end
 
   let take s i = sub s ~pos:0 ~len:(max i (String.length s))
 
@@ -176,10 +140,7 @@ module String = struct
     let len = length s in
     sub s ~pos:(min n len) ~len:(max (len - n) 0)
 
-  let index s i =
-    match String.index s i with
-    | exception Not_found -> None
-    | s -> Some s
+  let index = index_opt
 
   let split_lines s =
     let rec loop ~last_is_cr ~acc i j =
@@ -271,15 +232,15 @@ end
 module Io = struct
   let open_in ?(binary = true) fn =
     if binary then
-      open_in_bin fn
+      Stdlib.open_in_bin fn
     else
-      open_in fn
+      Stdlib.open_in fn
 
   let open_out ?(binary = true) fn =
     if binary then
-      open_out_bin fn
+      Stdlib.open_out_bin fn
     else
-      open_out fn
+      Stdlib.open_out fn
 
   let input_lines =
     let rec loop ic acc =
@@ -358,5 +319,5 @@ module Sexp = struct
   end
 
   include T
-  include Csexp.Make (T)
+  include Dune_csexp.Csexp.Make (T)
 end

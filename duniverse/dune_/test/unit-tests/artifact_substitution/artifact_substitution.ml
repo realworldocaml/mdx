@@ -1,5 +1,5 @@
 open Stdune
-open Dune_engine
+open Dune
 module Re = Dune_re
 
 let () =
@@ -70,7 +70,7 @@ let simple_subst =
     let slen = String.length s in
     let extract_placeholder pos =
       let open Option.O in
-      (* Look at the beginning manually otherwise it's too slow *)
+      (* Look at the begining manually otherwise it's too slow *)
       if
         pos + 3 >= slen
         || s.[pos] <> '%'
@@ -144,21 +144,18 @@ let compress_string s =
 let test input =
   let expected = simple_subst input in
   let buf = Buffer.create (String.length expected) in
-  Fiber.run
-    ~iter:(fun () -> assert false)
-    (let ofs = ref 0 in
-     let input buf pos len =
-       let to_copy = min len (String.length input - !ofs) in
-       Bytes.blit_string ~src:input ~dst:buf ~src_pos:!ofs ~dst_pos:pos
-         ~len:to_copy;
-       ofs := !ofs + to_copy;
-       to_copy
-     in
-     let output = Buffer.add_subbytes buf in
-     Artifact_substitution.copy
-       ~get_vcs:(fun _ -> None)
-       ~input_file:(Path.of_string "<memory>")
-       ~input ~output);
+  Option.value_exn
+  @@ Fiber.run
+       (let ofs = ref 0 in
+        let input buf pos len =
+          let to_copy = min len (String.length input - !ofs) in
+          Bytes.blit_string ~src:input ~dst:buf ~src_pos:!ofs ~dst_pos:pos
+            ~len:to_copy;
+          ofs := !ofs + to_copy;
+          to_copy
+        in
+        let output = Buffer.add_subbytes buf in
+        Artifact_substitution.copy ~get_vcs:(fun _ -> None) ~input ~output);
   let result = Buffer.contents buf in
   if result <> expected then
     fail

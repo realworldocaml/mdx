@@ -47,8 +47,6 @@ type 'a fields_parser = ('a, fields) parser
     information such as versions to individual parsers. *)
 val parse : 'a t -> Univ_map.t -> ast -> 'a
 
-val set_input : ast list -> (unit, 'k) parser
-
 val return : 'a -> ('a, _) parser
 
 val ( >>= ) : ('a, 'k) parser -> ('a -> ('b, 'k) parser) -> ('b, 'k) parser
@@ -105,7 +103,7 @@ type kind =
 
 val kind : (kind, _) parser
 
-(** [repeat t] uses [t] to consume all remaining elements of the input until the
+(** [repeat t] use [t] to consume all remaning elements of the input until the
     end of sequence is reached. *)
 val repeat : 'a t -> 'a list t
 
@@ -171,9 +169,6 @@ val plain_string : (loc:Loc.t -> string -> 'a) -> 'a t
 
 (** A valid filename, i.e. a string other than "." or ".." *)
 val filename : string t
-
-(** A relative filename *)
-val relative_file : string t
 
 val fix : ('a t -> 'a t) -> 'a t
 

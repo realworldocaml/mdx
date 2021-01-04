@@ -1,5 +1,24 @@
 module Sys = Stdlib.Sys
 
+module Fpath = struct
+  let is_root t = Filename.dirname t = t
+
+  let rec mkdir_p ?(perms = 0o777) t_s =
+    if is_root t_s then
+      ()
+    else
+      try Unix.mkdir t_s perms with
+      | Unix.Unix_error (EEXIST, _, _) -> ()
+      | Unix.Unix_error (ENOENT, _, _) as e ->
+        let parent = Filename.dirname t_s in
+        if is_root parent then
+          raise e
+        else (
+          mkdir_p parent ~perms;
+          Unix.mkdir t_s perms
+        )
+end
+
 let basename_opt ~is_root ~basename t =
   if is_root t then
     None
@@ -127,8 +146,7 @@ end = struct
       Code_error.raise "Path.External.parent_exn called on a root path" []
     | Some p -> p
 
-  let mkdir_p ?perms p =
-    ignore (Fpath.mkdir_p ?perms (to_string p) : Fpath.mkdir_p)
+  let mkdir_p ?perms p = Fpath.mkdir_p ?perms (to_string p)
 
   let extension t = Filename.extension (to_string t)
 
@@ -550,8 +568,7 @@ end = struct
 end
 
 module Relative_to_source_root = struct
-  let mkdir_p ?perms s =
-    ignore (Fpath.mkdir_p ?perms (Local.to_string s) : Fpath.mkdir_p)
+  let mkdir_p ?perms s = Fpath.mkdir_p ?perms (Local.to_string s)
 end
 
 module Source0 = Local
@@ -1299,7 +1316,7 @@ let temp_dir ?(temp_dir = get_temp_dir_name ()) ?(mode = 0o700) prefix suffix =
   let attempts = 512 in
   let rec loop count =
     if Stdlib.( >= ) count attempts then
-      Code_error.raise "Path.temp_dir: too many failing attempts"
+      Code_error.raise "Path.temp_dir: too many failing attemps"
         [ ("attempts", Int attempts) ]
     else
       let dir =
@@ -1335,6 +1352,3 @@ let chmod ~mode ?(stats = None) ?(op = `Set) path =
         stats.st_perm land lnot mode
   in
   Unix.chmod (to_string path) mode
-
-let follow_symlink path =
-  Fpath.follow_symlink (to_string path) |> Result.map ~f:of_string

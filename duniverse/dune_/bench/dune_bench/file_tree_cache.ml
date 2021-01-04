@@ -1,8 +1,7 @@
 (* Benchmark File_tree.t's internal cache *)
 
 open Stdune
-open Dune_rules
-open Dune_engine
+open Dune
 
 let deep_path = "a1/a2/a3/a4/a5/a6/a7/a8/a9/10"
 

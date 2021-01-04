@@ -1,6 +1,5 @@
 open Stdune
-open Dune_engine
-open Dune_rules
+open Dune
 
 module Kind = struct
   type t =
@@ -28,7 +27,7 @@ type t =
   { dir : string
   ; to_cwd : string list
   ; kind : Kind.t
-  ; ancestor_vcs : Dune_engine.Vcs.t option
+  ; ancestor_vcs : Dune.Vcs.t option
   }
 
 let make kind dir = { kind; dir; to_cwd = []; ancestor_vcs = None }

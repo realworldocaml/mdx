@@ -1,7 +1,7 @@
 open Stdune
 open Import
 
-(** A string that is "2.7.1" but not expanded by [dune subst] *)
+(** A string that is "2.6.2" but not expanded by [dune subst] *)
 let literal_version = "%%" ^ "VERSION%%"
 
 let doc = "Substitute watermarks in source files."
@@ -66,6 +66,6 @@ let term =
   Path.Build.set_build_dir (Path.Build.Kind.of_string Common.default_build_dir);
   Config.init config;
   Log.init_disabled ();
-  Dune_engine.Scheduler.go ~config Watermarks.subst
+  Dune.Scheduler.go ~config Watermarks.subst
 
 let command = (term, info)
