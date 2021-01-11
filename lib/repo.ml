@@ -4,7 +4,7 @@ type t = Fpath.t
 
 let folder_blacklist = [ "_build"; "_opam"; Fpath.to_string Config.vendor_dir ]
 
-let local_packages ~recurse t =
+let local_packages ~recurse ?filter t =
   let open Result.O in
   Bos.OS.Dir.exists t >>= fun exists ->
   if not exists then Ok String.Map.empty
@@ -14,8 +14,16 @@ let local_packages ~recurse t =
         `Sat (fun p -> Ok (not (List.mem (Fpath.to_string (Fpath.base p)) ~set:folder_blacklist)))
       else `Sat (fun p -> Ok (Fpath.equal p t))
     in
+    let accept_name =
+      match filter with
+      | None -> fun _ -> true
+      | Some list ->
+          fun p ->
+            let pkg = p |> Fpath.rem_ext |> Fpath.basename in
+            List.exists ~f:(fun { Types.Opam.name; _ } -> name = pkg) list
+    in
     Bos.OS.Path.fold
-      ~elements:(`Sat (fun p -> Ok (Fpath.has_ext ".opam" p)))
+      ~elements:(`Sat (fun p -> Ok (Fpath.has_ext ".opam" p && accept_name p)))
       ~traverse
       (fun path acc -> Fpath.(basename (rem_ext path), t // path) :: acc)
       [] [ t ]

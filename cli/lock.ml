@@ -80,7 +80,7 @@ let local_packages ~recurse ~explicit_list repo =
       Repo.local_packages ~recurse repo >>| fun local_paths ->
       String.Map.map ~f:(fun path -> (None, path)) local_paths
   | _ ->
-      Repo.local_packages ~recurse:true repo >>= fun local_paths ->
+      Repo.local_packages ~recurse:true ~filter:explicit_list repo >>= fun local_paths ->
       filter_local_packages ~explicit_list local_paths
 
 let read_opam fpath =
