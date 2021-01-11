@@ -10,7 +10,8 @@ let local_packages ~recurse t =
   if not exists then Ok String.Map.empty
   else
     let traverse =
-      if recurse then `Sat (fun p -> Ok (not (List.mem (Fpath.to_string p) ~set:folder_blacklist)))
+      if recurse then
+        `Sat (fun p -> Ok (not (List.mem (Fpath.to_string (Fpath.base p)) ~set:folder_blacklist)))
       else `Sat (fun p -> Ok (Fpath.equal p t))
     in
     Bos.OS.Path.fold
