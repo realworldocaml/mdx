@@ -19,7 +19,13 @@ let local_packages ~recurse t =
       ~traverse
       (fun path acc -> Fpath.(basename (rem_ext path), t // path) :: acc)
       [] [ t ]
-    >>| String.Map.of_list_exn
+    >>= fun lst ->
+    String.Map.of_list lst
+    |> Result.map_error ~f:(fun (_, a, b) ->
+           `Msg
+             (Printf.sprintf
+                "Conflicting definitions for the same package have been found:\n- %s\n- %s"
+                (Fpath.to_string a) (Fpath.to_string b)))
 
 let dune_project t = Fpath.(t / "dune-project")
 
