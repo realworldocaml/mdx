@@ -34,5 +34,5 @@ conflicts: [
   "dune-configurator" {= "2.7.0" | = "2.7.1"}
 ]
 dev-repo: "git+https://github.com/ocamllabs/opam-monorepo.git"
-build: [ "dune" "build" "-p" name "-j" jobs "@install" "@runtest" {with-test} "@doc" {with-doc} ]
+build: [ "dune" "build" "-p" name "-j" jobs "@install" "@runtest" {with-test} ]
 flags: [ plugin ]
