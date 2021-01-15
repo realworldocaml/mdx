@@ -69,7 +69,12 @@ module Typemod = struct
   open Typemod
 
   let type_structure e s l =
+#if OCAML_VERSION >= (4, 12, 0)
+    let _ = l in
+    type_structure e (to_current.copy_structure s)
+#else
     type_structure e (to_current.copy_structure s) l
+#endif
 end
 
 module Printast = struct
