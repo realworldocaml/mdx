@@ -21,8 +21,8 @@ license: "ISC"
 homepage: "https://github.com/realworldocaml/mdx"
 bug-reports: "https://github.com/realworldocaml/mdx/issues"
 depends: [
-  "dune" {>= "2.2"}
   "ocaml" {>= "4.02.3"}
+  "dune" {with-test & >= "2.8" | >= "2.2"}
   "ocamlfind"
   "fmt"
   "cppo" {build}
