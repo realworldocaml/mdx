@@ -42,6 +42,27 @@ module Ls_remote = struct
         | Some _, Some _ -> Error `Multiple_such_refs
         | Some commit, None | None, Some commit -> Ok commit
         | None, None -> Error `No_such_ref )
+
+  let parse_ref_output_line ~symref line =
+    match String.extract_blank_separated_words line with
+    | [ "ref:"; branch; ref ] when ref = symref -> Some branch
+    | _ -> None
+
+  let extract_branch branch_ref =
+    String.drop_prefix branch_ref ~prefix:"refs/heads/"
+    |> Option.to_result
+         ~none:
+           (`Msg
+             (Printf.sprintf
+                "Invalid `git ls-remote --symref` output. Failed to extract branch from ref `%s`."
+                branch_ref))
+
+  let branch_of_symref ~symref output_lines =
+    match List.filter_map ~f:(parse_ref_output_line ~symref) output_lines with
+    | [] -> Error `Not_a_symref
+    | [ ref ] -> extract_branch ref
+    | _ ->
+        Error (`Msg "Invalid `git ls-remote --symref` output. Too many lines starting by `ref:`.")
 end
 
 module Ref = struct

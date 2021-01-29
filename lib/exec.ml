@@ -142,21 +142,14 @@ let git_rev_parse ~repo ~ref () =
 let git_unshallow ~repo () = run_git ~repo Cmd.(v "fetch" % "--unshallow")
 
 let git_default_branch ~remote () =
-  let cmd = Cmd.(v "git" % "remote" % "show" % remote) in
+  let cmd = Cmd.(v "git" % "ls-remote" % "--symref" % remote % "HEAD") in
   run_and_log_l cmd >>= fun l ->
-  List.map String.trim l |> fun l ->
-  List.filter (String.is_prefix ~affix:"HEAD branch") l |> function
-  | [ hd ] -> (
-      match String.cut ~sep:":" hd with
-      | Some (_, branch) -> Ok (String.trim branch)
-      | None -> R.error_msg "unable to find remote branch" )
-  | [] ->
+  match Git.Ls_remote.branch_of_symref ~symref:"HEAD" l with
+  | Ok branch -> Ok branch
+  | Error `Not_a_symref ->
       R.error_msg
-        (Fmt.strf "unable to parse git remote show %s: no HEAD branch lines found (output was:\n%s)"
-           remote (String.concat ~sep:"-\n" l))
-  | _ ->
-      R.error_msg
-        (Fmt.strf "unable to parse git remote show %s: too many HEAD branch lines found" remote)
+        (Fmt.strf "unable to parse `git ls-remote --symref %s HEAD` output: not a symref." remote)
+  | Error (`Msg _) as err -> err
 
 let git_checkout ?(args = Cmd.empty) ~repo branch =
   run_git ~repo Cmd.(v "checkout" %% args % branch)
