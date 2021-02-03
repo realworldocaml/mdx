@@ -33,6 +33,8 @@ module Result = struct
 
   let errorf fmt = Format.ksprintf (fun s -> Error (`Msg s)) fmt
 
+  let map_error ~f = function Ok x -> Ok x | Error x -> Error (f x)
+
   module List = struct
     open Infix
 

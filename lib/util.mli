@@ -29,6 +29,8 @@ module Result : sig
   val errorf :
     ('a, unit, string, ('b, [> `Msg of string ]) result) format4 -> 'a
 
+  val map_error : f:('a -> 'b) -> ('c, 'a) result -> ('c, 'b) result
+
   module List : sig
     val fold :
       f:('acc -> 'a -> ('acc, 'err) result) ->

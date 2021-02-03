@@ -3,6 +3,7 @@
 #### Added
 
 - Display OCaml warnings in mdx-error blocks (#293, @gpetiot)
+- Format ocaml blocks with ocamlformat-rpc, if installed (#316, @gpetiot)
 
 #### Changed
 

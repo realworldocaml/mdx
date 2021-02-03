@@ -178,7 +178,7 @@ let eval_ocaml ~block ?syntax ?root c ppf cmd errors =
 
 let lines = function Ok x | Error x -> x
 
-let run_toplevel_tests ?syntax ?root c ppf tests t =
+let run_toplevel_tests ?syntax ?root ?format_code c ppf tests t =
   Block.pp_header ?syntax ppf t;
   List.iter
     (fun (test : Toplevel.t) ->
@@ -189,7 +189,7 @@ let run_toplevel_tests ?syntax ?root c ppf tests t =
         if Output.equal output test.output then test.output else output
       in
       let pad = test.hpad in
-      Toplevel.pp_command ppf test;
+      Toplevel.pp_command ?format_code ppf test;
       List.iter
         (function
           | `Ellipsis -> Output.pp ~pad ppf `Ellipsis
@@ -274,7 +274,7 @@ let preludes ~prelude ~prelude_str =
 
 let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
     ~verbose_findlib ~prelude ~prelude_str ~file ~section ~root ~force_output
-    ~output ~directives ~packages ~predicates =
+    ~output ~directives ~packages ~predicates ~format_code =
   Printexc.record_backtrace record_backtrace;
   let syntax =
     match syntax with Some syntax -> Some syntax | None -> Syntax.infer ~file
@@ -286,7 +286,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
   let preludes = preludes ~prelude ~prelude_str in
 
   let test_block ~ppf ~temp_file t =
-    let print_block () = Block.pp ?syntax ppf t in
+    let print_block () = Block.pp ?syntax ppf t ~format_code in
     if Block.is_active ?section t then
       match Block.value t with
       | Raw _ -> print_block ()
@@ -340,8 +340,8 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
             ~det:(fun () ->
               assert (syntax <> Some Cram);
               Mdx_top.in_env env (fun () ->
-                  run_toplevel_tests ?syntax ?root c ppf tests t))
-    else print_block ()
+                  run_toplevel_tests ?syntax ?root ~format_code c ppf tests t))
+    else Block.pp ?syntax ppf t
   in
   let gen_corrected file_contents items =
     let temp_file = Filename.temp_file "ocaml-mdx" ".output" in

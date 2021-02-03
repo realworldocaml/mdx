@@ -20,6 +20,7 @@ module Lexer_mdx = Lexer_mdx
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
+module Ocf_rpc = Ocf_rpc
 module Output = Output
 module Cram = Cram
 module Deprecated = Deprecated
