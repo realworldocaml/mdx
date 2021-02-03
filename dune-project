@@ -24,6 +24,8 @@
   ocamlfind
   fmt
   (cppo :build)
+  (csexp
+   (>= 1.3.2))
   astring
   logs
   (cmdliner
