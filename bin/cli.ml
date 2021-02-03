@@ -113,6 +113,13 @@ let force_output =
     (fun x -> `Force_output x)
     Arg.(value & flag & info [ "force-output" ] ~doc)
 
+let format_code =
+  let doc = "Format OCaml code." in
+  let env = Arg.env_var ~doc "MDX_FORMAT_CODE" in
+  named
+    (fun x -> `Format_code x)
+    Arg.(value & flag & info [ "format-code" ] ~env ~doc)
+
 type output = File of string | Stdout
 
 let output_conv =

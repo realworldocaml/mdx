@@ -24,6 +24,7 @@
    {{!Output}outputs}.  *)
 
 module Lexer_mdx = Lexer_mdx
+module Ocf_rpc = Ocf_rpc
 module Output = Output
 module Cram = Cram
 module Deprecated = Deprecated

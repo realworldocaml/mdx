@@ -2,9 +2,9 @@ Prelude can also be in a file
 
 # A Guided Tour
 
-```ocaml env=toto
+```ocaml env=toto,version>=4.09
 # raise Not_found
-Exception: Not_found.
+Exception: Not_found
 ```
 
 ```ocaml

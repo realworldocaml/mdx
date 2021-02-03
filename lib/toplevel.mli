@@ -31,12 +31,12 @@ val dump : t Fmt.t
 (** [dump] is the printer for dumping toplevel phrases. Useful for
    debugging. *)
 
-val pp : t Fmt.t
+val pp : ?format_code:bool -> t Fmt.t
 (** [pp] is the pretty-printer for top-level phrases. [pad] is the
    size of the optionnalwhitespace left padding (by default is is
    0). *)
 
-val pp_command : t Fmt.t
+val pp_command : ?format_code:bool -> t Fmt.t
 (** [pp_command] is the pretty-printer for toplevel commands. *)
 
 (** {2 Parser} *)

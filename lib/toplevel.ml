@@ -51,10 +51,13 @@ let pp_vpad ppf t =
   in
   aux t.vpad
 
-let pp_command ppf (t : t) =
+let pp_command ?(format_code = false) ppf (t : t) =
   match t.command with
   | [] -> ()
   | l ->
+      let l =
+        if format_code then Ocf_rpc.try_format_as_list ~toplevel:true l else l
+      in
       pp_vpad ppf t;
       List.iteri
         (fun i s ->
@@ -65,9 +68,9 @@ let pp_command ppf (t : t) =
             | _ -> Fmt.pf ppf "%a  %s\n" pp_pad t.hpad s)
         l
 
-let pp ppf (t : t) =
-  pp_command ppf t;
-  pp_lines (Output.pp ~pad:t.vpad) ppf t.output
+let pp ?format_code ppf (t : t) =
+  pp_command ?format_code ppf t;
+  pp_lines (Output.pp ~pad:t.hpad) ppf t.output
 
 let lexbuf ~(pos : Lexing.position) s =
   let lexbuf = Lexing.from_string s in
