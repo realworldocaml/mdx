@@ -33,4 +33,5 @@ val run_exn :
   directives:Mdx_top.directive list ->
   packages:string list ->
   predicates:string list ->
+  format_code:bool ->
   int

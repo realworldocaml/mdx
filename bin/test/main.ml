@@ -21,7 +21,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     (`Syntax syntax) (`Silent silent) (`Verbose_findlib verbose_findlib)
     (`Prelude prelude) (`Prelude_str prelude_str) (`File file)
     (`Section section) (`Root root) (`Force_output force_output)
-    (`Output output) =
+    (`Output output) (`Format_code format_code) =
   let output =
     match (output : Cli.output option) with
     | Some Stdout -> Some `Stdout
@@ -40,7 +40,7 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
   let predicates = [ Mdx_test.Predicate.byte; Mdx_test.Predicate.toploop ] in
   Mdx_test.run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax
     ~silent ~verbose_findlib ~prelude ~prelude_str ~file ~section ~root
-    ~force_output ~output ~directives ~packages ~predicates
+    ~force_output ~output ~directives ~packages ~predicates ~format_code
 
 let report_error_in_block block msg =
   let kind =
@@ -56,18 +56,23 @@ let report_error_in_block block msg =
     Stable_printer.Location.print_loc block.loc kind msg
 
 let run setup non_deterministic silent_eval record_backtrace syntax silent
-    verbose_findlib prelude prelude_str file section root force_output output :
-    int =
-  try
-    run_exn setup non_deterministic silent_eval record_backtrace syntax silent
-      verbose_findlib prelude prelude_str file section root force_output output
-  with
-  | Failure f ->
-      prerr_endline f;
-      1
-  | Mdx_test.Test_block_failure (block, msg) ->
-      report_error_in_block block msg;
-      1
+    verbose_findlib prelude prelude_str file section root force_output output
+    format_code : int =
+  let return_code =
+    try
+      run_exn setup non_deterministic silent_eval record_backtrace syntax silent
+        verbose_findlib prelude prelude_str file section root force_output
+        output format_code
+    with
+    | Failure f ->
+        prerr_endline f;
+        1
+    | Mdx_test.Test_block_failure (block, msg) ->
+        report_error_in_block block msg;
+        1
+  in
+  Ocf_rpc.halt ();
+  return_code
 
 (**** Cmdliner ****)
 
@@ -81,7 +86,7 @@ let cmd =
       pure run $ Cli.setup $ Cli.non_deterministic $ Cli.silent_eval
       $ Cli.record_backtrace $ Cli.syntax $ Cli.silent $ Cli.verbose_findlib
       $ Cli.prelude $ Cli.prelude_str $ Cli.file $ Cli.section $ Cli.root
-      $ Cli.force_output $ Cli.output),
+      $ Cli.force_output $ Cli.output $ Cli.format_code),
     Term.info "ocaml-mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man )
 
 let main () = Term.(exit_status @@ eval cmd)

@@ -4,7 +4,8 @@
  (preprocess
   (action
    (run %{bin:cppo} -V OCAML:%{ocaml_version} %{input-file})))
- (libraries astring csexp fmt logs ocaml-version odoc-parser re result str
+ (libraries astring bos.setup csexp fmt logs ocaml-version
+   ocamlformat-rpc-lib odoc-parser re result sexplib0 str
    compiler-libs.common))
 
 (ocamllex lexer_mdx)

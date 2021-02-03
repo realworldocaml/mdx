@@ -2,6 +2,8 @@
 
 #### Added
 
+- Format ocaml blocks with ocamlformat-rpc, if installed (#335, @gpetiot)
+
 #### Changed
 
 - Use odoc-parser.0.9.0 (#333, @julow)

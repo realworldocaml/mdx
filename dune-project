@@ -27,14 +27,18 @@
   (csexp
    (>= 1.3.2))
   astring
+  bos
   (logs (>= 0.7.0))
   (cmdliner
    (>= 1.0.0))
   (re
    (>= 1.7.2))
   result
+  sexplib0
   (ocaml-version
    (>= 2.3.0))
+  ocamlformat-rpc-lib
+  (ocamlformat-rpc :with-test)
   (odoc-parser (>= 0.9.0))
   (lwt :with-test)
   (alcotest :with-test)))

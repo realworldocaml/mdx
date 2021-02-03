@@ -22,7 +22,7 @@ type t = line list
 
 let pp_line ?syntax ppf (l : line) =
   match l with
-  | Block b -> Fmt.pf ppf "%a\n" (Block.pp ?syntax) b
+  | Block b -> Fmt.pf ppf "%a\n" (Block.pp ?syntax ~format_code:false) b
   | Section (d, s) -> Fmt.pf ppf "%s %s\n" (String.make d '#') s
   | Text s -> (
       match syntax with
