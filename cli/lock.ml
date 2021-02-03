@@ -7,7 +7,7 @@ let check_root_packages ~local_packages =
       Rresult.R.error_msg
         "Cannot find any packages to vendor.\n\
          Either create some *.opam files in the local repository, or specify them manually via \
-         'duniverse opam <packages>'."
+         'opam monorepo lock <packages>'."
   | local_packages ->
       let pp_package_name fmt { Opam.name; _ } = Fmt.string fmt name in
       Common.Logs.app (fun l ->
