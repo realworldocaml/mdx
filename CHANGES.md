@@ -8,6 +8,8 @@
 
 ### Fixed
 
+- Fix a log that was still refering to the old tool name `duniverse` (#158, @rizo)
+
 ### Removed
 
 ### Security
