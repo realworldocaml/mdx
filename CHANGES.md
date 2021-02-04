@@ -9,8 +9,9 @@
 ### Fixed
 
 - Fix a log that was still refering to the old tool name `duniverse` (#158, @rizo)
-- Use `git ls-remote --symref <remote> HEAD` to find the main branch of a given remote. 
-  (#157, fixes #114, @TheLortex)
+- Improve how the default branch for a git repository is queried, fixing a bug
+  where opam-monorepo wouldn't work outside of of git repo and a bug where it wouldn't
+  work on non-english systems. (#157, fixes #114, @TheLortex)
 
 ### Removed
 
