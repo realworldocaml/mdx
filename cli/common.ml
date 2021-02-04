@@ -33,6 +33,10 @@ module Arg = struct
   let non_empty_list_opt =
     Cmdliner.Term.pure (function [] -> None | l -> Some l)
 
+  let keep_clone =
+    let doc = "Keep the `.git' directory after pulling the vendored soruces." in
+    named (fun x -> `Keep_clone x) Cmdliner.Arg.(value & flag & info [ "keep-clone" ] ~doc)
+
   let duniverse_repos =
     let open Cmdliner in
     let docv = "REPOSITORIES" in
