@@ -15,6 +15,19 @@ module Testable = struct
       | `Multiple_such_refs -> Format.pp_print_string fmt "Multiple_such_refs"
     in
     Alcotest.testable pp equal
+
+  let branch_of_symref_error =
+    let equal err err' =
+      match (err, err') with
+      | `Not_a_symref, `Not_a_symref -> true
+      | `Msg s, `Msg s' -> String.equal s s'
+      | _ -> false
+    in
+    let pp fmt = function
+      | `Msg _ as m -> Rresult.R.pp_msg fmt m
+      | `Not_a_symref -> Format.pp_print_string fmt "`Not_a_symref"
+    in
+    Alcotest.testable pp equal
 end
 
 module Ls_remote = struct
@@ -86,6 +99,58 @@ module Ls_remote = struct
         ~expected:(Error `No_such_ref)
         ();
     ]
+
+  let test_branch_of_symref =
+    let make_test ~name ~symref ~lines ~expected () =
+      let test_name = Printf.sprintf "Ls_remote.branch_of_symref: %s" name in
+      let test_fun () =
+        let actual = Duniverse_lib.Git.Ls_remote.branch_of_symref ~symref lines in
+        Alcotest.(check (result string Testable.branch_of_symref_error)) test_name expected actual
+      in
+      (test_name, `Quick, test_fun)
+    in
+    [
+      make_test ~name:"Empty output" ~symref:"abc" ~lines:[ "" ] ~expected:(Error `Not_a_symref) ();
+      make_test ~name:"No output" ~symref:"abc" ~lines:[] ~expected:(Error `Not_a_symref) ();
+      make_test ~name:"Typical output" ~symref:"HEAD"
+        ~lines:[ "ref: refs/heads/master  HEAD"; "0000        HEAD" ]
+        ~expected:(Ok "master") ();
+      make_test ~name:"Another typical output" ~symref:"HEAD"
+        ~lines:[ "ref: refs/heads/main  HEAD"; "0001        HEAD" ]
+        ~expected:(Ok "main") ();
+      make_test ~name:"Local project" ~symref:"HEAD"
+        ~lines:
+          [
+            "ref: refs/heads/mirage-4        HEAD";
+            "0002        HEAD";
+            "ref: refs/remotes/origin/master refs/remotes/origin/HEAD";
+            "0003        refs/remotes/origin/HEAD";
+          ]
+        ~expected:(Ok "mirage-4") ();
+      make_test ~name:"Error when HEAD points towards multiple branches" ~symref:"HEAD"
+        ~lines:
+          [
+            "ref: refs/heads/master        HEAD";
+            "ref: refs/heads/main          HEAD";
+            "ref: refs/heads/trunk         HEAD";
+            "0004     HEAD";
+          ]
+        ~expected:
+          (Error
+             (`Msg "Invalid `git ls-remote --symref` output. Too many lines starting by `ref:`."))
+        ();
+      make_test ~name:"Error when symref doesn't point to a branch" ~symref:"symref"
+        ~lines:[ "ref: refs/tags/v0.1        symref"; "0005     symref" ]
+        ~expected:
+          (Error
+             (`Msg
+               "Invalid `git ls-remote --symref` output. Failed to extract branch from ref \
+                `refs/tags/v0.1`."))
+        ();
+    ]
 end
 
-let suite = ("Git", Ls_remote.test_parse_output_line @ Ls_remote.test_commit_pointed_by)
+let suite =
+  ( "Git",
+    Ls_remote.test_parse_output_line @ Ls_remote.test_commit_pointed_by
+    @ Ls_remote.test_branch_of_symref )
