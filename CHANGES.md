@@ -9,6 +9,8 @@
 ### Fixed
 
 - Fix a log that was still refering to the old tool name `duniverse` (#158, @rizo)
+- Use `git ls-remote --symref <remote> HEAD` to find the main branch of a given remote. 
+  (#157, fixes #114, @TheLortex)
 
 ### Removed
 
