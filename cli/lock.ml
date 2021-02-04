@@ -237,6 +237,7 @@ let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only)
       local_opam_files pin_opam_files
   in
   calculate_opam ~build_only ~allow_jbuilder ~ocaml_version ~local_opam_files
+    ~pin_packages:[]
   >>= fun package_summaries ->
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
   compute_duniverse ~package_summaries >>= resolve_ref >>= fun duniverse ->
