@@ -111,7 +111,12 @@ let type_structure env str loc =
 #else
   let tstr, _, env =
 #endif
+#if OCAML_VERSION >= (4, 12, 0)
+    let _ = loc in
+    Typemod.type_structure env str
+#else
     Typemod.type_structure env str loc
+#endif
   in
   tstr, env
 
