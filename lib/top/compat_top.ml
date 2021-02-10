@@ -348,3 +348,25 @@ let match_env
 #if OCAML_VERSION >= (4, 8, 0)
   | Env_persistent (summary, _) -> persistent summary
 #endif
+
+let top_directive_name (toplevel_phrase : Parsetree.toplevel_phrase) =
+  match toplevel_phrase with
+  | Ptop_def _ -> None
+#if OCAML_VERSION >= (4, 8, 0)
+  | Ptop_dir { pdir_name = { txt; _}; _ } -> Some txt
+#else
+  | Ptop_dir (name, _) -> Some name
+#endif
+
+let top_directive_require pkg =
+#if OCAML_VERSION >= (4, 8, 0)
+  Parsetree.Ptop_dir
+    {
+      pdir_name = { txt = "require"; loc = Location.none };
+      pdir_arg =
+        Some { pdira_desc = Pdir_string pkg; pdira_loc = Location.none };
+      pdir_loc = Location.none;
+    }
+#else  
+  Parsetree.Ptop_dir ("require", Pdir_string pkg)
+#endif

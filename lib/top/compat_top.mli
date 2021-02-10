@@ -98,3 +98,10 @@ val match_env :
   module_unbound:(Env.summary -> 'a) ->
   Env.summary ->
   'a
+
+val top_directive_name : Parsetree.toplevel_phrase -> string option
+(** Returns the name of the toplevel directive or [None] if the given phrase
+    is not a directive *)
+
+val top_directive_require : string -> Parsetree.toplevel_phrase
+(** [top_directive require "pkg"] builds the AST for [#require "pkg"] *)
