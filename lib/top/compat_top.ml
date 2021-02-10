@@ -182,6 +182,17 @@ let sig_class_type id desc =
   Types.Sig_class_type (id, desc, Trec_not)
 #endif
 
+module Printtyp = struct
+  include Printtyp
+
+  let wrap_printing_env e f =
+    wrap_printing_env
+#if OCAML_VERSION >= (4, 7, 0)
+      ~error:false
+#endif
+      e f
+end
+
 let add_directive ~name ~doc kind =
 #if OCAML_VERSION >= (4, 3, 0)
   let directive = match kind with
