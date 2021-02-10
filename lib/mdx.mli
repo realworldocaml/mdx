@@ -42,6 +42,7 @@ module Syntax = Syntax
 module Label = Label
 module Dep = Dep
 module Ocaml_env = Ocaml_env
+module Stable_printer = Stable_printer
 
 include module type of Document
 

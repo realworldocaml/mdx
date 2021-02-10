@@ -15,16 +15,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Mdx.Migrate_ast
 open Mdx.Compat
 open Compat_top
-
-module Toploop = struct
-  include Toploop
-
-  let execute_phrase verbose ppf p =
-    execute_phrase verbose ppf (to_current.copy_toplevel_phrase p)
-end
 
 let redirect ~f =
   let stdout_backup = Unix.dup Unix.stdout in
@@ -473,7 +465,7 @@ let show_exception () =
       let ext =
         extension_constructor ~ext_type_path:Predef.path_exn ~ext_type_params:[]
           ~ext_args:desc.cstr_args ~ext_ret_type:ret_type
-          ~ext_private:Asttypes_.Public ~ext_loc:desc.cstr_loc
+          ~ext_private:Asttypes.Public ~ext_loc:desc.cstr_loc
           ~ext_attributes:desc.cstr_attributes
       in
       [ sig_typext id ext ])
@@ -486,7 +478,7 @@ let show_module () =
         Mty_signature
           (map_sig_attributes sg ~f:(fun attrs ->
                attribute ~name:(Location.mknoloc "...")
-                 ~payload:(Parsetree_.PStr [])
+                 ~payload:(Parsetree.PStr [])
                :: attrs))
     | mty -> mty
   in

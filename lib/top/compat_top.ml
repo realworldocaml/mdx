@@ -1,4 +1,4 @@
-open Mdx.Migrate_ast
+open Mdx.Compat
 
 #if OCAML_VERSION >= (4, 8, 0)
 let try_finally ~always f = Misc.try_finally f ~always
@@ -273,7 +273,7 @@ let map_sig_attributes ~f =
 
 let attribute ~name ~payload =
 #if OCAML_VERSION >= (4, 8, 0)
-  { Parsetree_.attr_name = name
+  { Parsetree.attr_name = name
   ; attr_payload = payload
   ; attr_loc = Location.none
   }

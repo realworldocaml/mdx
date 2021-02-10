@@ -153,6 +153,17 @@ module Env = struct
 end
 #endif
 
+module Printtyp = struct
+  include Printtyp
+
+  let wrap_printing_env e f =
+    wrap_printing_env
+#if OCAML_VERSION >= (4, 7, 0)
+      ~error:false
+#endif
+      e f
+end
+
 #if OCAML_VERSION >= (4, 9, 0)
 let init_path () = Compmisc.init_path ()
 #else

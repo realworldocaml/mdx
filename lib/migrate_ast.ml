@@ -24,6 +24,8 @@
  * DEALINGS IN THE SOFTWARE.
  *)
 
+[@@@warning "-32"]
+
 open Compat
 
 (* original modules *)
