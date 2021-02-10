@@ -29,7 +29,6 @@ module Library = Library
 module Ocaml_delimiter = Ocaml_delimiter
 module Part = Part
 module Block = Block
-module Migrate_ast = Migrate_ast
 module Mli_parser = Mli_parser
 module Compat = Compat
 module Util = Util
