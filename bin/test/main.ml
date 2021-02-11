@@ -15,7 +15,6 @@
  *)
 
 open Mdx
-open Migrate_ast
 
 let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     (`Silent_eval silent_eval) (`Record_backtrace record_backtrace)
@@ -53,8 +52,8 @@ let report_error_in_block block msg =
     | Cram _ -> "cram "
     | Toplevel _ -> "toplevel "
   in
-  Fmt.epr "%a: Error in the %scode block@]\n%s\n" Location.print_loc block.loc
-    kind msg
+  Fmt.epr "%a: Error in the %scode block@]\n%s\n"
+    Stable_printer.Location.print_loc block.loc kind msg
 
 let run setup non_deterministic silent_eval record_backtrace syntax silent
     verbose_findlib prelude prelude_str file section root force_output output :

@@ -1,3 +1,20 @@
+### unreleased
+
+#### Added
+
+#### Changed
+
+- Dropped OMP dependency and use handwritten compat layers instead
+  (#317, @NathanReb)
+
+#### Deprecated
+
+#### Removed
+
+#### Fixed
+
+#### Security
+
 ### 1.8.0
 
 #### Added

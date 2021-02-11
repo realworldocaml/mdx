@@ -1,7 +1,6 @@
 {
 open Result
 open Astring
-open Migrate_ast
 
 type token = [ `Block of Block.t | `Section of int * string | `Text of string ]
 
@@ -150,13 +149,13 @@ and cram_block = parse
     | Failure e ->
       let loc = Location.curr lexbuf in
       let msg =
-        Format.asprintf "%a: invalid code block: %s" Location.print_loc loc e
+        Format.asprintf "%a: invalid code block: %s" Stable_printer.Location.print_loc loc e
       in
       Util.Result.errorf "%s" msg
     | exn ->
       let loc = Location.curr lexbuf in
       let msg =
-        Format.asprintf "%a: %s" Location.print_loc loc (Printexc.to_string exn)
+        Format.asprintf "%a: %s" Stable_printer.Location.print_loc loc (Printexc.to_string exn)
       in
       Util.Result.errorf "%s" msg
 
@@ -167,13 +166,13 @@ let cram_token lexbuf =
     | Failure e ->
       let loc = Location.curr lexbuf in
       let msg =
-        Format.asprintf "%a: invalid code block: %s" Location.print_loc loc e
+        Format.asprintf "%a: invalid code block: %s" Stable_printer.Location.print_loc loc e
       in
       Util.Result.errorf "%s" msg
     | exn ->
       let loc = Location.curr lexbuf in
       let msg =
-        Format.asprintf "%a: %s" Location.print_loc loc (Printexc.to_string exn)
+        Format.asprintf "%a: %s" Stable_printer.Location.print_loc loc (Printexc.to_string exn)
       in
       Util.Result.errorf "%s" msg
 }
