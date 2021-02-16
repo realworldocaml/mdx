@@ -59,7 +59,7 @@ let with_dir root f =
         r
       with e ->
         Sys.chdir old_d;
-        raise e )
+        raise e)
 
 let get_env unset_variables =
   let env = Array.to_list (Unix.environment ()) in
@@ -89,7 +89,7 @@ let root_dir ?root ?block () =
   | Some { dir = Some d; loc = { loc_start = { pos_fname; _ }; _ }; _ } -> (
       match root with
       | Some r -> Some (r / d)
-      | None -> Some (Filename.dirname pos_fname / d) )
+      | None -> Some (Filename.dirname pos_fname / d))
   | None -> root
 
 let resolve_root file dir root =
@@ -211,7 +211,7 @@ let read_parts file =
     | parts ->
         let f = { first = parts; current = parts } in
         Hashtbl.add files file f;
-        f )
+        f)
 
 let read_part file part =
   let parts = read_parts file in
@@ -356,16 +356,16 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
         | Block t -> (
             List.iter (fun (k, v) -> Unix.putenv k v) (Block.set_variables t);
             try test_block ~ppf ~temp_file t
-            with Failure msg -> raise (Test_block_failure (t, msg)) ))
+            with Failure msg -> raise (Test_block_failure (t, msg))))
       items;
     Format.pp_print_flush ppf ();
     Buffer.contents buf
   in
-  ( match output with
+  (match output with
   | Some `Stdout -> Mdx.run_to_stdout ?syntax ~f:gen_corrected file
   | Some (`File outfile) ->
       Mdx.run_to_file ?syntax ~outfile ~f:gen_corrected file
-  | None -> Mdx.run ?syntax ~force_output ~f:gen_corrected file )
+  | None -> Mdx.run ?syntax ~force_output ~f:gen_corrected file)
   >>! fun () ->
   Hashtbl.iter (write_parts ~force_output) files;
   0
