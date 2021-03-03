@@ -14,6 +14,16 @@ module Arg = struct
         & opt fpath (Fpath.v (Sys.getcwd ()))
         & info [ "r"; "repo" ] ~docv:"TARGET_REPO" ~doc)
 
+  let lockfile =
+    let doc =
+      "Path to the lockfile to use or generate. Defaults \
+       $(b,<project-name>.opam.locked)"
+    in
+    named
+      (fun x -> `Lockfile x)
+      Cmdliner.Arg.(
+        value & opt (some fpath) None & info [ "l"; "lockfile" ] ~doc)
+
   let yes =
     let doc = "Do not prompt for confirmation and always assume yes" in
     named

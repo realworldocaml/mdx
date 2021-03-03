@@ -18,6 +18,9 @@ module Arg : sig
   (** CLI option to specify the root directory of the project. Used to find root packages,
       duniverse files and directories. Defaults to the current directory. *)
 
+  val lockfile : [ `Lockfile of Fpath.t option ] Cmdliner.Term.t
+  (** CLI option to specify the path to the lockfile to use or generate. *)
+
   val yes : [ `Yes of bool ] Cmdliner.Term.t
   (** CLI flag to skip any prompt and perform actions straight away. The value of this flag
       must be passed to [Prompt.confirm]. *)

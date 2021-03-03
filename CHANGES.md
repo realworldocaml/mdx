@@ -6,6 +6,9 @@
   provided, use the value of the version field in the opam files instead of the
   default `zdev` if it is defined (#183, @emillon)
 
+- Add a `-l`/`--lockfile` command line option to explicitly set the lockfile
+  to use or generate in `pull` or `lock` (#163, @NathanReb)
+
 ### Changed
 
 ### Deprecated
@@ -21,6 +24,11 @@
 - Simply warn instead of exiting when the dune-project file can't be parsed
   by `pull` as it only use it to suggest updating the lang version for
   convenience (#191, @NathanReb)
+
+- Fix a bug where `pull` and `lock` would expect the lockfile to sit in a
+  different place and pull would fail. `pull` now simply looks for a
+  `.opam.locked` file and pulls it unless there are multiple matching files in
+  the repository's root. (#163, @NathanReb)
 
 ### Removed
 

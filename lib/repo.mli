@@ -28,4 +28,5 @@ val lockfile :
     file at the root of the repo.
     If it contains multiple packages, then it's the ["<project_name>.opam.locked"] file
     at the root of the repo.
-    One can provide [local_packages] if they were already computed. *)
+    One can provide [local_packages] if they were already computed are if only a subset
+    of the local packages must be taken into account. *)

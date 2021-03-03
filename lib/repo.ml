@@ -4,6 +4,9 @@ type t = Fpath.t
 
 let folder_blacklist = [ "_build"; "_opam"; Fpath.to_string Config.vendor_dir ]
 
+(* We accept a filter here instead of filtering the result because
+   some repos have duplicate dummy opam files that would fail the uniqueness
+   check. Dune is a good example, the blackbox tests contain duplicate opam files *)
 let local_packages ~recurse ?filter t =
   let open Result.O in
   Bos.OS.Dir.exists t >>= fun exists ->
@@ -51,7 +54,7 @@ let project_name t =
   let dune_project = dune_project t in
   Dune_file.Raw.as_sexps dune_project >>= Dune_file.Project.name
 
-let lockfile ~name t = Fpath.(t / (name ^ ".opam.locked"))
+let lockfile ~name t = Fpath.(t / (name ^ Config.lockfile_ext))
 
 let lockfile ?local_packages:lp t =
   let open Result.O in
