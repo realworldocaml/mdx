@@ -104,7 +104,8 @@ let root_depexts local_opam_files =
     (fun _pkg (_version, opam_file) acc -> OpamFile.OPAM.depexts opam_file :: acc)
     local_opam_files []
 
-let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only) (`Local_packages lp) () =
+let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only)
+    (`Allow_jbuilder allow_jbuilder) (`Local_packages lp) () =
   let open Rresult.R.Infix in
   local_packages ~recurse ~explicit_list:lp repo >>= fun local_paths ->
   let local_packages =
@@ -114,7 +115,8 @@ let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only) (`Local_pa
   check_root_packages ~local_packages >>= fun () ->
   local_paths_to_opam_map local_paths >>= fun local_opam_files ->
   Repo.lockfile ~local_packages repo >>= fun lockfile_path ->
-  calculate_opam ~build_only ~local_opam_files ~local_packages >>= fun package_summaries ->
+  calculate_opam ~build_only ~allow_jbuilder ~local_opam_files ~local_packages
+  >>= fun package_summaries ->
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
   compute_duniverse ~package_summaries >>= resolve_ref >>= fun duniverse ->
   let root_packages = String.Map.keys local_paths in
@@ -142,6 +144,13 @@ let recurse_opam =
 let build_only =
   let doc = "Only lock build dependencies, i.e. ignore the test deps." in
   Common.Arg.named (fun x -> `Build_only x) Arg.(value & flag & info ~doc [ "build-only" ])
+
+let allow_jbuilder =
+  let doc =
+    "Include packages depending on `jbuilder` for the resolution. Please note that since dune 2.0, \
+     `jbuild` files are not supported: the files will need to be upgraded manually."
+  in
+  Common.Arg.named (fun x -> `Allow_jbuilder x) Arg.(value & flag & info ~doc [ "allow-jbuilder" ])
 
 let packages =
   let doc =
@@ -185,6 +194,7 @@ let info =
 let term =
   let open Term in
   term_result
-    (const run $ Common.Arg.repo $ recurse_opam $ build_only $ packages $ Common.Arg.setup_logs ())
+    ( const run $ Common.Arg.repo $ recurse_opam $ build_only $ allow_jbuilder $ packages
+    $ Common.Arg.setup_logs () )
 
 let cmd = (term, info)

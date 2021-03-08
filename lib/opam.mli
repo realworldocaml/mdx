@@ -44,7 +44,7 @@ module Pp : sig
   val hash : OpamHash.t Fmt.t
 end
 
-val depends_on_dune : OpamTypes.filtered_formula -> bool
+val depends_on_dune : allow_jbuilder:bool -> OpamTypes.filtered_formula -> bool
 (** Returns whether the given depends field formula contains a dependency to dune or jbuilder *)
 
 val pull_tree :

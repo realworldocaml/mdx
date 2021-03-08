@@ -1,11 +1,11 @@
 open Import
 
-let depends_on_dune (formula : OpamTypes.filtered_formula) =
+let depends_on_dune ~allow_jbuilder (formula : OpamTypes.filtered_formula) =
   let dune = OpamPackage.Name.of_string "dune" in
   let jbuilder = OpamPackage.Name.of_string "jbuilder" in
   let is_duneish name =
     let eq n n' = OpamPackage.Name.compare n n' = 0 in
-    eq dune name || eq jbuilder name
+    eq dune name || (allow_jbuilder && eq jbuilder name)
   in
   OpamFormula.fold_left (fun acc (name, _) -> acc || is_duneish name) false formula
 
