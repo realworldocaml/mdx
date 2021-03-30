@@ -8,6 +8,10 @@
 
 #### Fixed
 
+- Use the same output as the normal toplevel. Mdx used to carry an unsafe patch
+  to work around a bug fixed in OCaml 4.06 and that patch would change the
+  printed types in some corner cases. (#322, @emillon)
+
 #### Removed
 
 #### Security
