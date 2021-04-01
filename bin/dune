@@ -8,4 +8,9 @@
  (public_name ocaml-mdx)
  (package mdx)
  (modules :standard \ cli)
- (libraries cli mdx))
+ (libraries cli mdx mdx_test))
+
+(install
+ (section bin)
+ (files
+  (main.exe as mdx)))
