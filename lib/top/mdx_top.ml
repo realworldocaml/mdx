@@ -245,7 +245,7 @@ module Rewrite = struct
 
   let active_rewriters () =
     List.filter
-      (fun t -> is_persistent_value !Toploop.toplevel_env t.witness)
+      (fun t -> is_persistent_value !Opttoploop.toplevel_env t.witness)
       [ lwt; async ]
 
   let phrase phrase =
@@ -263,7 +263,7 @@ module Rewrite = struct
           let pstr =
             try
               let tstr, env =
-                type_structure !Toploop.toplevel_env pstr Location.none
+                type_structure !Opttoploop.toplevel_env pstr Location.none
               in
               List.map2 (item ts env) pstr tstr.Typedtree.str_items
             with _ -> pstr
@@ -275,7 +275,7 @@ module Rewrite = struct
   let preload verbose ppf =
     let require pkg =
       let p = Compat_top.top_directive_require pkg in
-      let _ = Toploop.execute_phrase verbose ppf p in
+      let _ = Opttoploop.execute_phrase verbose ppf p in
       ()
     in
     match active_rewriters () with
@@ -326,7 +326,7 @@ let toplevel_exec_phrase t ppf p =
       if !Clflags.dump_parsetree then Printast.top_phrase ppf phrase;
       if !Clflags.dump_source then Pprintast.top_phrase ppf phrase;
       Env.reset_cache_toplevel ();
-      Toploop.execute_phrase t.verbose ppf phrase
+      Opttoploop.execute_phrase t.verbose ppf phrase
 
 type var_and_value = V : 'a ref * 'a -> var_and_value
 
@@ -597,27 +597,27 @@ let in_words s =
   in
   split 0 0
 
-let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates
-    () =
+let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates () =
+  Clflags.native_code := true;
   Clflags.real_paths := false;
-  Toploop.set_paths ();
+  Opttoploop.set_paths ();
   Mdx.Compat.init_path ();
-  Toploop.toplevel_env := Compmisc.initial_env ();
+  Opttoploop.toplevel_env := Compmisc.initial_env ();
   Sys.interactive := false;
   patch_env ();
   List.iter
     (function
-      | Directory path -> Topdirs.dir_directory path
-      | Load path -> Topdirs.dir_load Format.err_formatter path)
+      | Directory path -> Opttopdirs.dir_directory path
+      | Load path -> Opttopdirs.dir_load Format.err_formatter path)
     directives;
-  Topfind.don't_load_deeply packages;
-  Topfind.add_predicates predicates;
+  Opttopfind.don't_load_deeply packages;
+  Opttopfind.add_predicates predicates;
   (* [require] directive is overloaded to toggle the [errors] reference when
      an exception is raised. *)
-  Toploop.add_directive "require"
-    (Toploop.Directive_string
-       (fun s -> protect Topfind.load_deeply (in_words s)))
-    { Toploop.section = "Loading code"; doc = "Load an ocamlfind package" };
+  Opttoploop.add_directive "require"
+    (Opttoploop.Directive_string
+       (fun s -> protect Opttopfind.load_deeply (in_words s)))
+    { Opttoploop.section = "Loading code"; doc = "Load an ocamlfind package" };
   let t = { verbose = v; silent = s; verbose_findlib } in
   show ();
   show_val ();
@@ -633,56 +633,22 @@ let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates
 
 let envs = Hashtbl.create 8
 
-let rec save_summary acc s =
-  let default_case summary = save_summary acc summary in
-  let add summary id =
-    let acc =
-      if not (is_predef_or_global id) then
-        let name = Translmod.toplevel_name id in
-        name :: acc
-      else acc
-    in
-    save_summary acc summary
-  in
-  match_env s ~value:add
-    ~module_:(fun summary id ~present ->
-      match present with true -> add summary id | false -> acc)
-    ~open_:(fun summary x ->
-      match x with
-      | Pident id -> add summary id
-      | Pdot _ | Papply _ -> default_case summary)
-    ~class_:add ~functor_arg:add ~extension:add
-    ~empty:(fun () -> acc)
-    ~constraints:default_case ~cltype:default_case ~modtype:default_case
-    ~type_:default_case ~copy_types:default_case ~persistent:default_case
-    ~value_unbound:default_case ~module_unbound:default_case
-
 let default_env = ref (Compmisc.initial_env ())
 
 let first_call = ref true
-
-let env_deps env =
-  let names = save_summary [] (Env.summary env) in
-  let objs = List.map Toploop.getvalue names in
-  (env, names, objs)
-
-let load_env env names objs =
-  Toploop.toplevel_env := env;
-  List.iter2 Toploop.setvalue names objs
 
 let in_env e f =
   let env_name = Mdx.Ocaml_env.name e in
   if !first_call then (
     (* We will start from the *correct* initial environment with
        everything loaded, for each environment. *)
-    default_env := !Toploop.toplevel_env;
+    default_env := !Opttoploop.toplevel_env;
     first_call := false);
-  let env, names, objs =
-    try Hashtbl.find envs env_name with Not_found -> env_deps !default_env
+  let env  =
+    try Hashtbl.find envs env_name with Not_found -> !default_env
   in
-  load_env env names objs;
+  Opttoploop.toplevel_env := env;
   let res = f () in
-  let env = !Toploop.toplevel_env in
-  let env, names, objs = env_deps env in
-  Hashtbl.replace envs env_name (env, names, objs);
+  let env = !Opttoploop.toplevel_env in
+  Hashtbl.replace envs env_name env;
   res

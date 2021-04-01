@@ -32,12 +32,10 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
   let packages =
     [
       Mdx_test.Package.unix;
-      Mdx_test.Package.findlib_top;
       Mdx_test.Package.findlib_internal;
-      Mdx_test.Package.compilerlibs_toplevel;
     ]
   in
-  let predicates = [ Mdx_test.Predicate.byte; Mdx_test.Predicate.toploop ] in
+  let predicates = [] in
   Mdx_test.run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax
     ~silent ~verbose_findlib ~prelude ~prelude_str ~file ~section ~root
     ~force_output ~output ~directives ~packages ~predicates
