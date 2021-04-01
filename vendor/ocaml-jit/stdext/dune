@@ -1,0 +1,5 @@
+(library
+ (name stdext)
+ (public_name mdx.__jit__stdext)
+ (preprocess
+  (pps ppx_deriving.std)))

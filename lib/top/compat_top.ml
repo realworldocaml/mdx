@@ -196,10 +196,10 @@ end
 let add_directive ~name ~doc kind =
 #if OCAML_VERSION >= (4, 3, 0)
   let directive = match kind with
-    | `Bool f -> Toploop.Directive_bool f
+    | `Bool f -> Opttoploop.Directive_bool f
     | `Show_prim to_sig ->
         let show_prim to_sig lid =
-          let env = !Toploop.toplevel_env in
+          let env = !Opttoploop.toplevel_env in
           let loc = Location.none in
           try
             let s =
@@ -219,9 +219,9 @@ let add_directive ~name ~doc kind =
           | Not_found -> Format.printf "@[Unknown element.@]@."
           | Exit -> ()
         in
-    (Toploop.Directive_ident (show_prim to_sig))
+    (Opttoploop.Directive_ident (show_prim to_sig))
   in
-  Toploop.add_directive name
+  Opttoploop.add_directive name
     directive
     { section = "Environment queries"; doc }
 #else
@@ -298,7 +298,7 @@ let attribute ~name ~payload =
 #endif
 
 module Linked = struct
-  include (Topdirs : sig end)
+  include (Opttopdirs : sig end)
 #if OCAML_VERSION >= (4, 3, 0)
   include (Ephemeron : sig end)
 #endif

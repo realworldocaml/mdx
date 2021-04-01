@@ -14,44 +14,68 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-let src = Logs.Src.create "cram.test"
+open Mdx
 
-module Log = (val Logs.src_log src : Logs.LOG)
-
-let ( / ) x y = match x with "." -> y | _ -> Filename.concat x y
-
-let split_exe_extension path =
-  let exe = ".exe" in
-  if Filename.check_suffix path exe then (Filename.chop_extension path, exe)
-  else (path, "")
-
-let run (`Setup ()) _ _ _ _ _ _ _ _ _ _ =
-  let base = Filename.basename Sys.argv.(0) in
-  let dir = Filename.dirname Sys.argv.(0) in
-  let cmd =
-    match base with
-    | "main.exe" -> dir / "test" / "main.exe"
-    | x when String.length x > 6 && String.sub x 0 6 = "ocaml-" ->
-        let x_without_ext, x_ext = split_exe_extension x in
-        (dir / x_without_ext) ^ "-test" ^ x_ext
-    | x ->
-        let x_without_ext, x_ext = split_exe_extension x in
-        (dir / "ocaml-") ^ x_without_ext ^ "-test" ^ x_ext
+let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
+    (`Silent_eval silent_eval) (`Record_backtrace record_backtrace)
+    (`Syntax syntax) (`Silent silent) (`Verbose_findlib verbose_findlib)
+    (`Prelude prelude) (`Prelude_str prelude_str) (`File file)
+    (`Section section) (`Root root) (`Force_output force_output)
+    (`Output output) =
+  let output =
+    match (output : Cli.output option) with
+    | Some Stdout -> Some `Stdout
+    | Some (File outfile) -> Some (`File outfile)
+    | None -> None
   in
-  let argv = Array.sub Sys.argv 1 (Array.length Sys.argv - 1) in
-  argv.(0) <- cmd;
-  Log.debug (fun l -> l "executing %a" Fmt.(Dump.array string) argv);
-  let pid = Unix.create_process cmd argv Unix.stdin Unix.stdout Unix.stderr in
-  let code = Mdx.Util.Process.wait ~pid in
-  exit code
+  let directives = [] in
+  let packages =
+    [
+      Mdx_test.Package.unix;
+      Mdx_test.Package.findlib_internal;
+    ]
+  in
+  let predicates = [] in
+  Mdx_test.run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax
+    ~silent ~verbose_findlib ~prelude ~prelude_str ~file ~section ~root
+    ~force_output ~output ~directives ~packages ~predicates
+
+let report_error_in_block block msg =
+  let kind =
+    match block.Block.value with
+    | Raw _ -> ""
+    | Include { file_kind = Fk_ocaml _; _ } -> "OCaml file include "
+    | Include { file_kind = Fk_other _; _ } -> "file include "
+    | OCaml _ -> "OCaml "
+    | Cram _ -> "cram "
+    | Toplevel _ -> "toplevel "
+  in
+  Fmt.epr "%a: Error in the %scode block@]\n%s\n"
+    Stable_printer.Location.print_loc block.loc kind msg
+
+let run setup non_deterministic silent_eval record_backtrace syntax silent
+    verbose_findlib prelude prelude_str file section root force_output output :
+    int =
+  try
+    run_exn setup non_deterministic silent_eval record_backtrace syntax silent
+      verbose_findlib prelude prelude_str file section root force_output output
+  with
+  | Failure f ->
+      prerr_endline f;
+      1
+  | Mdx_test.Test_block_failure (block, msg) ->
+      report_error_in_block block msg;
+      1
+
+(**** Cmdliner ****)
 
 open Cmdliner
 
-let cmd : int Term.t * Term.info =
+let cmd =
   let doc = "Test markdown files." in
   ( Term.(
       pure run $ Cli.setup $ Cli.non_deterministic $ Cli.silent_eval
-      $ Cli.syntax $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude
-      $ Cli.prelude_str $ Cli.file $ Cli.section $ Cli.root $ Cli.force_output
-      $ Cli.output),
+      $ Cli.record_backtrace $ Cli.syntax $ Cli.silent $ Cli.verbose_findlib
+      $ Cli.prelude $ Cli.prelude_str $ Cli.file $ Cli.section $ Cli.root
+      $ Cli.force_output $ Cli.output),
     Term.info "test" ~doc )

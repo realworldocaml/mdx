@@ -1,0 +1,6 @@
+(library
+ (name opttoplevel)
+ (public_name mdx.opttoplevel)
+ (modes native)
+ (wrapped false)
+ (libraries compiler-libs compiler-libs.optcomp dynlink))
