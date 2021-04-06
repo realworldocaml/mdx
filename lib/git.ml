@@ -34,9 +34,22 @@ module Ls_remote = struct
     in
     List.fold_left ~f ~init:{ maybe_packed = None; not_packed = None } lines
 
+  let is_commit target = List.exists ~f:(fun (commit, _) -> commit = target)
+
+  let looks_like_commit ref =
+    String.length ref > 6
+    && Astring.(String.for_all Char.Ascii.is_hex_digit ref)
+
   let commit_pointed_by ~ref output_lines =
+    let log_approx () =
+      Logs.debug (fun l ->
+          l "Ref '%s' looks like a commit but hasn't been found in the remote."
+            ref);
+      Ok ref
+    in
     let open Result.O in
     match output_lines with
+    | [ "" ] when looks_like_commit ref -> log_approx ()
     | [ "" ] -> Error `No_such_ref
     | _ -> (
         Result.List.map ~f:parse_output_line output_lines
@@ -48,6 +61,8 @@ module Ls_remote = struct
         match (search "refs/tags/", search "refs/heads/") with
         | Some _, Some _ -> Error `Multiple_such_refs
         | Some commit, None | None, Some commit -> Ok commit
+        | None, None when is_commit ref parsed_lines -> Ok ref
+        | None, None when looks_like_commit ref -> log_approx ()
         | None, None -> Error `No_such_ref)
 
   let parse_ref_output_line ~symref line =

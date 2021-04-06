@@ -33,6 +33,11 @@
   `.opam.locked` file and pulls it unless there are multiple matching files in
   the repository's root. (#163, @NathanReb)
 
+- Fix failure when a package is pinned to a specific commit. `lock` now skips
+  resolution when the ref is actually a commit pointed by a remote branch or 
+  when it looks like a commit (hexadecimal characters only, at least 7 
+  characters-long). (#195, fixes #127, @TheLortex)
+
 ### Removed
 
 ### Security
