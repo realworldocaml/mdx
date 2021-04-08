@@ -13,6 +13,8 @@ end
 module Predicate : sig
   val byte : string
 
+  val native : string
+
   val toploop : string
 end
 

@@ -75,15 +75,17 @@ let load pkglist =
           Findlib.type_of_recorded_package pkg = Findlib.Record_core in
       if not loaded then begin
         (* Determine the package directory: *)
-	let d = Findlib.package_directory pkg in
-	add_dir d;
+        let d = Findlib.package_directory pkg in
+        add_dir d;
         (* Leave pkg out if mentioned in !forbidden *)
 	if not incore then begin
 	  (* Determine the 'archive' property: *)
 	  let archive =
 	    try Findlib.package_property !predicates pkg "archive"
 	    with
-	      Not_found -> ""
+	      Not_found ->
+       try Findlib.package_property !predicates pkg "archive"
+       with Not_found -> "" (* This should really report a loading error or warning *)
 	  in
 	  (* Split the 'archive' property and load the files: *)
 	  let archives = Fl_split.in_words archive in
