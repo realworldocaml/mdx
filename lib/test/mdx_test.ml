@@ -390,5 +390,7 @@ end
 module Predicate = struct
   let byte = "byte"
 
+  let native = "native"
+
   let toploop = "toploop"
 end
