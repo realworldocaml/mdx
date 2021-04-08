@@ -81,7 +81,7 @@ let load pkglist =
 	if not incore then begin
 	  (* Determine the 'archive' property: *)
 	  let archive =
-	    try Findlib.package_property !predicates pkg "archive"
+	    try Findlib.package_property !predicates pkg "plugin"
 	    with
 	      Not_found ->
        try Findlib.package_property !predicates pkg "archive"
