@@ -571,6 +571,9 @@ let protect f arg =
     let _ = f arg in
     ()
   with
+  | Dynlink.Error err ->
+    errors := true;
+    print_string ("Error while loading: " ^ (Dynlink.error_message err))
   | Failure s ->
       errors := true;
       print_string s
