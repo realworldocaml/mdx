@@ -377,20 +377,20 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               try
                 let decl = Env.find_type path env in
                 match decl with
-                | {type_kind = Type_abstract; type_manifest = None} ->
+                | {type_kind = Type_abstract; type_manifest = None; _} ->
                     Oval_stuff "<abstr>"
-                | {type_kind = Type_abstract; type_manifest = Some body} ->
+                | {type_kind = Type_abstract; type_manifest = Some body; _} ->
                     tree_of_val depth obj
                       (try Ctype.apply env decl.type_params body ty_list with
                          Ctype.Cannot_apply -> abstract_type)
-                | {type_kind = Type_variant constr_list; type_unboxed} ->
+                | {type_kind = Type_variant constr_list; type_unboxed; _} ->
                     let unbx = type_unboxed.unboxed in
                     let tag =
                       if unbx then Cstr_unboxed
                       else if O.is_block obj
                       then Cstr_block(O.tag obj)
                       else Cstr_constant(O.obj obj) in
-                    let {cd_id;cd_args;cd_res} =
+                    let {cd_id;cd_args;cd_res; _} =
                       Datarepr.find_constr_by_tag tag constr_list in
                     let type_params =
                       match cd_res with
@@ -424,7 +424,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                                         (Out_name.create (Ident.name cd_id)),
                                       [ r ])
                     end
-                | {type_kind = Type_record(lbl_list, rep)} ->
+                | {type_kind = Type_record(lbl_list, rep); _} ->
                     begin match check_depth depth obj ty with
                       Some x -> x
                     | None ->
@@ -440,7 +440,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                           env path decl.type_params ty_list
                           lbl_list pos obj unbx
                     end
-                | {type_kind = Type_open} ->
+                | {type_kind = Type_open; _} ->
                     tree_of_extension path depth obj
               with
                 Not_found ->                (* raised by Env.find_type *)
@@ -490,7 +490,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           lbl_list pos obj unboxed =
         let rec tree_of_fields pos = function
           | [] -> []
-          | {ld_id; ld_type} :: remainder ->
+          | {ld_id; ld_type; _} :: remainder ->
               let ty_arg =
                 try
                   Ctype.apply env type_params ld_type
