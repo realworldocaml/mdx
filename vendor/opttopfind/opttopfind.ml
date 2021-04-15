@@ -93,8 +93,7 @@ let load pkglist =
 	    (fun arch ->
 	       let arch' = Findlib.resolve_path ~base:d arch in
 	       !log (arch' ^ ": loaded");
-	       Opttopdirs.dir_load
-		 Format.std_formatter arch')
+	       Opttopdirs.dir_load_exn Format.std_formatter arch')
 	    archives;
           (* Determine the 'ppx' property: *)
           let ppx =
