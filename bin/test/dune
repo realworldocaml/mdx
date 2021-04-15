@@ -2,4 +2,5 @@
  (name main)
  (public_name ocaml-mdx-test)
  (package mdx)
+ (link_flags -linkall :standard)
  (libraries cli mdx.test))
