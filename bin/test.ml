@@ -16,6 +16,11 @@
 
 open Mdx
 
+(* The two lines below are required to get the compiler to properly link
+   all of the stubs for Unix and to allow successful dynamic loading of Lwt *)
+external _exit : int -> 'a = "unix_exit"
+let _ = if Sys.opaque_identity false then _exit 0 else ();;
+
 let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
     (`Silent_eval silent_eval) (`Record_backtrace record_backtrace)
     (`Syntax syntax) (`Silent silent) (`Verbose_findlib verbose_findlib)
