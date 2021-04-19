@@ -37,4 +37,5 @@
    (>= 2.3.0))
   (odoc-parser (>= 0.9.0))
   (lwt :with-test)
-  (alcotest :with-test)))
+  (alcotest :with-test)
+  ppx_deriving))
