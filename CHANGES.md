@@ -2,6 +2,9 @@
 
 #### Added
 
+- Add a new `dune-gen` subcommand that generates testing code for Dune to build
+  and run with the new `mdx` stanza. (#305, @voodoos)
+
 #### Changed
 
 #### Deprecated
