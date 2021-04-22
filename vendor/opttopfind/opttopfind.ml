@@ -18,10 +18,15 @@ let directories = ref [ Findlib.ocaml_stdlib() ];;
  * is _true_. It is set to false just before the script starts.
  *)
 
-let real_toploop =
+let real_toploop () =
   !Sys.interactive;;
 
-let log = ref (if real_toploop then prerr_endline else ignore)
+let log =
+  ref (fun msg ->
+      if real_toploop () then
+        prerr_endline msg
+      else
+        ())
 
 let rec remove_dups l =
   match l with
@@ -321,7 +326,7 @@ Hashtbl.add
 
 
 let announce() =
-  if real_toploop then begin
+  if real_toploop () then begin
     (* Assume we are in a toploop and not a script *)
     let msg_thread =
       "  #thread;;                 to enable threads\n" in
