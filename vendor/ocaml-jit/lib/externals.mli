@@ -14,7 +14,7 @@
  *
  *)
 
-val memalign : int -> (Address.t, int) result
+val memalign : int -> (Address.t, string) result
 
 val load_section : Address.t -> string -> int -> unit
 

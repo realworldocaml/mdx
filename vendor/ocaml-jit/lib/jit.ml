@@ -45,7 +45,7 @@ let alloc_memory binary_section =
   let size = round_to_pages (X86_emitter.size binary_section) in
   match Externals.memalign size with
   | Ok address -> address
-  | Error code -> failwithf "posix_memalign failed with code %d" code
+  | Error msg -> failwithf "posix_memalign failed: %s" msg
 
 let alloc_all binary_section_map =
   String.Map.map binary_section_map ~f:(fun binary_section ->
@@ -58,7 +58,7 @@ let alloc_text jit_text_section =
   in
   match Externals.memalign size with
   | Ok address -> { address; value = jit_text_section }
-  | Error code -> failwithf "posix_memalign failed with code %d" code
+  | Error msg -> failwithf "posix_memalign failed: %s" msg
 
 let local_symbol_map binary_section_map =
   String.Map.fold binary_section_map ~init:Symbols.empty
