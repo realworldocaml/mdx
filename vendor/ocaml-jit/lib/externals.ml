@@ -14,7 +14,7 @@
  *
  *)
 
-external memalign : int -> (Address.t, int) result = "jit_memalign"
+external memalign : int -> (Address.t, string) result = "jit_memalign"
 
 external load_section : Address.t -> string -> int -> unit = "jit_load_section"
 
