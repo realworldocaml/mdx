@@ -2,6 +2,9 @@
 
 ### Added
 
+- Add `--ocaml-version` argument to `lock`: it allows to determine the ocaml version in the
+  lockfile that's being generated (#161, @pitag-ha)
+
 ### Changed
 
 - Exclude packages depending on `jbuilder` from the lock step. Since dune 2.0, `jbuild` files are
