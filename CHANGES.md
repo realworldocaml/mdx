@@ -14,6 +14,7 @@
 
 ### Fixed
 
+- Fix the default branch mechanism when the opam remote starts with `git+https` (#166, @TheLortex)
 - Fix a log that was still refering to the old tool name `duniverse` (#158, @rizo)
 - Improve how the default branch for a git repository is queried, fixing a bug
   where opam-monorepo wouldn't work outside of of git repo and a bug where it wouldn't
