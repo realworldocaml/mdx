@@ -16,15 +16,15 @@ let check_root_packages ~local_packages =
             local_packages Pp.plural local_packages);
       Ok ()
 
+let opam_to_git_remote remote =
+  match String.lsplit2 ~on:'+' remote with Some ("git", remote) -> remote | _ -> remote
+
 let compute_duniverse ~package_summaries =
-  let get_default_branch remote = Exec.git_default_branch ~remote () in
+  let get_default_branch remote = Exec.git_default_branch ~remote:(opam_to_git_remote remote) () in
   Duniverse.from_package_summaries ~get_default_branch package_summaries
 
 let resolve_ref deps =
-  let resolve_ref ~repo ~ref =
-    let repo = match String.lsplit2 ~on:'+' repo with Some ("git", repo) -> repo | _ -> repo in
-    Exec.git_resolve ~remote:repo ~ref
-  in
+  let resolve_ref ~repo ~ref = Exec.git_resolve ~remote:(opam_to_git_remote repo) ~ref in
   Duniverse.resolve ~resolve_ref deps
 
 let current_repos ~repo_state ~switch_state =
