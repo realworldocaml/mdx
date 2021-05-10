@@ -91,9 +91,9 @@ let extract_code_blocks ~(location : Lexing.position) ~docstring =
       blocks
     |> List.concat
   in
-  let parsed = Odoc_parser.parse_comment_raw ~location ~text:docstring in
+  let parsed = Odoc_parser.parse_comment ~location ~text:docstring in
   List.iter
-    (fun error -> failwith (Odoc_model.Error.to_string error))
+    (fun error -> failwith (Odoc_parser.Error.to_string error))
     parsed.warnings;
   List.map
     (fun element ->
