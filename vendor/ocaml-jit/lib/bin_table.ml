@@ -65,6 +65,7 @@ module Make (X : IN) : S = struct
       List.fold_left relocations ~init:(0, String.Map.empty)
         ~f:(fun (index, map) reloc ->
           match X.entry_from_relocation reloc with
+          | Some label when String.Map.mem label map -> (index, map)
           | Some label -> (index + 1, String.Map.add ~key:label ~data:index map)
           | None -> (index, map))
     in
