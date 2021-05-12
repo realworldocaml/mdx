@@ -18,6 +18,8 @@
 open Mdx.Compat
 open Compat_top
 
+type directive = Directory of string | Load of string
+
 let redirect ~f =
   let stdout_backup = Unix.dup Unix.stdout in
   let stderr_backup = Unix.dup Unix.stdout in
@@ -592,14 +594,19 @@ let in_words s =
   in
   split 0 0
 
-let init ~verbose:v ~silent:s ~verbose_findlib ~dirs ~packages ~predicates () =
+let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates
+    () =
   Clflags.real_paths := false;
   Toploop.set_paths ();
   Mdx.Compat.init_path ();
   Toploop.toplevel_env := Compmisc.initial_env ();
   Sys.interactive := false;
   patch_env ();
-  List.iter (Topdirs.dir_load Format.err_formatter) dirs;
+  List.iter
+    (function
+      | Directory path -> Topdirs.dir_directory path
+      | Load path -> Topdirs.dir_load Format.err_formatter path)
+    directives;
   Topfind.don't_load_deeply packages;
   Topfind.add_predicates predicates;
   (* [require] directive is overloaded to toggle the [errors] reference when

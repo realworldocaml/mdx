@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2018 Thomas Gazagnaire <thomas@gazagnaire.org>
+ * Copyright (c) 2020 Ulysse Gérard <ulysse@tarides.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -16,25 +16,4 @@
 
 open Cmdliner
 
-let cmds = [ Test.cmd; Pp.cmd; Rule.cmd; Deps.cmd; Dune_gen.cmd ]
-
-let main (`Setup ()) = `Help (`Pager, None)
-
-let main =
-  let doc = "Execute markdown files." in
-  let exits = Term.default_exits in
-  let man = [] in
-  ( Term.(ret (const main $ Cli.setup)),
-    Term.info "ocaml-mdx" ~version:"%%VERSION%%" ~doc ~exits ~man )
-
-let main () = Term.(exit_status @@ eval_choice main cmds)
-
-let main () =
-  if String.compare Sys.argv.(0) "mdx" == 0 then
-    Format.eprintf
-      "\x1b[0;1mWarning\x1b[0m: 'mdx' is deprecated and will one day be removed.\n\
-      \    Use 'ocaml-mdx' instead\n\
-       %!";
-  main ()
-
-let () = main ()
+val cmd : int Term.t * Term.info

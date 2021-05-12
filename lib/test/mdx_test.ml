@@ -268,13 +268,13 @@ let preludes ~prelude ~prelude_str =
 
 let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
     ~verbose_findlib ~prelude ~prelude_str ~file ~section ~root ~force_output
-    ~output ~dirs ~packages ~predicates =
+    ~output ~directives ~packages ~predicates =
   Printexc.record_backtrace record_backtrace;
   let syntax =
     match syntax with Some syntax -> Some syntax | None -> Syntax.infer ~file
   in
   let c =
-    Mdx_top.init ~verbose:(not silent_eval) ~silent ~verbose_findlib ~dirs
+    Mdx_top.init ~verbose:(not silent_eval) ~silent ~verbose_findlib ~directives
       ~packages ~predicates ()
   in
   let preludes = preludes ~prelude ~prelude_str in
