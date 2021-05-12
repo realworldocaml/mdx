@@ -186,11 +186,19 @@ let set_debug () =
   | Some ("true" | "1") -> Globals.debug := true
   | None | Some _ -> Globals.debug := false
 
-let setup_jit () =
+let with_jit_x86 f =
+  let ias = !X86_proc.internal_assembler in
   X86_proc.register_internal_assembler
-    (jit_load_x86 ~outcome_ref:outcome_global)
+    (jit_load_x86 ~outcome_ref:outcome_global);
+  try
+    let res = f () in
+    X86_proc.internal_assembler := ias;
+    res
+  with exn ->
+    X86_proc.internal_assembler := ias;
+    raise exn
 
-let jit_load ppf program =
+let jit_load_body ppf program =
   let open Config in
   let open Opttoploop in
   let dll =
@@ -210,6 +218,9 @@ let jit_load ppf program =
       outcome_global := None;
       res
 
+let jit_load ppf program =
+  with_jit_x86 (fun () -> jit_load_body ppf program)
+
 let jit_lookup_symbol symbol =
   match Symbols.find !Globals.symbols symbol with
   | None -> Opttoploop.default_lookup symbol
@@ -217,6 +228,5 @@ let jit_lookup_symbol symbol =
 
 let init_top () =
   set_debug ();
-  setup_jit ();
   Opttoploop.register_jit
     { Opttoploop.Jit.load = jit_load; lookup_symbol = jit_lookup_symbol }
