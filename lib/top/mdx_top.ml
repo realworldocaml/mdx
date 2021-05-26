@@ -453,8 +453,11 @@ let show_exception () =
   reg_show_prim "show_exception"
     (fun env loc id lid ->
       let desc = Compat_top.find_constructor env loc lid in
-      if not (Ctype.equal env true [ desc.cstr_res ] [ Predef.type_exn ]) then
-        raise Not_found;
+      if
+        not
+          (Compat_top.ctype_is_equal env true [ desc.cstr_res ]
+             [ Predef.type_exn ])
+      then raise Not_found;
       let ret_type =
         if desc.cstr_generalized then Some Predef.type_exn else None
       in
