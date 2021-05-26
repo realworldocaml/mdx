@@ -611,9 +611,10 @@ let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates
   Topfind.add_predicates predicates;
   (* [require] directive is overloaded to toggle the [errors] reference when
      an exception is raised. *)
-  Hashtbl.add Toploop.directive_table "require"
+  Toploop.add_directive "require"
     (Toploop.Directive_string
-       (fun s -> protect Topfind.load_deeply (in_words s)));
+       (fun s -> protect Topfind.load_deeply (in_words s)))
+    { Toploop.section = "Loading code"; doc = "Load an ocamlfind package" };
   let t = { verbose = v; silent = s; verbose_findlib } in
   show ();
   show_val ();
