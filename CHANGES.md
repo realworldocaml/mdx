@@ -12,6 +12,8 @@
 - Recognize packages with an optional dependency on dune as building with dune. This allows
   opam-monorepo to rightfully recognize `opam-file-format` latest versions as building with 
   dune. (#176, @NathanReb)
+- Only print the full list of selected root packages once and only in verbose mode, simply printing
+  the number in the default logs. (#173, @NathanReb)
 
 ### Deprecated
 

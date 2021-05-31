@@ -2,18 +2,22 @@ open Import
 open Types
 
 let check_root_packages ~local_packages =
-  match local_packages with
-  | [] ->
+  let count = List.length local_packages in
+  match count with
+  | 0 ->
       Rresult.R.error_msg
         "Cannot find any packages to vendor.\n\
          Either create some *.opam files in the local repository, or specify them manually via \
          'opam monorepo lock <packages>'."
-  | local_packages ->
+  | _ ->
       let pp_package_name fmt { Opam.name; _ } = Fmt.string fmt name in
       Common.Logs.app (fun l ->
-          l "Using locally scanned package%a '%a' as the root%a." Pp.plural local_packages
+          l "Using %d locally scanned package%a as the root%a." count Pp.plural local_packages
+            Pp.plural local_packages);
+      Logs.info (fun l ->
+          l "Root package%a: %a." Pp.plural local_packages
             Fmt.(list ~sep:(unit ",@ ") (styled `Yellow pp_package_name))
-            local_packages Pp.plural local_packages);
+            local_packages);
       Ok ()
 
 let opam_to_git_remote remote =
