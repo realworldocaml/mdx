@@ -90,7 +90,7 @@ let generate_patch () =
 let tests () =
   set_debug_level 0 [];
   let cwd = Sys.getcwd () in
-  setup_directory test_dir;
+  setup_directory ~dir:test_dir;
   pattern1 "a";
   pattern2 "b";
   pattern1 "c";
@@ -102,6 +102,7 @@ let tests () =
 
 let () =
   (* This causes Windows to use LF endings instead of CRLF, which simplifies the comparison with the reference file *)
+  Unix.putenv "LC_ALL" "C";
   set_binary_mode_out stdout true;
   Unix.dup2 Unix.stdout Unix.stderr;
   tests ()

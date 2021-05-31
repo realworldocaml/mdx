@@ -4,7 +4,7 @@ Possibly scripts breaking changes are prefixed with ✘.
 New option/command/subcommand are prefixed with ◈.
 
 ## Version
-  * Bump version to '2.1.0~beta3' [@altgr]
+  *
 
 ## Global CLI
   *
@@ -37,6 +37,7 @@ New option/command/subcommand are prefixed with ◈.
   *
 
 ## Option
+  *
 
 ## Lint
   *
@@ -44,13 +45,12 @@ New option/command/subcommand are prefixed with ◈.
 ## Lock
   *
 
-## External dependencies
+## Opamfile
   *
+
+## External dependencies
 
 ## Sandbox
-  *
-
-## Test
   *
 
 ## Repository management
@@ -71,6 +71,12 @@ New option/command/subcommand are prefixed with ◈.
 ## Opam installer
   *
 
+## State
+  *
+
+# Opam file format
+  *
+
 ## Solver
   *
 
@@ -81,6 +87,9 @@ New option/command/subcommand are prefixed with ◈.
   *
 
 ## Test
+  *
+
+## Shell
   *
 
 ## Doc

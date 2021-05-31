@@ -63,7 +63,6 @@ let orphans ?changes ?(transitive=false) t =
     | Some ch ->
       if OpamPackage.Set.is_empty orphans then orphans else
       let recompile_cone =
-        OpamPackage.Set.of_list @@
         OpamSolver.reverse_dependencies
           ~depopts:true ~installed:true ~unavailable:true
           ~build:true ~post:false
@@ -93,7 +92,6 @@ let orphans ?changes ?(transitive=false) t =
     let rec add_trans full_orphans orphan_versions =
       (* fixpoint to check all packages with no available version *)
       let new_orphans =
-        OpamPackage.Set.of_list @@
         OpamSolver.reverse_dependencies
           ~depopts:false ~installed:false ~unavailable:true
           ~build:true ~post:false
@@ -135,17 +133,7 @@ let get_installed_atoms t atoms =
 (* Check atoms for pinned packages, and update them. Returns the state that
    may have been reloaded if there were changes *)
 let update_dev_packages_t ?(only_installed=false) atoms t =
-  (* Check last update of the repo *)
-  let last_update =
-    (Unix.stat (OpamFilename.to_string
-                  (OpamPath.state_cache
-                     (OpamStateConfig.(!r.root_dir))))).Unix.st_mtime
-  in
-  let too_old = float_of_int (3600*24*21) in
-  if (Unix.time () -. last_update) > too_old then
-    OpamConsole.note "It seems you have not updated your repositories \
-                      for a while. Consider updating them with:\n%s\n"
-      (OpamConsole.colorise `bold "opam update");
+  OpamRepositoryState.check_last_update ();
   if OpamClientConfig.(!r.skip_dev_update) then t else
   let working_dir = OpamClientConfig.(!r.working_dir || !r.inplace_build) in
   let to_update =
@@ -196,7 +184,11 @@ let compute_upgrade_t
              then (n, None)
              else
              let atom = (n, Some (`Gt, nv.version)) in
-             if OpamPackage.Set.exists (OpamFormula.check atom)
+             if OpamPackage.Set.exists
+                 (fun nv ->
+                    OpamFormula.check atom nv &&
+                    not (OpamFile.OPAM.has_flag Pkgflag_HiddenVersion
+                           (OpamSwitchState.opam t nv)))
                  (Lazy.force t.available_packages)
              then atom
              else (n, None)
@@ -293,8 +285,9 @@ let upgrade_t
       OpamConsole.warning
         "Upgrade is not possible because of conflicts or packages that \
          are no longer available:";
-      OpamConsole.errmsg "%s"
-        (OpamStd.Format.itemize (OpamCudf.string_of_conflict ~indent:4) reasons);
+      OpamConsole.errmsg "  %s"
+        (OpamStd.Format.itemize (OpamCudf.string_of_conflict ~start_column:2)
+           reasons);
       OpamConsole.errmsg
         "\nYou may run \"opam upgrade --fixup\" to let opam fix the \
          current state.\n"
@@ -1057,7 +1050,7 @@ let assume_built_restrictions ?available_packages t atoms =
     (OpamPackage.Map.values missing
      |> List.fold_left OpamPackage.Name.Set.union OpamPackage.Name.Set.empty
      |> OpamPackage.packages_of_names available_packages)
-    -- OpamPackage.Set.of_list installed_dependencies
+    -- installed_dependencies
   in
   let available_packages = lazy (
     (available_packages -- uninstalled_dependencies) ++ t.installed ++ pinned
@@ -1065,7 +1058,8 @@ let assume_built_restrictions ?available_packages t atoms =
   let fixed_atoms =
     List.map (fun nv ->
         (OpamPackage.name nv , Some (`Eq, OpamPackage.version nv)))
-      ((OpamPackage.Set.elements pinned) @ installed_dependencies)
+      (OpamPackage.Set.elements pinned @
+       OpamPackage.Set.elements installed_dependencies)
   in
   { t with available_packages }, fixed_atoms
 
@@ -1086,7 +1080,7 @@ let filter_unpinned_locally t atoms f =
     atoms
 
 let install_t t ?ask ?(ignore_conflicts=false) ?(depext_only=false)
-    atoms add_to_roots ~deps_only ~assume_built =
+    ?(download_only=false) atoms add_to_roots ~deps_only ~assume_built =
   log "INSTALL %a" (slog OpamFormula.string_of_atoms) atoms;
   let names = OpamPackage.Name.Set.of_list (List.rev_map fst atoms) in
 
@@ -1239,7 +1233,7 @@ let install_t t ?ask ?(ignore_conflicts=false) ?(depext_only=false)
       in
       let t, res =
         OpamSolution.apply ?ask t ~requested:names ?add_roots
-          ~assume_built solution in
+          ~download_only ~assume_built solution in
       t, Some (Success res)
   in
   OpamStd.Option.iter (OpamSolution.check_solution t) solution;
@@ -1247,24 +1241,25 @@ let install_t t ?ask ?(ignore_conflicts=false) ?(depext_only=false)
 
 let install t ?autoupdate ?add_to_roots
     ?(deps_only=false) ?(ignore_conflicts=false) ?(assume_built=false)
-    ?(depext_only=false) names =
+    ?(download_only=false) ?(depext_only=false) names =
   let atoms = OpamSolution.sanitize_atom_list ~permissive:true t names in
   let autoupdate_atoms = match autoupdate with
     | None -> atoms
     | Some a -> OpamSolution.sanitize_atom_list ~permissive:true t a
   in
   let t = update_dev_packages_t autoupdate_atoms t in
-  install_t t ~ignore_conflicts ~depext_only atoms add_to_roots ~deps_only ~assume_built
+  install_t t atoms add_to_roots
+    ~ignore_conflicts ~depext_only ~deps_only ~download_only ~assume_built
 
 let remove_t ?ask ~autoremove ~force atoms t =
   log "REMOVE autoremove:%b %a" autoremove
     (slog OpamFormula.string_of_atoms) atoms;
 
   let t, full_orphans, orphan_versions =
-    let changes =
-      if autoremove then None
-      else Some (OpamSwitchState.packages_of_atoms t atoms) in
-    orphans ?changes t
+    if atoms = [] then t, OpamPackage.Set.empty, OpamPackage.Set.empty
+    else
+    let changes = OpamSwitchState.packages_of_atoms t atoms in
+    orphans ~changes t
   in
 
   let nothing_to_do = ref true in
@@ -1300,18 +1295,17 @@ let remove_t ?ask ~autoremove ~force atoms t =
         Remove
     in
     let to_remove =
-      OpamPackage.Set.of_list
-        (OpamSolver.reverse_dependencies ~build:true ~post:true
-           ~depopts:false ~installed:true universe packages) in
+      OpamSolver.reverse_dependencies ~build:true ~post:true
+        ~depopts:false ~installed:true universe packages
+    in
     let to_keep =
       (if autoremove then t.installed_roots %% t.installed else t.installed)
       ++ universe.u_base
-      -- to_remove -- full_orphans -- orphan_versions
+      -- to_remove
     in
     let to_keep =
-      OpamPackage.Set.of_list
-        (OpamSolver.dependencies ~build:true ~post:true
-           ~depopts:true ~installed:true universe to_keep) in
+      OpamSolver.dependencies ~build:true ~post:true
+        ~depopts:true ~installed:true universe to_keep in
     (* to_keep includes the depopts, because we don't want to autoremove
        them. But that may re-include packages that we wanted removed, so we
        need to remove them again *)
@@ -1319,13 +1313,12 @@ let remove_t ?ask ~autoremove ~force atoms t =
     let requested = OpamPackage.names_of_packages packages in
     let to_remove =
       if autoremove then
-        let to_remove = t.installed -- to_keep in
-        if atoms = [] then to_remove
+        let to_remove1 = t.installed -- to_keep in
+        if atoms = [] then to_remove1
         else (* restrict to the dependency cone of removed pkgs *)
-          to_remove %%
-          (OpamPackage.Set.of_list
-             (OpamSolver.dependencies ~build:true ~post:true
-                ~depopts:true ~installed:true universe to_remove))
+          to_remove1 %%
+          (OpamSolver.dependencies ~build:true ~post:true
+             ~depopts:true ~installed:true universe to_remove)
       else to_remove in
     let t, solution =
       OpamSolution.resolve_and_apply ?ask t Remove
@@ -1520,6 +1513,15 @@ module PIN = struct
       then
         OpamStd.Sys.exit_because `Aborted
     | _ -> ());
+    let pins =
+      let urls_ok =
+        OpamPinCommand.fetch_all_pins st (List.map (fun (name, _, _, url, subpath) ->
+            OpamPackage.Name.to_string name, url, subpath) pins)
+      in
+      List.filter (fun (_,_,_, url, subpath) ->
+          List.mem (url, subpath) urls_ok)
+        pins
+    in
     let pinned = st.pinned in
     let st =
       List.fold_left (fun st (name, version, opam, url, subpath as pin) ->

@@ -38,8 +38,8 @@ end
 
 let opam_parse_formula s =
   let pp = OpamFormat.V.package_formula `Conj OpamFormat.V.(filtered_constraints ext_version) in
-  let pos = ("", 0, 0) in
-  OpamPp.parse ~pos pp (OpamParser.value_from_string s "_" [@alert "-deprecated"])
+  let pos = { OpamParserTypes.FullPos.filename = "_"; start = (0, 0); stop = (0, 0) } in
+  OpamPp.parse ~pos pp (OpamParser.FullPos.value_from_string s "_")
 
 let test_depends_on_dune =
   let make_test ~name ~allow_jbuilder ~input ~expected () =

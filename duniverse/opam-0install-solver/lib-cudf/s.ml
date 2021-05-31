@@ -5,7 +5,7 @@ module type CONTEXT = sig
   (** A reason why a package can't be used as input to the solver. e.g. it is
       for a different platform, or conflicts with a user-provided constraint. *)
 
-  val pp_rejection : rejection Fmt.t
+  val pp_rejection : Format.formatter -> rejection -> unit
 
   val candidates : t -> Cudf_types.pkgname -> (Cudf_types.version * (Cudf.package, rejection) result) list
   (** [candidates t name] is the list of available versions of [name], in order

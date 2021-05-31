@@ -9,6 +9,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open OpamParserTypes
 open OpamTypes
 open OpamStateTypes
 open OpamTypesBase
@@ -334,6 +335,24 @@ let is_up_to_date ?skip st =
   is_up_to_date_raw ?skip
     (updates ~set_opamroot:false ~set_opamswitch:false ~force_path:false st)
 
+(** Returns shell-appropriate statement to evaluate [cmd]. *)
+let shell_eval_invocation shell cmd =
+  match shell with
+  | SH_fish ->
+    Printf.sprintf "eval (%s)" cmd
+  | SH_csh ->
+    Printf.sprintf "eval `%s`" cmd
+  | _ ->
+    Printf.sprintf "eval $(%s)" cmd
+
+(** Returns "opam env" invocation string together with optional root and switch
+    overrides *)
+let opam_env_invocation ?root ?switch ?(set_opamswitch=false) () =
+  let root = OpamStd.Option.map_default (Printf.sprintf " --root=%s") "" root in
+  let switch = OpamStd.Option.map_default (Printf.sprintf " --switch=%s") "" switch in
+  let setswitch = if set_opamswitch then " --set-switch" else "" in
+  Printf.sprintf "opam env%s%s%s" root switch setswitch
+
 let eval_string gt ?(set_opamswitch=false) switch =
   let root =
     let opamroot_cur = OpamFilename.Dir.to_string gt.root in
@@ -343,34 +362,29 @@ let eval_string gt ?(set_opamswitch=false) switch =
         OpamFilename.Dir.to_string OpamStateConfig.(default.root_dir)
       ) in
     if opamroot_cur <> opamroot_env then
-      Printf.sprintf " --root=%s" opamroot_cur
+      Some opamroot_cur
     else
-      "" in
+      None
+  in
   let switch =
-    match switch with
-    | None -> ""
-    | Some sw ->
+    (* Returns the switch only if it is different from the one determined by the
+      environment *)
+    let f sw =
       let sw_cur = OpamSwitch.to_string sw in
       let sw_env =
         OpamStd.Option.Op.(
           OpamStd.Env.getopt "OPAMSWITCH" ++
           (OpamStateConfig.get_current_switch_from_cwd gt.root >>|
-           OpamSwitch.to_string) ++
+            OpamSwitch.to_string) ++
           (OpamFile.Config.switch gt.config >>| OpamSwitch.to_string)
         )
       in
-      if Some sw_cur <> sw_env then Printf.sprintf " --switch=%s" sw_cur
-      else ""
+      if Some sw_cur <> sw_env then Some sw_cur else None
+    in
+    OpamStd.Option.replace f switch
   in
-  let setswitch = if set_opamswitch then " --set-switch" else "" in
-  match OpamStd.Sys.guess_shell_compat () with
-  | SH_fish ->
-    Printf.sprintf "eval (opam env%s%s%s)" root switch setswitch
-  | SH_csh ->
-    Printf.sprintf "eval `opam env%s%s%s`" root switch setswitch
-  | _ ->
-    Printf.sprintf "eval $(opam env%s%s%s)" root switch setswitch
-
+  let shell = OpamStd.Sys.guess_shell_compat () in
+  shell_eval_invocation shell (opam_env_invocation ?root ?switch ~set_opamswitch ())
 
 
 (* -- Shell and init scripts handling -- *)
@@ -458,18 +472,18 @@ let env_hook_script shell =
     (env_hook_script_base shell)
 
 let source root shell f =
-  let file f = OpamFilename.to_string (OpamPath.init root // f) in
+  let fname = OpamFilename.to_string (OpamPath.init root // f) in
   match shell with
   | SH_csh ->
-    Printf.sprintf "source %s >& /dev/null || true\n" (file f)
+    Printf.sprintf "if ( -f %s ) source %s >& /dev/null\n" fname fname
   | SH_fish ->
-    Printf.sprintf "source %s > /dev/null 2> /dev/null; or true\n" (file f)
+    Printf.sprintf "source %s > /dev/null 2> /dev/null; or true\n" fname
   | SH_sh | SH_bash ->
     Printf.sprintf "test -r %s && . %s > /dev/null 2> /dev/null || true\n"
-      (file f) (file f)
+      fname fname
   | SH_zsh ->
     Printf.sprintf "[[ ! -r %s ]] || source %s  > /dev/null 2> /dev/null\n"
-      (file f) (file f)
+      fname fname
 
 let if_interactive_script shell t e =
   let ielse else_opt = match else_opt with
@@ -699,7 +713,7 @@ let setup
         (OpamConsole.colorise `bold @@ string_of_shell shell)
         (OpamConsole.colorise `cyan @@ OpamFilename.prettify dot_profile)
         (OpamConsole.colorise `bold @@ source root shell (init_file shell))
-        (OpamConsole.colorise `bold @@ "eval $(opam env)");
+        (OpamConsole.colorise `bold @@ shell_eval_invocation shell (opam_env_invocation ()));
       if OpamCoreConfig.(!r.answer = Some true) then begin
         OpamConsole.warning "Shell not updated in non-interactive mode: use --shell-setup";
         None

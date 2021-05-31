@@ -311,7 +311,8 @@ let edit st ?version name =
       let nv = OpamPackage.create name (OpamFile.OPAM.version opam) in
       let st = OpamSwitchState.update_pin nv opam st in
       OpamUpdate.cleanup_source st current_opam opam;
-      OpamSwitchAction.write_selections st;
+      if not OpamClientConfig.(!r.show) then
+        OpamSwitchAction.write_selections st;
       st
 
 let version_pin st name version =
@@ -351,7 +352,8 @@ let version_pin st name version =
     | None -> ()
   end;
   let st = OpamSwitchState.update_pin nv repo_opam st in
-  OpamSwitchAction.write_selections st;
+  if not OpamClientConfig.(!r.show) then
+    OpamSwitchAction.write_selections st;
   OpamConsole.msg "%s is now pinned to version %s\n"
     (OpamPackage.Name.to_string name)
     (OpamPackage.Version.to_string version);
@@ -363,6 +365,46 @@ exception Nothing_to_do
 let default_version st name =
   try OpamPackage.version (OpamSwitchState.get_package st name)
   with Not_found -> OpamPackage.Version.of_string "~dev"
+
+let fetch_all_pins st pins =
+  let root = st.switch_global.root in
+  let fetched =
+    let cache_dir =
+      OpamRepositoryPath.download_cache OpamStateConfig.(!r.root_dir)
+    in
+    let command (name, url, subpath) =
+      let srcdir =
+        OpamPath.Switch.pinned_package root st.switch
+          (OpamPackage.Name.of_string name)
+      in
+      OpamProcess.Job.Op.(
+        OpamRepository.pull_tree ~cache_dir ?subpath name srcdir [] [url]
+        @@| fun r -> (name, url, subpath, r))
+    in
+    OpamParallel.map ~jobs:OpamStateConfig.(!r.dl_jobs) ~command pins
+  in
+  let errored, to_pin =
+    List.fold_left (fun (err,ok) result ->
+        let name, url, subpath, result = result in
+        match result with
+        | Not_available _ -> (* clean dir ? *)
+          (name, url, subpath)::err, ok
+        | _ -> err, (url, subpath)::ok)
+      ([],[]) fetched
+  in
+  if errored = []
+  || OpamConsole.confirm
+       "Could not retrieve some package sources, they will not be pinned nor \
+        installed:%s\n\
+        Continue anyway?"
+       (OpamStd.Format.itemize (fun (name, url, subpath) ->
+            name ^ ": " ^ OpamUrl.to_string url ^
+            (OpamStd.Option.to_string (fun s -> "("^s^")") subpath))
+           errored)
+  then
+    to_pin
+  else
+    OpamStd.Sys.exit_because `Aborted
 
 let rec handle_pin_depends st nv opam =
   let extra_pins = OpamFile.OPAM.pin_depends opam in
@@ -382,12 +424,18 @@ let rec handle_pin_depends st nv opam =
               (OpamConsole.colorise `underline (OpamUrl.to_string url)))
           extra_pins);
      if OpamConsole.confirm "Pin and install them?" then
-       List.fold_left (fun st (nv, url) ->
-           source_pin st nv.name ~version:nv.version (Some url)
-             ~ignore_extra_pins:true)
-         st extra_pins
-     else
-     if OpamConsole.confirm
+       (let extra_pins =
+          let urls_ok =
+            fetch_all_pins st (List.map (fun (nv, u) ->
+                OpamPackage.name_to_string nv, u, None) extra_pins)
+          in
+          List.filter (fun (_, url) -> List.mem (url, None) urls_ok) extra_pins
+        in
+        List.fold_left (fun st (nv, url) ->
+            source_pin st nv.name ~version:nv.version (Some url)
+              ~ignore_extra_pins:true)
+          st extra_pins)
+     else if OpamConsole.confirm
          "Try to install anyway, assuming `--ignore-pin-depends'?"
      then st else
        OpamStd.Sys.exit_because `Aborted)
@@ -495,6 +543,7 @@ and source_pin
            (OpamStd.Option.to_string OpamUrl.to_string target_url)
            (OpamStd.Format.itemize (fun x -> x) [err]));
   in
+  let opam_opt = opam_opt >>| OpamFormatUpgrade.opam_file in
 
   let nv =
     match version with
@@ -591,7 +640,8 @@ and source_pin
 
     let st = OpamSwitchState.update_pin nv opam st in
 
-    OpamSwitchAction.write_selections st;
+    if not OpamClientConfig.(!r.show) then
+      OpamSwitchAction.write_selections st;
     OpamConsole.msg "%s is now %s\n"
       (OpamPackage.Name.to_string name)
       (string_of_pinned opam);
@@ -639,7 +689,8 @@ let unpin st names =
             string_of_pinned (OpamSwitchState.opam_opt st nv)
         in
         let st = unpin_one st nv in
-        OpamSwitchAction.write_selections st;
+        if not OpamClientConfig.(!r.show) then
+          OpamSwitchAction.write_selections st;
         OpamConsole.msg "Ok, %s is no longer %s\n"
           (OpamPackage.Name.to_string name) pin_str;
         st

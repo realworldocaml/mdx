@@ -107,7 +107,7 @@ endif
 endif
 
 ifneq ($(LIBINSTALL_DIR),)
-    OPAMINSTALLER_FLAGS += --libdir "$(LIBINSTALL_DIR)"
+    OPAMINSTALLER_FLAGS += --libdir "$(LIBINSTALL_DIR)" --docdir "$(LIBINSTALL_DIR)/../doc"
 endif
 
 opam-devel.install: $(DUNE_DEP)
@@ -119,23 +119,23 @@ opam-%.install: $(DUNE_DEP)
 
 .PHONY: build-opam-installer
 build-opam-installer: $(DUNE_DEP) 
-	$(DUNE) build --profile=$(DUNE_PROFILE) $(DUNE_ARGS)$(DUNE_PROMOTE_ARG) opam-installer.install
+	$(DUNE) build --profile=$(DUNE_PROFILE) $(DUNE_ARGS) $(DUNE_PROMOTE_ARG) opam-installer.install
 opam-installer.install: $(DUNE_DEP)
-	$(DUNE) build --profile=$(DUNE_PROFILE) $(DUNE_ARGS)$(DUNE_PROMOTE_ARG) opam-installer.install
+	$(DUNE) build --profile=$(DUNE_PROFILE) $(DUNE_ARGS) $(DUNE_PROMOTE_ARG) opam-installer.install
 
 .PHONY: build-opam
 build-opam: $(DUNE_DEP)
-	$(DUNE) build --profile=$(DUNE_PROFILE) $(DUNE_ARGS)$(DUNE_PROMOTE_ARG) opam-installer.install opam.install
+	$(DUNE) build --profile=$(DUNE_PROFILE) $(DUNE_ARGS) $(DUNE_PROMOTE_ARG) opam-installer.install opam.install
 opam.install: $(DUNE_DEP)
-	$(DUNE) build --profile=$(DUNE_PROFILE) $(DUNE_ARGS)$(DUNE_PROMOTE_ARG) opam-installer.install opam.install
+	$(DUNE) build --profile=$(DUNE_PROFILE) $(DUNE_ARGS) $(DUNE_PROMOTE_ARG) opam-installer.install opam.install
 
 OPAMLIBS = core format solver repository state client
 
 opam-%: $(DUNE_DEP)
-	$(DUNE) build --profile=$(DUNE_PROFILE) $(DUNE_ARGS)$(DUNE_PROMOTE_ARG) opam-$*.install
+	$(DUNE) build --profile=$(DUNE_PROFILE) $(DUNE_ARGS) $(DUNE_PROMOTE_ARG) opam-$*.install
 
 opam-lib: $(DUNE_DEP)
-	$(DUNE) build --profile=$(DUNE_PROFILE) $(DUNE_ARGS)$(DUNE_PROMOTE_ARG) $(patsubst %,opam-%.install,$(OPAMLIBS))
+	$(DUNE) build --profile=$(DUNE_PROFILE) $(DUNE_ARGS) $(DUNE_PROMOTE_ARG) $(patsubst %,opam-%.install,$(OPAMLIBS))
 
 installlib-%: opam-installer opam-%.install
 	$(if $(wildcard src_ext/lib/*),\
@@ -148,6 +148,12 @@ uninstalllib-%: opam-installer opam-%.install
 
 libinstall: $(DUNE_DEP) opam-admin.top $(OPAMLIBS:%=installlib-%)
 	@
+
+custom-libinstall: $(DUNE_DEP) opam-lib opam
+	for p in $(OPAMLIBS); do \
+	  ./opam$(EXE) custom-install --no-recompilations opam-$$p.$(version) -- \
+	    $(DUNE) install opam-$$p; \
+	done
 
 processed-%.install: %.install
 	sed -f process.sed $^ > $@
@@ -170,7 +176,7 @@ checker:
 tests: $(DUNE_DEP)
 	$(DUNE) build --profile=$(DUNE_PROFILE) $(DUNE_ARGS) opam.install src/tools/opam_check.exe tests/patcher.exe
 	$(DUNE) build --profile=$(DUNE_PROFILE) $(DUNE_ARGS) doc/man/opam-topics.inc doc/man/opam-admin-topics.inc
-	$(DUNE) runtest --force --no-buffer --profile=$(DUNE_PROFILE) $(DUNE_ARGS) src/ tests/
+	OPAMCLI=2.0 $(DUNE) runtest --force --no-buffer --profile=$(DUNE_PROFILE) $(DUNE_ARGS) src/ tests/
 
 .PHONY: crowbar
 # only run the quickcheck-style tests, not very covering

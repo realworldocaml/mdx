@@ -1,6 +1,6 @@
 (lang dune 2.0)
 (name opam-0install)
-(version v0.4)
+(version v0.4.1)
 (formatting disabled)
 
 (generate_opam_files true)
@@ -30,6 +30,7 @@ This package uses 0install's solver algorithm with opam packages.
   opam-state
   (ocaml (>= 4.08.0))
   0install-solver
+  (opam-file-format (>= 2.1.1))
   (opam-client :with-test)
   (opam-solver :with-test)
   (astring :with-test)
@@ -51,8 +52,6 @@ This package uses 0install's solver algorithm with opam packages using
 the CUDF interface.
 ")
  (depends
-  fmt
-  cmdliner
   cudf
   (ocaml (>= 4.08.0))
   0install-solver))

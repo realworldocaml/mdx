@@ -50,7 +50,7 @@ module Context = struct
     | Some (`Lt, v) -> "<"^string_of_int v
 
   let pp_rejection f = function
-    | UserConstraint (name, c) -> Fmt.pf f "Rejected by user-specified constraint %s%s" name (print_constr c)
+    | UserConstraint (name, c) -> Format.fprintf f "Rejected by user-specified constraint %s%s" name (print_constr c)
 end
 
 module Input = Model.Make(Context)

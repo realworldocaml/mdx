@@ -144,7 +144,8 @@ let check_and_run_external_commands () =
     let env =
       if has_init then
         let updates =
-          ["PATH", PlusEq, OpamFilename.Dir.to_string plugins_bin, None]
+          ["PATH", OpamParserTypes.PlusEq,
+           OpamFilename.Dir.to_string plugins_bin, None]
         in
         OpamStateConfig.init ~root_dir ();
         match OpamStateConfig.get_switch_opt () with
@@ -333,7 +334,6 @@ let run () =
       OpamCommands.get_cmdliner_parser cli, argv
   in
   let argv = Array.of_list argv1 in
-  OpamConsole.log "CLI" "Parsing CLI version %s" @@ OpamCLIVersion.to_string cli;
   match Term.eval_choice ~catch:false ~argv default commands with
   | `Error _ -> exit (OpamStd.Sys.get_exit_code `Bad_arguments)
   | _        -> exit (OpamStd.Sys.get_exit_code `Success)
