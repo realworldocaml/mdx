@@ -1,19 +1,9 @@
-### unreleased
+### 1.9.0
 
 #### Added
 
 - Add a new `dune-gen` subcommand that generates testing code for Dune to build
   and run with the new `mdx` stanza. (#305, @voodoos)
-
-#### Changed
-
-#### Deprecated
-
-#### Removed
-
-#### Fixed
-
-#### Security
 
 ### 1.8.1
 
