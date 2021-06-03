@@ -1,7 +1,6 @@
 name: opam-monorepo
 on:
   pull_request:
-  push:
 jobs:
   tests:
     name: Tests
@@ -13,7 +12,6 @@ jobs:
           - 4.10.x
         os:
           - macos-latest
-          - ubuntu-latest
           - windows-latest
     runs-on: ${{ matrix.os }}
     steps:
@@ -33,39 +31,3 @@ jobs:
 
       - name: Test
         run: opam exec -- dune runtest
-
-  binaries:
-    name: Binaries
-    runs-on: ${{ matrix.operating-system }}
-    strategy:
-      matrix:
-        operating-system: [macos-latest, ubuntu-latest, windows-latest]
-        include:
-          - operating-system: ubuntu-latest
-            ocaml-version: 4.10.0+musl+static+flambda
-            artifact-name: duniverse-linux-x86_64
-          - operating-system: macos-latest
-            ocaml-version: 4.10.0
-            artifact-name: duniverse-macos-x86_64
-          - operating-system: windows-latest
-            ocaml-version: 4.10.0
-            artifact-name: duniverse-win32-x86_64
-    steps:
-    - uses: actions/checkout@master
-    - name: Patches (Ubuntu)
-      if: matrix.operating-system == 'ubuntu-latest'
-      run: |
-        sudo add-apt-repository -y ppa:avsm/musl
-        sudo apt-get update
-        sudo apt-get install -y musl-tools
-    - uses: avsm/setup-ocaml@master
-      with:
-        ocaml-version: ${{ matrix.ocaml-version }}
-    - name: Dune
-      run: opam install -y dune
-    - name: Build
-      run: opam exec -- dune build @install
-    - uses: actions/upload-artifact@v1
-      with:
-        name: ${{ matrix.artifact-name }}
-        path: _build/default/bin/opam_monorepo.exe
