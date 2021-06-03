@@ -1,9 +1,10 @@
 name: opam-monorepo
-on: [push]
+on:
+  pull_request:
+  push:
 jobs:
   tests:
     name: Tests
-    runs-on: ${{ matrix.operating-system }}
     strategy:
       matrix:
         ocaml-compiler:
@@ -15,6 +16,7 @@ jobs:
           - macos-latest
           - ubuntu-latest
           - windows-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
