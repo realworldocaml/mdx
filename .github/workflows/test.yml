@@ -1,4 +1,4 @@
-name: Duniverse
+name: opam-monorepo
 on: [push]
 jobs:
   tests:
@@ -6,19 +6,33 @@ jobs:
     runs-on: ${{ matrix.operating-system }}
     strategy:
       matrix:
-        ocaml-version: [ '4.08.1', '4.09.0' ]
-        operating-system: [macos-latest, ubuntu-latest, windows-latest]
+        ocaml-compiler:
+          - 4.08.x
+          - 4.09.x
+          - 4.10.x
+          - 4.11.x
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
     steps:
-    - uses: actions/checkout@master
-    - uses: avsm/setup-ocaml@master
-      with:
-        ocaml-version: ${{ matrix.ocaml-version }}
-    - name: Dune
-      run: opam install -y dune
-    - name: Build
-      run: opam exec -- dune build
-    - name: Test
-      run: opam exec -- dune runtest
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup OCaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - name: Install Dune
+        run: opam install -y dune
+
+      - name: Build
+        run: opam exec -- dune build
+
+      - name: Test
+        run: opam exec -- dune runtest
+
   binaries:
     name: Binaries
     runs-on: ${{ matrix.operating-system }}
