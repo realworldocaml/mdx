@@ -9,6 +9,9 @@
 
 - Exclude packages depending on `jbuilder` from the lock step. Since dune 2.0, `jbuild` files are
   not supported. A new `--allow-jbuilder` option have been added to enable the old behavior. 
+- Recognize packages with an optional dependency on dune as building with dune. This allows
+  opam-monorepo to rightfully recognize `opam-file-format` latest versions as building with 
+  dune. (#176, @NathanReb)
 
 ### Deprecated
 
