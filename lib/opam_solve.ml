@@ -110,17 +110,11 @@ let calculate ~build_only ~allow_jbuilder ~local_opam_files ~local_packages ?oca
     switch_state
   >>= fun deps ->
   Logs.app (fun l ->
-      l "%aFound %a opam dependencies for %a." Pp.Styled.header ()
+      l "%aFound %a opam dependencies for the root package%a." Pp.Styled.header ()
         Fmt.(styled `Green int)
-        (List.length deps)
-        Fmt.(list ~sep:(unit " ") Pp.Styled.package)
-        local_packages);
+        (List.length deps) Pp.plural local_packages);
   Logs.info (fun l ->
-      l "The dependencies for %a are: %a"
-        Fmt.(list ~sep:(unit ",@ ") Types.Opam.pp_package)
-        local_packages
-        Fmt.(list ~sep:(unit ",@ ") Opam.Pp.package)
-        deps);
+      l "The dependencies are: %a" Fmt.(list ~sep:(unit ",@ ") Opam.Pp.package) deps);
   Logs.app (fun l ->
       l "%aQuerying opam database for their metadata and Dune compatibility." Pp.Styled.header ());
   Ok (List.map ~f:(get_opam_info ~switch_state) deps)
