@@ -36,4 +36,33 @@ module Url = struct
     ]
 end
 
-let suite = ("Opam", List.concat [ Url.test_from_opam ])
+let opam_parse_formula s =
+  let pp = OpamFormat.V.package_formula `Conj OpamFormat.V.(filtered_constraints ext_version) in
+  let pos = ("", 0, 0) in
+  OpamPp.parse ~pos pp (OpamParser.value_from_string s "_" [@alert "-deprecated"])
+
+let test_depends_on_dune =
+  let make_test ~name ~allow_jbuilder ~input ~expected () =
+    let test_name = Printf.sprintf "depends_on_dune: %s" name in
+    let test_fun () =
+      let formula = opam_parse_formula input in
+      let actual = Duniverse_lib.Opam.depends_on_dune ~allow_jbuilder formula in
+      Alcotest.(check bool) test_name expected actual
+    in
+    (test_name, `Quick, test_fun)
+  in
+  [
+    make_test ~name:"No deps" ~allow_jbuilder:false ~input:"[]" ~expected:false ();
+    make_test ~name:"Just dune" ~allow_jbuilder:false ~input:{|["dune"]|} ~expected:true ();
+    make_test ~name:"Versioned dune" ~allow_jbuilder:false ~input:{|["dune" {>= "2.1"}]|}
+      ~expected:true ();
+    make_test ~name:"jbuilder disallowed" ~allow_jbuilder:false ~input:{|["jbuilder"]|}
+      ~expected:false ();
+    make_test ~name:"jbuilder allowed" ~allow_jbuilder:true ~input:{|["jbuilder"]|} ~expected:true
+      ();
+    make_test ~name:"Several deps" ~allow_jbuilder:false
+      ~input:{|["ocaml" {>= "4.08"} "fmt" {>= "0.8.4"} "dune" {>= "2.1"} "logs" {>= "0.4"}]|}
+      ~expected:true ();
+  ]
+
+let suite = ("Opam", List.concat [ Url.test_from_opam; test_depends_on_dune ])
