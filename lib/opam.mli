@@ -49,7 +49,9 @@ val depends_on_dune : allow_jbuilder:bool -> OpamTypes.filtered_formula -> bool
 
 val depends_on_compiler_variants : OpamTypes.filtered_formula -> bool
 (** Returns whether the given depends field formula contains a dependency
-    towards a compiler variant (such as a compiler with flambda or afl enabled for instance). *)
+    towards a compiler variant (such as a compiler with flambda or afl enabled for instance).
+    This is detected by looking direct dependencies on ocaml-variants or dependencies on
+    any relevant ocaml-option-* packages. *)
 
 val pull_tree :
   url:OpamUrl.t ->
