@@ -27,7 +27,7 @@
   (csexp
    (>= 1.3.2))
   astring
-  logs
+  (logs (>= 0.7.0))
   (cmdliner
    (>= 1.0.0))
   (re
