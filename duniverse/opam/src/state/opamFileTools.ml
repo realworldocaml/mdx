@@ -9,6 +9,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open OpamParserTypes.FullPos
 open OpamTypes
 open OpamTypesBase
 
@@ -275,7 +276,7 @@ let t_lint ?check_extra_files ?(check_upstream=false) ?(all=false) t =
         Printf.sprintf "File format error in '%s'%s: %s"
           field
           (match pos with
-           | Some (_,li,col) when li >= 0 && col >= 0 ->
+           | Some {start=li,col; _} when li >= 0 && col >= 0 ->
              Printf.sprintf " at line %d, column %d" li col
            | _ -> "")
           msg)
@@ -715,7 +716,7 @@ let t_lint ?check_extra_files ?(check_upstream=false) ?(all=false) t =
        (bad_licenses <> []));
     (let subpath =
        match OpamStd.String.Map.find_opt "x-subpath" (extensions t) with
-       | Some (String (_,_)) -> true
+       | Some {pelem = String _; _} -> true
        | _ -> false
      in
      let opam_restriction =
@@ -736,7 +737,7 @@ let t_lint ?check_extra_files ?(check_upstream=false) ?(all=false) t =
        (subpath && not opam_restriction));
     (let subpath_string =
        match OpamStd.String.Map.find_opt "x-subpath" (extensions t) with
-       | Some (String (_,_)) | None -> false
+       | Some {pelem = String _; _} | None -> false
        | _ -> true
      in
      cond 64 `Warning
@@ -759,6 +760,61 @@ let t_lint ?check_extra_files ?(check_upstream=false) ?(all=false) t =
        "URLs must be absolute"
        ~detail:(List.map (fun u -> u.OpamUrl.path) relative)
        (relative <> []));
+    (let maybe_bool =
+      (* Regexp from [OpamFilter.string_interp_regexp] *)
+       let re =
+         let open Re in
+         let notclose =
+           rep @@ alt [
+             diff notnl @@ set "}";
+             seq [char '}'; alt [diff notnl @@ set "%"; stop] ]
+           ]
+         in
+         compile @@ seq [
+           bos; alt [
+             str "true"; str "false"; str "%%";
+             seq [str "%{"; greedy notclose; opt @@ str "}%"];
+           ]; eos]
+       in
+       fun s ->
+         try let _ = Re.exec re s in true with Not_found -> false
+     in
+     let check_strings =
+       let rec aux acc oped = function
+         | FString s -> if oped || maybe_bool s then acc else s::acc
+         | FIdent _ | FBool _ -> acc
+         | FOp (fl,_,fr) -> (aux acc true fl) @ aux acc true fr
+         | FAnd (fl, fr) | FOr (fl, fr)  ->
+           (aux acc false fl) @ aux acc false fr
+         | FNot f | FDefined f | FUndef f -> aux acc false f
+       in
+       aux [] false
+     in
+     let check_formula =
+       OpamFormula.fold_left (fun acc (_, form as ff) ->
+           match
+             OpamFormula.fold_left (fun acc fc ->
+                 match fc with
+                 | Filter f -> check_strings f @ acc
+                 | Constraint _ -> acc) [] form
+           with
+           | [] -> acc
+           | strs -> (ff, List.rev strs)::acc
+         )
+     in
+     let not_bool_strings =
+       List.fold_left check_formula []
+         (t.depends :: t.depopts :: t.conflicts
+          :: List.map (fun (_,f,_) -> f) t.features)
+     in
+     cond 66 `Warning
+       "String that can't be resolved to bool in filtered package formula"
+       ~detail:(List.map (fun (f, strs) ->
+           Printf.sprintf "%s in '%s'"
+             (OpamStd.Format.pretty_list (List.map (Printf.sprintf "%S") strs))
+             (OpamFilter.string_of_filtered_formula (Atom f)))
+           not_bool_strings)
+       (not_bool_strings <> []));
   ]
   in
   format_errors @
@@ -777,12 +833,13 @@ let extra_files_default filename =
        OpamHash.check_file (OpamFilename.to_string f))
     (OpamFilename.rec_files dir)
 
-let lint_gen ?check_extra_files ?check_upstream reader filename =
+let lint_gen ?check_extra_files ?check_upstream ?(handle_dirname=false)
+    reader filename =
   let warnings, t =
     let warn_of_bad_format (pos, msg) =
       2, `Error, Printf.sprintf "File format error%s: %s"
         (match pos with
-         | Some (_,li,col) when li >= 0 && col >= 0 ->
+         | Some {start=li,col; _} when li >= 0 && col >= 0 ->
            Printf.sprintf " at line %d, column %d" li col
          | _ -> "")
         msg
@@ -795,6 +852,7 @@ let lint_gen ?check_extra_files ?check_upstream reader filename =
           (OpamFormat.I.map_file OpamFile.OPAM.pp_raw_fields) f
       in
       let t, warnings =
+        if handle_dirname = false then t, [] else
         match OpamPackage.of_filename (OpamFile.filename filename) with
         | None -> t, []
         | Some nv ->
@@ -851,7 +909,7 @@ let lint_gen ?check_extra_files ?check_upstream reader filename =
   warnings @ (match t with Some t -> lint ~check_extra_files ?check_upstream t | None -> []),
   t
 
-let lint_file ?check_extra_files ?check_upstream filename =
+let lint_file ?check_extra_files ?check_upstream ?handle_dirname filename =
   let reader filename =
     try
       let ic = OpamFilename.open_in (OpamFile.filename filename) in
@@ -863,15 +921,17 @@ let lint_file ?check_extra_files ?check_upstream filename =
       OpamConsole.error_and_exit `Bad_arguments "File %s not found"
         (OpamFile.to_string filename)
   in
-  lint_gen ?check_extra_files ?check_upstream reader filename
+  lint_gen ?check_extra_files ?check_upstream ?handle_dirname reader filename
 
-let lint_channel ?check_extra_files ?check_upstream filename ic =
+let lint_channel ?check_extra_files ?check_upstream ?handle_dirname
+    filename ic =
   let reader filename = OpamFile.Syntax.of_channel filename ic in
-  lint_gen ?check_extra_files ?check_upstream reader filename
+  lint_gen ?check_extra_files ?check_upstream ?handle_dirname reader filename
 
-let lint_string ?check_extra_files ?check_upstream filename string =
+let lint_string ?check_extra_files ?check_upstream ?handle_dirname
+    filename string =
   let reader filename = OpamFile.Syntax.of_string filename string in
-  lint_gen ?check_extra_files ?check_upstream reader filename
+  lint_gen ?check_extra_files ?check_upstream ?handle_dirname reader filename
 
 let all_lint_warnings () =
   t_lint ~all:true OpamFile.OPAM.empty
@@ -1079,7 +1139,7 @@ let dep_formula_to_string f =
   let pp =
     OpamFormat.V.(package_formula `Conj (constraints version))
   in
-  OpamPrinter.value (OpamPp.print pp f)
+  OpamPrinter.FullPos.value (OpamPp.print pp f)
 
 let sort_opam opam =
   log "sorting %s" (OpamPackage.to_string (package opam));

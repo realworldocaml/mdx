@@ -39,18 +39,22 @@ module Make (Context : S.CONTEXT) = struct
     | Dummy                                     (* Used for diagnostics *)
 
   let rec pp_version f = function
-    | RealImpl impl -> Fmt.int f impl.pkg.Cudf.version
-    | Reject pkg -> Fmt.int f (snd pkg)
-    | VirtualImpl (_i, deps) -> Fmt.string f (String.concat "&" (List.map (fun d -> Fmt.to_to_string pp_role d.drole) deps))
-    | Dummy -> Fmt.string f "(no version)"
+    | RealImpl impl -> Format.pp_print_int f impl.pkg.Cudf.version
+    | Reject pkg -> Format.pp_print_int f (snd pkg)
+    | VirtualImpl (_i, deps) ->
+        Format.pp_print_string f
+          (String.concat "&" (List.map (fun d -> Format.asprintf "%a" pp_role d.drole) deps))
+    | Dummy -> Format.pp_print_string f "(no version)"
   and pp_impl f = function
-    | RealImpl impl -> Fmt.pf f "%s.%d" impl.pkg.Cudf.package impl.pkg.Cudf.version
-    | Reject pkg -> Fmt.pf f "%s.%d" (fst pkg) (snd pkg)
+    | RealImpl impl -> Format.fprintf f "%s.%d" impl.pkg.Cudf.package impl.pkg.Cudf.version
+    | Reject pkg -> Format.fprintf f "%s.%d" (fst pkg) (snd pkg)
     | VirtualImpl _ as x -> pp_version f x
-    | Dummy -> Fmt.string f "(no solution found)"
+    | Dummy -> Format.pp_print_string f "(no solution found)"
   and pp_role f = function
-    | Real t -> Fmt.string f t.name
-    | Virtual (_, impls) -> Fmt.pf f "%a" Fmt.(list ~sep:(unit "|") pp_impl) impls
+    | Real t -> Format.pp_print_string f t.name
+    | Virtual (_, impls) ->
+        Format.pp_print_string f
+          (String.concat "|" (List.map (Format.asprintf "%a" pp_impl) impls))
 
   let pp_impl_long = pp_impl
 
@@ -244,10 +248,10 @@ module Make (Context : S.CONTEXT) = struct
 
   let string_of_restriction = function
     | { kind = `Prevent; expr = [] } -> "conflict with all versions"
-    | { kind = `Prevent; expr } -> Fmt.strf "not(%s)" (string_of_version_formula expr)
+    | { kind = `Prevent; expr } -> Format.asprintf "not(%s)" (string_of_version_formula expr)
     | { kind = `Ensure; expr } -> string_of_version_formula expr
 
-  let describe_problem _impl = Fmt.to_to_string Context.pp_rejection
+  let describe_problem _impl = Format.asprintf "%a" Context.pp_rejection
 
   let version = function
     | RealImpl impl -> Some (impl.pkg.Cudf.package, impl.pkg.Cudf.version)

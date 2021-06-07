@@ -425,7 +425,8 @@ overridden from configuration. You can get the list of currently defined
 variables by running:
 
 ```
-opam config list
+opam config list # opam 2.0
+opam var         # opam 2.1.0
 ```
 
 #### Global variables
@@ -506,6 +507,9 @@ the package being defined.
 - <a id="pkgvar-build-id">`build-id`</a>:
   a hash identifying the precise package version and metadata, and that of all
   its dependencies
+- <a id="pkgvar-opamfile">`opamfile`</a>:
+  if the package is installed, path of its opam file, from opam internals,
+  otherwise not defined
 
 Extra variables can be defined by any package at installation time, using a
 [`<pkgname>.config`](#lt-pkgname-gt-config) file with a
@@ -1378,7 +1382,8 @@ them modified with [`opam option --global`](man/opam-option.html).
     modified during the installation of the package.
     Note that this hook is run after the scan for installed files is
     done, so any additional installed files won't be recorded and must be taken
-    care of by a `pre-remove-commands` hook.
+    care of by a `pre-remove-commands` hook. However, modified or deleted installed
+    files during the `post-install-commands` will be handled correctly by `opam`.
 - <a id="configfield-pre-session-commands">`pre-session-commands: [ [ <term> { <filter> } ... ] { <filter> } ... ]`</a>,
   <a id="configfield-post-session-commands">`post-session-commands: [ [ <term> { <filter> } ... ] { <filter> } ... ]`</a>:
   These commands will be run once respectively before and after the sequence of
@@ -1402,6 +1407,10 @@ them modified with [`opam option --global`](man/opam-option.html).
       `installed`.
     - `hooks`: the directory where scripts created using `opamrc`'s
       [`init-scripts:`](#opamrcfield-init-scripts) field are created.
+
+    In addition, the output of these hooks is printed to the user, so
+    `post-session-commands` may be used to output extra information upon session
+    completion.
 
 - <a id="configfield-repository-validation-command">`repository-validation-command: [ <term> { <filter> } ... ]`</a>:
   defines a command to run on the upstream repositories to validate their

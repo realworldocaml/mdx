@@ -1,0 +1,8 @@
+; This test (driven by Dune) ensures that the old build system works
+
+(copy_files ../../opam-file-format.opam)
+
+(alias
+  (name runtest)
+  (deps Makefile legacy.ml opam-file-format.opam (glob_files src/*))
+  (action (run make test)))

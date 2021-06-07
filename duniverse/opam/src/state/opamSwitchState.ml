@@ -314,7 +314,6 @@ let load lock_kind gt rt switch =
   let opams =
     OpamPackage.Map.union (fun _ x -> x) repos_package_index pinned_opams
   in
-  let packages = OpamPackage.keys opams in
   let available_packages =
     lazy (compute_available_packages gt switch switch_config
             ~pinned ~opams)
@@ -324,6 +323,7 @@ let load lock_kind gt rt switch =
        computing availability *)
     OpamPackage.Map.union (fun _ x -> x) installed_opams opams
   in
+  let packages = OpamPackage.keys opams in
   let installed_without_def =
     OpamPackage.Set.fold (fun nv nodef ->
         if OpamPackage.Map.mem nv installed_opams then nodef else
@@ -1007,7 +1007,7 @@ let not_found_message st (name, cstr) =
   | Some (relop,v) when OpamPackage.has_name st.packages name ->
     Printf.sprintf "Package %s has no version %s%s."
       (OpamPackage.Name.to_string name)
-      (match relop with `Eq -> "" | r -> OpamPrinter.relop r)
+      (match relop with `Eq -> "" | r -> OpamPrinter.FullPos.relop_kind r)
       (OpamPackage.Version.to_string v)
   | _ ->
     Printf.sprintf "No package named %s found."

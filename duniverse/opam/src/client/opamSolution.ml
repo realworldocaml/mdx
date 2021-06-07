@@ -19,6 +19,9 @@ open OpamProcess.Job.Op
 module PackageAction = OpamSolver.Action
 module PackageActionGraph = OpamSolver.ActionGraph
 
+
+exception Fetch_fail of string
+
 let post_message ?(failed=false) st action =
   match action, failed with
   | `Remove _, _ | `Reinstall _, _ | `Build _, false | `Fetch _, _ -> ()
@@ -84,7 +87,14 @@ let check_solution ?(quiet=false) st = function
     List.iter (fun (a, _) -> post_message ~failed:true st a) actions_errors;
     print_depexts_helper st (List.map fst actions_errors);
     OpamEnv.check_and_print_env_warning st;
-    OpamStd.Sys.exit_because `Package_operation_error
+    let reason =
+      if List.for_all (function
+            _, Fetch_fail _ -> true | _ -> false)
+          actions_errors then
+        `Sync_error
+      else `Package_operation_error
+    in
+    OpamStd.Sys.exit_because reason
   | Success (OK actions) ->
     List.iter (post_message st) actions;
     OpamEnv.check_and_print_env_warning st
@@ -272,7 +282,8 @@ end
 
 (* Process the atomic actions in a graph in parallel, respecting graph order,
    and report to user. Takes a graph of atomic actions *)
-let parallel_apply t ~requested ?add_roots ~assume_built ?(force_remove=false)
+let parallel_apply t
+    ~requested ?add_roots ~assume_built ~download_only ?(force_remove=false)
     action_graph =
   log "parallel_apply";
 
@@ -319,6 +330,9 @@ let parallel_apply t ~requested ?add_roots ~assume_built ?(force_remove=false)
   (* only needed when --update-invariant is set. Use the configured invariant,
      not the current one which will be empty. *)
   let original_invariant = t.switch_config.OpamFile.Switch_config.invariant in
+  let original_invariant_packages =
+    OpamFormula.packages t.installed original_invariant
+  in
   let invariant_ref = ref original_invariant in
 
   let bypass_ref = ref (t.switch_config.OpamFile.Switch_config.depext_bypass) in
@@ -336,19 +350,35 @@ let parallel_apply t ~requested ?add_roots ~assume_built ?(force_remove=false)
     let bypass = OpamSysPkg.Set.union missing_depexts !bypass_ref in
     let invariant =
       if OpamStateConfig.(!r.unlock_base) then
+        let update_cstr cstr =
+          if OpamFormula.check_version_formula cstr nv.version then cstr
+          else
+            OpamFormula.map (fun (relop, _ as vat) ->
+                if OpamFormula.check_version_formula (Atom vat) nv.version
+                then Atom vat
+                else match relop with
+                  | `Neq -> OpamFormula.Empty
+                  | `Gt -> Atom (`Geq, nv.version)
+                  | `Lt -> Atom (`Leq, nv.version)
+                  | `Eq | `Geq | `Leq -> Atom (relop, nv.version))
+              cstr
+        in
+        let nvset = OpamPackage.Set.singleton nv in
+        let upd_packages =
+          OpamSwitchState.conflicts_with t nvset original_invariant_packages
+        in
         OpamFormula.map (fun (n, cstr as at) ->
-            if n <> nv.name || OpamFormula.check_version_formula cstr nv.version
-            then Atom at else
-            let cstr =
-              OpamFormula.map (fun (relop, _ as vat) ->
-                  if OpamFormula.check_version_formula (Atom vat) nv.version
-                  then Atom vat
-                  else match relop with
-                    | `Neq | `Gt | `Lt -> OpamFormula.Empty
-                    | `Eq | `Geq | `Leq -> Atom (relop, nv.version))
-                cstr
-            in
-            Atom (n, cstr))
+            if
+              OpamPackage.Set.exists (OpamFormula.verifies (Atom at))
+                upd_packages
+            then
+              (* a package in the previous base validated this atom but is in
+                 conflict with what we just installed *)
+              Atom (nv.name, update_cstr cstr)
+            else if n = nv.name then
+              Atom (n, update_cstr cstr)
+            else
+              Atom at)
           !invariant_ref
       else !invariant_ref
     in
@@ -367,9 +397,10 @@ let parallel_apply t ~requested ?add_roots ~assume_built ?(force_remove=false)
        let switch_config =
          {!t_ref.switch_config with invariant; depext_bypass = bypass }
        in
-       t_ref := {!t_ref with switch_config};
-       OpamSwitchAction.install_switch_config t.switch_global.root t.switch
-         switch_config)
+       t_ref := {!t_ref with switch_invariant = invariant; switch_config};
+       if not OpamStateConfig.(!r.dryrun) then
+         OpamSwitchAction.install_switch_config t.switch_global.root t.switch
+           switch_config)
   in
 
   let remove_from_install ?keep_as_root nv =
@@ -398,7 +429,7 @@ let parallel_apply t ~requested ?add_roots ~assume_built ?(force_remove=false)
 
   (* 1/ process the package actions (fetch, build, installations and removals) *)
 
-  let action_graph = (* Add build actions *)
+  let action_graph = (* Add build and fetch actions *)
     let noop_remove nv =
       OpamAction.noop_remove_package t nv in
     PackageActionGraph.explicit
@@ -406,6 +437,21 @@ let parallel_apply t ~requested ?add_roots ~assume_built ?(force_remove=false)
       ~sources_needed:(fun p -> OpamPackage.Set.mem p sources_needed)
       action_graph
   in
+  let action_graph =
+    if download_only then
+      (* remove actions other than fetches *)
+      let g = PackageActionGraph.copy action_graph in
+      PackageActionGraph.iter_vertex (fun v ->
+          match v with
+          | `Fetch _ -> ()
+          | `Install _ | `Reinstall _ | `Change _
+          | `Remove _ | `Build _ ->
+            PackageActionGraph.remove_vertex g v
+        ) action_graph;
+      g
+    else action_graph
+  in
+
   (match OpamSolverConfig.(!r.cudf_file) with
    | None -> ()
    | Some f ->
@@ -495,7 +541,7 @@ let parallel_apply t ~requested ?add_roots ~assume_built ?(force_remove=false)
         | None ->
           store_time (); Done (`Successful (installed, removed))
         | Some (_short_error, long_error) ->
-          Done (`Exception (Failure long_error)))
+          Done (`Exception (Fetch_fail long_error)))
 
     | `Build nv ->
       if assume_built && OpamPackage.Set.mem nv requested then
@@ -611,7 +657,7 @@ let parallel_apply t ~requested ?add_roots ~assume_built ?(force_remove=false)
         (* Report download failures *)
         let failed_downloads = List.fold_left (fun failed (a, err) ->
             match (a, err) with
-            | `Fetch pkg, `Exception (Failure long_error) ->
+            | `Fetch pkg, `Exception (Fetch_fail long_error) ->
               OpamPackage.Map.add pkg long_error failed
             | _ ->
               failed
@@ -695,7 +741,8 @@ let parallel_apply t ~requested ?add_roots ~assume_built ?(force_remove=false)
           OpamAction.cleanup_package_artefacts t nv
           (* if reinstalled, only removes build dir *)
         | `Install nv
-          when not (OpamPackage.has_name t.pinned nv.name) ->
+          when not (OpamPackage.has_name t.pinned nv.name)
+            || OpamSwitchState.is_version_pinned t nv.name ->
           let build_dir =
             OpamPath.Switch.build t.switch_global.root t.switch nv in
           if not OpamClientConfig.(!r.keep_build_dir) then
@@ -704,10 +751,31 @@ let parallel_apply t ~requested ?add_roots ~assume_built ?(force_remove=false)
         | _ -> assert false)
       graph
   in
-  if !invariant_ref <> original_invariant then
-    OpamConsole.note "Switch invariant was updated to %s\n\
+  let t =
+    if OpamStateConfig.(!r.unlock_base) &&
+       (match action_results with `Successful _ -> true | _ -> false) &&
+       not (OpamFormula.satisfies_depends t.installed t.switch_invariant)
+    then
+      (* Fix the invariant to account for removed base packages *)
+      let invariant =
+        OpamFormula.map_formula (function
+            | OpamFormula.And _ as f -> f
+            | f when OpamFormula.satisfies_depends t.installed f -> f
+            | _ -> OpamFormula.Empty)
+          t.switch_invariant
+      in
+      let switch_config = {t.switch_config with invariant} in
+      if not OpamStateConfig.(!r.dryrun) then
+        OpamSwitchAction.install_switch_config t.switch_global.root t.switch
+          switch_config;
+      {t with switch_invariant = invariant; switch_config}
+    else t
+  in
+  if t.switch_invariant <> original_invariant then
+    OpamConsole.note "Switch invariant %s updated to %s\n\
                       Use `opam switch set-invariant' to change it."
-      (match !invariant_ref with
+      (if OpamStateConfig.(!r.dryrun) then "would have been" else "was")
+      (match t.switch_invariant with
        | OpamFormula.Empty -> "<empty>"
        | f -> OpamFileTools.dep_formula_to_string f);
   match action_results with
@@ -883,7 +951,7 @@ let confirmation ?ask requested solution =
     OpamPackage.Name.Set.equal requested solution_packages
     || OpamConsole.confirm "Do you want to continue?"
 
-let run_hook_job t name ?(local=[]) w =
+let run_hook_job t name ?(local=[]) ?(allow_stdout=false) w =
   let shell_env = OpamEnv.get_full ~force_path:true t in
   let mk_cmd = function
     | cmd :: args ->
@@ -900,9 +968,18 @@ let run_hook_job t name ?(local=[]) w =
     try Some (List.assoc v local)
     with Not_found -> OpamPackageVar.resolve_switch t v
   in
-  OpamProcess.Job.of_fun_list
-    (OpamStd.List.filter_map (fun cmd -> mk_cmd cmd)
-       (OpamFilter.commands env w))
+  let rec iter_commands = function
+    | [] -> Done None
+    | None :: commands -> iter_commands commands
+    | Some cmdf :: commands ->
+      let cmd = cmdf () in
+      cmd @@> fun result ->
+      if allow_stdout then
+        List.iter (OpamConsole.msg "%s\n") result.r_stdout;
+      if OpamProcess.is_success result then iter_commands commands
+      else Done (Some (cmd, result))
+  in
+  iter_commands (List.map mk_cmd (OpamFilter.commands env w))
   @@+ function
   | Some (cmd, _err) ->
     OpamConsole.error "The %s hook failed at %S"
@@ -1048,8 +1125,8 @@ let install_depexts ?(force_depext=false) ?(confirm=true) t packages =
        sys_packages)
 
 (* Apply a solution *)
-let apply ?ask t ~requested ?add_roots ?(assume_built=false) ?force_remove
-    solution =
+let apply ?ask t ~requested ?add_roots ?(assume_built=false)
+    ?(download_only=false) ?force_remove solution =
   log "apply";
   if OpamSolver.solution_is_empty solution then
     (* The current state satisfies the request contraints *)
@@ -1096,7 +1173,7 @@ let apply ?ask t ~requested ?add_roots ?(assume_built=false) ?force_remove
         OpamConsole.msg "===== %s =====\n" (OpamSolver.string_of_stats stats);
     );
     if not OpamClientConfig.(!r.show) &&
-       confirmation ?ask requested action_graph
+       (download_only || confirmation ?ask requested action_graph)
     then (
       let t =
         install_depexts t @@ OpamPackage.Set.inter
@@ -1127,6 +1204,11 @@ let apply ?ask t ~requested ?add_roots ?(assume_built=false) ?force_remove
               (OpamSwitchState.depexts t nv))
           new_state.installed OpamSysPkg.Set.empty
       in
+      let wrappers =
+        OpamFile.Wrappers.add
+          ~outer:(OpamFile.Config.wrappers t.switch_global.config)
+          ~inner:(OpamFile.Switch_config.wrappers t.switch_config)
+      in
       let pre_session =
         let open OpamPackage.Set.Op in
         let local = [
@@ -1136,15 +1218,15 @@ let apply ?ask t ~requested ?add_roots ?(assume_built=false) ?force_remove
           var_def_spset "depexts" depexts;
         ] in
         run_job @@
-        run_hook_job t "pre-session" ~local
-          (OpamFile.Wrappers.pre_session
-             (OpamFile.Config.wrappers t.switch_global.config))
+        run_hook_job t "pre-session" ~local ~allow_stdout:true
+          (OpamFile.Wrappers.pre_session wrappers)
       in
       if not pre_session then
         OpamStd.Sys.exit_because `Configuration_error;
       let t0 = t in
       let t, r =
-        parallel_apply t ~requested ?add_roots ~assume_built ?force_remove
+        parallel_apply t
+          ~requested ?add_roots ~assume_built ~download_only ?force_remove
           action_graph
       in
       let success = match r with | OK _ -> true | _ -> false in
@@ -1158,9 +1240,8 @@ let apply ?ask t ~requested ?add_roots ?(assume_built=false) ?force_remove
           OpamVariable.Full.of_string "failure", B (not success);
         ] in
         run_job @@
-        run_hook_job t "post-session" ~local
-          (OpamFile.Wrappers.post_session
-             (OpamFile.Config.wrappers t.switch_global.config))
+        run_hook_job t "post-session" ~local ~allow_stdout:true
+          (OpamFile.Wrappers.post_session wrappers)
       in
       if not post_session then
         OpamStd.Sys.exit_because `Configuration_error;
@@ -1184,7 +1265,7 @@ let resolve t action ~orphans ?reinstall ~requested request =
   r
 
 let resolve_and_apply ?ask t action ~orphans ?reinstall ~requested ?add_roots
-    ?(assume_built=false) ?force_remove request =
+    ?(assume_built=false) ?download_only ?force_remove request =
   match resolve t action ~orphans ?reinstall ~requested request with
   | Conflicts cs ->
     log "conflict!";
@@ -1194,6 +1275,8 @@ let resolve_and_apply ?ask t action ~orphans ?reinstall ~requested ?add_roots
     t, Conflicts cs
   | Success solution ->
     let t, res =
-      apply ?ask t ~requested ?add_roots ~assume_built ?force_remove solution
+      apply ?ask t
+        ~requested ?add_roots ~assume_built ?download_only ?force_remove
+        solution
     in
     t, Success res

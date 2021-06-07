@@ -1,3 +1,12 @@
+v0.4.1 (22/04/2021)
+-------------------
+
+- opam-0install-cudf: Remove unused (`cmdliner`) and unnecessary (`fmt`) dependencies
+  for easier integration with opam.
+  (@kit-ty-kate #28)
+
+- opam-0install: Be explicit that `Ok` values are not passed to `Term.exit` (@talex5 #24)
+
 v0.4 (09/10/2020)
 ----------------
 

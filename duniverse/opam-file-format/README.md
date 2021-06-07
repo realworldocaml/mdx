@@ -1,7 +1,5 @@
 # opam-file-format - Parser and printer for the opam file syntax
 
-[![TravisCI Build Status](https://travis-ci.org/ocaml/opam-file-format.svg?branch=master)](https://travis-ci.org/ocaml/opam-file-format)
-
 This library provides the parser and printer for the opam file syntax as a
 library with no dependencies. The package can be built either with GNU make
 or any version of [Dune](https://dune.build).
