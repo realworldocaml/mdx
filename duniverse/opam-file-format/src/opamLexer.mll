@@ -40,7 +40,7 @@ let pfxop = function
   | "?" -> `Defined
   | x -> error "%S is not a valid prefix operator" x
 
-let env_update_op : string -> env_update_op = function
+let env_update_op = function
   | "=" -> Eq
   | "+=" -> PlusEq
   | "=+" -> EqPlus
@@ -48,13 +48,6 @@ let env_update_op : string -> env_update_op = function
   | ":=" -> ColonEq
   | "=:" -> EqColon
   | x -> error "%S is not a valid environment update operator" x
-
-module FullPos = struct
-  let relop = relop
-  let logop = logop
-  let pfxop = pfxop
-  let env_update_op = env_update_op
-end
 
 let char_for_backslash = function
   | 'n' -> '\010'
@@ -126,11 +119,11 @@ rule token = parse
 | "false"{ BOOL false }
 | int    { INT (int_of_string (Lexing.lexeme lexbuf)) }
 | ident  { IDENT (Lexing.lexeme lexbuf) }
-| relop  { RELOP (FullPos.relop (Lexing.lexeme lexbuf)) }
+| relop  { RELOP (relop (Lexing.lexeme lexbuf)) }
 | '&'    { AND }
 | '|'    { OR }
-| pfxop  { PFXOP (FullPos.pfxop (Lexing.lexeme lexbuf)) }
-| envop  { ENVOP (FullPos.env_update_op (Lexing.lexeme lexbuf)) }
+| pfxop  { PFXOP (pfxop (Lexing.lexeme lexbuf)) }
+| envop  { ENVOP (env_update_op (Lexing.lexeme lexbuf)) }
 | eof    { EOF }
 | _      { let token = Lexing.lexeme lexbuf in
            error "'%s' is not a valid token" token }

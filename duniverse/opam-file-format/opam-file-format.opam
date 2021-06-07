@@ -1,5 +1,5 @@
 opam-version: "2.0"
-version: "2.1.1"
+version: "2.1.0"
 maintainer: "Louis Gesbert <louis.gesbert@ocamlpro.com>"
 authors: "Louis Gesbert <louis.gesbert@ocamlpro.com>"
 homepage: "https://opam.ocaml.org"
@@ -9,12 +9,8 @@ dev-repo: "git+https://github.com/ocaml/opam-file-format"
 build: [
   [make "byte" {!ocaml-native} "all" {ocaml-native}] {!dune:installed}
   ["dune" "build" "-p" name "-j" jobs "@install" "@doc" {with-doc}] {dune:installed}
-  ["dune" "runtest" "-p" name "-j" jobs] {with-test & dune:installed}
 ]
-depopts: "dune" { > "1.11.4" }
+depopts: "dune"
 install: [make "install" "PREFIX=%{prefix}%"] {!dune:installed}
 synopsis: "Parser and printer for the opam file syntax"
-depends: [
-  "ocaml"
-  "alcotest" {with-test}
-]
+depends: ["ocaml"]

@@ -1,3 +1,28 @@
+### 1.4.0 (2021-04-15)
+
+- Add `?here` and `?pos` arguments to the test assertion functions. These can be
+  used to pass information about the location of the call-site, which is
+  displayed in failing test output. (#291, @CraigFe)
+
+- Add a pretty-printer for the exception raised by `Alcotest.check` and related
+  functions. This allows them to be used outside of an Alcotest test runner for
+  making general assertions.  (#296, @CraigFe)
+
+- Add `--bail` option (and corresponding `ALCOTEST_BAIL` environment variable),
+  which causes Alcotest to terminate after the first test failure. (#298,
+  @CraigFe)
+
+### 1.3.0 (2021-02-16)
+
+- Add `Alcotest.triple` for testing 3-tuples. (#288, @sheepduke)
+
+- Correctly report test suite duration with millisecond precision. (#286,
+  @CraigFe)
+
+- Improve pretty-printing of results to consider the terminal width, fixing
+  several display issues due to line wrapping in small terminals. (#282,
+  @CraigFe)
+
 ### 1.2.3 (2020-09-07)
 
 - Require Dune 2.2. (#274, @CraigFe)

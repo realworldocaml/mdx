@@ -22,23 +22,28 @@
 type t
 (** Type of an OCaml version string *)
 
-val v : ?patch:int -> ?extra:string -> int -> int -> t
-(** [v ?patch ?extra major minor] will construct an OCaml
-    version string with the appropriate parameters.  The
-    [patch] and [extra] indicators are optional, but it is
-    conventional to include a [patch] value of 0 for most
-    recent OCaml releases. *)
+val v : ?patch:int -> ?prerelease:string -> ?extra:string -> int -> int -> t
+(** [v ?patch ?prerelease ?extra major minor] will construct
+    an OCaml version string with the appropriate parameters.
+    The [patch], [prerelease], and [extra] indicators are
+    optional, but it is conventional to include a [patch]
+    value of 0 for most recent OCaml releases. *)
 
 (** {2 Parsers and serializers} *)
 
-val to_string : ?sep:char -> t -> string
+val to_string : ?prerelease_sep:char -> ?sep:char -> t -> string
 (** [to_string ?sep t] will convert the version [t] into
     a human-readable representation.  The [sep] will default
-    to [+] which is the normal representation of extra
-    version strings, but can be changed to another character
-    by supplying [sep].  One such usecase is to generate
-    Docker container tags from OCaml version strings, where
-    only dashes and alphanumeric characters are allowed. *)
+    to the normal representation of extra version strings:
+    - [~] for prerelease version
+    - [+] otherwise
+    This can be changed to another character by supplying [sep]
+    and potentially [prerelease_sep]. If [sep] is defined but
+    not [prerelease_sep], the prerelease separator is represented by
+    two [sep] characters.
+    One such use case is to generate Docker container tags
+    from OCaml version strings, where only dashes and alphanumeric
+    characters are allowed. *)
 
 val of_string : string -> (t, [> `Msg of string ]) result
 (** [of_string t] will parse the version string in [t].
@@ -133,6 +138,12 @@ val patch : t -> int option
 (** [patch t] will return the patch version number of an OCaml
     release.  For example, [of_string "4.03.0" |> minor] will
     return [Some 0]. *)
+
+val prerelease : t -> string option
+(** [prerelease t] will return the prerelease extra string of an
+    OCaml prerelease.
+    For example, [of_string "4.12.0~beta+flambda" |> prerelease] will
+    return [Some "beta"]. *)
 
 val extra : t -> string option
 (** [extra t] will return the additional information string of
@@ -267,17 +278,29 @@ module Releases : sig
   val v4_10_1 : t
   (** Version 4.10.1 *)
 
+  val v4_10_2 : t
+  (** Version 4.10.2 *)
+
   val v4_10 : t
   (** Latest release in the 4.10.x series *)
 
   val v4_11_0 : t
   (** Version 4.11.0 *)
 
+  val v4_11_1 : t
+  (** Version 4.11.1 *)
+
+  val v4_11_2 : t
+  (** Version 4.11.2 *)
+
   val v4_11 : t
   (** Latest release in the 4.11.x series *)
 
   val v4_12 : t
   (** Latest release in the 4.12.x series *)
+
+  val v4_13 : t
+  (** Latest release in the 4.13.x series *)
 
   val all_patches : t list
   (** [all_patches] is an enumeration of all OCaml releases, including every patch release.
@@ -307,9 +330,13 @@ module Releases : sig
   (** [recent_with_dev] are the last eight stable releases of OCaml and the latest
       development branches. *)
 
+  val trunk : t
+  (** [trunk] is the version of the trunk branch in the OCaml repository. *)
+
   val is_dev : t -> bool
   (** [is_dev t] will return true if the release [t] represents a development
       release instead of a stable archive. *)
+
 end
 
 (** Values relating to the source code and version control of OCaml *)
@@ -332,9 +359,13 @@ module Since : sig
   val bytes: t
   (** [bytes] is the release that the {!Bytes} module first appeared in. *)
 
-  val arch : arch -> t 
+  val arch : arch -> t
   (** [arch a] will return the first release of OCaml that the architecture
       was reasonably stably supported on. *)
+
+  val options_packages : t
+  (** [options_packages t] will return the first release of OCaml that uses [ocaml-option-*]
+      packages in opam-repository, rather than +variant packages *)
 end
 
 (** Test whether a release has a given feature. *)
@@ -346,6 +377,10 @@ module Has : sig
 
   val arch : arch -> t -> bool
   (** [arch a t] will return {!true} if architecture [a] is supported on release [t]. *)
+
+  val options_packages : t -> bool
+  (** [options_packages t] will return true if the release [t] uses [ocaml-option-*]
+      packages in opam-repository, rather than +variant packages *)
 end
 
 (** Configuration parameters that affect the behaviour of OCaml at compiler-build-time. *)
@@ -382,12 +417,13 @@ module Configure_options : sig
   val to_configure_flag : t -> o -> string
   (** [to_configure_flag o] returns a string that can be passed to OCaml's [configure] script to activate that feature. *)
 
-  val compare : o -> o -> int
-  (** [compare a b] will return -1 if [a] is < [b], 0 if they are equal, or 1 if [a] > [b]. For backwards
-      compatibility reasons, {!`Frame_pointer} always comes first in comparisons. *)
+  val compare : t -> o -> o -> int
+  (** [compare t a b] will return -1 if [a] is < [b], 0 if they are equal, or 1 if [a] > [b]. For backwards
+      compatibility reasons, {!`Frame_pointer} always comes first in comparisons before OCaml 4.12.0, and
+      is lexically ordered after 4.12.0.  The [t] argument will determine which comparison function to use.  *)
 
-  val equal : o -> o -> bool
-  (** [equal a b] will return {!true} if [a=b] *)
+  val equal : t -> o -> o -> bool
+  (** [equal t a b] will return {!true} if [a=b] for a given OCaml version [t]. *)
 
 end
 
@@ -405,8 +441,16 @@ module Opam : sig
 
   (** Opam 2.0 functions *)
   module V2 : sig
+    val package : t -> (string * string)
+    (** [package t] returns the [(name, version)] pair corresponding to the opam2 package
+        for that compiler version. *)
+
+    val additional_packages : t -> string list
+    (** [additional_packages t] returns the list of opam packages which need to
+        be installed in addition to the {!package}[ t]. *)
+
     val name : t -> string
-    (** [package t] returns the opam2 package for that compiler version. *)
+    (** [name t] returns the opam2 package for that compiler version. *)
 
     val variant_switch : t -> Configure_options.o list -> t
     (** [variant_switch t cs] returns an OCaml version [t] whose

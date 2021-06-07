@@ -3,10 +3,10 @@ synopsis: "opam-monorepo generated lockfile"
 maintainer: "opam-monorepo"
 depends: [
   "0install-solver" {= "2.17"}
-  "alcotest" {= "1.2.3"}
+  "alcotest" {= "1.4.0"}
   "angstrom" {= "0.15.0"}
-  "astring" {= "0.8.4+dune"}
-  "base" {= "v0.14.0"}
+  "astring" {= "0.8.5+dune"}
+  "base" {= "v0.14.1"}
   "base-bigarray" {= "base"}
   "base-bytes" {= "base"}
   "base-threads" {= "base"}
@@ -15,30 +15,30 @@ depends: [
   "bigstringaf" {= "0.7.0"}
   "bos" {= "0.2.0+dune"}
   "cmdliner" {= "1.0.4+dune"}
-  "conf-pkg-config" {= "1.3"}
+  "conf-pkg-config" {= "2"}
   "cppo" {= "1.6.7"}
-  "dune" {= "2.7.1"}
-  "dune-build-info" {= "2.6.2"}
-  "dune-configurator" {= "2.6.2"}
-  "dune-private-libs" {= "2.6.2"}
+  "csexp" {= "1.5.1"}
+  "dune" {= "2.8.5"}
+  "dune-build-info" {= "2.8.5"}
+  "dune-configurator" {= "2.8.5"}
   "findlib" {= "1.8.1+dune"}
-  "fmt" {= "0.8.8+dune"}
-  "fpath" {= "0.7.2+dune"}
+  "fmt" {= "0.8.9+dune"}
+  "fpath" {= "0.7.3+dune"}
   "logs" {= "0.7.0+dune"}
-  "lwt" {= "5.4.0"}
+  "lwt" {= "5.4.1"}
   "mmap" {= "1.1.0"}
   "num" {= "1.3+dune"}
-  "ocaml" {= "4.11.1"}
-  "ocaml-base-compiler" {= "4.11.1"}
+  "ocaml" {= "4.11.2"}
+  "ocaml-base-compiler" {= "4.11.2"}
   "ocaml-config" {= "1"}
   "ocaml-syntax-shims" {= "1.0.0"}
-  "ocaml-version" {= "3.0.0"}
+  "ocaml-version" {= "3.1.0"}
   "ocamlfind" {= "1.8.1+dune"}
   "ocamlgraph" {= "2.0.0"}
   "ocplib-endian" {= "1.1"}
   "opam-0install" {= "0.4"}
   "opam-core" {= "2.1.0~beta2"}
-  "opam-file-format" {= "2.1.1"}
+  "opam-file-format" {= "2.1.0+dune"}
   "opam-format" {= "2.1.0~beta2"}
   "opam-repository" {= "2.1.0~beta2"}
   "opam-state" {= "2.1.0~beta2"}
@@ -49,16 +49,15 @@ depends: [
   "seq" {= "base+dune"}
   "sexplib" {= "v0.14.0"}
   "sexplib0" {= "v0.14.0"}
-  "stdlib-shims" {= "0.1.0"}
+  "stdlib-shims" {= "0.3.0"}
   "stringext" {= "1.6.0"}
   "uchar" {= "0.0.2+dune"}
-  "uri" {= "4.0.0"}
+  "uri" {= "4.2.0"}
   "uuidm" {= "0.9.7+dune"}
   "uutf" {= "1.0.2+dune"}
 ]
 depexts: [
   ["devel/pkgconf"] {os = "openbsd"}
-  ["pkg-config"] {os-distribution = "cygwinports"}
   ["pkg-config"] {os-family = "debian"}
   ["pkg-config"] {os = "macos" & os-distribution = "homebrew"}
   ["pkgconf"] {os = "freebsd"}
@@ -73,6 +72,7 @@ depexts: [
   ["pkgconfig"] {os = "macos" & os-distribution = "macports"}
   ["pkgconfig"] {os-distribution = "centos" & os-version <= "7"}
   ["pkgconfig"] {os-distribution = "rhel" & os-version <= "7"}
+  ["system:pkgconf"] {os = "win32" & os-distribution = "cygwinports"}
 ]
 pin-depends: [
   [
@@ -80,20 +80,19 @@ pin-depends: [
     "https://github.com/0install/0install/releases/download/v2.17/0install-v2.17.tbz"
   ]
   [
-    "alcotest.1.2.3"
-    "https://github.com/mirage/alcotest/releases/download/1.2.3/alcotest-mirage-1.2.3.tbz"
+    "alcotest.1.4.0"
+    "https://github.com/mirage/alcotest/releases/download/1.4.0/alcotest-mirage-1.4.0.tbz"
   ]
   [
     "angstrom.0.15.0"
     "https://github.com/inhabitedtype/angstrom/archive/0.15.0.tar.gz"
   ]
   [
-    "astring.0.8.4+dune"
-    "https://github.com/dune-universe/astring/archive/v0.8.4+dune.tar.gz"
+    "astring.0.8.5+dune"
+    "https://github.com/dune-universe/astring/archive/v0.8.5+dune.tar.gz"
   ]
   [
-    "base.v0.14.0"
-    "https://ocaml.janestreet.com/ocaml-core/v0.14/files/base-v0.14.0.tar.gz"
+    "base.v0.14.1" "https://github.com/janestreet/base/archive/v0.14.1.tar.gz"
   ]
   [
     "bigarray-compat.1.0.0"
@@ -116,49 +115,52 @@ pin-depends: [
     "https://github.com/ocaml-community/cppo/releases/download/v1.6.7/cppo-v1.6.7.tbz"
   ]
   [
-    "dune-build-info.2.6.2"
-    "https://github.com/ocaml/dune/releases/download/2.6.2/dune-2.6.2.tbz"
+    "csexp.1.5.1"
+    "https://github.com/ocaml-dune/csexp/releases/download/1.5.1/csexp-1.5.1.tbz"
   ]
   [
-    "dune-configurator.2.6.2"
-    "https://github.com/ocaml/dune/releases/download/2.6.2/dune-2.6.2.tbz"
+    "dune-build-info.2.8.5"
+    "https://github.com/ocaml/dune/releases/download/2.8.5/dune-2.8.5.tbz"
   ]
   [
-    "dune-private-libs.2.6.2"
-    "https://github.com/ocaml/dune/releases/download/2.6.2/dune-2.6.2.tbz"
+    "dune-configurator.2.8.5"
+    "https://github.com/ocaml/dune/releases/download/2.8.5/dune-2.8.5.tbz"
   ]
   [
     "findlib.1.8.1+dune"
     "https://github.com/dune-universe/lib-findlib/archive/v1.8.1+dune.tar.gz"
   ]
   [
-    "fmt.0.8.8+dune"
-    "https://github.com/dune-universe/fmt/archive/v0.8.8+dune.tar.gz"
+    "fmt.0.8.9+dune"
+    "https://github.com/dune-universe/fmt/archive/v0.8.9+dune.tar.gz"
   ]
   [
-    "fpath.0.7.2+dune"
-    "https://github.com/dune-universe/fpath/archive/v0.7.2+dune.tar.gz"
+    "fpath.0.7.3+dune"
+    "https://github.com/dune-universe/fpath/archive/v0.7.3+dune.tar.gz"
   ]
   [
     "logs.0.7.0+dune"
     "https://github.com/dune-universe/logs/archive/v0.7.0+dune.tar.gz"
   ]
-  ["lwt.5.4.0" "https://github.com/ocsigen/lwt/archive/5.4.0.zip"]
+  [
+    "lwt.5.4.1"
+    "https://github.com/ocsigen/lwt/archive/refs/tags/5.4.1.tar.gz"
+  ]
   [
     "mmap.1.1.0"
     "https://github.com/mirage/mmap/releases/download/v1.1.0/mmap-v1.1.0.tbz"
   ]
   [
     "num.1.3+dune"
-    "https://github.com/dune-universe/num/archive/v1.3+dune.tar.gz"
+    "https://github.com/dune-universe/num/archive/v1.3+dune-2.tar.gz"
   ]
   [
     "ocaml-syntax-shims.1.0.0"
     "https://github.com/ocaml-ppx/ocaml-syntax-shims/releases/download/1.0.0/ocaml-syntax-shims-1.0.0.tbz"
   ]
   [
-    "ocaml-version.3.0.0"
-    "https://github.com/ocurrent/ocaml-version/releases/download/v3.0.0/ocaml-version-v3.0.0.tbz"
+    "ocaml-version.3.1.0"
+    "https://github.com/ocurrent/ocaml-version/releases/download/v3.1.0/ocaml-version-v3.1.0.tbz"
   ]
   [
     "ocamlfind.1.8.1+dune"
@@ -181,8 +183,8 @@ pin-depends: [
     "https://github.com/ocaml/opam/archive/2.1.0-beta2.tar.gz"
   ]
   [
-    "opam-file-format.2.1.1"
-    "https://github.com/ocaml/opam-file-format/archive/2.1.1.tar.gz"
+    "opam-file-format.2.1.0+dune"
+    "https://github.com/ocaml/opam-file-format/archive/2.1.0.tar.gz"
   ]
   [
     "opam-format.2.1.0~beta2"
@@ -222,8 +224,8 @@ pin-depends: [
     "https://ocaml.janestreet.com/ocaml-core/v0.14/files/sexplib0-v0.14.0.tar.gz"
   ]
   [
-    "stdlib-shims.0.1.0"
-    "https://github.com/ocaml/stdlib-shims/releases/download/0.1.0/stdlib-shims-0.1.0.tbz"
+    "stdlib-shims.0.3.0"
+    "https://github.com/ocaml/stdlib-shims/releases/download/0.3.0/stdlib-shims-0.3.0.tbz"
   ]
   [
     "stringext.1.6.0"
@@ -234,8 +236,8 @@ pin-depends: [
     "https://github.com/dune-universe/uchar/archive/v0.0.2+dune.tar.gz"
   ]
   [
-    "uri.4.0.0"
-    "https://github.com/mirage/ocaml-uri/releases/download/v4.0.0/uri-v4.0.0.tbz"
+    "uri.4.2.0"
+    "https://github.com/mirage/ocaml-uri/releases/download/v4.2.0/uri-v4.2.0.tbz"
   ]
   [
     "uuidm.0.9.7+dune"
@@ -280,10 +282,10 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/dune-universe/astring/archive/v0.8.4+dune.tar.gz"
+    "https://github.com/dune-universe/astring/archive/v0.8.5+dune.tar.gz"
     "astring"
     [
-      "sha256=f033789895d92081d9926880c5fe364f925576b2236cb179ad85bf7b8dc84efb"
+      "sha256=11327c202fd0115f3a2bf7710c9c603b979a32ba9b16c1a64ba155857233acc8"
     ]
   ]
   [
@@ -301,17 +303,17 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/dune-universe/fmt/archive/v0.8.8+dune.tar.gz"
+    "https://github.com/dune-universe/fmt/archive/v0.8.9+dune.tar.gz"
     "fmt"
     [
-      "sha256=da16172528cc5ebde062fcb25e46085962ddd5fd32d2dc00eb07697384f0eb2d"
+      "sha256=343f768c369a253c12df2a20fae7e41deb27d394102b8cf847182e50a4fc5b45"
     ]
   ]
   [
-    "https://github.com/dune-universe/fpath/archive/v0.7.2+dune.tar.gz"
+    "https://github.com/dune-universe/fpath/archive/v0.7.3+dune.tar.gz"
     "fpath"
     [
-      "sha256=3ff946188d3a21ba1f7cdd5e3809a2572ca24e5063334a7845ff6b36173ff8d6"
+      "sha256=792ecf88d2a311596106e30775864629558ed0c2d0501590fda55f363dbb6ebc"
     ]
   ]
   [
@@ -329,10 +331,10 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/dune-universe/num/archive/v1.3+dune.tar.gz"
+    "https://github.com/dune-universe/num/archive/v1.3+dune-2.tar.gz"
     "num"
     [
-      "sha256=29716f41349bd408e46b676a518464576003cc0e38929975e411c31a5c374728"
+      "sha256=32156376be05260eb72f651ae33df41fe0af03ad322bee29a10495efadfb2d1d"
     ]
   ]
   [
@@ -374,16 +376,21 @@ x-opam-monorepo-duniverse-dirs: [
     ["md5=3e47593200b77fa6dd2754d37e9cbe19"]
   ]
   [
+    "https://github.com/janestreet/base/archive/v0.14.1.tar.gz"
+    "base"
+    ["md5=e4419eae60f57e553b154856f0cacf42"]
+  ]
+  [
     "https://github.com/janestreet/result/releases/download/1.5/result-1.5.tbz"
     "result"
     ["md5=1b82dec78849680b49ae9a8a365b831b"]
   ]
   [
-    "https://github.com/mirage/alcotest/releases/download/1.2.3/alcotest-mirage-1.2.3.tbz"
+    "https://github.com/mirage/alcotest/releases/download/1.4.0/alcotest-mirage-1.4.0.tbz"
     "alcotest"
     [
-      "sha256=085c481aeedf80d766ff9ba4d9929688bed01ef390915dc28a9bb4ba7664b2ae"
-      "sha512=ca489811d3f13a2604a4b0a2b7463d611741bf8a96655e3ae1dfbeb60f2e81f589d389f12379543e5e2a31e973170134855f10d1ba94ffdc6123e34227a7d37a"
+      "sha256=b1aaccfb2d651c902592c04953e2619169c91f797cf4f04a7dda2cab09b93ec1"
+      "sha512=8a13d5d4c8c77f115903e6b8e58160c6e6ec27870440bd38a674e9406f57f1eff299e65f006fd77728015d1a8f0ae30a714fe47e035824950a71ebfdff2cf3c9"
     ]
   ]
   [
@@ -400,11 +407,11 @@ x-opam-monorepo-duniverse-dirs: [
     ["md5=8c5d5fbc537296dc525867535fb878ba"]
   ]
   [
-    "https://github.com/mirage/ocaml-uri/releases/download/v4.0.0/uri-v4.0.0.tbz"
+    "https://github.com/mirage/ocaml-uri/releases/download/v4.2.0/uri-v4.2.0.tbz"
     "ocaml-uri"
     [
-      "sha256=000d9928877581c4f2fe6e02dee41db9cc4cb1f21e383f3b6ee3a7eadfb4298f"
-      "sha512=954b082b9409717bd59164b8a03196af9320f60fcb529bf885ba1771a4097aaf6c4cc3769e1d7b8be5239bfb690119b53b6a3fa6282a5ac5a5544119d82b1b7e"
+      "sha256=c5c013d940dbb6731ea2ee75c2bf991d3435149c3f3659ec2e55476f5473f16b"
+      "sha512=119e39bf53db9e94383a4e3a3df492b60b2db097266b3a8660de431ad85bc87997718305972fd2abbfb529973475ce6b210ba5e34d12e85a5dabbb0e24130aa1"
     ]
   ]
   [
@@ -413,6 +420,14 @@ x-opam-monorepo-duniverse-dirs: [
     [
       "sha256=db553e3e6c206df09b1858c3aef5e21e56564d593642a3c78bcedb6af36f529d"
       "sha512=9722b50fd23aaccf86816313333a3bf8fc7c6b4ef06b153e5e1e1aaf14670cf51a4aac52fb1b4a0e5531699c4047a1eff6c24c969f7e5063e78096c2195b5819"
+    ]
+  ]
+  [
+    "https://github.com/ocaml-dune/csexp/releases/download/1.5.1/csexp-1.5.1.tbz"
+    "csexp"
+    [
+      "sha256=d605e4065fa90a58800440ef2f33a2d931398bf2c22061a8acb7df845c0aac02"
+      "sha512=d785bbabaff9f6bf601399149ef0a42e5e99647b54e27f97ef1625907793dda22a45bf83e0e8a1eba2c63634c5484b54739ff0904ef556f5fc592efa38af7505"
     ]
   ]
   [
@@ -432,11 +447,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/ocaml/dune/releases/download/2.6.2/dune-2.6.2.tbz"
+    "https://github.com/ocaml/dune/releases/download/2.8.5/dune-2.8.5.tbz"
     "dune_"
     [
-      "sha256=4f6ec1f3f27ac48753d03b4a172127e4a56ae724201a3a18dc827c94425788e9"
-      "sha512=d195479c99a59edb0cb7674375f45e518389b2f251b02e5f603c196b9592acbcf2a12193b3de70831a543fa477f57abb101fdd210660e25805b147c66877cafa"
+      "sha256=79011283fb74c7a27eb17ad752efbcc39b39633cbacc8d7be97e8ea869443629"
+      "sha512=4ef6cdea0768a29de0108cb61b04ef471cb494762c865265f20d7d15ed65a39557f7e34f2dbd466352a6567cce29d7ba21be6569afafbcfc2871720b9466dcae"
     ]
   ]
   [
@@ -445,11 +460,11 @@ x-opam-monorepo-duniverse-dirs: [
     ["md5=bddaed4f386a22cace7850c9c7dac296"]
   ]
   [
-    "https://github.com/ocaml/opam-file-format/archive/2.1.1.tar.gz"
+    "https://github.com/ocaml/opam-file-format/archive/2.1.0.tar.gz"
     "opam-file-format"
     [
-      "md5=c1949c5dff062c754d0642c7eded794f"
-      "sha512=bb5fab696a31d985539e75383d82299145ea594456e7aa9ecff425187f2c781a2efda6924a193623938cafa13a8c65a2624dd965242289d5404f0a4d61af37b0"
+      "md5=f3daefb6f6041d6c1baed0c63d88f0fb"
+      "sha512=b948545497de0386457a9b5772924572249e38164aa49d5ab2ac9442d1231a56a3b8132a95197d74cbbe34336a7edc04eaca351a8763c4a009a512085ca0ab25"
     ]
   ]
   [
@@ -461,24 +476,27 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/ocaml/stdlib-shims/releases/download/0.1.0/stdlib-shims-0.1.0.tbz"
+    "https://github.com/ocaml/stdlib-shims/releases/download/0.3.0/stdlib-shims-0.3.0.tbz"
     "stdlib-shims"
-    ["md5=12b5704eed70c6bff5ac39a16db1425d"]
-  ]
-  [
-    "https://github.com/ocsigen/lwt/archive/5.4.0.zip"
-    "lwt"
     [
-      "md5=fc4721bdb1a01225b96e3a2debde95fa"
-      "sha512=e427f08223b77f9af696c9e6f90ff68e27e02e446910ef90d3da542e7b00bf23dd191ac77c1871288faa2289f8d28fc2f44efc3d3fe9165fe1c7a6be88ee49ff"
+      "sha256=babf72d3917b86f707885f0c5528e36c63fccb698f4b46cf2bab5c7ccdd6d84a"
+      "sha512=1151d7edc8923516e9a36995a3f8938d323aaade759ad349ed15d6d8501db61ffbe63277e97c4d86149cf371306ac23df0f581ec7e02611f58335126e1870980"
     ]
   ]
   [
-    "https://github.com/ocurrent/ocaml-version/releases/download/v3.0.0/ocaml-version-v3.0.0.tbz"
+    "https://github.com/ocsigen/lwt/archive/refs/tags/5.4.1.tar.gz"
+    "lwt"
+    [
+      "md5=5a8d2a83ee9314781f137d147a4c62ae"
+      "sha512=b872b7abe546c431ba62fe466423d7ace8e487ebd85ea5e859f462eb4c0a6884b242d9efd4a557b6da3ae699b0b695e0a783f89a1d1147cba7d99c4ae9d2db17"
+    ]
+  ]
+  [
+    "https://github.com/ocurrent/ocaml-version/releases/download/v3.1.0/ocaml-version-v3.1.0.tbz"
     "ocaml-version"
     [
-      "sha256=24b2f324ea91cff98bb8790a6746ccce3173bac5f57cb457156e5c50a0467397"
-      "sha512=a1936198e6e563ed703c8cd9d481394660fb25e9e700ea481e5326536c2734d9356c99750ae3ef8a55614776cc040c05cbcf2e03f609ab1f78c34aab0c5de830"
+      "sha256=ac7ba16a09d8f72212742f3936980fbfaebb698c7bbf625182af7d6b2c3cde5f"
+      "sha512=6e11823531f1f70b5d4b90ed9f2fcc22cbf83924a7a0ef40eebc4b80598db6acdaca97f1d379e01860513d5dda492f5bc4d944f0c1dd7df491b2f36a0f729bb5"
     ]
   ]
   [
@@ -488,11 +506,6 @@ x-opam-monorepo-duniverse-dirs: [
       "sha256=db41f5d52e9eab17615f110b899dfeb27dd7e7f89cd35ae43827c5119db206ea"
       "sha512=d8ebe40f42b598a9bd99f1ef4b00ba93458385a4accd121af66a0bf3b3f8d7135f576740adf1a43081dd409977c2219fd4bdbb5b3d1308890d301d553ed49900"
     ]
-  ]
-  [
-    "https://ocaml.janestreet.com/ocaml-core/v0.14/files/base-v0.14.0.tar.gz"
-    "base"
-    ["md5=5a00382c724e97b6768aaa27481dd3cc"]
   ]
   [
     "https://ocaml.janestreet.com/ocaml-core/v0.14/files/parsexp-v0.14.0.tar.gz"

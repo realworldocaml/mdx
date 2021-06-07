@@ -3,16 +3,7 @@
   (public_name opam-file-format)
   (synopsis "Parser and printer for the opam file syntax")
   (wrapped false)
-  (flags :standard (:include flags.sexp))
   (modules_without_implementation opamParserTypes))
-
-(rule
-  (with-stdout-to flags.ml
-    (echo "print_string (if String.sub Sys.ocaml_version 0 5 = \"4.02.\" then \"(-w -50)\" else \"()\")")))
-
-(rule
-  (with-stdout-to flags.sexp
-    (run ocaml %{dep:flags.ml})))
 
 (ocamlyacc opamBaseParser)
 (ocamllex opamLexer)

@@ -10,9 +10,7 @@ let make_checks () =
   check int32
 
 exception Zero
-
 exception One of int
-
 exception Two of int * char
 
 let checked_exceptions () =
@@ -66,6 +64,7 @@ let () =
           id_case (result int unit) "result ok" (Ok 1);
           id_case (result int unit) "result error" (Error ());
           id_case (pair int char) "pair" (1, 'a');
+          id_case (triple int bool string) "triple" (1, true, "a");
         ] );
       ( "negation",
         [
