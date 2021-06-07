@@ -66,24 +66,36 @@ end
 
 module Local_solver = Opam_0install.Solver.Make (Switch_and_local_packages_context)
 
+let constraints ~ocaml_version =
+  let no_constraints = OpamPackage.Name.Map.empty in
+  match ocaml_version with
+  | Some version ->
+      let key = OpamPackage.Name.of_string "ocaml" in
+      let value = (`Eq, OpamPackage.Version.of_string version) in
+      OpamPackage.Name.Map.safe_add key value no_constraints
+  | None -> no_constraints
+
+let request ~allow_compiler_variants local_packages_names =
+  if allow_compiler_variants then local_packages_names
+  else
+    (* We add ocaml-base-compiler to the solver request to prevent it
+       from selecting a version of OCaml that hasn't been officially
+       released yet but that exists in opam with variants such as
+       ocaml-variants.x+trunk *)
+    let base_compiler = OpamPackage.Name.of_string "ocaml-base-compiler" in
+    base_compiler :: local_packages_names
+
 let calculate_raw ~build_only ~allow_jbuilder ~ocaml_version ~local_packages switch_state =
   let local_packages_names = OpamPackage.Name.Map.keys local_packages in
   let names_set = OpamPackage.Name.Set.of_list local_packages_names in
   let test = if build_only then OpamPackage.Name.Set.empty else names_set in
-  let constraints =
-    let no_constraints = OpamPackage.Name.Map.empty in
-    match ocaml_version with
-    | Some version ->
-        let key = OpamPackage.Name.of_string "ocaml" in
-        let value = (`Eq, OpamPackage.Version.of_string version) in
-        OpamPackage.Name.Map.safe_add key value no_constraints
-    | None -> no_constraints
-  in
+  let constraints = constraints ~ocaml_version in
   let context =
     Switch_and_local_packages_context.create ~test ~allow_jbuilder ~constraints ~local_packages
       switch_state
   in
-  let result = Local_solver.solve context local_packages_names in
+  let request = request ~allow_compiler_variants:false local_packages_names in
+  let result = Local_solver.solve context request in
   match result with
   | Error e -> Error (`Msg (Local_solver.diagnostics e))
   | Ok selections ->
