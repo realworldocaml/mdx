@@ -7,7 +7,33 @@ let depends_on_any packages (formula : OpamTypes.filtered_formula) =
   in
   OpamFormula.fold_left (fun acc (name, _) -> acc || is_one_of_packages name) false formula
 
-let depends_on_compiler_variants formula = depends_on_any [ "ocaml-variants" ] formula
+let ocaml_options =
+  (* ocaml-options-vanilla is purposefully excluded from that list as it doesn't imply
+     a dependency towards ocaml-variants on its own. *)
+  [
+    "ocaml-option-32bit";
+    "ocaml-option-afl";
+    "ocaml-option-bytecode-only";
+    "ocaml-option-default-unsafe-string";
+    "ocaml-option-flambda";
+    "ocaml-option-fp";
+    "ocaml-option-musl";
+    "ocaml-option-nnp";
+    "ocaml-option-nnpchecker";
+    "ocaml-option-no-flat-float-array";
+    "ocaml-option-spacetime";
+    "ocaml-option-static";
+    "ocaml-options-only-afl";
+    "ocaml-options-only-flambda";
+    "ocaml-options-only-flambda-fp";
+    "ocaml-options-only-fp";
+    "ocaml-options-only-nnp";
+    "ocaml-options-only-nnpchecker";
+    "ocaml-options-only-no-flat-float-array";
+  ]
+
+let depends_on_compiler_variants formula =
+  depends_on_any ("ocaml-variants" :: ocaml_options) formula
 
 let depends_on_dune ~allow_jbuilder (formula : OpamTypes.filtered_formula) =
   let packages = if allow_jbuilder then [ "dune"; "jbuilder" ] else [ "dune" ] in

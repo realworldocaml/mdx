@@ -77,8 +77,47 @@ let test_depends_on_compiler_variants =
   in
   [
     make_test ~name:"Depends on ocaml" ~input:{|[ "ocaml" {>= "4.11"} ]|} ~expected:false ();
-    make_test ~name:"Depends variant directly"
+    make_test ~name:"Depends on variant directly"
       ~input:{|[ "ocaml-variants" {= "4.11.1+flambda+afl"} ]|} ~expected:true ();
+    make_test ~name:"Depends on ocaml-option-vanilla" ~input:{|[ "ocaml-options-vanilla" ]|}
+      ~expected:false ();
+    make_test ~name:"Depends on ocaml-option-32bit" ~input:{|[ "ocaml-option-32bit" ]|}
+      ~expected:true ();
+    make_test ~name:"Depends on ocaml-option-afl" ~input:{|[ "ocaml-option-afl" ]|} ~expected:true
+      ();
+    make_test ~name:"Depends on ocaml-option-bytecode-only"
+      ~input:{|[ "ocaml-option-bytecode-only" ]|} ~expected:true ();
+    make_test ~name:"Depends on ocaml-option-default-unsafe-string"
+      ~input:{|[ "ocaml-option-default-unsafe-string" ]|} ~expected:true ();
+    make_test ~name:"Depends on ocaml-option-flambda" ~input:{|[ "ocaml-option-flambda" ]|}
+      ~expected:true ();
+    make_test ~name:"Depends on ocaml-option-fp" ~input:{|[ "ocaml-option-fp" ]|} ~expected:true ();
+    make_test ~name:"Depends on ocaml-option-musl" ~input:{|[ "ocaml-option-musl" ]|} ~expected:true
+      ();
+    make_test ~name:"Depends on ocaml-option-nnp" ~input:{|[ "ocaml-option-nnp" ]|} ~expected:true
+      ();
+    make_test ~name:"Depends on ocaml-option-nnpchecker" ~input:{|[ "ocaml-option-nnpchecker" ]|}
+      ~expected:true ();
+    make_test ~name:"Depends on ocaml-option-no-flat-float-array"
+      ~input:{|[ "ocaml-option-no-flat-float-array" ]|} ~expected:true ();
+    make_test ~name:"Depends on ocaml-option-spacetime" ~input:{|[ "ocaml-option-spacetime" ]|}
+      ~expected:true ();
+    make_test ~name:"Depends on ocaml-option-static" ~input:{|[ "ocaml-option-static" ]|}
+      ~expected:true ();
+    make_test ~name:"Depends on ocaml-options-only-afl" ~input:{|[ "ocaml-options-only-afl" ]|}
+      ~expected:true ();
+    make_test ~name:"Depends on ocaml-options-only-flambda"
+      ~input:{|[ "ocaml-options-only-flambda" ]|} ~expected:true ();
+    make_test ~name:"Depends on ocaml-options-only-flambda-fp"
+      ~input:{|[ "ocaml-options-only-flambda-fp" ]|} ~expected:true ();
+    make_test ~name:"Depends on ocaml-options-only-fp" ~input:{|[ "ocaml-options-only-fp" ]|}
+      ~expected:true ();
+    make_test ~name:"Depends on ocaml-options-only-nnp" ~input:{|[ "ocaml-options-only-nnp" ]|}
+      ~expected:true ();
+    make_test ~name:"Depends on ocaml-options-only-nnpchecker"
+      ~input:{|[ "ocaml-options-only-nnpchecker" ]|} ~expected:true ();
+    make_test ~name:"Depends on ocaml-options-only-no-flat-float-array"
+      ~input:{|[ "ocaml-options-only-no-flat-float-array" ]|} ~expected:true ();
   ]
 
 let suite =
