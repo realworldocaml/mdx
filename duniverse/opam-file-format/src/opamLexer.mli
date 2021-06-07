@@ -17,35 +17,17 @@ exception Error of string
 (** Raised on any lexing error with a description of the fault. Note that
     [Failure "lexing: empty token"] is never raised by the lexer. *)
 
-val token: Lexing.lexbuf -> OpamBaseParser.token
-
-(** [OpamLexer] transitional module with full position types *)
-module FullPos : sig
-
-  open OpamParserTypes.FullPos
-
-  val relop: string -> relop_kind
-  (** Inverse of {!OpamPrinter.relop} *)
-
-  val logop: string -> logop_kind
-  (** Inverse of {!OpamPrinter.logop} *)
-
-  val pfxop: string -> pfxop_kind
-  (** Inverse of {!OpamPrinter.pfxop} *)
-
-  val env_update_op: string -> env_update_op_kind
-  (** Inverse of {!OpamPrinter.env_update_op} *)
-
-end
-
 val relop: string -> relop
-[@@ocaml.deprecated "Use OpamLexer.FullPos.relop instead."]
+(** Inverse of {!OpamPrinter.relop} *)
 
 val logop: string -> logop
-[@@ocaml.deprecated "Use OpamLexer.FullPos.logop instead."]
+(** Inverse of {!OpamPrinter.logop} *)
 
 val pfxop: string -> pfxop
-[@@ocaml.deprecated "Use OpamLexer.FullPos.pfxop instead."]
+(** Inverse of {!OpamPrinter.pfxop} *)
 
 val env_update_op: string -> env_update_op
-[@@ocaml.deprecated "Use OpamLexer.FullPos.env_update_op instead."]
+(** Inverse of {!OpamPrinter.env_update_op} *)
+
+
+val token: Lexing.lexbuf -> OpamBaseParser.token

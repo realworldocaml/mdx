@@ -25,11 +25,9 @@
     only faulty runs are fully displayed at the end of the run (with the full
     logs ready to inspect).
 
-    {e Release 1.2.3} *)
+    {e Release 1.4.0} *)
 
 include Alcotest_engine.Cli.S with type return = unit
-
-(** {1 Assert functions} *)
 
 include module type of Alcotest_engine.Test
 (** @inline *)
@@ -41,7 +39,6 @@ include module type of Alcotest_engine.Test
     package provides the [Unix] platform implementation. *)
 
 open Alcotest_engine
-
 module Unix : Platform.MAKER
 
 (** {!Core.Make} is [Alcotest_engine.Core.Make (Unix)] *)

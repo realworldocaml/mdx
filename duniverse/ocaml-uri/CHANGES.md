@@ -1,3 +1,18 @@
+v4.2.0 2021-04-26
+-----------------
+
+* Do not mutate the base encoder when using custom percent encoders.
+  This was a bug introduced in #147. (#156 @aantron)
+* Disable Travis CI tests and switch Win/Mac tests to GitHub Actions and
+  Linux ones to ocaml-ci (@avsm).
+
+v4.1.0 2021-01-04
+-----------------
+
+* `uri-re` is deprecated, it is a legacy implementation that is now outdated. 
+  `uri` should be used instead (@dinosaure, #152).
+* Fix build system for cross-compilation (@TheLortex, #151).
+
 v4.0.0 2020-01-01
 -----------------
 

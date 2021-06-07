@@ -1,4 +1,4 @@
-version: "4.0.0"
+version: "4.2.0"
 opam-version: "2.0"
 maintainer: "anil@recoil.org"
 authors: ["Anil Madhavapeddy" "David Sheets" "Rudi Grinberg"]
@@ -26,3 +26,4 @@ build: [
   ["dune" "build" "-p" name "-j" jobs]
   ["dune" "runtest" "-p" name "-j" jobs] {with-test}
 ]
+messages: [ "Deprecated. This package is outdated, you should consider using uri instead" ]
