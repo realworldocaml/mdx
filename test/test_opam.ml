@@ -65,4 +65,22 @@ let test_depends_on_dune =
       ~expected:true ();
   ]
 
-let suite = ("Opam", List.concat [ Url.test_from_opam; test_depends_on_dune ])
+let test_depends_on_compiler_variants =
+  let make_test ~name ~input ~expected () =
+    let test_name = Printf.sprintf "depends_on_compiler_variants: %s" name in
+    let test_fun () =
+      let formula = opam_parse_formula input in
+      let actual = Duniverse_lib.Opam.depends_on_compiler_variants formula in
+      Alcotest.(check bool) test_name expected actual
+    in
+    (test_name, `Quick, test_fun)
+  in
+  [
+    make_test ~name:"Depends on ocaml" ~input:{|[ "ocaml" {>= "4.11"} ]|} ~expected:false ();
+    make_test ~name:"Depends variant directly"
+      ~input:{|[ "ocaml-variants" {= "4.11.1+flambda+afl"} ]|} ~expected:true ();
+  ]
+
+let suite =
+  ( "Opam",
+    List.concat [ Url.test_from_opam; test_depends_on_dune; test_depends_on_compiler_variants ] )

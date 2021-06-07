@@ -85,6 +85,13 @@ let request ~allow_compiler_variants local_packages_names =
     let base_compiler = OpamPackage.Name.of_string "ocaml-base-compiler" in
     base_compiler :: local_packages_names
 
+let depend_on_compiler_variants local_packages =
+  OpamPackage.Name.Map.exists
+    (fun _name (_version, opam_file) ->
+      let depends = OpamFile.OPAM.depends opam_file in
+      Opam.depends_on_compiler_variants depends)
+    local_packages
+
 let calculate_raw ~build_only ~allow_jbuilder ~ocaml_version ~local_packages switch_state =
   let local_packages_names = OpamPackage.Name.Map.keys local_packages in
   let names_set = OpamPackage.Name.Set.of_list local_packages_names in
@@ -94,7 +101,8 @@ let calculate_raw ~build_only ~allow_jbuilder ~ocaml_version ~local_packages swi
     Switch_and_local_packages_context.create ~test ~allow_jbuilder ~constraints ~local_packages
       switch_state
   in
-  let request = request ~allow_compiler_variants:false local_packages_names in
+  let allow_compiler_variants = depend_on_compiler_variants local_packages in
+  let request = request ~allow_compiler_variants local_packages_names in
   let result = Local_solver.solve context request in
   match result with
   | Error e -> Error (`Msg (Local_solver.diagnostics e))
