@@ -22,12 +22,12 @@
   (ocaml
    (>= 4.02.3))
   ocamlfind
-  fmt
+  (fmt (>= 0.8.5))
   (cppo :build)
   (csexp
    (>= 1.3.2))
   astring
-  logs
+  (logs (>= 0.7.0))
   (cmdliner
    (>= 1.0.0))
   (re
@@ -35,6 +35,6 @@
   result
   (ocaml-version
    (>= 2.3.0))
-  odoc
+  (odoc (>= 1.4.1))
   (lwt :with-test)
   (alcotest :with-test)))
