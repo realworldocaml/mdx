@@ -372,7 +372,7 @@ let errors = ref false
 
 let eval t cmd =
   let buf = Buffer.create 1024 in
-  let ppf = Format.formatter_of_buffer buf in
+  let ppf = Format.formatter_of_out_channel stderr in
   errors := false;
   let exec_code ~capture phrase =
     let lines = ref [] in
