@@ -10,6 +10,8 @@
 
 #### Fixed
 
+- Show exceptions in the correct order (#332, @talex5)
+
 #### Security
 
 ### 1.9.0
