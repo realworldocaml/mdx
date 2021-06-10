@@ -35,6 +35,6 @@
   result
   (ocaml-version
    (>= 2.3.0))
-  (odoc (>= 1.4.1))
+  (odoc-parser (>= 0.9.0))
   (lwt :with-test)
   (alcotest :with-test)))
