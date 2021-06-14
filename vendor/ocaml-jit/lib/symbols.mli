@@ -33,3 +33,6 @@ val union : t -> t -> t
 val find : t -> string -> Address.t option
 (** Lookup a symbol's address in the given symbol map. If it is missing from the map
     look it up using dlsym. *)
+
+val dprint : t -> unit
+(** Debug printer for symbol table *)

@@ -131,7 +131,8 @@ let entry_points ~phrase_name symbols =
         entry;
       }
   | None ->
-      failwithf "Toplevel phrase entry point symbol %s is not defined" entry_name
+      failwithf "Toplevel phrase entry point symbol %s is not defined"
+        entry_name
 
 let jit_run entry_points =
   let open Opttoploop in
@@ -218,8 +219,7 @@ let jit_load_body ppf program =
       outcome_global := None;
       res
 
-let jit_load ppf program =
-  with_jit_x86 (fun () -> jit_load_body ppf program)
+let jit_load ppf program = with_jit_x86 (fun () -> jit_load_body ppf program)
 
 let jit_lookup_symbol symbol =
   match Symbols.find !Globals.symbols symbol with

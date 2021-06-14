@@ -50,7 +50,7 @@ let lookup_plt plt symbol =
 
 let one ~symbols ~got ~plt ~section_name binary_section t =
   let open Result.Op in
-  let+ target_address =
+  let+ target_symbol_address =
     match (t, got, plt) with
     | { target = Direct name; _ }, _, _ -> lookup_symbol symbols name
     | { target = Got name; kind = Relative; _ }, Some got, _ ->
@@ -66,6 +66,7 @@ let one ~symbols ~got ~plt ~section_name binary_section t =
     | { target = Plt _; _ }, _, None ->
         out_of_text_error ~got_or_plt:"PLT" ~section_name
   in
+  let target_address = Address.add_int64 target_symbol_address t.addend in
   let data =
     match t.kind with
     | Absolute -> Address.to_int64 target_address
