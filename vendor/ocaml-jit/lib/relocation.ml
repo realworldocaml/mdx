@@ -49,6 +49,7 @@ type t = {
   size : Size.t;
   kind : Kind.t;
   target : Target.t;
+  addend: int64;
 }
 
 let size_from_reloc_kind (kind : X86_emitter.Relocation.Kind.t) =
@@ -63,16 +64,20 @@ let label_from_reloc_kind (kind : X86_emitter.Relocation.Kind.t) =
   match kind with
   | REL32 (label, _) | DIR32 (label, _) | DIR64 (label, _) -> label
 
+let addend_from_reloc_kind (kind : X86_emitter.Relocation.Kind.t) =
+  match kind with REL32 (_, addend) | DIR32 (_, addend) | DIR64 (_, addend) -> addend
+
 let from_x86_relocation relocation =
   let open Option.Op in
   let ({ offset_from_section_beginning; kind } : X86_emitter.Relocation.t) =
     relocation
   in
   let label = label_from_reloc_kind kind in
+  let addend = addend_from_reloc_kind kind in
   let size = size_from_reloc_kind kind in
   let kind = kind_from_reloc_kind kind in
   let+ target = Target.from_label label in
-  { target; size; kind; offset_from_section_beginning }
+  { target; addend; size; kind; offset_from_section_beginning }
 
 let from_x86_relocation_err relocation =
   let open Result.Op in
@@ -80,7 +85,8 @@ let from_x86_relocation_err relocation =
     relocation
   in
   let label = label_from_reloc_kind kind in
+  let addend = addend_from_reloc_kind kind in
   let size = size_from_reloc_kind kind in
   let kind = kind_from_reloc_kind kind in
   let+ target = Target.from_label_err label in
-  { target; size; kind; offset_from_section_beginning }
+  { target; addend; size; kind; offset_from_section_beginning }

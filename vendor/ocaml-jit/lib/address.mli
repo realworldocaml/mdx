@@ -23,6 +23,8 @@ val placeholder : t
 
 val add_int : t -> int -> t
 
+val add_int64 : t -> int64 -> t
+
 val emit : Buffer.t -> t -> unit
 (** Prints the address to the given buffer, respecting the architecture's endianness *)
 
