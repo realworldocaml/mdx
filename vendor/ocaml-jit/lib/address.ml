@@ -23,6 +23,9 @@ let placeholder = Nativeint.zero
 
 let add_int t int = Nativeint.(add t (of_int int))
 
+let add_int64 t int64 =
+  Nativeint.(add t (Int64.to_nativeint int64))
+
 let emit buf t =
   match Nativeint.size with
   | 32 -> Buffer.add_int32_ne buf (Nativeint.to_int32 t)

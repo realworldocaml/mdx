@@ -29,25 +29,30 @@ let keep_asm_files =
     (fun x -> `Keep_asm_files x)
     Cmdliner.Arg.(value & flag & info ~doc [ "k"; "keep-asm-files" ])
 
-let eval_one ~eval_phrase input =
-  let phrase =
+let eval_script ~eval_phrase input =
+  let lexbuf =
     match input with
-    | Stdin ->
-        let lexbuf = Lexing.from_channel stdin in
-        Parse.toplevel_phrase lexbuf
+    | Stdin -> Lexing.from_channel stdin
     | In_file file ->
         let ic = open_in file in
-        let lexbuf = Lexing.from_channel ic in
-        Parse.toplevel_phrase lexbuf
+        Lexing.from_channel ic
   in
-  let _ = eval_phrase true Format.std_formatter phrase in
-  ()
+  let rec aux () =
+    try
+      let phrase = Parse.toplevel_phrase lexbuf in
+      let _ = eval_phrase true Format.std_formatter phrase in
+      aux ()
+    with
+    | End_of_file -> ()
+    | x -> Location.report_exception Format.std_formatter x
+  in
+  aux ()
 
 let run ~eval_phrase ~loop (`Keep_asm_files keep_asm_files) (`Input input) =
   Clflags.keep_asm_file := keep_asm_files;
   match input with
   | None -> loop Format.std_formatter
-  | Some input -> eval_one ~eval_phrase input
+  | Some input -> eval_script ~eval_phrase input
 
 let term ~eval_phrase ~loop =
   Cmdliner.Term.(const (run ~eval_phrase ~loop) $ keep_asm_files $ input)
