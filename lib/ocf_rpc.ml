@@ -1,28 +1,24 @@
 module Sexp = Sexplib0.Sexp
 module Csexp = Csexp.Make (Sexp)
 module Ocf = Ocamlformat_rpc_lib
-open Util.Result.Infix
-
-let supported_versions = [ "v1" ]
+module Result = Util.Result
+open Result.Infix
 
 type state = Uninitialized | Running of Ocf.client | Errored
 
 let state : state ref = ref Uninitialized
 
 let start () =
-  let argv = [| "ocamlformat-rpc" |] in
-  let cmd = Bos.Cmd.v "ocamlformat-rpc" in
-  Bos.OS.Cmd.get_tool cmd >>= fun cmd_path ->
-  let prog = Fpath.to_string cmd_path in
-  let input, output = Unix.open_process_args prog argv in
-  let pid = Unix.process_pid (input, output) in
-  Ocf.pick_client ~pid input output supported_versions
-  >>| (fun client ->
-        state := Running client;
-        client)
-  |> Util.Result.map_error ~f:(fun (`Msg _) ->
-         state := Errored;
-         `No_process)
+  let err _ =
+    state := Errored;
+    `No_process
+  in
+  Result.map_error ~f:err @@ Bos.OS.Env.req_var "MDX__OCAMLFORMAT_RPC_CLIENT"
+  >>= fun client_env ->
+  Result.map_error ~f:err @@ Csexp.parse_string client_env >>= fun sexp ->
+  Result.map_error ~f:err @@ Ocf.client_of_sexp sexp >>= fun client ->
+  state := Running client;
+  Ok client
 
 let try_format_as_list ?(toplevel = false) l cl =
   let split_lines = Astring.String.cuts ~sep:"\n" ~empty:true in
