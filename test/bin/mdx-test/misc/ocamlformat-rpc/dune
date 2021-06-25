@@ -1,0 +1,30 @@
+(executable
+ (name rpc_driver)
+ (public_name rpc_driver)
+ (libraries ocamlformat-rpc-lib unix sexplib0 bos)
+ (modules rpc_driver))
+
+(rule
+ (deps
+  (package mdx)
+  (source_tree ocamlformat-rpc)
+  %{bin:rpc_driver}
+  (env_var MDX__OCAMLFORMAT_RPC_CLIENT))
+ (action
+  (progn
+   (with-stdout-to
+     rpc_driver.output
+     (run %{bin:rpc_driver}))
+   (with-stdout-to
+     test-case.output
+     (run ocaml-mdx test --format-code --output - %{dep:test-case.md})))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff test-case.md.expected test-case.output)))
+
+(rule
+ (alias runtest)
+ (action
+  (diff rpc_driver.expected rpc_driver.output)))

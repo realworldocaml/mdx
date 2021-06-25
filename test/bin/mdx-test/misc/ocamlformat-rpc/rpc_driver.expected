@@ -1,0 +1,5 @@
+Looking for ocamlformat-rpc binary in path... /home/gpe/.opam/mdx-4.11.0/bin/ocamlformat-rpc
+Starting process... OK
+Selecting ocamlformat-rpc client... V1 selected
+Selecting Janestreet profile... OK
+Setting MDX__OCAMLFORMAT_RPC_CLIENT value... OK
