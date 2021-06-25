@@ -17,6 +17,7 @@ let start () =
   >>= fun client_env ->
   Result.map_error ~f:err @@ Csexp.parse_string client_env >>= fun sexp ->
   Result.map_error ~f:err @@ Ocf.client_of_sexp sexp >>= fun client ->
+  Ocf.new_session client;
   state := Running client;
   Ok client
 
@@ -76,7 +77,9 @@ let get_client () =
   | Errored -> Error `No_process
 
 let halt () =
-  match get_client () >>= Ocf.halt with (exception _) | Error _ | Ok () -> ()
+  match get_client () with
+  | Ok client -> Ocf.end_session client
+  | (exception _) | Error _ -> ()
 
 let try_config x =
   match get_client () >>= Ocf.config x with
