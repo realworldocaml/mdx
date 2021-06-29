@@ -14,7 +14,7 @@
 opam package manager with having a local copy of all the source
 code required to build a project using the dune build tool.")
  (depends
-  (ocaml (and (>= 4.08.0) (< 4.12)))
+  (ocaml (>= 4.08.0))
   dune-build-info
   bos
   cmdliner
