@@ -1,4 +1,4 @@
-## unreleased
+## 0.2.2
 
 ### Added
 
@@ -15,7 +15,7 @@
 - Only print the full list of selected root packages once and only in verbose mode, simply printing
   the number in the default logs. (#173, @NathanReb)
 - Improve the solving process so it only accepts base-compilers unless one explicitly requires
-  an compiler variant, either directly or using `ocaml-option-*` packages. (#178, @NathanReb)
+  a compiler variant, either directly or using `ocaml-option-*` packages. (#178, @NathanReb)
 
 ### Deprecated
 
