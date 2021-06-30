@@ -1,3 +1,17 @@
+## unreleased
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Fixed
+
+### Removed
+
+### Security
+
 ## 0.2.2
 
 ### Added
@@ -17,8 +31,6 @@
 - Improve the solving process so it only accepts base-compilers unless one explicitly requires
   a compiler variant, either directly or using `ocaml-option-*` packages. (#178, @NathanReb)
 
-### Deprecated
-
 ### Fixed
 
 - Fix the default branch mechanism when the opam remote starts with `git+https` (#166, @TheLortex)
@@ -26,10 +38,6 @@
 - Improve how the default branch for a git repository is queried, fixing a bug
   where opam-monorepo wouldn't work outside of of git repo and a bug where it wouldn't
   work on non-english systems. (#157, fixes #114, @TheLortex)
-
-### Removed
-
-### Security
 
 ## 0.2.1
 
