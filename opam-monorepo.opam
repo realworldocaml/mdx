@@ -13,28 +13,26 @@ license: "ISC"
 homepage: "https://github.com/ocamllabs/opam-monorepo"
 bug-reports: "https://github.com/ocamllabs/opam-monorepo/issues"
 depends: [
-  "dune" {>= "2.8"}
+  "dune" {>= "2.6"}
   "ocaml" {>= "4.08.0"}
-  "odoc" {with-doc}
+  "dune-build-info"
+  "bos"
+  "cmdliner"
+  "fmt"
+  "logs"
+  "opam-file-format" {>= "2.1.0"}
+  "opam-format" {>= "2.1.0~beta4"}
+  "opam-state" {>= "2.1.0~beta4"}
+  "opam-0install"
+  "ocaml-version"
+  "sexplib"
+  "uri"
+  "alcotest" {with-test}
+]
+conflicts: [
+  "dune-build-info" {= "2.7.0" | = "2.7.1"}
+  "dune-configurator" {= "2.7.0" | = "2.7.1"}
 ]
 dev-repo: "git+https://github.com/ocamllabs/opam-monorepo.git"
 build: [ "dune" "build" "-p" name "-j" jobs "@install" "@runtest" {with-test} ]
 flags: [ plugin ]
-depexts: [
-  ["devel/pkgconf"] {os = "openbsd"}
-  ["pkg-config"] {os-family = "debian"}
-  ["pkg-config"] {os = "macos" & os-distribution = "homebrew"}
-  ["pkgconf"] {os = "freebsd"}
-  ["pkgconf"] {os-distribution = "alpine"}
-  ["pkgconf"] {os-distribution = "arch"}
-  ["pkgconf-pkg-config"] {os-distribution = "centos" & os-version >= "8"}
-  ["pkgconf-pkg-config"] {os-distribution = "rhel" & os-version >= "8"}
-  ["pkgconfig"] {os-distribution = "fedora"}
-  ["pkgconfig"] {os-distribution = "mageia"}
-  ["pkgconfig"] {os-distribution = "nixos"}
-  ["pkgconfig"] {os-distribution = "ol"}
-  ["pkgconfig"] {os = "macos" & os-distribution = "macports"}
-  ["pkgconfig"] {os-distribution = "centos" & os-version <= "7"}
-  ["pkgconfig"] {os-distribution = "rhel" & os-version <= "7"}
-  ["system:pkgconf"] {os = "win32" & os-distribution = "cygwinports"}
-]
