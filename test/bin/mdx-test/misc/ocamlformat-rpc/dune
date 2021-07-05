@@ -1,7 +1,8 @@
 (rule
- (target test-case.actual)
+ (target test-case.md.actual)
  (deps
   (package mdx)
+  ocamlformat-rpc-server
   (source_tree ocamlformat-rpc))
  (action
   (with-stdout-to
@@ -9,9 +10,38 @@
    (setenv
     MDX__OCAMLFORMAT_RPC_CONFIG
     "profile=janestreet"
-    (run ocaml-mdx test --output - --format-code %{dep:test-case.md})))))
+    (setenv
+     PATH
+     "$PATH:."
+     (run ocaml-mdx test --output - --format-code %{dep:test-case.md}))))))
+
+(rule
+ (target test-case.mli.actual)
+ (deps
+  (package mdx)
+  ocamlformat-rpc-server
+  (source_tree ocamlformat-rpc))
+ (action
+  (with-stdout-to
+   %{target}
+   (setenv
+    PATH
+    "$PATH:."
+    (run ocaml-mdx test --output - --syntax=mli --format-code
+      %{dep:test-case.mli})))))
 
 (rule
  (alias runtest)
  (action
-  (diff test-case.expected test-case.actual)))
+  (diff test-case.mli.expected test-case.mli.actual)))
+
+(rule
+ (alias runtest)
+ (action
+  (diff test-case.md.expected test-case.md.actual)))
+
+(rule
+ (deps %{bin:ocamlformat-rpc})
+ (target ocamlformat-rpc-server)
+ (action
+  (copy %{deps} %{target})))

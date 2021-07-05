@@ -13,3 +13,9 @@
  (alias runtest)
  (action
   (diff dune.inc dune.gen)))
+
+(rule
+ (deps %{bin:ocamlformat-rpc})
+ (target ocamlformat-rpc-server)
+ (action
+  (copy %{deps} %{target})))
