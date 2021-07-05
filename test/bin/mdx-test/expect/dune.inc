@@ -192,6 +192,18 @@
  (action (diff fmt-code/test-case.md.expected fmt-code.actual)))
 
 (rule
+ (target format-mli.actual)
+ (deps (package mdx) (source_tree format-mli))
+ (action
+  (with-stdout-to %{target}
+   (chdir format-mli
+    (run ocaml-mdx test --output - --syntax=mli --format-code test-case.mli)))))
+
+(rule
+ (alias runtest)
+ (action (diff format-mli/test-case.expected format-mli.actual)))
+
+(rule
  (target heredoc.actual)
  (deps (package mdx) (source_tree heredoc))
  (action
