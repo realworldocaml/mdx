@@ -14,6 +14,20 @@ let err (`Msg _) =
   state := Errored;
   `No_process
 
+let parse_config s =
+  let opts = String.split_on_char ',' s in
+  List.fold_left
+    (fun acc x ->
+      match String.split_on_char '=' x with
+      | [ var; val_ ] -> (var, val_) :: acc
+      | _ -> acc)
+    [] opts
+
+let set_config client =
+  let s = Bos.OS.Env.opt_var ~absent:"" "MDX__OCAMLFORMAT_RPC_CONFIG" in
+  match Ocf.config (parse_config s) client with
+  | (exception _) | Ok () | Error _ -> ()
+
 let start () =
   let argv = [| "ocamlformat-rpc" |] in
   (match Bos.OS.Env.req_var "MDX__OCAMLFORMAT_RPC_START" with
@@ -28,6 +42,7 @@ let start () =
   @@ Ocf.pick_client ~pid input output supported_versions
   >>| fun client ->
   state := Running client;
+  set_config client;
   client
 
 let try_format_as_list ?(toplevel = false) l cl =
