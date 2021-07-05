@@ -29,8 +29,8 @@ let set_config client =
   | (exception _) | Ok () | Error _ -> ()
 
 let start () =
-  let argv = [| "ocamlformat-rpc" |] in
-  let cmd = Bos.Cmd.v "ocamlformat-rpc" in
+  let argv = [| "ocamlformat-rpc-server" |] in
+  let cmd = Bos.Cmd.v "ocamlformat-rpc-server" in
   Bos.OS.Cmd.get_tool cmd >>= fun cmd_path ->
   let prog = Fpath.to_string cmd_path in
   let input, output = Unix.open_process_args prog argv in
