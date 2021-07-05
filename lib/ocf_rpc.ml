@@ -47,6 +47,12 @@ let start () =
 
 let try_format_as_list ?(toplevel = false) l cl =
   let split_lines = Astring.String.cuts ~sep:"\n" ~empty:true in
+  let add_semisemi x =
+    let len = String.length x in
+    match (String.get x (len - 1), String.get x (len - 2)) with
+    | ';', ';' -> x
+    | _ -> x ^ ";;"
+  in
   let chop_semisemi x =
     match Astring.String.cut ~sep:"\n" x with Some (";;", x) -> x | _ -> x
   in
@@ -57,7 +63,7 @@ let try_format_as_list ?(toplevel = false) l cl =
     | Error _ -> l
     | Ok fmted -> (
         match List.rev (split_lines (chop_semisemi fmted)) with
-        | "" :: x :: r | x :: r -> List.rev ((x ^ ";;") :: r)
+        | "" :: x :: r | x :: r -> List.rev (add_semisemi x :: r)
         | [] -> failwith "command are not empty")
   else
     match Astring.String.cuts ~sep:";;" whole with
@@ -79,14 +85,16 @@ let try_format_as_list ?(toplevel = false) l cl =
               else
                 match Ocf.format phrase cl with
                 | exception _ ->
-                    Astring.String.cuts ~sep:"\n" ~empty:true (phrase ^ ";;")
+                    Astring.String.cuts ~sep:"\n" ~empty:true
+                      (add_semisemi phrase)
                 | Error _ ->
-                    Astring.String.cuts ~sep:"\n" ~empty:true (phrase ^ ";;")
+                    Astring.String.cuts ~sep:"\n" ~empty:true
+                      (add_semisemi phrase)
                 | Ok fmted -> (
                     match List.rev (split_lines (chop_semisemi fmted)) with
-                    | [ ""; x1 ] -> [ x1 ^ ";;" ]
-                    | "" :: x :: r -> List.rev ((x ^ ";;") :: r)
-                    | x :: r -> List.rev ((x ^ ";;") :: r)
+                    | [ ""; x1 ] -> [ add_semisemi x1 ]
+                    | "" :: x :: r -> List.rev (add_semisemi x :: r)
+                    | x :: r -> List.rev (add_semisemi x :: r)
                     | [] -> failwith "command are not empty"))
             phrases
         in

@@ -13,13 +13,13 @@ module X : sig val x : int end
       assert true;
       ignore @@ fun x -> ignore @@ fun _ -> [ 2; 3; 3; 4; 5 ]
     | _ -> ()
-  ;;;;
+  ;;
 val f : 'a * ('b * 'c) -> unit = <fun>
 # let ( || ) x y =
     match x with
     | true -> y
     | false -> false
-  ;;;;
+  ;;
 val ( || ) : bool -> bool -> bool = <fun>
 ```
 
