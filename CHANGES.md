@@ -1,20 +1,12 @@
-### unreleased
+### 1.10.0
 
 #### Added
 
 - Display OCaml warnings in mdx-error blocks (#293, @gpetiot)
 
-#### Changed
-
-#### Deprecated
-
-#### Removed
-
 #### Fixed
 
 - Show exceptions in the correct order (#332, @talex5)
-
-#### Security
 
 ### 1.9.0
 
