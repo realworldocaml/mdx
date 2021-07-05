@@ -27,14 +27,4 @@ let main =
   ( Term.(ret (const main $ Cli.setup)),
     Term.info "ocaml-mdx" ~version:"%%VERSION%%" ~doc ~exits ~man )
 
-let main () = Term.(exit_status @@ eval_choice main cmds)
-
-let main () =
-  if String.compare Sys.argv.(0) "mdx" == 0 then
-    Format.eprintf
-      "\x1b[0;1mWarning\x1b[0m: 'mdx' is deprecated and will one day be removed.\n\
-      \    Use 'ocaml-mdx' instead\n\
-       %!";
-  main ()
-
-let () = main ()
+let () = Term.(exit_status @@ eval_choice main cmds)
