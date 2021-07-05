@@ -30,12 +30,9 @@ let set_config client =
 
 let start () =
   let argv = [| "ocamlformat-rpc" |] in
-  (match Bos.OS.Env.req_var "MDX__OCAMLFORMAT_RPC_START" with
-  | Ok s -> Ok s
-  | Error _ ->
-      let cmd = Bos.Cmd.v "ocamlformat-rpc" in
-      Bos.OS.Cmd.get_tool cmd >>= fun cmd_path -> Ok (Fpath.to_string cmd_path))
-  >>= fun prog ->
+  let cmd = Bos.Cmd.v "ocamlformat-rpc" in
+  Bos.OS.Cmd.get_tool cmd >>= fun cmd_path ->
+  let prog = Fpath.to_string cmd_path in
   let input, output = Unix.open_process_args prog argv in
   let pid = Unix.process_pid (input, output) in
   Result.map_error ~f:err
