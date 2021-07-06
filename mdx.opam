@@ -33,7 +33,9 @@ depends: [
   "odoc-parser" {>= "0.9.0"}
   "lwt" {with-test}
   "alcotest" {with-test}
-  "ppx_deriving"
+  "compiler-libs-opttoplevel"
+  "opttopfind"
+  "jit"
   "odoc" {with-doc}
 ]
 build: [
@@ -51,3 +53,17 @@ build: [
   ]
 ]
 dev-repo: "git+https://github.com/realworldocaml/mdx.git"
+pin-depends: [
+  [
+    "compiler-libs-opttoplevel.0.1.0"
+    "git+https://github.com/NathanReb/compiler-libs-opttoplevel.git#0.1.0"
+  ]
+  [
+    "opttopfind.dev"
+    "git+https://github.com/NathanReb/opttopfind.git"
+  ]
+  [
+    "jit.dev"
+    "git+https://github.com/NathanReb/ocaml-jit.git"
+  ]
+]
