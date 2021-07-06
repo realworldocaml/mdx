@@ -4,4 +4,4 @@
  (preprocess
   (action
    (run %{bin:cppo} -V OCAML:%{ocaml_version} %{input-file})))
- (libraries unix jit mdx compiler-libs opttoplevel threads opttopfind))
+ (libraries unix jit mdx compiler-libs compiler-libs-opttoplevel threads opttopfind))
