@@ -4,11 +4,11 @@ pin-depends: [
     "git+https://github.com/NathanReb/compiler-libs-opttoplevel.git#0.1.0"
   ]
   [
-    "opttopfind.dev"
-    "git+https://github.com/NathanReb/opttopfind.git"
+    "opttopfind.0.1.0"
+    "git+https://github.com/NathanReb/opttopfind.git#0.1.0"
   ]
   [
-    "jit.dev"
-    "git+https://github.com/NathanReb/ocaml-jit.git"
+    "jit.0.1.0"
+    "git+https://github.com/NathanReb/ocaml-jit.git#0.1.0"
   ]
 ]
