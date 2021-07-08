@@ -41,7 +41,7 @@ module Ls_remote = struct
         match (search "refs/tags/", search "refs/heads/") with
         | Some _, Some _ -> Error `Multiple_such_refs
         | Some commit, None | None, Some commit -> Ok commit
-        | None, None -> Error `No_such_ref )
+        | None, None -> Error `No_such_ref)
 
   let parse_ref_output_line ~symref line =
     match String.extract_blank_separated_words line with

@@ -45,8 +45,7 @@ module Repo = struct
           ~expected:(Ok None) ();
         make_test ~name:"Regular"
           ~summary:
-            (summary_factory ~dev_repo:"d" ~url_src:(Other "u") ~name:"y" ~version:"v" ~hashes:[]
-               ())
+            (summary_factory ~dev_repo:"d" ~url_src:(Other "u") ~name:"y" ~version:"v" ~hashes:[] ())
           ~expected:
             (Ok
                (Some

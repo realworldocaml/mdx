@@ -87,4 +87,4 @@ let filter_duniverse ~to_consider (duniverse : Duniverse.t) =
           let sep fmt () = Fmt.pf fmt " " in
           Rresult.R.error_msgf "The following repos are not in your duniverse: %a"
             Fmt.(list ~sep string)
-            unmatched )
+            unmatched)

@@ -11,7 +11,7 @@ let rec equal eq xs ys =
 let rec find_map l ~f =
   match l with
   | [] -> None
-  | x :: l -> ( match f x with None -> find_map l ~f | Some _ as res -> res )
+  | x :: l -> ( match f x with None -> find_map l ~f | Some _ as res -> res)
 
 let rev_partition_map =
   let rec loop l accl accr ~f =
@@ -20,7 +20,7 @@ let rev_partition_map =
     | x :: l -> (
         match (f x : (_, _) Either.t) with
         | Left y -> loop l (y :: accl) accr ~f
-        | Right y -> loop l accl (y :: accr) ~f )
+        | Right y -> loop l accl (y :: accr) ~f)
   in
   fun l ~f -> loop l [] [] ~f
 

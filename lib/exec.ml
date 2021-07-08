@@ -30,7 +30,7 @@ let run_and_log_s ?(ignore_error = false) cmd =
   | true -> (
       match res with
       | Ok (stdout, _) -> Ok stdout
-      | Error (`Msg _) -> OS.File.read tmp_file >>= fun stderr -> Ok stderr )
+      | Error (`Msg _) -> OS.File.read tmp_file >>= fun stderr -> Ok stderr)
   | false -> (
       match res with
       | Ok (stdout, (_, `Exited 0)) -> Ok stdout
@@ -43,7 +43,7 @@ let run_and_log_s ?(ignore_error = false) cmd =
                 Fmt.(styled `Red text)
                 stderr Fmt.text (String.trim stdout));
           Error (`Msg "Command execution failed")
-      | Error (`Msg m) -> Error (`Msg m) )
+      | Error (`Msg m) -> Error (`Msg m))
 
 let run_and_log ?ignore_error cmd = run_and_log_s ?ignore_error cmd >>= fun _ -> Ok ()
 
@@ -75,7 +75,7 @@ let ocaml_version ?ocamlc () =
   | Ok s -> (
       match Ocaml_version.of_string s with
       | Ok v -> Ok v
-      | Error (`Msg _) -> Error (`Msg "unable to parse OCaml string from ocamlc") )
+      | Error (`Msg _) -> Error (`Msg "unable to parse OCaml string from ocamlc"))
   | Error (`Msg _) -> Error (`Msg "unable to find an installed ocamlc")
 
 let install_ocaml_to ~prefix ~src () =

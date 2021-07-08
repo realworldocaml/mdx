@@ -45,7 +45,7 @@ module Make (Key : Key) : S with type key = Key.t = struct
     let rec loop acc = function
       | [] -> Result.Ok acc
       | (k, v) :: l -> (
-          match find acc k with None -> loop (set acc k v) l | Some v_old -> Error (k, v_old, v) )
+          match find acc k with None -> loop (set acc k v) l | Some v_old -> Error (k, v_old, v))
     in
     fun l -> loop empty l
 
@@ -65,7 +65,7 @@ module Make (Key : Key) : S with type key = Key.t = struct
                 match Key.compare (fst (f x)) k with 0 -> true | _ -> false)
           with
           | x :: y :: _ -> Error (k, x, y)
-          | _ -> assert false )
+          | _ -> assert false)
 
   let of_list_map_exn t ~f =
     match of_list_map t ~f with

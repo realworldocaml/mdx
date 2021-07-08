@@ -60,7 +60,7 @@ module Version = struct
     | Some (major, minor) -> (
         match (int_of_string_opt major, int_of_string_opt minor) with
         | Some major, Some minor -> Ok (major, minor)
-        | _ -> err () )
+        | _ -> err ())
 
   let backward_compatible (major, minor) (major', minor') = major = major' && minor >= minor'
 
@@ -168,7 +168,7 @@ module Duniverse_dirs = struct
     | { pelem = String s; pos } -> (
         match OpamHash.of_string_opt s with
         | Some hash -> Ok hash
-        | None -> Pos.errorf ~pos "Invalid hash: %s" s )
+        | None -> Pos.errorf ~pos "Invalid hash: %s" s)
     | _ -> value_errorf ~value "Expected a hash string representation"
 
   let from_opam_value value =
