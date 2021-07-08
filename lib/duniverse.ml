@@ -45,7 +45,7 @@ module Repo = struct
       | Other _, Git _ -> Ordering.to_int Gt
       | Git { repo; ref }, Git { repo = repo'; ref = ref' } -> (
           let c1 = String.compare repo repo' in
-          match Ordering.of_int c1 with Lt | Gt -> c1 | Eq -> compare_ref ref ref' )
+          match Ordering.of_int c1 with Lt | Gt -> c1 | Eq -> compare_ref ref ref')
       | Other s, Other s' -> String.compare s s'
 
     let pp pp_ref fmt t =

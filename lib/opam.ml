@@ -77,7 +77,7 @@ module Url = struct
         let str_url = OpamUrl.to_string url in
         match String.lsplit2 ~on:'#' str_url with
         | Some (repo, ref) -> Git { repo; ref = Some ref }
-        | None -> Git { repo = str_url; ref = None } )
+        | None -> Git { repo = str_url; ref = None })
     | _ -> Other (OpamUrl.to_string url)
 
   let from_opam_field url =

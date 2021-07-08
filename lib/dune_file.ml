@@ -14,7 +14,7 @@ module Lang = struct
     | [ major; minor ] -> (
         match (int_of_string_opt major, int_of_string_opt minor) with
         | Some major, Some minor -> Ok (major, minor)
-        | _ -> err () )
+        | _ -> err ())
     | _ -> err ()
 
   let parse_stanza s =
