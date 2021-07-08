@@ -8,6 +8,8 @@
 
 ### Fixed
 
+- Fix compat with opam 2.1.0~rc2 by upgrading vendored opam libs
+
 ### Removed
 
 ### Security
