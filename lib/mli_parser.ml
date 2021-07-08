@@ -46,46 +46,13 @@ let slice lines ~(start : Odoc_parser.Loc.point) ~(end_ : Odoc_parser.Loc.point)
       let last_line = String.sub last_line 0 end_.column in
       String.concat "\n" ([ first_line ] @ stripped @ [ last_line ])
 
-(* Imagine a docstring that is within a file with four characters # of indentation. (I'll
-   use square brackets rather than parens to avoid escaping):
-
-   ####[** foo
-   ####
-   ####bar
-   ####
-   ####baz *]
-   ####val x : int
-   ####val y : int
-
-   According to odoc, the "b" in "bar" is at column 0 inside the docstring and at column 4
-   within the broader file. That is correct. But it says the "f" in "foo" is at column 1
-   inside the docstring and column 5 within the file. This isn't right.
-
-   The problem is that it starts counting the inside-the-docstring column number from the
-   end of "[**", but doesn't add those three characters to the within-the-file column
-   number. Here, we make the adjustment.
-*)
-let account_for_docstring_open_token (location : Odoc_parser.Loc.span) =
-  let start_shift = 3 in
-  let end_shift = if location.start.line = location.end_.line then 3 else 0 in
-  {
-    location with
-    start = { location.start with column = location.start.column + start_shift };
-    end_ = { location.end_ with column = location.end_.column + end_shift };
-  }
-
 let extract_code_blocks ~(location : Lexing.position) ~docstring =
   let rec acc blocks =
     List.map
       (fun block ->
         match Odoc_parser.Loc.value block with
         | `Code_block (_metadata, { Odoc_parser.Loc.value = contents; _ }) ->
-            let location =
-              if location.pos_lnum = block.location.start.line then
-                account_for_docstring_open_token block.location
-              else block.location
-            in
-            [ { Code_block.location; contents } ]
+            [ { Code_block.location = block.location; contents } ]
         | `List (_, _, lists) -> List.map acc lists |> List.concat
         | _ -> [])
       blocks
@@ -140,12 +107,13 @@ let docstring_code_blocks str =
   Lexer.handle_docstrings := true;
   Lexer.init ();
   List.map
-    (fun (docstring, (location : Location.t)) ->
-      let blocks =
-        extract_code_blocks ~location:location.loc_start ~docstring
+    (fun (docstring, (cmt_loc : Location.t)) ->
+      let location =
+        { cmt_loc.loc_start with pos_cnum = cmt_loc.loc_start.pos_cnum + 3 }
       in
+      let blocks = extract_code_blocks ~location ~docstring in
       List.map
-        (fun (b : Code_block.t) -> (b, convert_loc location b.location))
+        (fun (b : Code_block.t) -> (b, convert_loc cmt_loc b.location))
         blocks)
     (docstrings (Lexing.from_string str))
   |> List.concat
