@@ -25,15 +25,18 @@ let init_config_files () =
     OpamFilename.Dir.of_string (OpamStd.Sys.home ()) // ".opamrc";
   ]
 
-let state_cache t = t / "repo" // "state.cache"
+let state_cache_dir t = t / "repo"
+
+let state_cache t = state_cache_dir t // Printf.sprintf "state-%s.cache" (OpamVersion.magic ())
 
 let lock t = t // "lock"
 
 let config_lock t = t // "config.lock"
 
+(*
 let archives_dir t = t / "archives"
-
 let archive t nv = archives_dir t // (OpamPackage.to_string nv ^ "+opam.tar.gz")
+*)
 
 let repos_lock t = t / "repo" // "lock"
 
@@ -57,15 +60,17 @@ let backup_dir t = t / "backup"
 
 let backup t = backup_dir t /- backup_file ()
 
+let plugin_prefix = "opam-"
+
 let plugins t = t / "plugins"
 
 let plugins_bin t = plugins t / "bin"
 
 let plugin_bin t name =
-  let sname = OpamPackage.Name.to_string name in
+  let sname = OpamPackage.Name.to_string name ^ OpamStd.Sys.executable_name "" in
   let basename =
-    if OpamStd.String.starts_with ~prefix:"opam-" sname then sname
-    else "opam-" ^ sname
+    if OpamStd.String.starts_with ~prefix:plugin_prefix sname then sname
+    else plugin_prefix ^ sname
   in
   plugins_bin t // basename
 

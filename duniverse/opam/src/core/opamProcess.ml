@@ -310,6 +310,17 @@ let set_resolve_command =
     resolve_command_fn := resolve_command
 let resolve_command cmd = !resolve_command_fn cmd
 
+let create_process_env =
+  if Sys.win32 then
+    fun cmd ->
+      let resolved_cmd = resolve_command cmd in
+      if OpamStd.(Option.map_default Sys.is_cygwin_variant `Native resolved_cmd) = `Cygwin then
+        cygwin_create_process_env cmd
+      else
+        Unix.create_process_env cmd
+  else
+    Unix.create_process_env
+
 (** [create cmd args] create a new process to execute the command
     [cmd] with arguments [args]. If [stdout_file] or [stderr_file] are
     set, the channels are redirected to the corresponding files.  The
@@ -427,13 +438,11 @@ let create ?info_file ?env_file ?(allow_stdin=true) ?stdout_file ?stderr_file ?e
       else
         cmd, args in
     let create_process, cmd, args =
-      if Sys.win32 then
-        if OpamStd.Sys.is_cygwin_variant cmd = `Cygwin then
-          cygwin_create_process_env, cmd, args
-        else
-          Unix.create_process_env, cmd, args
+      if Sys.win32 && OpamStd.Sys.is_cygwin_variant cmd = `Cygwin then
+        cygwin_create_process_env, cmd, args
       else
-        Unix.create_process_env, cmd, args in
+        Unix.create_process_env, cmd, args
+    in
     try
       create_process
         cmd

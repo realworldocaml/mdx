@@ -44,7 +44,8 @@ val load_virtual:
 
 (** Load the switch's state file, without constructing the package maps: much
     faster than loading the full switch state *)
-val load_selections: 'a global_state -> switch -> switch_selections
+val load_selections:
+  ?lock_kind: 'a lock -> 'b global_state -> switch -> switch_selections
 
 (** Raw function to compute the availability of all packages, in [opams], given
     the switch configuration and the set of pinned packages. (The result is
@@ -231,6 +232,19 @@ val is_switch_globally_set: 'a switch_state -> bool
 (** Returns a message about a package or version that couldn't be found *)
 val not_found_message: 'a switch_state -> atom -> string
 
+val unavailable_reason_raw:
+  'a switch_state -> name * OpamFormula.version_formula ->
+  [ `UnknownVersion
+  | `UnknownPackage
+  | `NoDefinition
+  | `Pinned of OpamPackage.t
+  | `Unavailable of string
+  | `ConflictsBase
+  | `ConflictsInvariant of string
+  | `MissingDepexts of string list
+  | `Default
+  ]
+
 (** Returns a printable explanation why a package is not currently available
     (pinned to an incompatible version, unmet [available:] constraints...).
     [default] is returned if no reason why it wouldn't be available was found
@@ -238,6 +252,9 @@ val not_found_message: 'a switch_state -> atom -> string
 val unavailable_reason:
   'a switch_state -> ?default:string -> name * OpamFormula.version_formula ->
   string
+
+(** Returns whether or not the package can be upgraded to a version tagged with avoid-version *)
+val can_upgrade_to_avoid_version : OpamPackage.Name.t -> 'a switch_state -> bool
 
 (** Handle a cache of the opam files of installed packages *)
 module Installed_cache: sig

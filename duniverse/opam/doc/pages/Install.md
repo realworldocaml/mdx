@@ -37,7 +37,7 @@ and run `sh install.sh`)
 
 We provide pre-compiled binaries for:
 - Linux i686, amd64, arm7, arm64
-- OSX (intel 64 bits)
+- OSX (intel 64 bits, arm64)
 - We do not at present provide an official Windows distribution of opam, but please see [this separately maintained distribution](https://fdopen.github.io/opam-repository-mingw/)
 (other platforms are available using the other methods below)
 
@@ -56,7 +56,7 @@ sudo install <downloaded file> /usr/local/bin/opam
 ## Using your distribution's package system
 
 This is generally the recommended way, **when available and up-to-date** (you
-can check [here](https://github.com/ocaml/opam/wiki/Distributions) the latest
+can check [here](Distribution.html) the latest
 available release per distribution). Here is a list of supported distributions:
 
 #### Arch Linux
@@ -213,12 +213,9 @@ You can also download the full archives, including opam dependencies (these
 don't require any extra downloads, just the OCaml compiler -- 4.02.3 or later
 for the latest version):
 
-* [2.0.2](https://github.com/ocaml/opam/releases/download/2.0.2/opam-full-2.0.2.tar.gz)
- - MD5: 8780b0dc4209451e21330b6a3e663fe9
- - SHA384: 2ecbdd28840564f873af2f56fcb337d49477f4b63a39ed3878a38eb55bbda67d7561a8deee697c36d7be50ff36a8fe21
-* [1.2.2](https://github.com/ocaml/opam/releases/download/1.2.2/opam-full-1.2.2.tar.gz)
- - MD5: 7d348c2898795e9f325fb80eaaf5eae8
- - SHA384: 3a0a7868b5f510c1248959ed350eecacfe1abd886e373fd31066ce10871354010ef057934df026e5fad389ead6c2857d
+* [2.0.8](https://github.com/ocaml/opam/releases/download/2.0.8/opam-full-2.0.8.tar.gz)
+ - MD5: 69e95d318fec8027b9eb6af6075a2a13
+ - SHA384: f534860f511768f78f646be4248df58ecaf699dc55eea90e21f0d8d6e2bd23235a9ca132fcf17bf854cf3c25adfab4c8
 
 Follow the instructions in the included
 [`README.md`](https://github.com/ocaml/opam#readme) to get opam built and

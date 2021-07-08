@@ -124,7 +124,6 @@ if "%INSTALLED_URL%" neq "%OCAML_URL% %FLEXDLL_URL% %DEP_MODE%" if exist bootstr
   echo Re-building bootstrap compiler
   rd /s/q bootstrap
   if exist src_ext\archives\nul rd /s/q src_ext\archives
-  "%CYG_ROOT%\bin\bash.exe" -lc "cd $APPVEYOR_BUILD_FOLDER && patch -p1 -i appveyor.patch"
 )
 
 if "%DEP_MODE%" equ "lib-pkg" "%CYG_ROOT%\bin\bash.exe" -lc "cd $APPVEYOR_BUILD_FOLDER && make --no-print-directory -C src_ext lib-pkg-urls | head -n -1 | sort | uniq" > current-lib-pkg-list
@@ -182,7 +181,9 @@ set PRIVATE_RUNTIME=
 if "%OCAML_PORT:~0,5%" equ "mingw" set PRIVATE_RUNTIME=--with-private-runtime
 set WITH_MCCS=--with-mccs
 if "%DEP_MODE%" equ "lib-pkg" set WITH_MCCS=
-"%CYG_ROOT%\bin\bash.exe" -lc "cd $APPVEYOR_BUILD_FOLDER %LIB_PKG% && ./configure %PRIVATE_RUNTIME% %WITH_MCCS% %LIB_EXT% && make opam %POST_COMMAND%" || exit /b 1
+"%CYG_ROOT%\bin\bash.exe" -lc "cd $APPVEYOR_BUILD_FOLDER %LIB_PKG% && ./configure %PRIVATE_RUNTIME% %WITH_MCCS% %LIB_EXT%" || exit /b 1
+"%CYG_ROOT%\bin\bash.exe" -lc "cd $APPVEYOR_BUILD_FOLDER && echo DUNE_PROFILE=dev >> Makefile.config" || exit /b 1
+"%CYG_ROOT%\bin\bash.exe" -lc "cd $APPVEYOR_BUILD_FOLDER && make opam %POST_COMMAND%" || exit /b 1
 goto :EOF
 
 :test
@@ -201,7 +202,7 @@ if "%OCAML_PORT%" neq "" if "%GIT_FOR_WINDOWS%" equ "1" (
   "C:\Program Files\Git\cmd\git.exe" config --global core.autocrlf true
   "C:\Program Files\Git\cmd\git.exe" config --global core.autocrlf
 )
-"%CYG_ROOT%\bin\bash.exe" -lc "%PATH_SHIM% make -C $APPVEYOR_BUILD_FOLDER tests" || (for %%I in (%APPVEYOR_BUILD_FOLDER%\_build\default\tests\failed-*.log) do appveyor PushArtifact %%I) && exit /b 1
+"%CYG_ROOT%\bin\bash.exe" -lc "%PATH_SHIM% make -C $APPVEYOR_BUILD_FOLDER tests" || exit /b 1
 rem Can't yet do an opam init with the native Windows builds
 if "%OCAML_PORT%" equ "" "%CYG_ROOT%\bin\bash.exe" -lc "make -C $APPVEYOR_BUILD_FOLDER run-appveyor-test" || exit /b 1
 goto :EOF

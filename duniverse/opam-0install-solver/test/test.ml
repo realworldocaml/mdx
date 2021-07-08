@@ -31,7 +31,7 @@ let select_opam st spec =
   match OpamSolution.resolve st Install ~orphans:OpamPackage.Set.empty ~requested:names request with
   | Success s -> Ok (OpamSolver.all_packages s)
   | Conflicts c -> Error (lazy (
-      OpamCudf.string_of_conflict st.packages (OpamSwitchState.unavailable_reason st) c
+      OpamCudf.string_of_conflicts st.packages (OpamSwitchState.unavailable_reason st) c
       |> String.trim
     ))
 
@@ -149,7 +149,7 @@ let () =
   let root = OpamStateConfig.opamroot () in
   OpamFormatConfig.init ();
   ignore (OpamStateConfig.load_defaults root);
-  OpamStd.Config.init ();
+  OpamCoreConfig.init ();
   OpamStateConfig.init ();
   OpamClientConfig.opam_init ();
   OpamGlobalState.with_ `Lock_none @@ fun gt ->

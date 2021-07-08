@@ -12,14 +12,14 @@ environment:
     CYG_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
     DEP_MODE: lib-ext
     # This should be identical to the value in .travis.yml
-    OPAM_REPO_SHA: 88c17a663
-    OPAM_TEST_REPO_SHA: 6877131f0
+    OPAM_REPO_SHA: b02110b549a0b5275806ce27444fabac71093a0e
+    OPAM_TEST_REPO_SHA: b02110b549a0b5275806ce27444fabac71093a0e
   matrix:
     - CYG_ROOT: cygwin
       CYG_ARCH: x86
-#    - CYG_ROOT: cygwin64
-#      CYG_ARCH: x86_64
-#      DEP_MODE: lib-pkg
+    - CYG_ROOT: cygwin64
+      CYG_ARCH: x86_64
+      DEP_MODE: lib-pkg
     - appveyor_build_worker_image: Visual Studio 2017
       OCAML_PORT: msvc
       DEP_MODE: lib-pkg

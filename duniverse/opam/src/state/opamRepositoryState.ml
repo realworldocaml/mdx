@@ -27,6 +27,15 @@ module Cache = struct
       let name = "repository"
     end)
 
+  let remove () =
+    let root = OpamStateConfig.(!r.root_dir) in
+    let cache_dir = OpamPath.state_cache_dir root in
+    let remove_cache_file file =
+      if OpamFilename.check_suffix file ".cache" then
+        OpamFilename.remove file
+    in
+    List.iter remove_cache_file (OpamFilename.files cache_dir)
+
   let save rt =
     let file = OpamPath.state_cache rt.repos_global.root in
     (* Repository without remote are not cached, they are intended to be
@@ -49,6 +58,7 @@ module Cache = struct
             (filter_out_nourl rt.repo_opams);
       }
     in
+    remove ();
     C.save file t
 
   let load root =
@@ -59,11 +69,6 @@ module Cache = struct
         (OpamRepositoryName.Map.of_list cache.cached_repofiles,
          OpamRepositoryName.Map.of_list cache.cached_opams)
     | None -> None
-
-  let remove () =
-    let root = OpamStateConfig.(!r.root_dir) in
-    let file = OpamPath.state_cache root in
-    C.remove file
 
 end
 
@@ -142,9 +147,12 @@ let get_repo_root rt repo =
 let load lock_kind gt =
   log "LOAD-REPOSITORY-STATE %@ %a" (slog OpamFilename.Dir.to_string) gt.root;
   let lock = OpamFilename.flock lock_kind (OpamPath.repos_lock gt.root) in
-  let repos_map =
-    OpamFile.Repos_config.safe_read (OpamPath.repos_config gt.root)
-  in
+  let repos_map = OpamStateConfig.Repos.safe_read ~lock_kind gt in
+  if OpamStateConfig.is_newer_than_self gt then
+    log "root version (%s) is greater than running binary's (%s); \
+         load with best-effort (read-only)"
+      (OpamVersion.to_string (OpamFile.Config.opam_root_version gt.config))
+      (OpamVersion.to_string (OpamFile.Config.root_version));
   let mk_repo name url_opt = {
     repo_name = name;
     repo_url = OpamStd.Option.Op.((url_opt >>| fst) +! OpamUrl.empty);
@@ -260,6 +268,10 @@ let drop ?cleanup rt =
   let _ = unlock ?cleanup rt in ()
 
 let with_write_lock ?dontblock rt f =
+  if OpamStateConfig.is_newer_than_self rt.repos_global then
+    OpamConsole.error_and_exit `Locked
+      "The opam root has been upgraded by a newer version of opam-state \
+       and cannot be written to";
   let ret, rt =
     OpamFilename.with_flock_upgrade `Lock_write ?dontblock rt.repos_lock
     @@ fun _ -> f ({ rt with repos_lock = rt.repos_lock } : rw repos_state)
@@ -280,6 +292,7 @@ let write_config rt =
         rt.repositories)
 
 let check_last_update () =
+  if OpamCoreConfig.(!r.debug_level) < 0 then () else
   let last_update =
     OpamFilename.written_since
       (OpamPath.state_cache (OpamStateConfig.(!r.root_dir)))

@@ -18,9 +18,13 @@ open OpamStateTypes
 let log fmt = OpamConsole.log "GSTATE" fmt
 let slog = OpamConsole.slog
 
-let load_config global_lock root =
-  let config = match OpamStateConfig.load root with
+let load_config lock_kind global_lock root =
+  let config =
+    match OpamStateConfig.load ~lock_kind root with
     | Some c -> c
+    | exception (OpamPp.Bad_version _ as e) ->
+      OpamFormatUpgrade.hard_upgrade_from_2_1_intermediates ~global_lock root;
+      raise e
     | None ->
       if OpamFilename.exists (root // "aliases") then
         OpamFile.Config.(with_opam_version (OpamVersion.of_string "1.1") empty)
@@ -31,7 +35,9 @@ let load_config global_lock root =
            argument"
           (OpamFilename.Dir.to_string root)
   in
-  let config = OpamFormatUpgrade.as_necessary global_lock root config in
+  let config =
+    OpamFormatUpgrade.as_necessary lock_kind global_lock root config
+  in
   config
 
 let inferred_from_system = "Inferred from system"
@@ -44,12 +50,7 @@ let load lock_kind =
   let has_root = OpamFilename.exists_dir root in
   let global_lock =
     if has_root then
-      let lock = (* needed for on-the-fly upgrade config file *)
-        match lock_kind with
-        | `Lock_none | `Lock_read -> `Lock_read
-        | `Lock_write -> `Lock_write
-      in
-      OpamFilename.flock lock (OpamPath.lock root)
+      OpamFilename.flock `Lock_read (OpamPath.lock root)
     else OpamSystem.lock_none
   in
   (* The global_state lock actually concerns the global config file only (and
@@ -59,7 +60,12 @@ let load lock_kind =
     OpamConsole.error_and_exit `Configuration_error
       "Opam has not been initialised, please run `opam init'";
   let config_lock = OpamFilename.flock lock_kind (OpamPath.config_lock root) in
-  let config = load_config global_lock root in
+  let config = load_config lock_kind global_lock root in
+  if OpamStateConfig.is_newer config && lock_kind <> `Lock_write then
+    log "root version (%s) is greater than running binary's (%s); \
+         load with best-effort (read-only)"
+      (OpamVersion.to_string (OpamFile.Config.opam_root_version config))
+      (OpamVersion.to_string (OpamFile.Config.root_version));
   let switches =
     List.filter
       (fun sw -> not (OpamSwitch.is_external sw) ||
@@ -71,8 +77,8 @@ let load lock_kind =
     List.fold_left (fun acc (v,value) ->
         OpamVariable.Map.add v
           (lazy (Some (OpamStd.Option.default (S "unknown") (Lazy.force value))),
-          (* Careful on changing it, it is used to determine user defined
-             variables on `config report`. See [OpamConfigCommand.help]. *)
+           (* Careful on changing it, it is used to determine user defined
+              variables on `config report`. See [OpamConfigCommand.help]. *)
            inferred_from_system)
           acc)
       OpamVariable.Map.empty
@@ -121,13 +127,14 @@ let switches gt =
 let fold_switches f gt acc =
   List.fold_left (fun acc switch ->
       f switch
-        (OpamFile.SwitchSelections.safe_read
-           (OpamPath.Switch.selections gt.root switch))
+        (OpamStateConfig.Switch.safe_read_selections
+           ~lock_kind:`Lock_read gt switch)
         acc
     ) acc (OpamFile.Config.installed_switches gt.config)
 
 let switch_exists gt switch =
-  if OpamSwitch.is_external switch then OpamStateConfig.local_switch_exists gt.root switch
+  if OpamSwitch.is_external switch then
+    OpamStateConfig.local_switch_exists gt.root switch
   else List.mem switch (switches gt)
 
 let all_installed gt =
@@ -157,6 +164,10 @@ let drop gt =
   let _ = unlock gt in ()
 
 let with_write_lock ?dontblock gt f =
+  if OpamStateConfig.is_newer_than_self gt then
+    OpamConsole.error_and_exit `Locked
+      "The opam root has been upgraded by a newer version of opam-state \
+       and cannot be written to";
   let ret, gt =
     OpamFilename.with_flock_upgrade `Lock_write ?dontblock gt.global_lock
     @@ fun _ -> f ({ gt with global_lock = gt.global_lock } : rw global_state)
@@ -189,7 +200,8 @@ let fix_switch_list gt =
     OpamFile.Config.with_installed_switches known_switches gt.config
   in
   let gt = { gt with config } in
-  if not OpamCoreConfig.(!r.safe_mode) then
+  if not OpamCoreConfig.(!r.safe_mode)
+  && OpamSystem.get_lock_flag gt.global_lock = `Lock_write then
     try
       snd @@ with_write_lock ~dontblock:true gt @@ fun gt ->
       write gt, gt

@@ -15,7 +15,9 @@
 open OpamTypes
 open OpamStateTypes
 
-(** Initialize the client to a consistent state. *)
+(** Initialize the client to a consistent state.
+    Returns the initial state and, in case a switch is to be created, its
+    initial set of packages *)
 val init:
   init_config:OpamFile.InitConfig.t ->
   interactive:bool ->
@@ -27,7 +29,7 @@ val init:
   ?completion:bool ->
   ?check_sandbox:bool ->
   shell ->
-  rw global_state * unlocked repos_state * formula
+  rw global_state * unlocked repos_state * atom list
 
 (* (\** Gets the initial config (opamrc) to be used *\)
  * val get_init_config:
@@ -41,7 +43,7 @@ val init:
 val reinit:
   ?init_config:OpamFile.InitConfig.t -> interactive:bool -> ?dot_profile:filename ->
   ?update_config:bool -> ?env_hook:bool -> ?completion:bool -> ?inplace:bool ->
-  ?check_sandbox:bool ->
+  ?check_sandbox:bool -> ?bypass_checks:bool ->
   OpamFile.Config.t -> shell -> unit
 
 (** Install the given list of packages. [add_to_roots], if given, specifies that
@@ -122,6 +124,7 @@ module PIN: sig
     rw switch_state ->
     OpamPackage.Name.t ->
     ?edit:bool -> ?version:version -> ?action:bool -> ?subpath:string ->
+    ?locked:bool ->
     [< `Source of url | `Version of version | `Dev_upstream
     | `Source_version of version * version
     (* the first version is the source one, the second the package one *)
@@ -129,11 +132,13 @@ module PIN: sig
     rw switch_state
 
   val edit:
-    rw switch_state -> ?action:bool -> ?version:version -> OpamPackage.Name.t ->
+    rw switch_state ->
+    ?action:bool -> ?version:version -> ?locked:bool ->
+    OpamPackage.Name.t ->
     rw switch_state
 
   val url_pins:
-    rw switch_state ->  ?edit:bool -> ?action:bool ->
+    rw switch_state -> ?edit:bool -> ?action:bool -> ?locked:bool ->
     ?pre:((name * version option * OpamFile.OPAM.t option * url * string option)
           -> unit) ->
     (name * version option * OpamFile.OPAM.t option * url * string option) list ->

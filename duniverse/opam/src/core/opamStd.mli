@@ -267,6 +267,10 @@ module String : sig
   val remove_prefix: prefix:string -> string -> string
   val remove_suffix: suffix:string -> string -> string
 
+  (** [is_prefix_of from full str] returns true if [str] if a prefix of [full],
+      with at least [from] first characters *)
+  val is_prefix_of: from:int -> full:string -> string -> bool
+
   (** {4 Transformations} *)
 
   (** Cut a string at the first occurrence of the given char *)
@@ -450,7 +454,10 @@ module Sys : sig
   (** For native Windows builds, returns [`Cygwin] if the command is a Cygwin-
       compiled executable, [`CygLinked] if the command links to a library which is
       itself Cygwin-compiled or [`Native] otherwise.
-      Note that this returns [`Native] on a Cygwin-build of opam! *)
+
+      Note that this returns [`Native] on a Cygwin-build of opam!
+
+      Both cygcheck and an unqualified command will be resolved using the current PATH. *)
   val is_cygwin_variant: string -> [ `Native | `Cygwin | `CygLinked ]
 
   (** {3 Exit handling} *)
@@ -540,34 +547,37 @@ module Config : sig
 
   type env_var = string
 
+  type when_ = [ `Always | `Never | `Auto ]
+  type when_ext = [ `Extended | when_ ]
+  type answer = [ `unsafe_yes | `all_yes | `all_no | `ask ]
+
+  (* Parse a envrionement variable boolean value *)
+  val bool_of_string: string -> bool option
+
   val env: (string -> 'a) -> string -> 'a option
 
   val env_bool: env_var -> bool option
 
   val env_int: env_var -> int option
 
+  type level = int
   (* Like [env_int], but accept boolean values for 0 and 1 *)
-  val env_level: env_var -> int option
+  val env_level: env_var -> level option
 
-  val env_sections: env_var -> int option OpamCoreConfig.StringMap.t option
+  type sections = int option String.Map.t
+  val env_sections: env_var -> sections option
 
   val env_string: env_var -> string option
 
   val env_float: env_var -> float option
 
-  val env_when: env_var -> [ `Always | `Never | `Auto ] option
+  val env_when: env_var -> when_ option
 
-  val env_when_ext: env_var -> [ `Extended | `Always | `Never | `Auto ] option
+  val env_when_ext: env_var -> when_ext option
 
-  val resolve_when: auto:(bool Lazy.t) -> [ `Always | `Never | `Auto ] -> bool
+  val resolve_when: auto:(bool Lazy.t) -> when_ -> bool
 
-  (** Sets the OpamCoreConfig options, reading the environment to get default
-      values when unspecified *)
-  val init: ?noop:_ -> (unit -> unit) OpamCoreConfig.options_fun
-
-  (** Like [init], but returns the given value. For optional argument
-      stacking *)
-  val initk: 'a -> 'a OpamCoreConfig.options_fun
+  val env_answer: env_var -> answer option
 
   module type Sig = sig
 
@@ -605,6 +615,15 @@ module Config : sig
         stacking) *)
     val initk: 'a -> 'a options_fun
 
+  end
+
+  (* Opam environment variables handling *)
+  module E : sig
+    type t = ..
+    val find: (t -> 'a option) -> 'a
+    val value: (t -> 'a option) -> (unit ->'a option)
+    val update: t -> unit
+    val updates: t list -> unit
   end
 
 end

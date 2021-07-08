@@ -13,6 +13,7 @@
     versions to the current one *)
 
 open OpamTypes
+open OpamStateTypes
 
 (** Raised when the opam root has been updated to a newer format, and further
     action (opam init/update) is needed. *)
@@ -22,10 +23,24 @@ exception Upgrade_done of OpamFile.Config.t
     instance of opam requires *)
 val latest_version: OpamVersion.t
 
-(** Runs the upgrade from its current format to the latest compatible version
-    for the opam root at the given directory. A global write lock must be supplied.
-    If an upgrade has been done, raises [Upgrade_done updated_config]. *)
-val as_necessary: OpamSystem.lock -> dirname -> OpamFile.Config.t -> OpamFile.Config.t
+(** [as_necessary requested_lock global_lock root config]
+    Runs the upgrade from its current format to the latest compatible version
+    for the opam root at [root] directory. Performs an on-the-fly upgrade
+    (loaded state, not written) if possible: no hard upgrade needed, and no
+    write lock required ([requested_lock]). If upgrade need to be written (hard
+    upgrade), a write lock on the global state ([global_lock]) is taken and
+    when it's done raises [Upgrade_done updated_config]. Otherwise, it returns
+    the upgraded or unchanged config file.*)
+val as_necessary:
+  'a lock -> OpamSystem.lock -> dirname -> OpamFile.Config.t -> OpamFile.Config.t
+
+(* Try to launch a hard upgrade from 2;1 alpha's & beta's root
+   to 2.1~rc one. Raises [Upgrade_done] (catched by main
+   function) if an upgrade is done, otherwise do nothing.
+   It is intend to be called after a config file that error with
+   [OpamPp.Bad_version] *)
+val hard_upgrade_from_2_1_intermediates:
+  ?global_lock: OpamSystem.lock -> dirname -> unit
 
 (** Converts the opam file format, including rewriting availability conditions
     based on OCaml-related variables into dependencies. The filename is used to

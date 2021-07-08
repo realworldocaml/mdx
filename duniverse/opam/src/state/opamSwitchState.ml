@@ -18,18 +18,21 @@ let slog = OpamConsole.slog
 
 open OpamStateTypes
 
-let load_selections gt switch =
-  OpamFile.SwitchSelections.safe_read (OpamPath.Switch.selections gt.root switch)
+let load_selections ?lock_kind gt switch =
+  OpamStateConfig.Switch.safe_read_selections ?lock_kind gt switch
 
-let load_switch_config gt switch =
-  let f = OpamPath.Switch.switch_config gt.root switch in
-  match OpamFile.Switch_config.read_opt f with
+let load_switch_config ?lock_kind gt switch =
+  match OpamStateConfig.Switch.read_opt ?lock_kind gt switch with
   | Some c -> c
+  | exception (OpamPp.Bad_version _ as e) ->
+    OpamFormatUpgrade.hard_upgrade_from_2_1_intermediates
+      ~global_lock:gt.global_lock gt.root;
+    raise e
   | None ->
-    OpamConsole.error
-      "No config file found for switch %s. Switch broken?"
-      (OpamSwitch.to_string switch);
-    OpamFile.Switch_config.empty
+    (OpamConsole.error
+       "No config file found for switch %s. Switch broken?"
+       (OpamSwitch.to_string switch);
+     OpamFile.Switch_config.empty)
 
 let compute_available_packages gt switch switch_config ~pinned ~opams =
   (* remove all versions of pinned packages, but the pinned-to version *)
@@ -142,9 +145,17 @@ let infer_switch_invariant_raw
   | [] -> OpamFormula.Empty
 
 let infer_switch_invariant st =
+  let compiler_packages =
+    if OpamPackage.Set.is_empty st.compiler_packages then
+      OpamPackage.Set.filter (fun nv ->
+          OpamFile.OPAM.has_flag Pkgflag_Compiler
+            (OpamPackage.Map.find nv st.opams))
+        st.installed
+    else st.compiler_packages
+  in
   infer_switch_invariant_raw
     st.switch_global st.switch st.switch_config st.opams
-    st.packages st.compiler_packages st.installed_roots st.available_packages
+    st.packages compiler_packages st.installed_roots st.available_packages
 
 let depexts_raw ~env nv opams =
   try
@@ -237,22 +248,26 @@ let load lock_kind gt rt switch =
   let lock =
     OpamFilename.flock lock_kind (OpamPath.Switch.lock gt.root switch)
   in
-  let switch_config = load_switch_config gt switch in
+  let switch_config = load_switch_config ~lock_kind gt switch in
+  if OpamStateConfig.is_newer_than_self gt then
+    log "root version (%s) is greater than running binary's (%s); \
+         load with best-effort (read-only)"
+      (OpamVersion.to_string (OpamFile.Config.opam_root_version gt.config))
+      (OpamVersion.to_string (OpamFile.Config.root_version));
   if OpamVersion.compare
-      switch_config.OpamFile.Switch_config.opam_version
+      switch_config.opam_version
       OpamFile.Switch_config.oldest_compatible_format_version
      < 0 then
     OpamConsole.error_and_exit `Configuration_error
       "Could not load opam switch %s: it reports version %s while >= %s was \
        expected"
       (OpamSwitch.to_string switch)
-      (OpamVersion.to_string
-         (switch_config.OpamFile.Switch_config.opam_version))
+      (OpamVersion.to_string (switch_config.opam_version))
       (OpamVersion.to_string
          OpamFile.Switch_config.oldest_compatible_format_version);
   let { sel_installed = installed; sel_roots = installed_roots;
         sel_pinned = pinned; sel_compiler = compiler_packages; } =
-    load_selections gt switch
+    load_selections ~lock_kind gt switch
   in
   let pinned, pinned_opams =
     OpamPackage.Set.fold (fun nv (pinned,opams) ->
@@ -357,12 +372,6 @@ let load lock_kind gt rt switch =
         opams installed_opams
       |> OpamPackage.keys
     in
-    let changed =
-      changed --
-      OpamPackage.Set.filter
-        (fun nv -> not (OpamPackage.has_name pinned nv.name))
-        compiler_packages
-    in
     log "Detected changed packages (marked for reinstall): %a"
       (slog OpamPackage.Set.to_string) changed;
     changed
@@ -370,7 +379,7 @@ let load lock_kind gt rt switch =
   (* Detect and initialise missing switch description *)
   let switch_config =
     if switch_config <> OpamFile.Switch_config.empty &&
-       switch_config.OpamFile.Switch_config.synopsis = "" then
+       switch_config.synopsis = "" then
       let synopsis =
         match OpamPackage.Set.elements (compiler_packages %% installed_roots)
         with
@@ -381,7 +390,7 @@ let load lock_kind gt rt switch =
           OpamPackage.to_string nv
         | pkgs -> OpamStd.List.concat_map " " OpamPackage.to_string pkgs
       in
-      let conf = { switch_config with OpamFile.Switch_config.synopsis } in
+      let conf = { switch_config with synopsis } in
       if lock_kind = `Lock_write then (* auto-repair *)
         OpamFile.Switch_config.write
           (OpamPath.Switch.switch_config gt.root switch)
@@ -390,13 +399,9 @@ let load lock_kind gt rt switch =
     else switch_config
   in
   let switch_config, switch_invariant =
-    if OpamVersion.compare
-        switch_config.OpamFile.Switch_config.opam_version
-        (OpamVersion.of_string "2.1")
-       >= 0
-    || switch_config.OpamFile.Switch_config.invariant <> OpamFormula.Empty
-    then switch_config, switch_config.OpamFile.Switch_config.invariant
-    else
+    match switch_config.invariant with
+    | Some invariant -> switch_config, invariant
+    | None ->
       let invariant =
         infer_switch_invariant_raw
           gt switch switch_config opams
@@ -407,14 +412,20 @@ let load lock_kind gt rt switch =
         (slog @@ fun () ->
          OpamPackage.Set.to_string (compiler_packages %% installed_roots)) ()
         (slog OpamFileTools.dep_formula_to_string) invariant;
-      let min_opam_version = OpamVersion.of_string "2.1" in
+      let min_opam_version = OpamVersion.of_string "2.0" in
       let opam_version =
         if OpamVersion.compare switch_config.opam_version min_opam_version < 0
         then min_opam_version
         else switch_config.opam_version
       in
-      {switch_config with invariant; opam_version},
-      invariant
+      let switch_config =
+        {switch_config with invariant = Some invariant; opam_version}
+      in
+      if lock_kind = `Lock_write then
+        OpamFile.Switch_config.write
+          (OpamPath.Switch.switch_config gt.root switch)
+          switch_config;
+      switch_config, invariant
   in
   let conf_files =
     let conf_files =
@@ -427,10 +438,10 @@ let load lock_kind gt rt switch =
               OpamFilename.(Base.to_string (basename (chop_extension f)))
           with
           | name when OpamPackage.has_name installed name ->
-              OpamPackage.Name.Map.add name
-                (OpamFile.Dot_config.safe_read
-                   (OpamPath.Switch.config gt.root switch name))
-                acc
+            OpamPackage.Name.Map.add name
+              (OpamFile.Dot_config.safe_read
+                 (OpamPath.Switch.config gt.root switch name))
+              acc
           | exception (Failure _) -> acc
           | _ -> acc
         else acc)
@@ -629,6 +640,10 @@ let drop st =
   let _ = unlock st in ()
 
 let with_write_lock ?dontblock st f =
+  if OpamStateConfig.is_newer_than_self st.switch_global then
+    OpamConsole.error_and_exit `Locked
+      "The opam root has been upgraded by a newer version of opam-state \
+       and cannot be written to";
   let ret, st =
     OpamFilename.with_flock_upgrade `Lock_write ?dontblock st.switch_lock
     @@ fun _ -> f ({ st with switch_lock = st.switch_lock } : rw switch_state)
@@ -821,6 +836,12 @@ let get_conflicts st packages opams_map =
     (fun package -> OpamPackageVar.resolve_switch ~package st)
     packages opams_map
 
+let can_upgrade_to_avoid_version name st =
+  OpamPackage.Set.exists (fun pkg ->
+      OpamPackage.Name.equal (OpamPackage.name pkg) name &&
+      OpamFile.OPAM.has_flag Pkgflag_AvoidVersion (OpamPackage.Map.find pkg st.opams)
+    ) st.installed
+
 let universe st
     ?(test=OpamStateConfig.(!r.build_test))
     ?(doc=OpamStateConfig.(!r.build_doc))
@@ -917,9 +938,10 @@ let universe st
       (Lazy.force st.sys_packages)
       OpamPackage.Set.empty
   in
-  let hidden_versions =
+  let avoid_versions =
     OpamPackage.Map.fold (fun nv opam acc ->
-        if OpamFile.OPAM.has_flag Pkgflag_HiddenVersion opam
+        if OpamFile.OPAM.has_flag Pkgflag_AvoidVersion opam &&
+           not (can_upgrade_to_avoid_version (OpamFile.OPAM.name opam) st)
         then OpamPackage.Set.add nv acc else acc)
       st.opams
       OpamPackage.Set.empty
@@ -940,7 +962,7 @@ let universe st
   u_reinstall;
   u_attrs     = ["opam-query", requested_allpkgs;
                  "missing-depexts", missing_depexts;
-                 "hidden-version", hidden_versions];
+                 "avoid-version", avoid_versions];
 }
   in
   u
@@ -1014,7 +1036,7 @@ let not_found_message st (name, cstr) =
       (OpamPackage.Name.to_string name)
 
 (* Display a meaningful error for an unavailable package *)
-let unavailable_reason st ?(default="") (name, vformula) =
+let unavailable_reason_raw st (name, vformula) =
   let candidates = OpamPackage.packages_of_name st.packages name in
   let candidates =
     OpamPackage.Set.filter
@@ -1022,57 +1044,88 @@ let unavailable_reason st ?(default="") (name, vformula) =
       candidates
   in
   if OpamPackage.Set.is_empty candidates then
-    (if OpamPackage.has_name st.packages name then "no matching version"
-     else "unknown package")
+    (if OpamPackage.has_name st.packages name then `UnknownVersion
+     else `UnknownPackage)
   else
   let nv =
     try OpamPinned.package st name
     with Not_found ->
-      match vformula with
-      | Atom (_, v) when
-          OpamPackage.Set.mem (OpamPackage.create name v) candidates ->
-        OpamPackage.create name v
-      | _ -> OpamPackage.max_version candidates name
+    match vformula with
+    | Atom (_, v) when
+        OpamPackage.Set.mem (OpamPackage.create name v) candidates ->
+      OpamPackage.create name v
+    | _ -> OpamPackage.max_version candidates name
   in
   match opam_opt st nv with
-  | None -> "no package definition found"
+  | None -> `NoDefinition
   | Some opam ->
     let avail = OpamFile.OPAM.available opam in
     if not (OpamPackage.Set.mem nv candidates) then
-      Printf.sprintf
-        "not available because the package is pinned to version %s"
-        (OpamPackage.version_to_string nv)
+      `Pinned nv
     else if not (OpamFilter.eval_to_bool ~default:false
                    (OpamPackageVar.resolve_switch ~package:nv st)
-                   avail)
-    then
-      Printf.sprintf "unmet availability conditions%s'%s'"
-        (if OpamPackage.Set.cardinal candidates = 1 then ": "
-         else ", e.g. ")
-        (OpamFilter.to_string avail)
+                   avail) then
+      `Unavailable
+        (Printf.sprintf "%s'%s'"
+           (if OpamPackage.Set.cardinal candidates = 1 then ": "
+            else ", e.g. ")
+           (OpamFilter.to_string avail))
     else if OpamPackage.has_name
         (Lazy.force st.available_packages --
          remove_conflicts st st.compiler_packages
            (Lazy.force st.available_packages))
-        name
-    then
-      "conflict with the base packages of this switch"
+        name then
+      `ConflictsBase
     else if OpamPackage.has_name st.compiler_packages name &&
             not OpamStateConfig.(!r.unlock_base) then
-      Printf.sprintf
-        "incompatible with the switch invariant %s (use `--update-invariant' \
-         to force)"
-        (OpamConsole.colorise `bold
-           (OpamFileTools.dep_formula_to_string st.switch_invariant))
+      `ConflictsInvariant
+        (OpamFileTools.dep_formula_to_string st.switch_invariant)
     else
     match depexts_unavailable st (OpamPackage.Set.max_elt candidates) with
     | Some missing ->
-      Printf.sprintf
-        "depends on the unavailable system package '%s'. Use \
-         `--assume-depexts' to attempt installation anyway."
-        (OpamStd.List.concat_map " " OpamSysPkg.to_string
-           (OpamSysPkg.Set.elements missing))
-    | None -> default
+      let missing =
+        List.rev_map OpamSysPkg.to_string (OpamSysPkg.Set.elements missing)
+      in
+      `MissingDepexts missing
+    | None -> `Default
+
+(* Display a meaningful error for an unavailable package *)
+let unavailable_reason st ?(default="") atom =
+  match unavailable_reason_raw st atom with
+  | `UnknownVersion ->
+    "no matching version"
+  | `UnknownPackage ->
+    "unknown package"
+  | `NoDefinition ->
+    "no package definition found"
+  | `Pinned nv ->
+    Printf.sprintf
+      "not available because the package is pinned to version %s"
+      (OpamPackage.version_to_string nv)
+  | `Unavailable msg ->
+    Printf.sprintf "unmet availability conditions%s" msg
+  | `ConflictsBase ->
+    "conflict with the base packages of this switch"
+  | `ConflictsInvariant invariant ->
+    Printf.sprintf
+      "incompatible with the switch invariant %s (use `--update-invariant' \
+       to force)"
+      (OpamConsole.colorise `bold invariant)
+  | `MissingDepexts missing ->
+    let msg =
+      match missing with
+      | [pkg] -> " '" ^ pkg ^ "'"
+      | pkgs ->
+        "s " ^ (OpamStd.Format.pretty_list
+                  (List.rev_map (Printf.sprintf "'%s'") pkgs))
+    in
+    Printf.sprintf
+      "depends on the unavailable system package%s. Use \
+       `--no-depexts' to attempt installation anyway, or it is \
+       possible that a depext package name in the opam file \
+       is incorrect." msg
+  | `Default ->
+    default
 
 let update_package_metadata nv opam st =
   { st with
@@ -1127,7 +1180,9 @@ let do_backup lock st = match lock with
       | true -> OpamFilename.remove (OpamFile.filename file)
       | false ->
         (* Reload, in order to skip the message if there were no changes *)
-        let new_selections = load_selections st.switch_global st.switch in
+        let new_selections =
+          load_selections ~lock_kind:lock st.switch_global st.switch
+        in
         if new_selections.sel_installed = previous_selections.sel_installed
         then OpamFilename.remove (OpamFile.filename file)
         else
@@ -1162,7 +1217,7 @@ let with_ lock ?rt ?(switch=OpamStateConfig.get_switch ()) gt f =
 let update_repositories gt update_fun switch =
   OpamFilename.with_flock `Lock_write (OpamPath.Switch.lock gt.root switch)
   @@ fun _ ->
-  let conf = load_switch_config gt switch in
+  let conf = load_switch_config ~lock_kind:`Lock_write gt switch in
   let repos =
     match conf.OpamFile.Switch_config.repos with
     | None -> OpamGlobalState.repos_list gt

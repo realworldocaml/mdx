@@ -11,6 +11,44 @@
 open OpamTypes
 open OpamStateTypes
 
+module E = struct
+
+  type OpamStd.Config.E.t +=
+    | BUILDDOC of bool option
+    | BUILDTEST of bool option
+    | DOWNLOADJOBS of int option
+    | DRYRUN of bool option
+    | IGNORECONSTRAINTS of string option
+    | JOBS of int option
+    | LOCKED of string option
+    | MAKECMD of string option
+    | NODEPEXTS of bool option
+    | NOENVNOTICE of bool option
+    | ROOT of string option
+    | SWITCH of string option
+    | UNLOCKBASE of bool option
+    | WITHDOC of bool option
+    | WITHTEST of bool option
+
+  open OpamStd.Config.E
+  let builddoc = value (function BUILDDOC b -> b | _ -> None)
+  let buildtest = value (function BUILDTEST b -> b | _ -> None)
+  let downloadjobs = value (function DOWNLOADJOBS i -> i | _ -> None)
+  let dryrun = value (function DRYRUN b -> b | _ -> None)
+  let ignoreconstraints = value (function IGNORECONSTRAINTS s -> s | _ -> None)
+  let jobs = value (function JOBS i -> i | _ -> None)
+  let locked = value (function LOCKED s -> s | _ -> None)
+  let makecmd = value (function MAKECMD s -> s | _ -> None)
+  let nodepexts = value (function NODEPEXTS b -> b | _ -> None)
+  let noenvnotice = value (function NOENVNOTICE b -> b | _ -> None)
+  let root = value (function ROOT s -> s | _ -> None)
+  let switch = value (function SWITCH s -> s | _ -> None)
+  let unlockbase = value (function UNLOCKBASE b -> b | _ -> None)
+  let withdoc = value (function WITHDOC b -> b | _ -> None)
+  let withtest = value (function WITHTEST b -> b | _ -> None)
+
+end
+
 type t = {
   root_dir: OpamFilename.Dir.t;
   current_switch: OpamSwitch.t option;
@@ -110,32 +148,31 @@ let r = ref default
 let update ?noop:_ = setk (fun cfg () -> r := cfg) !r
 
 let initk k =
-  let open OpamStd.Config in
   let open OpamStd.Option.Op in
   let current_switch, switch_from =
-    match env_string "SWITCH" with
+    match E.switch () with
     | Some "" | None -> None, None
     | Some s -> Some (OpamSwitch.of_string s), Some `Env
   in
   setk (setk (fun c -> r := c; k)) !r
-    ?root_dir:(env_string "ROOT" >>| OpamFilename.Dir.of_string)
+    ?root_dir:(E.root () >>| OpamFilename.Dir.of_string)
     ?current_switch
     ?switch_from
-    ?jobs:(env_int "JOBS" >>| fun s -> lazy s)
-    ?dl_jobs:(env_int "DOWNLOADJOBS")
-    ?build_test:(env_bool "WITHTEST" ++ env_bool "BUILDTEST")
-    ?build_doc:(env_bool "WITHDOC" ++ env_bool "BUILDDOC")
-    ?dryrun:(env_bool "DRYRUN")
-    ?makecmd:(env_string "MAKECMD" >>| fun s -> lazy s)
+    ?jobs:(E.jobs () >>| fun s -> lazy s)
+    ?dl_jobs:(E.downloadjobs ())
+    ?build_test:(E.withtest () ++ E.buildtest ())
+    ?build_doc:(E.withdoc () ++ E.builddoc ())
+    ?dryrun:(E.dryrun ())
+    ?makecmd:(E.makecmd () >>| fun s -> lazy s)
     ?ignore_constraints_on:
-      (env_string "IGNORECONSTRAINTS" >>| fun s ->
+      (E.ignoreconstraints () >>| fun s ->
        OpamStd.String.split s ',' |>
        List.map OpamPackage.Name.of_string |>
        OpamPackage.Name.Set.of_list)
-    ?unlock_base:(env_bool "UNLOCKBASE")
-    ?no_env_notice:(env_bool "NOENVNOTICE")
-    ?locked:(env_string "LOCKED" >>| function "" -> None | s -> Some s)
-    ?no_depexts:None
+    ?unlock_base:(E.unlockbase ())
+    ?no_env_notice:(E.noenvnotice ())
+    ?locked:(E.locked () >>| function "" -> None | s -> Some s)
+    ?no_depexts:(E.nodepexts ())
 
 let init ?noop:_ = initk (fun () -> ())
 
@@ -145,14 +182,144 @@ let opamroot ?root_dir () =
    OpamStd.Env.getopt "OPAMROOT" >>| OpamFilename.Dir.of_string)
   +! default.root_dir
 
-let load opamroot =
-  OpamFile.Config.read_opt (OpamPath.config opamroot)
+let is_newer_raw = function
+  | Some v ->
+    OpamVersion.compare v OpamFile.Config.root_version > 0
+  | None -> false
+
+let is_newer config =
+    is_newer_raw (Some (OpamFile.Config.opam_root_version config))
+
+(** none -> shouldn't load (write attempt in readonly)
+    Some true -> everything is fine normal read
+    Some false -> readonly accorded, load with best effort *)
+let is_readonly_opamroot_raw ?(lock_kind=`Lock_write) version =
+  let newer = is_newer_raw version in
+  let write = lock_kind = `Lock_write in
+  if newer && write then None else
+    Some (newer && not write)
+
+let is_readonly_opamroot_t ?lock_kind gt =
+  is_readonly_opamroot_raw ?lock_kind
+    (Some (OpamFile.Config.opam_root_version gt.config))
+
+let is_newer_than_self ?lock_kind gt =
+  is_readonly_opamroot_t ?lock_kind gt <> Some false
+
+let load_if_possible_raw ?lock_kind root version (read,read_wo_err) f =
+  match is_readonly_opamroot_raw ?lock_kind version with
+  | None ->
+    OpamConsole.error_and_exit `Locked
+      "Refusing write access to %s, which is more recent than this version of \
+       opam (%s > %s), aborting."
+      (OpamFilename.Dir.to_string root)
+      (OpamStd.Option.to_string OpamVersion.to_string version)
+      OpamVersion.(to_string current_nopatch)
+  | Some true -> read_wo_err f
+  | Some false -> read f
+
+let load_if_possible_t ?lock_kind opamroot config readf f =
+  load_if_possible_raw ?lock_kind
+    opamroot (Some (OpamFile.Config.opam_root_version config)) readf f
+
+let load_if_possible ?lock_kind gt =
+  load_if_possible_t ?lock_kind gt.root gt.config
+
+let load_config_root ?lock_kind readf opamroot =
+  let f = OpamPath.config opamroot in
+  load_if_possible_raw ?lock_kind
+    opamroot
+    (OpamFile.Config.raw_root_version f)
+    readf f
+
+let safe_load ?lock_kind opamroot =
+  load_config_root ?lock_kind
+    OpamFile.Config.(safe_read, BestEffort.safe_read) opamroot
+
+let load ?lock_kind opamroot =
+  load_config_root ?lock_kind
+    OpamFile.Config.(read_opt, BestEffort.read_opt) opamroot
+
+(* switches *)
+module Switch = struct
+
+  let load_raw ?lock_kind root config readf switch =
+    load_if_possible_t ?lock_kind root config readf
+      (OpamPath.Switch.switch_config root switch)
+
+  let safe_load_t ?lock_kind root switch =
+    let config = safe_load ~lock_kind:`Lock_read root in
+    load_raw ?lock_kind root config
+      OpamFile.Switch_config.(safe_read, BestEffort.safe_read)
+      switch
+
+  let load ?lock_kind gt readf switch =
+    load_raw ?lock_kind gt.root gt.config readf switch
+
+  let safe_load ?lock_kind gt switch =
+    load ?lock_kind gt
+      OpamFile.Switch_config.(safe_read, BestEffort.safe_read)
+      switch
+
+  let read_opt ?lock_kind gt switch =
+    load ?lock_kind gt
+      OpamFile.Switch_config.(read_opt, BestEffort.read_opt)
+      switch
+
+  let safe_read_selections ?lock_kind gt switch =
+    load_if_possible ?lock_kind gt
+      OpamFile.SwitchSelections.(safe_read, BestEffort.safe_read)
+      (OpamPath.Switch.selections gt.root switch)
+
+end
+
+(* repos *)
+module Repos = struct
+  let safe_read ?lock_kind gt =
+    load_if_possible ?lock_kind gt
+      OpamFile.Repos_config.(safe_read, BestEffort.safe_read)
+      (OpamPath.repos_config gt.root)
+end
+
+let downgrade_2_1_switch f =
+  let filename = OpamFile.filename f in
+  let str_f = OpamFilename.to_string filename in
+  let opamfile = OpamParser.FullPos.file str_f in
+  let opamfile' =
+    let open OpamParserTypes.FullPos in
+    { opamfile with
+      file_contents =
+        List.map (fun item ->
+            match item.pelem with
+            | Variable (({pelem = "opam-version"; _} as opam_v),
+                        ({pelem = String "2.1"; _} as v)) ->
+              { item with
+                pelem = Variable ({opam_v with pelem = "opam-version"},
+                                  {v with pelem = String "2.0"})}
+            | _ -> item)
+          opamfile.file_contents}
+  in
+  if opamfile' = opamfile then None else
+    Some (opamfile'
+          |> OpamPrinter.FullPos.opamfile
+          |> OpamFile.Switch_config.read_from_string)
 
 let local_switch_exists root switch =
-  OpamPath.Switch.switch_config root switch |>
-  OpamFile.Switch_config.read_opt |> function
+  (* we don't use safe loading function to avoid errors displaying *)
+  let f = OpamPath.Switch.switch_config root switch in
+  match OpamFile.Switch_config.BestEffort.read_opt f with
   | None -> false
   | Some conf -> conf.OpamFile.Switch_config.opam_root = Some root
+  | exception (OpamPp.Bad_version _ as e) ->
+    match OpamFile.Config.raw_root_version (OpamPath.config root) with
+    | None -> raise e
+    | Some _ ->
+      match downgrade_2_1_switch f with
+      | None -> raise e
+      | Some conf ->
+        if conf.OpamFile.Switch_config.opam_root = Some root then
+          (OpamFile.Switch_config.write f conf; true)
+        else false
 
 let resolve_local_switch root s =
   let switch_root = OpamSwitch.get_root root s in
@@ -161,21 +328,24 @@ let resolve_local_switch root s =
   else s
 
 let get_current_switch_from_cwd root =
-  let open OpamStd.Option.Op in
-  OpamFilename.find_in_parents (fun dir ->
-      OpamSwitch.of_string (OpamFilename.Dir.to_string dir) |>
-      local_switch_exists root)
-    (OpamFilename.cwd ())
-  >>| OpamSwitch.of_dirname
-  >>| resolve_local_switch root
+  try
+    let open OpamStd.Option.Op in
+    OpamFilename.find_in_parents (fun dir ->
+        OpamSwitch.of_string (OpamFilename.Dir.to_string dir) |>
+        local_switch_exists root)
+      (OpamFilename.cwd ())
+    >>| OpamSwitch.of_dirname
+    >>| resolve_local_switch root
+  with OpamPp.Bad_version _ -> None
 
-let load_defaults root_dir =
+(* do we want `load_defaults` to fail / run a format upgrade ? *)
+let load_defaults ?lock_kind root_dir =
   let current_switch =
-    match OpamStd.Config.env_string "SWITCH" with
+    match E.switch () with
     | Some "" | None -> get_current_switch_from_cwd root_dir
     | _ -> (* OPAMSWITCH is set, no need to lookup *) None
   in
-  match load root_dir with
+  match try load ?lock_kind root_dir with OpamPp.Bad_version _ -> None with
   | None ->
     update ?current_switch ();
     None

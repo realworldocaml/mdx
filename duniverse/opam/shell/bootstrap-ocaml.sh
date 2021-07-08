@@ -25,11 +25,16 @@ if [ ! -e ${V}.tar.gz ]; then
 fi
 
 ACTUALMD5=`openssl md5 ${V}.tar.gz  2> /dev/null | cut -f 2 -d ' '`
-if [ "$ACTUALMD5" != "$MD5" ]; then
-  echo "Bad checksum for ${V}.tar.gz:"
-  echo "- expected: $MD5"
-  echo "- actual:   $ACTUALMD5"
+if [ -z "$ACTUALMD5" ]; then
+  echo "Blank checksum returned; is `openssl` installed?"
   exit 2
+else
+  if [ "$ACTUALMD5" != "$MD5" ]; then
+    echo "Bad checksum for ${V}.tar.gz:"
+    echo "- expected: $MD5"
+    echo "- actual:   $ACTUALMD5"
+    exit 2
+  fi
 fi
 
 if [ ${GEN_CONFIG_ONLY} -eq 0 ] ; then
@@ -151,7 +156,7 @@ if [ -n "$1" -a -n "${COMSPEC}" -a -x "${COMSPEC}" ] ; then
 else
   PREFIX=`cd .. ; pwd`/ocaml
   if [ ${GEN_CONFIG_ONLY} -eq 0 ] ; then
-    ./configure --prefix "${PREFIX}" $BOOTSTRAP_EXTRA_OPTS
+    ./configure --prefix "${PREFIX}" $BOOTSTRAP_EXTRA_OPTS --disable-stdlib-manpages
     ${MAKE:-make} world
     ${MAKE:-make} $BOOTSTRAP_OPT_TARGET
     ${MAKE:-make} install
@@ -175,3 +180,5 @@ if [ -n "${INC_PREPEND}" ] ; then
   echo "export Include:=${INC_PREPEND}\$(Include)" >> $BOOTSTRAP_ROOT/../src_ext/Makefile.config
 fi
 echo "export OCAMLLIB=${OCAMLLIB}" >> $BOOTSTRAP_ROOT/../src_ext/Makefile.config
+echo 'unexport CAML_LD_LIBRARY_PATH' >> $BOOTSTRAP_ROOT/../src_ext/Makefile.config
+echo 'unexport OPAM_SWITCH_PREFIX' >> $BOOTSTRAP_ROOT/../src_ext/Makefile.config

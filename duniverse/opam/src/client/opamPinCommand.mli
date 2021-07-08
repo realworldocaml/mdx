@@ -35,7 +35,7 @@ exception Nothing_to_do
 val source_pin:
   rw switch_state -> name ->
   ?version:version -> ?edit:bool -> ?opam:OpamFile.OPAM.t -> ?quiet:bool ->
-  ?force:bool -> ?ignore_extra_pins:bool -> ?subpath: string ->
+  ?force:bool -> ?ignore_extra_pins:bool -> ?subpath: string -> ?locked:bool ->
   url option ->
   rw switch_state
 
@@ -48,7 +48,7 @@ val handle_pin_depends:
     Ask for confirmation to continue if a fetching fails.
 *)
 val fetch_all_pins:
-  'a switch_state -> (string * url * string option) list ->
+  'a switch_state -> ?working_dir:bool -> (name * url * string option) list ->
   (url * string option) list
 
 (** Let the user edit a pinned package's opam file. If given, the version is put
@@ -65,13 +65,13 @@ val unpin_one: 'a switch_state -> package -> 'a switch_state
 (** List the pinned packages to the user. *)
 val list: 'a switch_state -> short:bool -> unit
 
-(** Scan pinning separator, used for printing and parsing by [scna] and
+(** Scan pinning separator, used for printing and parsing by [scan] and
     [parse_pins]. *)
 val scan_sep: char
 
 (** Scan for available packages to pin, and display it on stdout. If
     [normalise] is true, displays it's normalised format
-    `name.version[scan_sep]curl[scan_sep]subpath`. *)
+    `name.version[scan_sep]url[scan_sep]subpath`. *)
 val scan: normalise:bool -> recurse:bool -> ?subpath: string -> url -> unit
 
 (** Detect if a string is a normalised format of [scan]. *)

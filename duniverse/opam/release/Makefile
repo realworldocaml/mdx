@@ -8,7 +8,7 @@ FULL_ARCHIVE_URL = https://github.com/ocaml/opam/releases/download/$(VERSION)/op
 TARGETS = x86_64-linux i686-linux armhf-linux arm64-linux
 # todo: x86_64-darwin
 
-OCAMLV = 4.07.1
+OCAMLV = 4.10.2
 # currently hardcoded in Dockerfile.in
 OCAML_URL = https://caml.inria.fr/pub/distrib/ocaml-$(basename $(OCAMLV))/ocaml-$(OCAMLV).tar.gz
 
@@ -37,7 +37,7 @@ build/Dockerfile.i686-linux: Dockerfile.in
 build/Dockerfile.armhf-linux: Dockerfile.in
 	mkdir -p build && sed 's/%TARGET_TAG%/armhf-jessie/g' $^ | sed 's/%CONF%//g' >$@
 build/Dockerfile.arm64-linux: Dockerfile.in
-	mkdir -p build && sed 's/%TARGET_TAG%/arm64-jessie/g' $^ | sed 's/%CONF%//g' >$@
+	mkdir -p build && sed 's/%TARGET_TAG%/arm64-stretch/g' $^ | sed 's/%CONF%//g' >$@
 
 
 build/%.image: build/Dockerfile.%
@@ -47,13 +47,13 @@ build/%.image: build/Dockerfile.%
 # Actually, this is for debian 8 jessie, and varies wildly
 CLINKING_linux = \
 -Wl,-Bstatic \
--lunix -lbigarray -lmccs_stubs -lmccs_glpk_stubs \
+-lunix -lmccs_stubs -lmccs_glpk_stubs \
 -lstdc++ \
 -Wl,-Bdynamic \
 -static-libgcc
 
 CLINKING_macos = \
--lunix -lbigarray -lmccs_stubs -lmccs_glpk_stubs \
+-lunix -lmccs_stubs -lmccs_glpk_stubs \
 -lstdc++
 
 CLINKING_openbsd = $(CLINKING_macos)

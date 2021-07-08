@@ -137,13 +137,24 @@ let check_availability ?permissive t set atoms =
     match OpamSwitchState.depexts_unavailable
             t (OpamPackage.Set.max_elt pkgs) with
     | Some missing ->
+      let missing =
+        List.rev_map OpamSysPkg.to_string (OpamSysPkg.Set.elements missing)
+      in
+      let msg =
+        match missing with
+        | [pkg] ->
+          " '" ^ pkg ^ "'"
+        | pkgs ->
+          "s " ^ (OpamStd.Format.pretty_list (List.rev_map (Printf.sprintf "'%s'") pkgs))
+      in
       Some
         (Printf.sprintf
-           "Package %s depends on the unavailable system package '%s'. You \
-            can use `--no-depexts' to attempt installation anyway."
+           "Package %s depends on the unavailable system package%s. You \
+            can use `--no-depexts' to attempt installation anyway.%s"
            (OpamFormula.short_string_of_atom atom)
-           (OpamStd.List.concat_map " " OpamSysPkg.to_string
-              (OpamSysPkg.Set.elements missing)))
+           msg
+           (OpamStd.Option.map_default (Printf.sprintf "\n%s.") ""
+              (OpamSysInteract.repo_enablers ())))
     | None -> None
   in
   let check_atom (name, cstr as atom) =
@@ -329,7 +340,10 @@ let parallel_apply t
 
   (* only needed when --update-invariant is set. Use the configured invariant,
      not the current one which will be empty. *)
-  let original_invariant = t.switch_config.OpamFile.Switch_config.invariant in
+  let original_invariant =
+    OpamStd.Option.default OpamFormula.Empty
+      t.switch_config.OpamFile.Switch_config.invariant
+  in
   let original_invariant_packages =
     OpamFormula.packages t.installed original_invariant
   in
@@ -386,16 +400,19 @@ let parallel_apply t
       (if bypass <> !bypass_ref then
          (let spkgs = OpamSysPkg.Set.Op.(bypass -- !bypass_ref) in
           OpamConsole.note
-            "The bypass of system package %s has been registered in this switch. You \
-             can use `opam option depext-bypass-=%s' to revert."
+            "Requirement for system package%s %s overridden in this switch. Use \
+             `opam option depext-bypass-=%s' to revert."
             (if OpamSysPkg.Set.cardinal spkgs > 1 then "s" else "")
             (OpamStd.Format.pretty_list
                (List.map OpamSysPkg.to_string
-                  (OpamSysPkg.Set.elements spkgs))));
+                  (OpamSysPkg.Set.elements spkgs)))
+            (OpamStd.List.concat_map "," OpamSysPkg.to_string
+               (OpamSysPkg.Set.elements spkgs)));
        bypass_ref := bypass;
        invariant_ref := invariant;
        let switch_config =
-         {!t_ref.switch_config with invariant; depext_bypass = bypass }
+         {!t_ref.switch_config with
+          invariant = Some invariant; depext_bypass = bypass }
        in
        t_ref := {!t_ref with switch_invariant = invariant; switch_config};
        if not OpamStateConfig.(!r.dryrun) then
@@ -764,7 +781,7 @@ let parallel_apply t
             | _ -> OpamFormula.Empty)
           t.switch_invariant
       in
-      let switch_config = {t.switch_config with invariant} in
+      let switch_config = {t.switch_config with invariant = Some invariant} in
       if not OpamStateConfig.(!r.dryrun) then
         OpamSwitchAction.install_switch_config t.switch_global.root t.switch
           switch_config;
@@ -937,7 +954,7 @@ let simulate_new_state state t =
 (* Ask confirmation whenever the packages to modify are not exactly
    the packages in the user request *)
 let confirmation ?ask requested solution =
-  OpamCoreConfig.(!r.answer = Some true) ||
+  OpamCoreConfig.answer_is_yes () ||
   match ask with
   | Some false -> true
   | Some true -> OpamConsole.confirm "Do you want to continue?"
@@ -952,7 +969,7 @@ let confirmation ?ask requested solution =
     || OpamConsole.confirm "Do you want to continue?"
 
 let run_hook_job t name ?(local=[]) ?(allow_stdout=false) w =
-  let shell_env = OpamEnv.get_full ~force_path:true t in
+  let shell_env = OpamEnv.get_full ~set_opamroot:true ~set_opamswitch:true ~force_path:true t in
   let mk_cmd = function
     | cmd :: args ->
       let text = OpamProcess.make_command_text name ~args cmd in
@@ -1077,7 +1094,7 @@ let install_depexts ?(force_depext=false) ?(confirm=true) t packages =
          system packages altogether.\n";
       OpamStd.Sys.exit_because `Aborted
     in
-    if not OpamStd.Sys.tty_in || OpamCoreConfig.(!r.answer <> None) then
+    if not (OpamStd.Sys.tty_in && OpamCoreConfig.answer_is `ask) then
       give_up ()
     else if OpamConsole.confirm
         "%s\nWhen you are done: check again and continue?"
@@ -1104,9 +1121,10 @@ let install_depexts ?(force_depext=false) ?(confirm=true) t packages =
        sys_packages)
   else if OpamClientConfig.(!r.fake) then (print (); t)
   else if
-    not confirm || OpamConsole.confirm
+    not confirm
+    || OpamConsole.confirm ~require_unsafe_yes:true
       "Let opam run your package manager to install the required system \
-       packages?"
+       packages?\n(answer 'n' for other options)"
   then
     try
       OpamSysInteract.install sys_packages; (* handles dry_run *)
