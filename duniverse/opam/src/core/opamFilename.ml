@@ -238,6 +238,10 @@ let files d =
   let fs = OpamSystem.files (Dir.to_string d) in
   List.rev_map of_string fs
 
+let files_and_links d =
+  let fs = OpamSystem.files_all_not_dir (Dir.to_string d) in
+  List.rev_map of_string fs
+
 let copy ~src ~dst =
   if src <> dst then OpamSystem.copy_file (to_string src) (to_string dst)
 
@@ -386,6 +390,7 @@ let link ?(relative=false) ~target ~link =
       Filename.concat back forward
   in
   OpamSystem.link target (to_string link)
+[@@ocaml.warning "-16"]
 
 let patch ?preprocess filename dirname =
   OpamSystem.patch ?preprocess ~dir:(Dir.to_string dirname) (to_string filename)

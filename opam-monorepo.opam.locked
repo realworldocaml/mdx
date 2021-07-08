@@ -18,9 +18,9 @@ depends: [
   "conf-pkg-config" {= "2"}
   "cppo" {= "1.6.7"}
   "csexp" {= "1.5.1"}
-  "dune" {= "2.8.5"}
-  "dune-build-info" {= "2.8.5"}
-  "dune-configurator" {= "2.8.5"}
+  "dune" {= "2.9.0"}
+  "dune-build-info" {= "2.9.0"}
+  "dune-configurator" {= "2.9.0"}
   "findlib" {= "1.8.1+dune"}
   "fmt" {= "0.8.9+dune"}
   "fpath" {= "0.7.3+dune"}
@@ -28,21 +28,22 @@ depends: [
   "lwt" {= "5.4.1"}
   "mmap" {= "1.1.0"}
   "num" {= "1.3+dune"}
-  "ocaml" {= "4.11.2"}
-  "ocaml-base-compiler" {= "4.11.2"}
-  "ocaml-config" {= "1"}
+  "ocaml" {= "4.13.0"}
+  "ocaml-base-compiler" {= "4.13.0~alpha1"}
+  "ocaml-config" {= "2"}
+  "ocaml-options-vanilla" {= "1"}
   "ocaml-syntax-shims" {= "1.0.0"}
   "ocaml-version" {= "3.1.0"}
   "ocamlfind" {= "1.8.1+dune"}
   "ocamlgraph" {= "2.0.0"}
   "ocplib-endian" {= "1.1"}
-  "opam-0install" {= "0.4.1"}
-  "opam-core" {= "2.1.0~beta4"}
+  "opam-0install" {= "0.4.2"}
+  "opam-core" {= "2.1.0~rc2"}
   "opam-file-format" {= "2.1.3"}
-  "opam-format" {= "2.1.0~beta4"}
-  "opam-repository" {= "2.1.0~beta4"}
-  "opam-state" {= "2.1.0~beta4"}
-  "parsexp" {= "v0.14.0"}
+  "opam-format" {= "2.1.0~rc2"}
+  "opam-repository" {= "2.1.0~rc2"}
+  "opam-state" {= "2.1.0~rc2"}
+  "parsexp" {= "v0.14.1"}
   "re" {= "1.9.0"}
   "result" {= "1.5"}
   "rresult" {= "0.6.0+dune"}
@@ -119,12 +120,12 @@ pin-depends: [
     "https://github.com/ocaml-dune/csexp/releases/download/1.5.1/csexp-1.5.1.tbz"
   ]
   [
-    "dune-build-info.2.8.5"
-    "https://github.com/ocaml/dune/releases/download/2.8.5/dune-2.8.5.tbz"
+    "dune-build-info.2.9.0"
+    "https://github.com/ocaml/dune/releases/download/2.9.0/dune-2.9.0.tbz"
   ]
   [
-    "dune-configurator.2.8.5"
-    "https://github.com/ocaml/dune/releases/download/2.8.5/dune-2.8.5.tbz"
+    "dune-configurator.2.9.0"
+    "https://github.com/ocaml/dune/releases/download/2.9.0/dune-2.9.0.tbz"
   ]
   [
     "findlib.1.8.1+dune"
@@ -175,32 +176,32 @@ pin-depends: [
     "https://github.com/OCamlPro/ocplib-endian/archive/1.1.tar.gz"
   ]
   [
-    "opam-0install.0.4.1"
-    "https://github.com/ocaml-opam/opam-0install-solver/releases/download/v0.4.1/opam-0install-cudf-v0.4.1.tbz"
+    "opam-0install.0.4.2"
+    "https://github.com/ocaml-opam/opam-0install-solver/releases/download/v0.4.2/opam-0install-cudf-v0.4.2.tbz"
   ]
   [
-    "opam-core.2.1.0~beta4"
-    "https://github.com/ocaml/opam/archive/2.1.0-beta4.tar.gz"
+    "opam-core.2.1.0~rc2"
+    "https://github.com/ocaml/opam/archive/2.1.0-rc2.tar.gz"
   ]
   [
     "opam-file-format.2.1.3"
     "https://github.com/ocaml/opam-file-format/archive/2.1.3.tar.gz"
   ]
   [
-    "opam-format.2.1.0~beta4"
-    "https://github.com/ocaml/opam/archive/2.1.0-beta4.tar.gz"
+    "opam-format.2.1.0~rc2"
+    "https://github.com/ocaml/opam/archive/2.1.0-rc2.tar.gz"
   ]
   [
-    "opam-repository.2.1.0~beta4"
-    "https://github.com/ocaml/opam/archive/2.1.0-beta4.tar.gz"
+    "opam-repository.2.1.0~rc2"
+    "https://github.com/ocaml/opam/archive/2.1.0-rc2.tar.gz"
   ]
   [
-    "opam-state.2.1.0~beta4"
-    "https://github.com/ocaml/opam/archive/2.1.0-beta4.tar.gz"
+    "opam-state.2.1.0~rc2"
+    "https://github.com/ocaml/opam/archive/2.1.0-rc2.tar.gz"
   ]
   [
-    "parsexp.v0.14.0"
-    "https://ocaml.janestreet.com/ocaml-core/v0.14/files/parsexp-v0.14.0.tar.gz"
+    "parsexp.v0.14.1"
+    "https://github.com/janestreet/parsexp/archive/refs/tags/v0.14.1.tar.gz"
   ]
   [
     "re.1.9.0"
@@ -381,6 +382,11 @@ x-opam-monorepo-duniverse-dirs: [
     ["md5=e4419eae60f57e553b154856f0cacf42"]
   ]
   [
+    "https://github.com/janestreet/parsexp/archive/refs/tags/v0.14.1.tar.gz"
+    "parsexp"
+    ["md5=e6659d53f4d94de8979e05d17222b753"]
+  ]
+  [
     "https://github.com/janestreet/result/releases/download/1.5/result-1.5.tbz"
     "result"
     ["md5=1b82dec78849680b49ae9a8a365b831b"]
@@ -431,11 +437,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/ocaml-opam/opam-0install-solver/releases/download/v0.4.1/opam-0install-cudf-v0.4.1.tbz"
+    "https://github.com/ocaml-opam/opam-0install-solver/releases/download/v0.4.2/opam-0install-cudf-v0.4.2.tbz"
     "opam-0install-solver"
     [
-      "sha256=17bb96502e30ab652bd44b476c119359ad79ea272a66c15f0eb7349fa35d33d3"
-      "sha512=3890f65ad656e5191706374e0006dc73b81813d130ca62576b739e1f92daf5896b323c6dc8bcdd16dc5cdd11e851c88c469f3f8c31e6092d9ed0d7d1440f44dc"
+      "sha256=b95717ca5b377357bcbabab3374c189f6edda3a1d8229a139910d10421519583"
+      "sha512=d818f9ad62888a5bcb5e22db394b2a310afd22fbc313a3b16f5488ab5b19c4f05bb9ddee82a2f2842f5bd034f703175db4d5ad963d57514647793c2a1da70680"
     ]
   ]
   [
@@ -447,11 +453,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/ocaml/dune/releases/download/2.8.5/dune-2.8.5.tbz"
+    "https://github.com/ocaml/dune/releases/download/2.9.0/dune-2.9.0.tbz"
     "dune_"
     [
-      "sha256=79011283fb74c7a27eb17ad752efbcc39b39633cbacc8d7be97e8ea869443629"
-      "sha512=4ef6cdea0768a29de0108cb61b04ef471cb494762c865265f20d7d15ed65a39557f7e34f2dbd466352a6567cce29d7ba21be6569afafbcfc2871720b9466dcae"
+      "sha256=bb217cfb17e893a0b1eb002ac83c14f96adc9d0703cb51ff34ed3ef5a639a41e"
+      "sha512=fcd8bc3ea7e9a14e6787a3b0384a488e45fa51e164a175ad1b147bebb3fbcccfd8f321b9b6a7665ac3dafeb18a2a6f8626d182af3b1796691f6ed79c166a5f44"
     ]
   ]
   [
@@ -468,11 +474,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/ocaml/opam/archive/2.1.0-beta4.tar.gz"
+    "https://github.com/ocaml/opam/archive/2.1.0-rc2.tar.gz"
     "opam"
     [
-      "md5=c8b674ab0803330a1daaa241b067c7e3"
-      "sha512=d9ee987a173a013a40a2ab1765f7e2d71bdc1b191e868ec99f4b60e9b6792b1850894a484b9770ae7fb4a540a9fd3f2417506701924f45430a2a31125ba5784f"
+      "md5=5eaab63268be06e2b10e97f7005f6c91"
+      "sha512=77ce2b6a79d57a6a51c76cc8e94ade0749c7bc5aca5237921361fd5909dd678b71a8e29a5af2460dafea2b4c558ed0484cbc4d1bbe1914f51b21a61320c95b96"
     ]
   ]
   [
@@ -506,11 +512,6 @@ x-opam-monorepo-duniverse-dirs: [
       "sha256=db41f5d52e9eab17615f110b899dfeb27dd7e7f89cd35ae43827c5119db206ea"
       "sha512=d8ebe40f42b598a9bd99f1ef4b00ba93458385a4accd121af66a0bf3b3f8d7135f576740adf1a43081dd409977c2219fd4bdbb5b3d1308890d301d553ed49900"
     ]
-  ]
-  [
-    "https://ocaml.janestreet.com/ocaml-core/v0.14/files/parsexp-v0.14.0.tar.gz"
-    "parsexp"
-    ["md5=c2c5fa3f9b082e4fe729e2cf95cacd3b"]
   ]
   [
     "https://ocaml.janestreet.com/ocaml-core/v0.14/files/sexplib-v0.14.0.tar.gz"

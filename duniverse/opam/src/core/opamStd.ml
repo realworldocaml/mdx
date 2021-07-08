@@ -659,6 +659,16 @@ module OpamString = struct
     in
     aux 0
 
+  let is_prefix_of ~from ~full s =
+    let length_s = String.length s in
+    let length_full = String.length full in
+    if from < 0 || from > length_full then
+      invalid_arg "is_prefix_of"
+    else
+      length_s <= length_full
+      && length_s > from
+      && String.sub full 0 length_s = s
+
 end
 
 type warning_printer =
@@ -796,12 +806,15 @@ module OpamSys = struct
     in
     if cols > 0 then cols else fallback
 
-  let win32_get_console_width () =
-    let hConsoleOutput = OpamStubs.(getStdHandle STD_OUTPUT_HANDLE) in
-    let {OpamStubs.size = (width, _); _} =
-      OpamStubs.getConsoleScreenBufferInfo hConsoleOutput
-    in
-    width
+  let win32_get_console_width default_columns =
+    try
+      let hConsoleOutput = OpamStubs.(getStdHandle STD_OUTPUT_HANDLE) in
+      let {OpamStubs.size = (width, _); _} =
+        OpamStubs.getConsoleScreenBufferInfo hConsoleOutput
+      in
+      width
+    with Not_found ->
+      Lazy.force default_columns
 
   let terminal_columns =
     let v = ref (lazy (get_terminal_columns ())) in
@@ -813,9 +826,7 @@ module OpamSys = struct
     in
     if Sys.win32 then
       fun () ->
-        if tty_out
-        then win32_get_console_width ()
-        else Lazy.force default_columns
+        win32_get_console_width default_columns
     else
       fun () ->
         if tty_out
@@ -1004,8 +1015,9 @@ module OpamSys = struct
                   f a
               else
                 f a
-          | exception _ ->
+          | exception e ->
               Unix.close_process_full process |> ignore;
+              fatal e;
               a
         in
         f `Native
@@ -1307,7 +1319,7 @@ module OpamFormat = struct
     | []    -> ""
     | [a]   -> a
     | [a;b] -> Printf.sprintf "%s %s %s" a last b
-    | h::t  -> Printf.sprintf "%s, %s" h (pretty_list t)
+    | h::t  -> Printf.sprintf "%s, %s" h (pretty_list ~last t)
 
   let as_aligned_table ?(width=OpamSys.terminal_columns ()) l =
     let itlen =
@@ -1398,6 +1410,10 @@ module Config = struct
 
   type env_var = string
 
+  type when_ = [ `Always | `Never | `Auto ]
+  type when_ext = [ `Extended | when_ ]
+  type answer = [ `unsafe_yes | `all_yes | `all_no | `ask ]
+
   let env conv var =
     try Option.map conv (Env.getopt ("OPAM"^var))
     with Failure _ ->
@@ -1406,22 +1422,32 @@ module Config = struct
         "Invalid value for environment variable OPAM%s, ignored." var;
       None
 
-  let env_bool var =
-    env (fun s -> match String.lowercase_ascii s with
-        | "" | "0" | "no" | "false" -> false
-        | "1" | "yes" | "true" -> true
-        | _ -> failwith "env_bool")
-      var
+  let bool_of_string s =
+    match String.lowercase_ascii s with
+    | "" | "0" | "no" | "false" -> Some false
+    | "1" | "yes" | "true" -> Some true
+    | _ -> None
+
+  let bool s =
+    match bool_of_string s with
+    | Some s -> s
+    | None -> failwith "env_bool"
+
+  let env_bool var = env bool var
 
   let env_int var = env int_of_string var
 
+  type level = int
   let env_level var =
-    env (fun s -> match String.lowercase_ascii s with
-        | "" | "no" | "false" -> 0
-        | "yes" | "true" -> 1
-        | s -> int_of_string s)
+    env (function s ->
+        if s = "" then 0 else
+        match bool_of_string s with
+        | Some true -> 0
+        | Some false -> 1
+        | None -> int_of_string s)
       var
 
+  type sections = int option OpamString.Map.t
   let env_sections var =
     env (fun s ->
       let f map elt =
@@ -1434,9 +1460,9 @@ module Config = struct
         let (section, level) =
           Option.map_default parse_value (elt, None) (OpamString.cut_at elt ':')
         in
-        OpamCoreConfig.StringMap.add section level map
+        OpamString.Map.add section level map
       in
-      List.fold_left f OpamCoreConfig.StringMap.empty (OpamString.split s ' ')) var
+      List.fold_left f OpamString.Map.empty (OpamString.split s ' ')) var
 
   let env_string var =
     env (fun s -> s) var
@@ -1465,36 +1491,33 @@ module Config = struct
     | `Never -> false
     | `Auto -> Lazy.force auto
 
-  let initk k =
-    let utf8 = Option.Op.(
-        env_when_ext "UTF8" ++
-        (env_bool "UTF8MSGS" >>= function
-          | true -> Some `Extended
-          | false -> None)
-      ) in
-    let answer = match env_bool "YES", env_bool "NO" with
-      | Some true, _ -> Some (Some true)
-      | _, Some true -> Some (Some false)
-      | None, None -> None
-      | _ -> Some None
-    in
-    OpamCoreConfig.(setk (setk (fun c -> r := c; k)) !r)
-      ?debug_level:(env_level "DEBUG")
-      ?debug_sections:(env_sections "DEBUGSECTIONS")
-      ?verbose_level:(env_level "VERBOSE")
-      ?color:(env_when "COLOR")
-      ?utf8
-      ?disp_status_line:(env_when "STATUSLINE")
-      ?answer
-      ?safe_mode:(env_bool "SAFE")
-      ?log_dir:(env_string "LOGS")
-      ?keep_log_dir:(env_bool "KEEPLOGS")
-      ?errlog_length:(env_int "ERRLOGLEN")
-      ?merged_output:(env_bool "MERGEOUT")
-      ?use_openssl:(env_bool "USEOPENSSL")
-      ?precise_tracking:(env_bool "PRECISETRACKING")
+  let answer s =
+    match String.lowercase_ascii s with
+    | "ask" -> `ask
+    | "yes" -> `all_yes
+    | "no" -> `all_no
+    | "unsafe-yes" -> `unsafe_yes
+    | _ -> failwith "env_answer"
 
-  let init ?noop:_ = initk (fun () -> ())
+  let env_answer =
+    env (fun s ->
+        try if bool s then `all_yes else `all_no
+        with Failure _ -> answer s)
+
+
+  module E = struct
+    type t = ..
+    let (r : t list ref) = ref []
+
+    let update v = r := v :: !r
+    let updates l = r := l @ !r
+
+    let find var = OpamList.find_map var !r
+    let value var =
+      let l = lazy (try Some (find var); with Not_found -> None) in
+      fun () -> Lazy.force l
+  end
+
 end
 
 module List = OpamList

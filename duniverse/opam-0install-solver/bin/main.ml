@@ -9,7 +9,7 @@ let select verbose with_test prefer_oldest = function
     let root = OpamStateConfig.opamroot () in
     OpamFormatConfig.init ();
     ignore (OpamStateConfig.load_defaults root);
-    OpamStd.Config.init ();
+    OpamCoreConfig.init ();
     OpamStateConfig.init ();
     OpamGlobalState.with_ `Lock_none @@ fun gt ->
     OpamSwitchState.with_ `Lock_none gt @@ fun st ->

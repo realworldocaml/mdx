@@ -187,8 +187,8 @@ let compute_upgrade_t
              if OpamPackage.Set.exists
                  (fun nv ->
                     OpamFormula.check atom nv &&
-                    not (OpamFile.OPAM.has_flag Pkgflag_HiddenVersion
-                           (OpamSwitchState.opam t nv)))
+                    (not (OpamFile.OPAM.has_flag Pkgflag_AvoidVersion (OpamSwitchState.opam t nv)) ||
+                     OpamSwitchState.can_upgrade_to_avoid_version (OpamPackage.name nv) t))
                  (Lazy.force t.available_packages)
              then atom
              else (n, None)
@@ -500,9 +500,9 @@ let fixup t =
   let t, result = match solution with
     | Conflicts cs -> (* ouch... *)
       OpamConsole.error
-        "It appears that the base packages for this switch are no longer \
-         available. Either fix their prerequisites or change them through \
-         'opam list --base' and 'opam switch set-base'.";
+        "It appears that the switch invariant is no longer satisfiable. \
+         Either fix the package prerequisites or change the invariant \
+         with 'opam switch set-invariant'.";
       OpamConsole.errmsg "%s"
         (OpamCudf.string_of_conflicts t.packages
            (OpamSwitchState.unavailable_reason t) cs);
@@ -767,15 +767,20 @@ let update_with_init_config ?(overwrite=false) config init_config =
   setifnew C.eval_variables C.with_eval_variables
     (I.eval_variables init_config) |>
   setifnew C.default_compiler C.with_default_compiler
-    (I.default_compiler init_config)
+    (I.default_compiler init_config) |>
+  setifnew C.default_invariant C.with_default_invariant
+    (I.default_invariant init_config)
 
 let reinit ?(init_config=OpamInitDefaults.init_config()) ~interactive
     ?dot_profile ?update_config ?env_hook ?completion ?inplace
-    ?(check_sandbox=true)
+    ?(check_sandbox=true) ?(bypass_checks=false)
     config shell =
   let root = OpamStateConfig.(!r.root_dir) in
   let config = update_with_init_config config init_config in
-  let _all_ok = init_checks ~hard_fail_exn:false init_config in
+  let _all_ok =
+    if bypass_checks then false else
+      init_checks ~hard_fail_exn:false init_config
+  in
   let custom_init_scripts =
     let env v =
       let vs = OpamVariable.Full.variable v in
@@ -823,7 +828,11 @@ let init
     if OpamFile.exists config_f then (
       OpamConsole.msg "Opam has already been initialized.\n";
       let gt = OpamGlobalState.load `Lock_write in
-      gt, OpamRepositoryState.load `Lock_none gt, OpamFormula.Empty
+      if OpamFile.Config.installed_switches gt.config = [] then
+        OpamConsole.msg
+          "... but you have no switches installed, use `opam switch \
+           create <compiler-or-version>' to get started.";
+      gt, OpamRepositoryState.load `Lock_none gt, []
     ) else (
       if not root_empty then (
         OpamConsole.warning "%s exists and is not empty"
@@ -837,7 +846,9 @@ let init
           | None -> OpamFile.InitConfig.repositories init_config
         in
         let config =
-          update_with_init_config OpamFile.Config.empty init_config |>
+          update_with_init_config
+            OpamFile.Config.(with_opam_root_version root_version empty)
+            init_config |>
           OpamFile.Config.with_repositories (List.map fst repos)
         in
 
@@ -884,11 +895,38 @@ let init
             (List.map fst repos)
         in
         if failed <> [] then
-          OpamConsole.error_and_exit `Sync_error
-            "Initial download of repository failed";
-        gt, OpamRepositoryState.unlock ~cleanup:false rt,
-        (if dontswitch then OpamFormula.Empty
-         else OpamFile.InitConfig.default_compiler init_config)
+          (if root_empty then
+             (try OpamFilename.rmdir root with _ -> ());
+           OpamConsole.error_and_exit `Sync_error
+             "Initial download of repository failed.");
+        let default_compiler =
+          if dontswitch then [] else
+          let chrono = OpamConsole.timer () in
+          let alternatives =
+            OpamFormula.to_dnf
+              (OpamFile.InitConfig.default_compiler init_config)
+          in
+          let invariant = OpamFile.InitConfig.default_invariant init_config in
+          let virt_st =
+            OpamSwitchState.load_virtual ~avail_default:false gt rt
+          in
+          let univ =
+            OpamSwitchState.universe virt_st
+              ~requested:OpamPackage.Name.Set.empty Query
+          in
+          let univ = { univ with u_invariant = invariant } in
+          let default_compiler =
+            OpamStd.List.find_opt
+              (OpamSolver.atom_coinstallability_check univ)
+            alternatives
+            |> OpamStd.Option.default []
+          in
+          log "Selected default compiler %s in %0.3fs"
+            (OpamFormula.string_of_atoms default_compiler)
+            (chrono ());
+          default_compiler
+        in
+        gt, OpamRepositoryState.unlock ~cleanup:false rt, default_compiler
       with e ->
         OpamStd.Exn.finalise e @@ fun () ->
         if not (OpamConsole.debug ()) && root_empty then begin
@@ -1126,16 +1164,15 @@ let install_t t ?ask ?(ignore_conflicts=false) ?(depext_only=false)
               { t with installed_roots =
                          OpamPackage.Set.add nv t.installed_roots }
             | Some false ->
-              if OpamPackage.Set.mem nv t.compiler_packages then
-                (OpamConsole.note
-                   "Package %s is part of the compiler base and can't be set \
-                    as 'installed automatically'"
-                   (OpamPackage.name_to_string nv);
-                 t)
-              else if OpamPackage.Set.mem nv t.installed_roots then
+              if OpamPackage.Set.mem nv t.installed_roots then begin
+                if OpamPackage.Set.mem nv t.compiler_packages then
+                  OpamConsole.note
+                    "Package %s is part of the switch invariant and won't be uninstalled \
+                     unless the invariant is updated."
+                    (OpamPackage.name_to_string nv);
                 { t with installed_roots =
                            OpamPackage.Set.remove nv t.installed_roots }
-              else
+              end else
                 (OpamConsole.note
                    "Package %s is already marked as 'installed automatically'."
                    (OpamPackage.Name.to_string nv.name);
@@ -1210,26 +1247,66 @@ let install_t t ?ask ?(ignore_conflicts=false) ?(depext_only=false)
     | Conflicts cs ->
       log "conflict!";
       OpamConsole.error "Package conflict!";
-      OpamConsole.errmsg "%s"
-        (OpamCudf.string_of_conflicts t.packages
-           (OpamSwitchState.unavailable_reason t) cs);
+      let (conflicts, _cycles) as explanations =
+        OpamCudf.conflict_explanations_raw t.packages cs
+      in
+      let has_missing_depexts =
+        let check = function
+          | `Missing (_, _, fdeps) ->
+            OpamFormula.fold_right (fun a x ->
+                match OpamSwitchState.unavailable_reason_raw t x with
+                | `MissingDepexts _ -> true
+                | _ -> a)
+              false fdeps
+          | _ -> false
+        in
+        List.exists check conflicts
+      in
+      let extra_message =
+        if has_missing_depexts then
+          OpamStd.Option.map_default (fun s -> s ^ ".\n\n") ""
+            (OpamSysInteract.repo_enablers ())
+        else
+          ""
+      in
+      OpamConsole.errmsg "%s%s"
+        (OpamCudf.string_of_explanations
+           (OpamSwitchState.unavailable_reason t) explanations)
+        extra_message;
       t, if depext_only then None else Some (Conflicts cs)
-    | Success solution ->
+    | Success full_solution ->
       let solution =
         if deps_only then
           OpamSolver.filter_solution (fun nv ->
               not (OpamPackage.Name.Set.mem nv.name names))
-            solution
-        else solution in
+            full_solution
+        else full_solution in
       if depext_only then
         (OpamSolution.install_depexts ~force_depext:true ~confirm:false t
            (OpamSolver.all_packages solution)), None
       else
       let add_roots =
-        OpamStd.Option.map (function
-            | true -> names
-            | false -> OpamPackage.Name.Set.empty)
-          add_to_roots
+        if deps_only && add_to_roots <> Some false then
+          let requested_deps =
+            OpamPackage.Set.fold (fun nv acc ->
+                OpamFormula.ors [
+                  OpamPackageVar.all_depends t (OpamSwitchState.opam t nv)
+                    ~depopts:false ~build:true ~post:false;
+                  acc
+                ])
+              (OpamPackage.packages_of_names
+                 (OpamSolver.all_packages full_solution)
+                 names)
+              OpamFormula.Empty
+          in
+          Some (OpamPackage.names_of_packages
+                  (OpamFormula.packages
+                     (OpamSolver.all_packages solution) requested_deps))
+        else
+          OpamStd.Option.map (function
+              | true -> names
+              | false -> OpamPackage.Name.Set.empty)
+            add_to_roots
       in
       let t, res =
         OpamSolution.apply ?ask t ~requested:names ?add_roots
@@ -1464,12 +1541,12 @@ module PIN = struct
         "No package named %S found"
         (OpamPackage.Name.to_string name)
 
-  let pin st name ?(edit=false) ?version ?(action=true) ?subpath target =
+  let pin st name ?(edit=false) ?version ?(action=true) ?subpath ?locked target =
     try
       let pinned = st.pinned in
       let st =
         match target with
-        | `Source url -> source_pin st name ?version ~edit ?subpath (Some url)
+        | `Source url -> source_pin st name ?version ~edit ?subpath ?locked (Some url)
         | `Version v ->
           let st = version_pin st name v in
           if edit then OpamPinCommand.edit st name else st
@@ -1492,10 +1569,10 @@ module PIN = struct
                 (OpamPackage.Name.to_string name)
                 (OpamPackage.Version.to_string version)
           in
-          source_pin st name ~version ~edit (Some url)
+          source_pin st name ~version ~edit ?locked (Some url)
         | `Dev_upstream ->
-          source_pin st name ?version ~edit (Some (get_upstream st name))
-        | `None -> source_pin st name ?version ~edit None
+          source_pin st name ?version ~edit ?locked (Some (get_upstream st name))
+        | `None -> source_pin st name ?version ~edit ?locked None
       in
       if action then (OpamConsole.msg "\n"; post_pin_action st pinned [name])
       else st
@@ -1503,7 +1580,7 @@ module PIN = struct
     | OpamPinCommand.Aborted -> OpamStd.Sys.exit_because `Aborted
     | OpamPinCommand.Nothing_to_do -> st
 
-  let url_pins st ?edit ?(action=true) ?(pre=fun _ -> ()) pins =
+  let url_pins st ?edit ?(action=true) ?locked ?(pre=fun _ -> ()) pins =
     let names = List.map (fun (n,_,_,_,_) -> n) pins in
     (match names with
     | _::_::_ ->
@@ -1515,8 +1592,9 @@ module PIN = struct
     | _ -> ());
     let pins =
       let urls_ok =
-        OpamPinCommand.fetch_all_pins st (List.map (fun (name, _, _, url, subpath) ->
-            OpamPackage.Name.to_string name, url, subpath) pins)
+        OpamPinCommand.fetch_all_pins st
+          (List.map (fun (name, _, _, url, subpath) ->
+               name, url, subpath) pins)
       in
       List.filter (fun (_,_,_, url, subpath) ->
           List.mem (url, subpath) urls_ok)
@@ -1528,7 +1606,7 @@ module PIN = struct
           pre pin;
           try
             OpamPinCommand.source_pin st name ?version ?opam
-              ?edit ?subpath (Some url)
+              ?edit ?subpath ?locked (Some url)
           with
           | OpamPinCommand.Aborted -> OpamStd.Sys.exit_because `Aborted
           | OpamPinCommand.Nothing_to_do -> st)
@@ -1539,7 +1617,7 @@ module PIN = struct
        post_pin_action st pinned names)
     else st
 
-  let edit st ?(action=true) ?version name =
+  let edit st ?(action=true) ?version ?locked name =
     let pinned = st.pinned in
     let st =
       if OpamPackage.has_name st.pinned name then
@@ -1564,7 +1642,7 @@ module PIN = struct
             OpamStd.Option.Op.(OpamSwitchState.url st nv >>| OpamFile.URL.url)
           in
           let opam = OpamPackage.Map.find_opt nv st.repos_package_index in
-          try source_pin st name ~edit:true ?version ?opam target
+          try source_pin st name ~edit:true ?version ?opam ?locked target
           with OpamPinCommand.Aborted -> OpamStd.Sys.exit_because `Aborted
              | OpamPinCommand.Nothing_to_do -> st
         else

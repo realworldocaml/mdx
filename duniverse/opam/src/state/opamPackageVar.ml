@@ -70,6 +70,8 @@ let resolve_global gt full_var =
       | "root"          -> Some (V.string (OpamFilename.Dir.to_string gt.root))
       | "make"          -> Some (V.string OpamStateConfig.(Lazy.force !r.makecmd))
       | "exe"           -> Some (V.string (OpamStd.Sys.executable_name ""))
+      | "switch"        -> OpamStd.Option.map (OpamSwitch.to_string @> V.string)
+                             (OpamStateConfig.get_switch_opt ())
       | _               -> None
 
 (** Resolve switch-global variables only, as allowed by the 'available:'
@@ -106,6 +108,7 @@ let resolve_switch_raw ?package gt switch switch_config full_var =
       | Some _ as c -> c
       | None ->
         match V.to_string var with
+        (* we keep it in case no global switch is defined *)
         | "switch" -> Some (V.string (OpamSwitch.to_string switch))
         | _ -> None
 
@@ -295,15 +298,12 @@ let resolve st ?opam:opam_arg ?(local=OpamVariable.Map.empty) v =
       in
       Some (string str_deps)
     | "hash", Some opam ->
-      (try
-         let nv = get_nv opam in
-         let f = OpamPath.archive root nv in
-         if OpamFilename.exists f then
-           Some (string (OpamHash.to_string
-                           (OpamHash.compute ~kind:`MD5
-                              (OpamFilename.to_string f))))
-         else Some (string "")
-       with Not_found -> Some (string ""))
+      OpamStd.Option.Op.(
+        OpamFile.OPAM.url opam
+        >>| OpamFile.URL.checksum
+        (* on download, the cache is populated with the first checksum found *)
+        >>= (function [] -> None
+                    | h::_ -> Some (string (OpamHash.to_string h))))
     | "dev", Some opam -> Some (bool (is_dev_package st opam))
     | "build-id", Some opam -> OpamStd.Option.map string (build_id st opam)
     | "opamfile", Some opam ->

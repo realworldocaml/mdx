@@ -20,6 +20,9 @@ export OCAMLRUNPARAM=b
   fi
 
   ./configure --prefix ~/local --with-mccs
+  if [ "$OPAM_TEST" != "1" ]; then
+    echo 'DUNE_PROFILE=dev' >> Makefile.config
+  fi
 
   if [[ $OPAM_TEST$OPAM_COLD -eq 0 ]] ; then
     make lib-ext
@@ -61,9 +64,6 @@ export OCAMLRUNPARAM=b
 
     # Note: these tests require a "system" compiler and will use the one in $OPAMBSROOT
     make tests
-    if [ "$RUNNER_OS" = "Linux" ]; then
-      make reftests
-    fi
 
     make distclean
 
@@ -87,12 +87,13 @@ export OCAMLRUNPARAM=b
       git reset --hard origin/master
     fi
 
-    test -d _opam || opam switch create . --empty
+    test -d _opam || opam switch create . --no-install --formula '"ocaml-system"'
     eval $(opam env)
-    opam pin --kind=path $GITHUB_WORKSPACE --yes --no-action
-    opam pin . -yn
-    opam install opam-rt --deps-only
-    make
+    opam pin $GITHUB_WORKSPACE -yn --with-version to-test
+    # opam lib pins defined in opam-rt are ignored as there is a local pin
+    opam pin . -yn --ignore-pin-depends
+    opam install opam-rt --deps-only opam-devel.to-test
+    make || { opam reinstall opam-client -y; make; }
     (set +x ; echo -en "::endgroup::opam-rt\r") 2>/dev/null
   fi
 )
@@ -100,7 +101,6 @@ export OCAMLRUNPARAM=b
 export PATH=~/local/bin:$PATH
 
 if [ $OPAM_UPGRADE -eq 1 ]; then
-  OPAM12CACHE=`eval echo $OPAM12CACHE`
   OPAM12=$OPAM12CACHE/bin/opam
   if [[ ! -f $OPAM12 ]]; then
     mkdir -p $OPAM12CACHE/bin

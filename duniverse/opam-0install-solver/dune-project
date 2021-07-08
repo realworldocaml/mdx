@@ -1,6 +1,6 @@
-(lang dune 2.0)
+(lang dune 2.7)
 (name opam-0install)
-(version v0.4.1)
+(version v0.4.2)
 (formatting disabled)
 
 (generate_opam_files true)
@@ -9,6 +9,7 @@
 (authors "talex5@gmail.com")
 (maintainers "talex5@gmail.com")
 (documentation "https://ocaml-opam.github.io/opam-0install-solver/")
+(license ISC)
 
 (package
  (name opam-0install)
@@ -27,7 +28,7 @@ This package uses 0install's solver algorithm with opam packages.
  (depends
   fmt
   cmdliner
-  opam-state
+  (opam-state (>= 2.1.0~rc))
   (ocaml (>= 4.08.0))
   0install-solver
   (opam-file-format (>= 2.1.1))

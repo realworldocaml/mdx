@@ -54,8 +54,7 @@ let list gt ~print_short =
           |> ifempty comp
         in
         let conf =
-          OpamFile.Switch_config.read_opt
-            (OpamPath.Switch.switch_config gt.root sw)
+          OpamStateConfig.Switch.read_opt ~lock_kind:`Lock_read gt sw
         in
         let descr = match conf with
           | Some c -> c.OpamFile.Switch_config.synopsis
@@ -186,14 +185,15 @@ let remove gt ?(confirm = true) switch =
   else gt
 
 let set_invariant_raw st invariant =
-  let switch_config = {st.switch_config with invariant} in
+  let switch_config = {st.switch_config with invariant = Some invariant} in
   let st = {st with switch_invariant = invariant; switch_config } in
   if not (OpamStateConfig.(!r.dryrun) || OpamClientConfig.(!r.show)) then
     OpamSwitchAction.install_switch_config st.switch_global.root st.switch
       switch_config;
   st
 
-let install_compiler ?(additional_installs=[]) ?(deps_only=false) t =
+let install_compiler
+    ?(additional_installs=[]) ?(deps_only=false) ?(ask=false) t =
   let invariant = t.switch_invariant in
   if invariant = OpamFormula.Empty && additional_installs = [] then begin
     (if not OpamClientConfig.(!r.show) &&
@@ -225,7 +225,7 @@ let install_compiler ?(additional_installs=[]) ?(deps_only=false) t =
     | Success s -> s
     | Conflicts cs ->
       OpamConsole.error
-        "Could not resolve base install for this switch:";
+        "Could not determine which packages to install for this switch:";
       OpamConsole.errmsg "%s\n"
         (OpamCudf.string_of_conflicts t.packages
            (OpamSwitchState.unavailable_reason t) cs);
@@ -236,7 +236,7 @@ let install_compiler ?(additional_installs=[]) ?(deps_only=false) t =
         s_downgrade=0; s_remove = 0 } -> ()
     | stats ->
       OpamConsole.error_and_exit `No_solution
-        "Inconsistent resolution of base package installs:\n%s"
+        "Inconsistent resolution of packages:\n%s"
         (OpamSolver.string_of_stats stats)
   in
   let to_install_pkgs = OpamSolver.new_packages solution in
@@ -257,20 +257,18 @@ let install_compiler ?(additional_installs=[]) ?(deps_only=false) t =
                  (OpamSwitchState.opam t nv))))
       base_comp
   in
-  if OpamPackage.Set.is_empty has_comp_flag then
-    (OpamConsole.warning
-       "Packages %s don't have the 'compiler' flag set (nor any of their \
-        direct dependencies)."
-       (OpamStd.List.concat_map ", " OpamPackage.to_string
-          (OpamPackage.Set.elements base_comp));
-    if OpamClientConfig.(!r.show) || OpamStateConfig.(!r.dryrun) ||
-       OpamConsole.confirm
-         "Are you sure you want to define them as the invariant base for this \
-          switch?"
-    then ()
-    else
-      OpamConsole.error_and_exit `Aborted
-        "Aborted installation of non-compiler packages as switch base.");
+  if invariant = OpamFormula.Empty then
+    OpamConsole.note
+      "No invariant was set, you may want to use `opam switch set-invariant' \
+       to keep a stable compiler version on upgrades."
+  else if OpamPackage.Set.is_empty has_comp_flag then
+    OpamConsole.note
+      "Packages %s don't have the 'compiler' flag set (nor any of their \
+       direct dependencies).\n\
+       You may want to use `opam switch set-invariant' to keep a stable \
+       compiler version on upgrades."
+      (OpamStd.List.concat_map ", " OpamPackage.to_string
+         (OpamPackage.Set.elements base_comp));
   let t =
     if t.switch_config.OpamFile.Switch_config.synopsis = "" then
       let synopsis =
@@ -299,12 +297,9 @@ let install_compiler ?(additional_installs=[]) ?(deps_only=false) t =
         solution
     else solution
   in
-  let ask =
-    OpamClientConfig.(!r.show) || additional_installs <> []
-  in
   let t, result =
     OpamSolution.apply t
-      ~ask
+      ~ask:(OpamClientConfig.(!r.show) || ask)
       ~requested:roots
       ~add_roots:roots
       solution in
@@ -562,7 +557,10 @@ let export rt ?(freeze=false) ?(full=false)
   let export =
     OpamFilename.with_flock `Lock_none (OpamPath.Switch.lock root switch)
     @@ fun _ ->
-    let selections = S.safe_read (OpamPath.Switch.selections root switch) in
+    let selections =
+      OpamStateConfig.Switch.safe_read_selections
+        ~lock_kind:`Lock_none rt.repos_global switch
+    in
     let opams =
       let read_opams read pkgs =
         let src_dir nv =
@@ -697,7 +695,7 @@ let set_invariant ?(force=false) st invariant =
   let not_comp =
     OpamPackage.Set.filter (fun nv ->
         match OpamSwitchState.opam_opt st nv with
-        | Some opam -> OpamFile.OPAM.has_flag Pkgflag_Compiler opam
+        | Some opam -> not (OpamFile.OPAM.has_flag Pkgflag_Compiler opam)
         | None -> false)
       packages
   in

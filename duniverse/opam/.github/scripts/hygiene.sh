@@ -10,9 +10,19 @@ fi
 # defined. See .github/workflows/ci.yml hygiene job.
 
 if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-  # needed or git diffs and rev-list
-  git fetch origin master
-  git fetch origin $GITHUB_REF
+  # needed for git diffs and rev-list
+  # we need to get history from base ref to head ref for check configure
+  depth=10
+  set +e
+  git cat-file -e $BASE_REF_SHA
+  r=$?
+  while [ $r -ne 0 ] ; do
+    git fetch origin $GITHUB_REF --depth=$depth
+    depth=$(( $depth + 10 ))
+    git cat-file -e $BASE_REF_SHA
+    r=$?
+  done
+  set -e
 fi
 
 CheckConfigure () {
@@ -132,5 +142,22 @@ if [[ $(find patches -name \*.old | wc -l) -ne 0 ]] ; then
 fi
 cd ..
 (set +x ; echo -en "::endgroup::check src_ext patches\r") 2>/dev/null
+
+###
+# Default cli version check
+###
+
+if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$BRANCH" = "master" ]; then
+  (set +x ; echo -en "::group::check default cli\r") 2>/dev/null
+  CURRENT_MAJOR="`sed -n "s/^AC_INIT(opam,\([0-9]\+\)[^0-9]*.*)$/\1/p" configure.ac`"
+  DEFAULT_CLI_MAJOR="`sed -n "/let *default *=/s/.*(\([0-9]*\)[^0-9]*.*/\1/p" src/client/opamCLIVersion.ml`"
+  if [ $CURRENT_MAJOR -eq $DEFAULT_CLI_MAJOR ]; then
+    echo "Major viersion is default cli one: $CURRENT_MAJOR"
+  else
+    echo -e "[\e[31mERROR\e[0m] Major version $CURRENT_MAJOR and default cli version $DEFAULT_CLI_MAJOR mismatches"
+  (set +x ; echo -en "::endgroup::check default cli\r") 2>/dev/null
+    ERROR=1
+  fi
+fi
 
 exit $ERROR

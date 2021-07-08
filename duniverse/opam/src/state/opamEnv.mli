@@ -19,10 +19,11 @@ open OpamStateTypes
 (** Get the current environment with OPAM specific additions. If [force_path],
     the PATH is modified to ensure opam dirs are leading. [set_opamroot] and
     [set_opamswitch] can be additionally used to set the [OPAMROOT] and
-    [OPAMSWITCH] variables. *)
+    [OPAMSWITCH] variables. [scrub] is a list of environment variables to
+    remove from the environment. *)
 val get_full:
-  ?set_opamroot:bool -> ?set_opamswitch:bool -> force_path:bool ->
-  ?updates:env_update list -> 'a switch_state -> env
+  set_opamroot:bool -> set_opamswitch:bool -> force_path:bool ->
+  ?updates:env_update list -> ?scrub:string list -> 'a switch_state -> env
 
 (** Get only environment modified by OPAM. If [force_path], the PATH is modified
     to ensure opam dirs are leading. [set_opamroot] and [set_opamswitch] can be
@@ -30,7 +31,7 @@ val get_full:
 
     With [base], apply the modifications to the specified base environment *)
 val get_opam:
-  ?set_opamroot:bool -> ?set_opamswitch:bool -> force_path:bool ->
+  set_opamroot:bool -> set_opamswitch:bool -> force_path:bool ->
   'a switch_state -> env
 
 (** Like [get_opam], but reads the cache file from the given opam root and
@@ -38,7 +39,7 @@ val get_opam:
 
     With [base], apply the modifications to the specified base environment *)
 val get_opam_raw:
-  ?set_opamroot:bool -> ?set_opamswitch:bool -> ?base:env ->
+  set_opamroot:bool -> set_opamswitch:bool -> ?base:env ->
   force_path:bool ->
   dirname -> switch -> env
 
@@ -54,7 +55,7 @@ val add: env -> env_update list -> env
 (** Like [get_opam] computes environment modification by OPAM , but returns
     these [updates] instead of the new environment. *)
 val updates:
-  ?set_opamroot:bool -> ?set_opamswitch:bool -> ?force_path:bool ->
+  set_opamroot:bool -> set_opamswitch:bool -> ?force_path:bool ->
   'a switch_state -> env_update list
 
 (** Check if the shell environment is in sync with the current OPAM switch,

@@ -59,7 +59,7 @@ let read_opam_file_for_pinning ?(quiet=false) name f url =
 
 exception Fetch_Fail of string
 
-let get_source_definition ?version ?subpath st nv url =
+let get_source_definition ?version ?subpath ?locked st nv url =
   let root = st.switch_global.root in
   let srcdir = OpamPath.Switch.pinned_package root st.switch nv.name in
   let fix opam =
@@ -86,7 +86,7 @@ let get_source_definition ?version ?subpath st nv url =
       match OpamFile.URL.subpath url with
       | None -> srcdir
       | Some subpath -> OpamFilename.Op.(srcdir / subpath) in
-    match OpamPinned.find_opam_file_in_source nv.name subsrcdir with
+    match OpamPinned.find_opam_file_in_source ?locked nv.name subsrcdir with
     | None -> None
     | Some f ->
       match read_opam_file_for_pinning nv.name f (OpamFile.URL.url url) with
@@ -366,19 +366,18 @@ let default_version st name =
   try OpamPackage.version (OpamSwitchState.get_package st name)
   with Not_found -> OpamPackage.Version.of_string "~dev"
 
-let fetch_all_pins st pins =
+let fetch_all_pins st ?working_dir pins =
   let root = st.switch_global.root in
   let fetched =
     let cache_dir =
       OpamRepositoryPath.download_cache OpamStateConfig.(!r.root_dir)
     in
     let command (name, url, subpath) =
-      let srcdir =
-        OpamPath.Switch.pinned_package root st.switch
-          (OpamPackage.Name.of_string name)
-      in
+      let srcdir = OpamPath.Switch.pinned_package root st.switch name in
+      let name = OpamPackage.Name.to_string name in
       OpamProcess.Job.Op.(
-        OpamRepository.pull_tree ~cache_dir ?subpath name srcdir [] [url]
+        OpamRepository.pull_tree ~cache_dir ?subpath ?working_dir
+          name srcdir [] [url]
         @@| fun r -> (name, url, subpath, r))
     in
     OpamParallel.map ~jobs:OpamStateConfig.(!r.dl_jobs) ~command pins
@@ -427,7 +426,7 @@ let rec handle_pin_depends st nv opam =
        (let extra_pins =
           let urls_ok =
             fetch_all_pins st (List.map (fun (nv, u) ->
-                OpamPackage.name_to_string nv, u, None) extra_pins)
+                OpamPackage.name nv, u, None) extra_pins)
           in
           List.filter (fun (_, url) -> List.mem (url, None) urls_ok) extra_pins
         in
@@ -444,7 +443,7 @@ and source_pin
     st name
     ?version ?edit:(need_edit=false) ?opam:opam_opt ?(quiet=false)
     ?(force=false) ?(ignore_extra_pins=OpamClientConfig.(!r.ignore_pin_depends))
-    ?subpath
+    ?subpath ?locked
     target_url
   =
   log "pin %a to %a %a%a"
@@ -486,14 +485,6 @@ and source_pin
       (* else raise Exns.Aborted *);
       cur_version, cur_urlf
     with Not_found ->
-      if OpamPackage.has_name st.compiler_packages name then (
-        OpamConsole.warning
-          "Package %s is part of the base packages of this compiler."
-          (OpamPackage.Name.to_string name);
-        if not @@ OpamConsole.confirm
-            "Are you sure you want to override this and pin it anyway?"
-        then raise Aborted
-      );
       let version = default_version st name in
       version, None
   in
@@ -535,7 +526,7 @@ and source_pin
     try
       opam_opt >>+ fun () ->
       urlf >>= fun url ->
-      OpamProcess.Job.run @@ get_source_definition ?version ?subpath st nv url
+      OpamProcess.Job.run @@ get_source_definition ?version ?subpath ?locked st nv url
     with Fetch_Fail err ->
       if force then None else
         (OpamConsole.error_and_exit `Sync_error

@@ -23,7 +23,7 @@ let init_opam () =
   let root = OpamStateConfig.opamroot () in
   ignore (OpamStateConfig.load_defaults root);
   OpamFormatConfig.init ();
-  OpamStd.Config.init ~safe_mode:true ();
+  OpamCoreConfig.init ~safe_mode:true ();
   OpamRepositoryConfig.init ();
   OpamStateConfig.init ()
 

@@ -26,7 +26,7 @@ let checked_repo_root () =
   repo_root
 
 let global_options cli =
-  let apply_cli options = {options with OpamArg.cli} in
+  let apply_cli options = { options with OpamArg.cli = options.OpamArg.cli} in
   Term.(const apply_cli $ OpamArg.global_options cli)
 
 let admin_command_doc =
@@ -75,7 +75,7 @@ let index_command cli =
     ]
   in
   let cmd global_options urls_txt () =
-    OpamArg.apply_global_options global_options;
+    OpamArg.apply_global_options cli global_options;
     let repo_root = checked_repo_root ()  in
     let repo_file = OpamRepositoryPath.repo repo_root in
     let repo_def =
@@ -121,12 +121,12 @@ let index_command cli =
     OpamHTTP.make_index_tar_gz repo_root;
     OpamConsole.msg "Done.\n";
   in
-  OpamArg.mk_command cli OpamArg.cli_original command ~doc ~man
+  OpamArg.mk_command  ~cli OpamArg.cli_original command ~doc ~man
     Term.(const cmd $ global_options cli $ urls_txt_arg cli)
 
 let cache_urls repo_root repo_def =
   let global_dl_cache =
-    OpamStd.Option.Op.(OpamStateConfig.(load !r.root_dir) +!
+    OpamStd.Option.Op.(OpamStateConfig.(load ~lock_kind:`Lock_read !r.root_dir) +!
                        OpamFile.Config.empty)
     |> OpamFile.Config.dl_cache
   in
@@ -227,7 +227,7 @@ let cache_command cli =
       OpamArg.positive_integer 8
   in
   let cmd global_options cache_dir no_repo_update link jobs () =
-    OpamArg.apply_global_options global_options;
+    OpamArg.apply_global_options cli global_options;
     let repo_root = checked_repo_root () in
     let repo_file = OpamRepositoryPath.repo repo_root in
     let repo_def = OpamFile.Repo.safe_read repo_file in
@@ -272,7 +272,7 @@ let cache_command cli =
 
     OpamConsole.msg "Done.\n";
   in
-  OpamArg.mk_command cli OpamArg.cli_original command ~doc ~man
+  OpamArg.mk_command  ~cli OpamArg.cli_original command ~doc ~man
     Term.(const cmd $ global_options cli $
           cache_dir_arg $ no_repo_update_arg $ link_arg $ jobs_arg)
 
@@ -390,7 +390,7 @@ let add_hashes_command cli =
       h
   in
   let cmd global_options hash_types replace packages () =
-    OpamArg.apply_global_options global_options;
+    OpamArg.apply_global_options cli global_options;
     let repo_root = checked_repo_root () in
     let cache_urls =
       cache_urls repo_root
@@ -491,7 +491,7 @@ let add_hashes_command cli =
     if has_error then OpamStd.Sys.exit_because `Sync_error
     else OpamStd.Sys.exit_because `Success
   in
-  OpamArg.mk_command cli OpamArg.cli_original command ~doc ~man
+  OpamArg.mk_command  ~cli OpamArg.cli_original command ~doc ~man
     Term.(const cmd $ global_options cli $
           hash_types_arg $ replace_arg $ packages)
 
@@ -527,7 +527,7 @@ let upgrade_command cli =
       Arg.(some OpamArg.url) None
   in
   let cmd global_options clear_cache create_mirror () =
-    OpamArg.apply_global_options global_options;
+    OpamArg.apply_global_options cli global_options;
     if clear_cache then OpamAdminRepoUpgrade.clear_cache ()
     else match create_mirror with
       | None ->
@@ -541,7 +541,7 @@ let upgrade_command cli =
             \  opam admin index"
       | Some m -> OpamAdminRepoUpgrade.do_upgrade_mirror (OpamFilename.cwd ()) m
   in
-  OpamArg.mk_command cli OpamArg.cli_original command ~doc ~man
+  OpamArg.mk_command  ~cli OpamArg.cli_original command ~doc ~man
     Term.(const cmd $ global_options cli $
           clear_cache_arg $ create_mirror_arg)
 
@@ -583,7 +583,7 @@ let lint_command cli =
       "Return failure on any warnings, not only on errors"
   in
   let cmd global_options short list incl excl ign warn_error () =
-    OpamArg.apply_global_options global_options;
+    OpamArg.apply_global_options cli global_options;
     let repo_root = OpamFilename.cwd () in
     if not (OpamFilename.exists_dir OpamFilename.Op.(repo_root / "packages"))
     then
@@ -624,7 +624,7 @@ let lint_command cli =
     in
     OpamStd.Sys.exit_because (if ret then `Success else `False)
   in
-  OpamArg.mk_command cli OpamArg.cli_original command ~doc ~man
+  OpamArg.mk_command  ~cli OpamArg.cli_original command ~doc ~man
     Term.(const cmd $ global_options cli $
           short_arg $ list_arg $ include_arg $ exclude_arg $ ignore_arg $
           warn_error_arg)
@@ -666,7 +666,7 @@ let check_command cli =
   in
   let cmd global_options ignore_test print_short
       installability cycles obsolete () =
-    OpamArg.apply_global_options global_options;
+    OpamArg.apply_global_options cli global_options;
     let repo_root = checked_repo_root () in
     let installability, cycles, obsolete =
       if installability || cycles || obsolete
@@ -708,7 +708,7 @@ let check_command cli =
        (pr obsolete "obsolete packages"));
     OpamStd.Sys.exit_because (if all_ok then `Success else `False)
   in
-  OpamArg.mk_command cli OpamArg.cli_original command ~doc ~man
+  OpamArg.mk_command  ~cli OpamArg.cli_original command ~doc ~man
   Term.(const cmd $ global_options cli $ ignore_test_arg $ print_short_arg
         $ installability_arg $ cycles_arg $ obsolete_arg)
 
@@ -771,7 +771,8 @@ let get_virtual_switch_state repo_root env =
   let gt = {
     global_lock = OpamSystem.lock_none;
     root = OpamStateConfig.(!r.root_dir);
-    config = OpamStd.Option.Op.(OpamStateConfig.(load !r.root_dir) +!
+    config = OpamStd.Option.Op.(OpamStateConfig.(
+        load ~lock_kind:`Lock_read !r.root_dir) +!
                                 OpamFile.Config.empty);
     global_variables = OpamVariable.Map.empty;
   } in
@@ -823,7 +824,7 @@ let list_command cli =
   let cmd
       global_options package_selection disjunction state_selection
       package_listing env packages () =
-    OpamArg.apply_global_options global_options;
+    OpamArg.apply_global_options cli global_options;
     let format =
       let force_all_versions =
         match packages with
@@ -859,7 +860,7 @@ let list_command cli =
     in
     OpamListCommand.display st format results
   in
-  OpamArg.mk_command cli OpamArg.cli_original command ~doc ~man
+  OpamArg.mk_command  ~cli OpamArg.cli_original command ~doc ~man
   Term.(const cmd $ global_options cli $ OpamArg.package_selection cli $
         or_arg cli $ state_selection_arg cli $ OpamArg.package_listing cli $
         env_arg cli $ pattern_list_arg)
@@ -890,7 +891,7 @@ let filter_command cli =
   let cmd
       global_options package_selection disjunction state_selection env
       remove dryrun packages () =
-    OpamArg.apply_global_options global_options;
+    OpamArg.apply_global_options cli global_options;
     let repo_root = OpamFilename.cwd () in
     let pattern_selector = OpamListCommand.pattern_selector packages in
     let join =
@@ -946,7 +947,7 @@ let filter_command cli =
              OpamFilename.rmdir_cleanup d))
       pkg_prefixes
   in
-  OpamArg.mk_command cli OpamArg.cli_original command ~doc ~man
+  OpamArg.mk_command  ~cli OpamArg.cli_original command ~doc ~man
   Term.(const cmd $ global_options cli $ OpamArg.package_selection cli $
         or_arg cli $ state_selection_arg cli $ env_arg cli $ remove_arg $
         dryrun_arg $
@@ -985,7 +986,7 @@ let add_constraint_command cli =
        the existing constraint unchanged."
   in
   let cmd global_options force atom () =
-    OpamArg.apply_global_options global_options;
+    OpamArg.apply_global_options cli global_options;
     let repo_root = checked_repo_root () in
     let pkg_prefixes = OpamRepository.packages_with_prefixes repo_root in
     let name, cstr_opt = atom in
@@ -1055,7 +1056,7 @@ let add_constraint_command cli =
              |> OpamFile.OPAM.with_conflicts conflicts))
       pkg_prefixes
   in
-  OpamArg.mk_command cli OpamArg.cli_original command ~doc ~man
+  OpamArg.mk_command  ~cli OpamArg.cli_original command ~doc ~man
   Term.(pure cmd $ global_options cli $ force_arg $ atom_arg)
 
 (* HELP *)
@@ -1087,7 +1088,7 @@ let help =
 let admin_subcommands cli =
   let index_command = index_command cli in
   [
-    index_command; OpamArg.make_command_alias index_command "make";
+    index_command; OpamArg.make_command_alias ~cli index_command "make";
     cache_command cli;
     upgrade_command cli;
     lint_command cli;
@@ -1104,10 +1105,10 @@ let default_subcommand cli =
     admin_command_man @ [
       `S Manpage.s_commands;
       `S "COMMAND ALIASES";
-    ] @ OpamArg.help_sections
+    ] @ OpamArg.help_sections cli
   in
   let usage global_options =
-    OpamArg.apply_global_options global_options;
+    OpamArg.apply_global_options cli global_options;
     OpamConsole.formatted_msg
       "usage: opam admin [--version]\n\
       \                  [--help]\n\

@@ -1,3 +1,10 @@
+v0.4.2 (16/06/2021)
+-------------------
+
+- opam-0install: Upgrade to opam 2.1.0~rc (@kit-ty-kate #29)
+
+- Upgrade to (lang dune 2.7) (@kit-ty-kate #29)
+
 v0.4.1 (22/04/2021)
 -------------------
 
