@@ -1,18 +1,8 @@
-## unreleased
-
-### Added
-
-### Changed
-
-### Deprecated
+## 0.2.3
 
 ### Fixed
 
 - Fix compat with opam 2.1.0~rc2 by upgrading vendored opam libs
-
-### Removed
-
-### Security
 
 ## 0.2.2
 
