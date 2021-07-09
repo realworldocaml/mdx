@@ -2,6 +2,8 @@
 
 #### Added
 
+- Support for OCaml 4.13 (#330, @emillon)
+
 #### Changed
 
 #### Deprecated
