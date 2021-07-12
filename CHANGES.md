@@ -1,18 +1,8 @@
-### unreleased
+### 1.10.1
 
 #### Added
 
 - Support for OCaml 4.13 (#330, @emillon)
-
-#### Changed
-
-#### Deprecated
-
-#### Removed
-
-#### Fixed
-
-#### Security
 
 ### 1.10.0
 
