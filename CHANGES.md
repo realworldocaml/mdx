@@ -4,6 +4,8 @@
 
 #### Changed
 
+- Use odoc-parser.0.9.0 (#333, @julow)
+
 #### Deprecated
 
 #### Fixed
