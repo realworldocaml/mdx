@@ -8,12 +8,9 @@
   (with-stdout-to
    %{target}
    (setenv
-    MDX__OCAMLFORMAT_RPC_CONFIG
-    "profile=janestreet"
-    (setenv
-     MDX__OCAMLFORMAT_RPC_PATH
-     homemade_rpc_server
-     (run ocaml-mdx test --output - --format-code %{dep:test-case.md}))))))
+    MDX__OCAMLFORMAT_RPC_PATH
+    homemade_rpc_server
+    (run ocaml-mdx test --output - --format-code %{dep:test-case.md})))))
 
 (rule
  (target test-case.mli.actual)
