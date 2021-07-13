@@ -28,10 +28,17 @@ let set_config client =
   match Ocf.config (parse_config s) client with
   | (exception _) | Ok () | Error _ -> ()
 
+let rpc_path () =
+  let env_var = "MDX__OCAMLFORMAT_RPC_PATH" in
+  match Bos.OS.Env.var env_var with
+  | Some str -> Fpath.of_string str >>| fun path -> (str, path)
+  | None ->
+      Result.errorf "%s should be set to the path of the ocamlformat-rpc server"
+        env_var
+
 let start () =
-  let argv = [| "ocamlformat-rpc-server" |] in
-  let cmd = Bos.Cmd.v "ocamlformat-rpc-server" in
-  Bos.OS.Cmd.get_tool cmd >>= fun cmd_path ->
+  Result.map_error ~f:err @@ rpc_path () >>= fun (cmd_name, cmd_path) ->
+  let argv = [| cmd_name |] in
   let prog = Fpath.to_string cmd_path in
   let input, output = Unix.open_process_args prog argv in
   let pid = Unix.process_pid (input, output) in
