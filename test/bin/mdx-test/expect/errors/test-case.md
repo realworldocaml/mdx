@@ -61,13 +61,13 @@ Error: This expression has type string but an expression was expected of type
          int
 ```
 
-```ocaml non-deterministic=output
+```ocaml non-deterministic=output,version>=4.09
 # raise Not_found
-Exception: Not_found.
+Exception: Not_found
 ```
 
-```ocaml
+```ocaml version>=4.09
 # print_endline "first"; failwith "second"
 first
-Exception: Failure "second".
+Exception: (Failure second)
 ```

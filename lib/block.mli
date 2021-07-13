@@ -118,13 +118,13 @@ val dump : t Fmt.t
 val pp_header : ?syntax:Syntax.t -> t Fmt.t
 (** [pp_header] pretty-prints full block headers with the labels. *)
 
-val pp_contents : ?syntax:Syntax.t -> t Fmt.t
+val pp_contents : ?syntax:Syntax.t -> ?format_code:bool -> t Fmt.t
 (** [pp_contents] pretty-prints block contents. *)
 
 val pp_footer : ?syntax:Syntax.t -> t Fmt.t
 (** [pp_footer] pretty-prints block footer. *)
 
-val pp : ?syntax:Syntax.t -> t Fmt.t
+val pp : ?syntax:Syntax.t -> ?format_code:bool -> t Fmt.t
 (** [pp] pretty-prints blocks. *)
 
 val pp_line_directive : (string * int) Fmt.t

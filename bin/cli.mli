@@ -28,6 +28,8 @@ val root : [> `Root of string option ] t
 
 val force_output : [> `Force_output of bool ] t
 
+val format_code : [> `Format_code of bool ] t
+
 type output = File of string | Stdout
 
 val output : [> `Output of output option ] t

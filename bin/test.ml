@@ -25,7 +25,7 @@ let split_exe_extension path =
   if Filename.check_suffix path exe then (Filename.chop_extension path, exe)
   else (path, "")
 
-let run (`Setup ()) _ _ _ _ _ _ _ _ _ _ =
+let run (`Setup ()) _ _ _ _ _ _ _ _ _ _ _ =
   let base = Filename.basename Sys.argv.(0) in
   let dir = Filename.dirname Sys.argv.(0) in
   let cmd =
@@ -53,5 +53,5 @@ let cmd : int Term.t * Term.info =
       pure run $ Cli.setup $ Cli.non_deterministic $ Cli.silent_eval
       $ Cli.syntax $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude
       $ Cli.prelude_str $ Cli.file $ Cli.section $ Cli.root $ Cli.force_output
-      $ Cli.output),
+      $ Cli.output $ Cli.format_code),
     Term.info "test" ~doc )
