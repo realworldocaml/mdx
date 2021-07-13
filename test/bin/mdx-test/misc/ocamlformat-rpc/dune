@@ -2,7 +2,7 @@
  (target test-case.md.actual)
  (deps
   (package mdx)
-  %{bin:ocamlformat-rpc}
+  %{bin:homemade_rpc_server}
   (source_tree ocamlformat-rpc))
  (action
   (with-stdout-to
@@ -12,7 +12,7 @@
     "profile=janestreet"
     (setenv
      MDX__OCAMLFORMAT_RPC_PATH
-     "%{bin:ocamlformat-rpc}"
+     homemade_rpc_server
      (run ocaml-mdx test --output - --format-code %{dep:test-case.md}))))))
 
 (rule
@@ -39,3 +39,8 @@
  (alias runtest)
  (action
   (diff test-case.md.expected test-case.md.actual)))
+
+(executable
+ (name homemade_rpc_server)
+ (libraries ocamlformat-rpc-lib unix)
+ (modules homemade_rpc_server))
