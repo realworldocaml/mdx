@@ -98,9 +98,8 @@ let local_paths_to_opam_map local_paths =
   Result.List.map bindings ~f:(fun (name, (version, path)) ->
       read_opam path >>| fun opam_file ->
       let name = OpamPackage.Name.of_string name in
-      let version =
-        OpamPackage.Version.of_string (Option.value ~default:Types.Opam.default_version version)
-      in
+      let explicit_version = Option.map ~f:OpamPackage.Version.of_string version in
+      let version = Opam.local_package_version opam_file ~explicit_version in
       (name, (version, opam_file)))
   >>| OpamPackage.Name.Map.of_list
 
