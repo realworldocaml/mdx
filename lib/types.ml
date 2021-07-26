@@ -19,19 +19,6 @@ module Opam = struct
 
   let default_version = OpamPackage.Version.of_string "zdev"
 
-  let explicit_version p =
-    match p.version with
-    | Some v -> OpamPackage.Version.of_string v
-    | None -> default_version
-
-  let package_to_opam p =
-    OpamPackage.create (OpamPackage.Name.of_string p.name) (explicit_version p)
-
-  let package_from_opam o =
-    let name = OpamPackage.(Name.to_string (name o)) in
-    let version = Some OpamPackage.(Version.to_string (version o)) in
-    { name; version }
-
   let package_from_string name =
     match Astring.String.cut ~sep:"." name with
     | None -> { name; version = None }
@@ -41,8 +28,4 @@ module Opam = struct
     match version with
     | None -> Fmt.pf ppf "%s" name
     | Some v -> Fmt.pf ppf "%s.%s" name v
-
-  let string_of_package pkg = Fmt.strf "%a" pp_package pkg
-
-  let sort_uniq l = List.sort_uniq (fun a b -> String.compare a.name b.name) l
 end
