@@ -14,8 +14,6 @@ module Styled = struct
 
   let commit = branch
 
-  let package = Fmt.(styled `Yellow Types.Opam.pp_package)
-
   let package_name = Fmt.(styled `Yellow string)
 
   let path fmt path = Fmt.(styled `Cyan Fpath.pp) fmt (Fpath.normalize path)

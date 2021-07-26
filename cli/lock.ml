@@ -1,7 +1,49 @@
 open Import
 
+module Package_argument : sig
+  type t
+
+  val make : name:string -> version:OpamPackage.Version.t option -> t
+
+  val name : t -> OpamPackage.Name.t
+
+  val version : t -> OpamPackage.Version.t option
+
+  val converter : t Cmdliner.Arg.converter
+
+  val pp_styled : t Fmt.t
+end = struct
+  type t = { name : OpamPackage.Name.t; version : OpamPackage.Version.t option }
+
+  let make ~name ~version =
+    let name = OpamPackage.Name.of_string name in
+    { name; version }
+
+  let name { name; _ } = name
+
+  let version { version; _ } = version
+
+  let from_string name =
+    match Astring.String.cut ~sep:"." name with
+    | None -> make ~name ~version:None
+    | Some (name, version) ->
+        make ~name ~version:(Some (OpamPackage.Version.of_string version))
+
+  let pp_version_opt ppf =
+    Option.iter (fun version ->
+        Fmt.pf ppf ".%s" (OpamPackage.Version.to_string version))
+
+  let pp ppf { name; version } =
+    Fmt.pf ppf "%s%a" (OpamPackage.Name.to_string name) pp_version_opt version
+
+  let converter =
+    let parse s = Ok (from_string s) in
+    Cmdliner.Arg.conv ~docv:"PACKAGE" (parse, pp)
+
+  let pp_styled ppf t = Fmt.to_to_string pp t |> Pp.Styled.package_name ppf
+end
+
 let check_root_packages ~local_packages =
-  let open Types in
   let count = List.length local_packages in
   match count with
   | 0 ->
@@ -10,13 +52,12 @@ let check_root_packages ~local_packages =
          Either create some *.opam files in the local repository, or specify \
          them manually via 'opam monorepo lock <packages>'."
   | _ ->
-      let pp_package_name fmt { Opam.name; _ } = Fmt.string fmt name in
       Common.Logs.app (fun l ->
           l "Using %d locally scanned package%a as the root%a." count Pp.plural
             local_packages Pp.plural local_packages);
       Logs.info (fun l ->
           l "Root package%a: %a." Pp.plural local_packages
-            Fmt.(list ~sep:(unit ",@ ") (styled `Yellow pp_package_name))
+            Fmt.(list ~sep:(unit ",@ ") Package_argument.pp_styled)
             local_packages);
       Ok ()
 
@@ -72,15 +113,16 @@ let calculate_opam ~build_only ~local_opam_files ~ocaml_version =
             switch_state))
 
 let filter_local_packages ~explicit_list local_paths =
-  let open Types in
   let res =
     List.fold_left
-      ~f:(fun acc { Opam.name; version } ->
+      ~f:(fun acc pkg ->
+        let name = Package_argument.name pkg |> OpamPackage.Name.to_string in
         match (acc, String.Map.find local_paths name) with
         | Error _, Some _ -> acc
         | Error l, None -> Error (name :: l)
         | Ok _, None -> Error [ name ]
         | Ok filtered, Some path ->
+            let version = Package_argument.version pkg in
             Ok (String.Map.set filtered name (version, path)))
       ~init:(Ok String.Map.empty) explicit_list
   in
@@ -99,7 +141,9 @@ let local_packages ~recurse ~explicit_list repo =
       Repo.local_packages ~recurse repo >>| fun local_paths ->
       String.Map.map ~f:(fun path -> (None, path)) local_paths
   | _ ->
-      Repo.local_packages ~recurse:true ~filter:explicit_list repo
+      Repo.local_packages ~recurse:true
+        ~filter:(List.map ~f:Package_argument.name explicit_list)
+        repo
       >>= fun local_paths -> filter_local_packages ~explicit_list local_paths
 
 let read_opam fpath =
@@ -113,12 +157,9 @@ let read_opam fpath =
 let local_paths_to_opam_map local_paths =
   let open Result.O in
   let bindings = String.Map.bindings local_paths in
-  Result.List.map bindings ~f:(fun (name, (version, path)) ->
+  Result.List.map bindings ~f:(fun (name, (explicit_version, path)) ->
       read_opam path >>| fun opam_file ->
       let name = OpamPackage.Name.of_string name in
-      let explicit_version =
-        Option.map ~f:OpamPackage.Version.of_string version
-      in
       let version = Opam.local_package_version opam_file ~explicit_version in
       (name, (version, opam_file)))
   >>| OpamPackage.Name.Map.of_list
@@ -135,14 +176,16 @@ let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only)
   let open Rresult.R.Infix in
   local_packages ~recurse ~explicit_list:lp repo >>= fun local_paths ->
   let local_packages =
-    let open Types.Opam in
     List.map
-      ~f:(fun (name, (version, _)) -> { name; version })
+      ~f:(fun (name, (version, _)) -> Package_argument.make ~name ~version)
       (String.Map.bindings local_paths)
   in
   check_root_packages ~local_packages >>= fun () ->
   local_paths_to_opam_map local_paths >>= fun local_opam_files ->
-  Repo.lockfile ~local_packages repo >>= fun lockfile_path ->
+  Repo.lockfile
+    ~local_packages:(List.map ~f:Package_argument.name local_packages)
+    repo
+  >>= fun lockfile_path ->
   calculate_opam ~build_only ~allow_jbuilder ~ocaml_version ~local_opam_files
   >>= fun package_summaries ->
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
@@ -202,7 +245,7 @@ let packages =
   let docv = "LOCAL_PACKAGE" in
   Common.Arg.named
     (fun x -> `Local_packages x)
-    Arg.(value & pos_all Common.Arg.package [] & info ~doc ~docv [])
+    Arg.(value & pos_all Package_argument.converter [] & info ~doc ~docv [])
 
 let ocaml_version =
   let doc = "Determined version to lock ocaml with in the lockfile." in

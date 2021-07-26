@@ -13,8 +13,6 @@ module Styled : sig
 
   val commit : string Fmt.t
 
-  val package : Types.Opam.package Fmt.t
-
   val package_name : string Fmt.t
 
   val path : Fpath.t Fmt.t

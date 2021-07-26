@@ -25,8 +25,10 @@ let local_packages ~recurse ?filter t =
       | None -> fun _ -> true
       | Some list ->
           fun p ->
-            let pkg = p |> Fpath.rem_ext |> Fpath.basename in
-            List.exists ~f:(fun { Types.Opam.name; _ } -> name = pkg) list
+            let pkg =
+              p |> Fpath.rem_ext |> Fpath.basename |> OpamPackage.Name.of_string
+            in
+            List.exists ~f:(fun name -> OpamPackage.Name.equal name pkg) list
     in
     Bos.OS.Path.fold
       ~elements:(`Sat (fun p -> Ok (Fpath.has_ext ".opam" p && accept_name p)))
@@ -58,11 +60,12 @@ let lockfile ?local_packages:lp t =
     | Some lp -> Ok lp
     | None ->
         local_packages ~recurse:false t >>| fun lp ->
-        List.map
-          ~f:(fun (name, _) -> { Types.Opam.name; version = None })
-          (String.Map.bindings lp)
+        lp |> String.Map.keys |> List.map ~f:OpamPackage.Name.of_string
   in
-  local_packages >>= fun pkgs ->
-  match pkgs with
-  | [ { name; _ } ] -> Ok (lockfile ~name t)
+
+  local_packages >>= fun names ->
+  match names with
+  | [ name ] ->
+      let name = OpamPackage.Name.to_string name in
+      Ok (lockfile ~name t)
   | _ -> project_name t >>= fun name -> Ok (lockfile ~name t)

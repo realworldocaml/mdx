@@ -5,7 +5,7 @@ type t = Fpath.t
 
 val local_packages :
   recurse:bool ->
-  ?filter:Types.Opam.package list ->
+  ?filter:OpamPackage.Name.t list ->
   t ->
   (Fpath.t String.Map.t, [> `Msg of string ]) result
 (** Returns the locally defined opam packages as a map from package names to
@@ -20,7 +20,7 @@ val project_name : t -> (string, [> `Msg of string ]) result
 (** Returns the name of the project, as set in the dune-project. *)
 
 val lockfile :
-  ?local_packages:Types.Opam.package list ->
+  ?local_packages:OpamPackage.Name.t list ->
   t ->
   (Fpath.t, [> `Msg of string ]) result
 (** Returns the path to the opam-monorepo lockfile for the given repo.
