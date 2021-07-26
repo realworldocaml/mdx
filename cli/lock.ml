@@ -1,7 +1,7 @@
 open Import
-open Types
 
 let check_root_packages ~local_packages =
+  let open Types in
   let count = List.length local_packages in
   match count with
   | 0 ->
@@ -62,6 +62,7 @@ let calculate_opam ~build_only ~local_opam_files ~local_packages ~ocaml_version 
             switch_state))
 
 let filter_local_packages ~explicit_list local_paths =
+  let open Types in
   let res =
     List.fold_left
       ~f:(fun acc { Opam.name; version } ->

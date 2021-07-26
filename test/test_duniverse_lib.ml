@@ -8,5 +8,4 @@ let () =
       Test_opam.suite;
       Test_parallel.suite;
       Test_uri_utils.suite;
-      Test_types_opam.suite;
     ]

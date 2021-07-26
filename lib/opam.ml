@@ -157,3 +157,8 @@ module Pp = struct
 
   let hash = Hash.pp
 end
+
+let local_package_version opam_file ~explicit_version =
+  match explicit_version with
+  | Some v -> v
+  | None -> Option.value (OpamFile.OPAM.version_opt opam_file) ~default:Types.Opam.default_version

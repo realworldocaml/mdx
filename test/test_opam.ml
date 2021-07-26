@@ -4,6 +4,14 @@ module Testable = struct
 
     let t = Alcotest.testable pp equal
   end
+
+  module Version = struct
+    open OpamPackage.Version
+
+    let pp ppf v = Format.fprintf ppf "%s" (to_string v)
+
+    let t = Alcotest.testable pp equal
+  end
 end
 
 module Url = struct
@@ -120,6 +128,36 @@ let test_depends_on_compiler_variants =
       ~input:{|[ "ocaml-options-only-no-flat-float-array" ]|} ~expected:true ();
   ]
 
+let create_opam_file ~package ~version =
+  Printf.ksprintf OpamPackage.of_string "%s.DUMMY" package
+  |> OpamFile.OPAM.create
+  |> OpamFile.OPAM.with_version_opt (Option.map OpamPackage.Version.of_string version)
+
+let test_local_package_version =
+  let test name ~explicit_version:explicit_version_string ~expected:expected_string ~opam_version =
+    ( Printf.sprintf "local_package_version: %s" name,
+      `Quick,
+      fun () ->
+        let opam_file = create_opam_file ~package:"PKG" ~version:opam_version in
+        let explicit_version = Option.map OpamPackage.Version.of_string explicit_version_string in
+        let expected = OpamPackage.Version.of_string expected_string in
+        let got = Duniverse_lib.Opam.local_package_version opam_file ~explicit_version in
+        Alcotest.check Testable.Version.t __LOC__ expected got )
+  in
+  [
+    test "explicit version wins" ~explicit_version:(Some "EXPLICIT") ~opam_version:(Some "OPAMVER")
+      ~expected:"EXPLICIT";
+    test "if no explicit, use version in opam file" ~explicit_version:None
+      ~opam_version:(Some "OPAMVER") ~expected:"OPAMVER";
+    test "if all else fails, use zdev" ~explicit_version:None ~opam_version:None ~expected:"zdev";
+  ]
+
 let suite =
   ( "Opam",
-    List.concat [ Url.test_from_opam; test_depends_on_dune; test_depends_on_compiler_variants ] )
+    List.concat
+      [
+        Url.test_from_opam;
+        test_depends_on_dune;
+        test_depends_on_compiler_variants;
+        test_local_package_version;
+      ] )

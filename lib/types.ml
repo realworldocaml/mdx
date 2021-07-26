@@ -41,9 +41,4 @@ module Opam = struct
   let string_of_package pkg = Fmt.strf "%a" pp_package pkg
 
   let sort_uniq l = List.sort_uniq (fun a b -> String.compare a.name b.name) l
-
-  let local_package_version opam_file ~explicit_version =
-    match explicit_version with
-    | Some v -> v
-    | None -> Option.value (OpamFile.OPAM.version_opt opam_file) ~default:default_version
 end
