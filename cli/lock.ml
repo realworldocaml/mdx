@@ -240,8 +240,11 @@ let allow_jbuilder =
 
 let packages =
   let doc =
-    "Explicit list of local packages to compute the lockfile from. When none \
-     are provided, all packages that have an opam file at the root of the \
+    "Explicit list of local packages to compute the lockfile from. These can \
+     be either plain package names (such as \"dune-release\"), or packages \
+     with a version number (e.g. \"irmin.2.7.1\"). Version numbers are used to \
+     tell the solver what is the version of the local package. When none are \
+     provided, all packages that have an opam file at the root of the \
      repository are used."
   in
   let docv = "LOCAL_PACKAGE" in
