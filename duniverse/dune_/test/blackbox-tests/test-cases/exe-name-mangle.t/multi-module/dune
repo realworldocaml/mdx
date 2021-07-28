@@ -1,7 +1,0 @@
-(executable
- (libraries foo)
- (name baz))
-
-(alias
- (name default)
- (action (run ./baz.exe)))

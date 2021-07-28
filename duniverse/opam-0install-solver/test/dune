@@ -1,3 +1,0 @@
-(executables
- (names test dump diff)
- (libraries opam-0install fmt fmt.tty alcotest opam-solver opam-client astring))
