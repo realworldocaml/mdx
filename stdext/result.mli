@@ -21,5 +21,6 @@ module List : sig
 
   val all : ('a, 'error) t list -> ('a list, 'error) t
 
-  val fold_left : 'a list -> f:('acc -> 'a -> ('acc, 'c) t) -> init:'acc -> ('acc, 'c) t
+  val fold_left :
+    'a list -> f:('acc -> 'a -> ('acc, 'c) t) -> init:'acc -> ('acc, 'c) t
 end

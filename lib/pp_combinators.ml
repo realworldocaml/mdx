@@ -13,7 +13,10 @@ module Ocaml = struct
     | [ a ] -> Format.fprintf fmt "[%a]" pp_a a
     | l ->
         let pp_sep fmt () = Format.fprintf fmt ";@ " in
-        Format.fprintf fmt "@[<hov 2>[@ %a@ ]@]" (Format.pp_print_list ~pp_sep pp_a) l
+        Format.fprintf fmt "@[<hov 2>[@ %a@ ]@]"
+          (Format.pp_print_list ~pp_sep pp_a)
+          l
 
-  let pair pp_a pp_b fmt (a, b) = Format.fprintf fmt "@[<hov 2>(@ %a,@ %a@ )@]" pp_a a pp_b b
+  let pair pp_a pp_b fmt (a, b) =
+    Format.fprintf fmt "@[<hov 2>(@ %a,@ %a@ )@]" pp_a a pp_b b
 end

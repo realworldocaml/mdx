@@ -64,7 +64,9 @@ val pull_tree :
     This benefits from opam's global cache.*)
 
 val local_package_version :
-  OpamFile.OPAM.t -> explicit_version:OpamTypes.version option -> OpamTypes.version
+  OpamFile.OPAM.t ->
+  explicit_version:OpamTypes.version option ->
+  OpamTypes.version
 (** Determine the version for a local package.
     - if [explicit_version] is passed, use it
     - if the opam file has a version field, use it

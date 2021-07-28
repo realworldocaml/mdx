@@ -45,7 +45,9 @@ module Make (Key : Key) : S with type key = Key.t = struct
     let rec loop acc = function
       | [] -> Result.Ok acc
       | (k, v) :: l -> (
-          match find acc k with None -> loop (set acc k v) l | Some v_old -> Error (k, v_old, v))
+          match find acc k with
+          | None -> loop (set acc k v) l
+          | Some v_old -> Error (k, v_old, v))
     in
     fun l -> loop empty l
 
@@ -73,5 +75,7 @@ module Make (Key : Key) : S with type key = Key.t = struct
     | Error (_, _, _) -> invalid_arg "Map.of_list_map_exn"
 
   let of_list_exn l =
-    match of_list l with Result.Ok x -> x | Error (_, _, _) -> invalid_arg "Map.of_list_exn"
+    match of_list l with
+    | Result.Ok x -> x
+    | Error (_, _, _) -> invalid_arg "Map.of_list_exn"
 end

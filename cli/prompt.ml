@@ -1,7 +1,9 @@
 let ask f =
   Logs.app (fun l ->
       f (fun ?header ?tags fmt ->
-          l ?header ?tags ("%a" ^^ fmt ^^ " [Y/n]") Duniverse_lib.Pp.Styled.question_header ()))
+          l ?header ?tags
+            ("%a" ^^ fmt ^^ " [Y/n]")
+            Duniverse_lib.Pp.Styled.question_header ()))
 
 let confirm ~question ~yes =
   let rec loop () =
@@ -11,10 +13,13 @@ let confirm ~question ~yes =
     | "n" | "no" -> false
     | _ ->
         Logs.app (fun l ->
-            l "Please answer with \"y\" for yes, \"n\" for no or just hit enter for the default");
+            l
+              "Please answer with \"y\" for yes, \"n\" for no or just hit \
+               enter for the default");
         loop ()
   in
   if yes then true else loop ()
 
 let confirm_or_abort ~question ~yes =
-  if confirm ~question ~yes then Ok () else Error (`Msg "Aborting on user demand")
+  if confirm ~question ~yes then Ok ()
+  else Error (`Msg "Aborting on user demand")

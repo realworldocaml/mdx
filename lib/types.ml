@@ -20,7 +20,9 @@ module Opam = struct
   let default_version = OpamPackage.Version.of_string "zdev"
 
   let explicit_version p =
-    match p.version with Some v -> OpamPackage.Version.of_string v | None -> default_version
+    match p.version with
+    | Some v -> OpamPackage.Version.of_string v
+    | None -> default_version
 
   let package_to_opam p =
     OpamPackage.create (OpamPackage.Name.of_string p.name) (explicit_version p)
@@ -36,7 +38,9 @@ module Opam = struct
     | Some (name, version) -> { name; version = Some version }
 
   let pp_package ppf { name; version } =
-    match version with None -> Fmt.pf ppf "%s" name | Some v -> Fmt.pf ppf "%s.%s" name v
+    match version with
+    | None -> Fmt.pf ppf "%s" name
+    | Some v -> Fmt.pf ppf "%s.%s" name v
 
   let string_of_package pkg = Fmt.strf "%a" pp_package pkg
 

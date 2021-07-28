@@ -12,7 +12,9 @@ module Ls_remote : sig
       It will work even if the repo uses packed-refs. *)
 
   val branch_of_symref :
-    symref:string -> string list -> (string, [> `Not_a_symref | `Msg of string ]) result
+    symref:string ->
+    string list ->
+    (string, [> `Not_a_symref | `Msg of string ]) result
   (** [ref_of_symref ~symref ls_remote_output] parses the output from git ls-remote --symref
       and returns the underlying branch pointed by the symbolic ref [symref]. *)
 

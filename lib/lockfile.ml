@@ -26,11 +26,16 @@ module Extra_field = struct
   type 'a t = {
     name : string;
     to_opam_value : 'a -> OpamParserTypes.FullPos.value;
-    from_opam_value : OpamParserTypes.FullPos.value -> ('a, [ `Msg of string ]) result;
+    from_opam_value :
+      OpamParserTypes.FullPos.value -> ('a, [ `Msg of string ]) result;
   }
 
   let make ~name ~to_opam_value ~from_opam_value =
-    { name = Printf.sprintf "x-opam-monorepo-%s" name; to_opam_value; from_opam_value }
+    {
+      name = Printf.sprintf "x-opam-monorepo-%s" name;
+      to_opam_value;
+      from_opam_value;
+    }
 
   let add t a opam = OpamFile.OPAM.add_extension opam t.name (t.to_opam_value a)
 
@@ -41,7 +46,9 @@ module Extra_field = struct
         let file_suffix_opt = Option.map ~f:(Printf.sprintf " %s") file in
         let file_suffix = Option.value ~default:"" file_suffix_opt in
         Error
-          (`Msg (Printf.sprintf "Missing %s field in opam-monorepo lockfile%s" t.name file_suffix))
+          (`Msg
+            (Printf.sprintf "Missing %s field in opam-monorepo lockfile%s"
+               t.name file_suffix))
 end
 
 module Version = struct
@@ -54,7 +61,9 @@ module Version = struct
   let to_string (major, minor) = Printf.sprintf "%d.%d" major minor
 
   let from_string s =
-    let err () = Error (`Msg (Format.sprintf "Invalid lockfile version: %S" s)) in
+    let err () =
+      Error (`Msg (Format.sprintf "Invalid lockfile version: %S" s))
+    in
     match String.lsplit2 ~on:'.' s with
     | None -> err ()
     | Some (major, minor) -> (
@@ -62,7 +71,8 @@ module Version = struct
         | Some major, Some minor -> Ok (major, minor)
         | _ -> err ())
 
-  let backward_compatible (major, minor) (major', minor') = major = major' && minor >= minor'
+  let backward_compatible (major, minor) (major', minor') =
+    major = major' && minor >= minor'
 
   let compatible t =
     (* We still support 0.1 lockfiles but we'll need to update that if we stop doing so *)
@@ -71,11 +81,12 @@ module Version = struct
       Error
         (`Msg
           (Format.asprintf
-             "Incompatible opam-monorepo lockfile version %a. Please upgrade your opam-monorepo \
-              plugin."
+             "Incompatible opam-monorepo lockfile version %a. Please upgrade \
+              your opam-monorepo plugin."
              pp t))
 
-  let to_opam_value t = Pos.with_default_pos (OpamParserTypes.FullPos.String (to_string t))
+  let to_opam_value t =
+    Pos.with_default_pos (OpamParserTypes.FullPos.String (to_string t))
 
   let from_opam_value value =
     match (value : OpamParserTypes.FullPos.value) with
@@ -92,20 +103,25 @@ module Root_packages = struct
     let open OpamParserTypes.FullPos in
     let sorted = List.sort ~cmp:String.compare t in
     let pelem =
-      List (Pos.with_default_pos (List.map ~f:(fun s -> Pos.with_default_pos (String s)) sorted))
+      List
+        (Pos.with_default_pos
+           (List.map ~f:(fun s -> Pos.with_default_pos (String s)) sorted))
     in
     Pos.with_default_pos pelem
 
   let from_opam_value value =
     let open OpamParserTypes.FullPos in
     let elm_from_value { pelem; _ } =
-      match pelem with String s -> Ok s | _ -> value_errorf ~value "Expected a string"
+      match pelem with
+      | String s -> Ok s
+      | _ -> value_errorf ~value "Expected a string"
     in
     match value.pelem with
     | List { pelem; _ } -> Result.List.map ~f:elm_from_value pelem
     | _ -> value_errorf ~value "Expected a list"
 
-  let field = Extra_field.make ~name:"root-packages" ~to_opam_value ~from_opam_value
+  let field =
+    Extra_field.make ~name:"root-packages" ~to_opam_value ~from_opam_value
 end
 
 module Depends = struct
@@ -123,11 +139,12 @@ module Depends = struct
       | _ ->
           Error
             (`Msg
-              "Invalid opam-monorepo lockfile: depends should be expressed as a list equality \
-               constraints"))
+              "Invalid opam-monorepo lockfile: depends should be expressed as \
+               a list equality constraints"))
 
   let one_to_formula (name, version) : OpamTypes.filtered_formula =
-    Atom (OpamPackage.Name.of_string name, Atom (Constraint (`Eq, FString version)))
+    Atom
+      (OpamPackage.Name.of_string name, Atom (Constraint (`Eq, FString version)))
 
   let to_filtered_formula t =
     let sorted = List.sort ~cmp:(fun (n, _) (n', _) -> String.compare n n') t in
@@ -148,7 +165,8 @@ module Pin_depends = struct
         let url = Url.to_opam_url url in
         List.map provided_packages ~f:(fun p -> (Duniverse.Opam.to_opam p, url)))
 
-  let sort t = List.sort ~cmp:(fun (pkg, _) (pkg', _) -> OpamPackage.compare pkg pkg') t
+  let sort t =
+    List.sort ~cmp:(fun (pkg, _) (pkg', _) -> OpamPackage.compare pkg pkg') t
 end
 
 module Duniverse_dirs = struct
@@ -156,11 +174,13 @@ module Duniverse_dirs = struct
 
   let from_duniverse l =
     let open Duniverse.Repo in
-    List.fold_left l ~init:OpamUrl.Map.empty ~f:(fun acc { dir; url; hashes; _ } ->
+    List.fold_left l ~init:OpamUrl.Map.empty
+      ~f:(fun acc { dir; url; hashes; _ } ->
         OpamUrl.Map.add (Url.to_opam_url url) (dir, hashes) acc)
 
   let hash_to_opam_value hash =
-    Pos.with_default_pos (OpamParserTypes.FullPos.String (OpamHash.to_string hash))
+    Pos.with_default_pos
+      (OpamParserTypes.FullPos.String (OpamHash.to_string hash))
 
   let hash_from_opam_value value =
     let open OpamParserTypes.FullPos in
@@ -176,8 +196,15 @@ module Duniverse_dirs = struct
     let open Result.O in
     let elm_from_opam_value value =
       match value with
-      | { pelem = List { pelem = [ { pelem = String url; _ }; { pelem = String dir; _ } ]; _ }; _ }
-        ->
+      | {
+       pelem =
+         List
+           {
+             pelem = [ { pelem = String url; _ }; { pelem = String dir; _ } ];
+             _;
+           };
+       _;
+      } ->
           Ok (OpamUrl.of_string url, (dir, []))
       | {
        pelem =
@@ -195,7 +222,9 @@ module Duniverse_dirs = struct
       } ->
           Result.List.map ~f:hash_from_opam_value hashes >>= fun hashes ->
           Ok (OpamUrl.of_string url, (dir, hashes))
-      | _ -> value_errorf ~value "Expected a list [ \"url\" \"repo name\" [<hashes>] ]"
+      | _ ->
+          value_errorf ~value
+            "Expected a list [ \"url\" \"repo name\" [<hashes>] ]"
     in
     match value with
     | { pelem = List { pelem = l; _ }; _ } ->
@@ -209,14 +238,18 @@ module Duniverse_dirs = struct
     let dir = Pos.with_default_pos (String dir) in
     let hashes = List.map ~f:hash_to_opam_value hashes in
     let list l = Pos.(with_default_pos (List (with_default_pos l))) in
-    match hashes with [] -> list [ url; dir ] | _ -> list [ url; dir; list hashes ]
+    match hashes with
+    | [] -> list [ url; dir ]
+    | _ -> list [ url; dir; list hashes ]
 
   let to_opam_value t =
     let open OpamParserTypes.FullPos in
     let l = OpamUrl.Map.bindings t in
-    Pos.with_default_pos (List (Pos.with_default_pos (List.map l ~f:one_to_opam_value)))
+    Pos.with_default_pos
+      (List (Pos.with_default_pos (List.map l ~f:one_to_opam_value)))
 
-  let field = Extra_field.make ~name:"duniverse-dirs" ~to_opam_value ~from_opam_value
+  let field =
+    Extra_field.make ~name:"duniverse-dirs" ~to_opam_value ~from_opam_value
 end
 
 module Depexts = struct
@@ -228,7 +261,9 @@ module Depexts = struct
 
   let all ~root_depexts ~package_summaries =
     let transitive_depexts =
-      List.map ~f:(fun { Opam.Package_summary.depexts; _ } -> depexts) package_summaries
+      List.map
+        ~f:(fun { Opam.Package_summary.depexts; _ } -> depexts)
+        package_summaries
     in
     let all = root_depexts @ transitive_depexts in
     List.concat all |> List.sort_uniq ~cmp:compare_elm
@@ -255,14 +290,16 @@ let url_to_duniverse_url url =
   let url_res = Duniverse.Repo.Url.from_opam_url url in
   Result.map_error url_res ~f:(function `Msg msg ->
       let msg =
-        Printf.sprintf "Invalid-monorepo lockfile pin URL %s: %s" (OpamUrl.to_string url) msg
+        Printf.sprintf "Invalid-monorepo lockfile pin URL %s: %s"
+          (OpamUrl.to_string url) msg
       in
       `Msg msg)
 
 let to_duniverse { duniverse_dirs; pin_depends; _ } =
   let open Result.O in
   let packages_per_url =
-    List.fold_left pin_depends ~init:OpamUrl.Map.empty ~f:(fun acc (package, url) ->
+    List.fold_left pin_depends ~init:OpamUrl.Map.empty
+      ~f:(fun acc (package, url) ->
         OpamUrl.Map.update url (fun l -> package :: l) [ package ] acc)
     |> OpamUrl.Map.bindings
   in
@@ -270,12 +307,15 @@ let to_duniverse { duniverse_dirs; pin_depends; _ } =
       match OpamUrl.Map.find_opt url duniverse_dirs with
       | None ->
           let msg =
-            Printf.sprintf "Invalid opam-monorepo lockfile: Missing dir for %s in %s"
+            Printf.sprintf
+              "Invalid opam-monorepo lockfile: Missing dir for %s in %s"
               (OpamUrl.to_string url) Duniverse_dirs.field.name
           in
           Error (`Msg msg)
       | Some (dir, hashes) ->
-          let provided_packages = List.map packages ~f:Duniverse.Opam.from_opam in
+          let provided_packages =
+            List.map packages ~f:Duniverse.Opam.from_opam
+          in
           url_to_duniverse_url url >>= fun url ->
           Ok { Duniverse.Repo.dir; url; hashes; provided_packages })
 

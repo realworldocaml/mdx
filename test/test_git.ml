@@ -36,15 +36,21 @@ module Ls_remote = struct
       let test_name = Printf.sprintf "Ls_remote.parse_output_line: %s" name in
       let test_fun () =
         let actual = Duniverse_lib.Git.Ls_remote.parse_output_line line in
-        Alcotest.(check (result (pair string string) Testable.r_msg)) test_name expected actual
+        Alcotest.(check (result (pair string string) Testable.r_msg))
+          test_name expected actual
       in
       (test_name, `Quick, test_fun)
     in
     [
-      make_test ~name:"Ok" ~line:"12ab  refs/tags/v1" ~expected:(Ok ("12ab", "refs/tags/v1")) ();
+      make_test ~name:"Ok" ~line:"12ab  refs/tags/v1"
+        ~expected:(Ok ("12ab", "refs/tags/v1"))
+        ();
       make_test ~name:"Error" ~line:"12ab  refs/tags/v1 something"
         ~expected:
-          (Error (`Msg "Invalid git ls-remote output line: \"12ab  refs/tags/v1 something\""))
+          (Error
+             (`Msg
+               "Invalid git ls-remote output line: \"12ab  refs/tags/v1 \
+                something\""))
         ();
     ]
 
@@ -53,26 +59,41 @@ module Ls_remote = struct
       let test_name = Printf.sprintf "Ls_remote.commit_pointed_by: %s" name in
       let test_fun () =
         let actual = Duniverse_lib.Git.Ls_remote.commit_pointed_by ~ref lines in
-        Alcotest.(check (result string Testable.commit_pointed_by_error)) test_name expected actual
+        Alcotest.(check (result string Testable.commit_pointed_by_error))
+          test_name expected actual
       in
       (test_name, `Quick, test_fun)
     in
     [
-      make_test ~name:"Empty output" ~ref:"v1" ~lines:[] ~expected:(Error `No_such_ref) ();
-      make_test ~name:"Not in output" ~ref:"v1" ~lines:[ "0001    refs/heads/master" ]
+      make_test ~name:"Empty output" ~ref:"v1" ~lines:[]
+        ~expected:(Error `No_such_ref)
+        ();
+      make_test ~name:"Not in output" ~ref:"v1"
+        ~lines:[ "0001    refs/heads/master" ]
         ~expected:(Error `No_such_ref)
         ();
       make_test ~name:"Invalid output" ~ref:"v1" ~lines:[ "invalid-output" ]
-        ~expected:(Error (`Msg "Invalid git ls-remote output line: \"invalid-output\""))
+        ~expected:
+          (Error (`Msg "Invalid git ls-remote output line: \"invalid-output\""))
         ();
       make_test ~name:"Regular repo" ~ref:"v1"
         ~lines:[ "0001   refs/heads/master"; "0002   refs/tags/v1" ]
         ~expected:(Ok "0002") ();
       make_test ~name:"Repo with packed refs" ~ref:"v1"
-        ~lines:[ "0001   refs/heads/master"; "0002   refs/tags/v1"; "0003   refs/tags/v1^{}" ]
+        ~lines:
+          [
+            "0001   refs/heads/master";
+            "0002   refs/tags/v1";
+            "0003   refs/tags/v1^{}";
+          ]
         ~expected:(Ok "0003") ();
       make_test ~name:"Order doesn't matter" ~ref:"v1"
-        ~lines:[ "0003   refs/tags/v1^{}"; "0001   refs/heads/master"; "0002   refs/tags/v1" ]
+        ~lines:
+          [
+            "0003   refs/tags/v1^{}";
+            "0001   refs/heads/master";
+            "0002   refs/tags/v1";
+          ]
         ~expected:(Ok "0003") ();
       make_test ~name:"Works with branches" ~ref:"some-branch"
         ~lines:[ "0001    refs/heads/master"; "0002   refs/heads/some-branch" ]
@@ -91,11 +112,19 @@ module Ls_remote = struct
           ]
         ~expected:(Error `Multiple_such_refs)
         ();
-      make_test ~name:"Empty output" ~ref:"abc" ~lines:[ "" ] ~expected:(Error `No_such_ref) ();
+      make_test ~name:"Empty output" ~ref:"abc" ~lines:[ "" ]
+        ~expected:(Error `No_such_ref)
+        ();
       make_test ~name:"Not branch or tag" ~ref:"abc"
-        ~lines:[ "001   refs/heads/master"; "002   refs/import/tags/abc"; "003   refs/tags/abc" ]
+        ~lines:
+          [
+            "001   refs/heads/master";
+            "002   refs/import/tags/abc";
+            "003   refs/tags/abc";
+          ]
         ~expected:(Ok "003") ();
-      make_test ~name:"Same suffix" ~ref:"abc" ~lines:[ "001   refs/heads/xabc" ]
+      make_test ~name:"Same suffix" ~ref:"abc"
+        ~lines:[ "001   refs/heads/xabc" ]
         ~expected:(Error `No_such_ref)
         ();
     ]
@@ -104,14 +133,21 @@ module Ls_remote = struct
     let make_test ~name ~symref ~lines ~expected () =
       let test_name = Printf.sprintf "Ls_remote.branch_of_symref: %s" name in
       let test_fun () =
-        let actual = Duniverse_lib.Git.Ls_remote.branch_of_symref ~symref lines in
-        Alcotest.(check (result string Testable.branch_of_symref_error)) test_name expected actual
+        let actual =
+          Duniverse_lib.Git.Ls_remote.branch_of_symref ~symref lines
+        in
+        Alcotest.(check (result string Testable.branch_of_symref_error))
+          test_name expected actual
       in
       (test_name, `Quick, test_fun)
     in
     [
-      make_test ~name:"Empty output" ~symref:"abc" ~lines:[ "" ] ~expected:(Error `Not_a_symref) ();
-      make_test ~name:"No output" ~symref:"abc" ~lines:[] ~expected:(Error `Not_a_symref) ();
+      make_test ~name:"Empty output" ~symref:"abc" ~lines:[ "" ]
+        ~expected:(Error `Not_a_symref)
+        ();
+      make_test ~name:"No output" ~symref:"abc" ~lines:[]
+        ~expected:(Error `Not_a_symref)
+        ();
       make_test ~name:"Typical output" ~symref:"HEAD"
         ~lines:[ "ref: refs/heads/master  HEAD"; "0000        HEAD" ]
         ~expected:(Ok "master") ();
@@ -127,7 +163,8 @@ module Ls_remote = struct
             "0003        refs/remotes/origin/HEAD";
           ]
         ~expected:(Ok "mirage-4") ();
-      make_test ~name:"Error when HEAD points towards multiple branches" ~symref:"HEAD"
+      make_test ~name:"Error when HEAD points towards multiple branches"
+        ~symref:"HEAD"
         ~lines:
           [
             "ref: refs/heads/master        HEAD";
@@ -137,15 +174,18 @@ module Ls_remote = struct
           ]
         ~expected:
           (Error
-             (`Msg "Invalid `git ls-remote --symref` output. Too many lines starting by `ref:`."))
+             (`Msg
+               "Invalid `git ls-remote --symref` output. Too many lines \
+                starting by `ref:`."))
         ();
-      make_test ~name:"Error when symref doesn't point to a branch" ~symref:"symref"
+      make_test ~name:"Error when symref doesn't point to a branch"
+        ~symref:"symref"
         ~lines:[ "ref: refs/tags/v0.1        symref"; "0005     symref" ]
         ~expected:
           (Error
              (`Msg
-               "Invalid `git ls-remote --symref` output. Failed to extract branch from ref \
-                `refs/tags/v0.1`."))
+               "Invalid `git ls-remote --symref` output. Failed to extract \
+                branch from ref `refs/tags/v0.1`."))
         ();
     ]
 end

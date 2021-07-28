@@ -6,6 +6,7 @@ val confirm : question:('a, unit) Logs.msgf -> yes:bool -> bool
     If [yes] then just skip the prompt and returns [true].
     E.g. [confirm ~question:(fun l -> l "Do you want some %a?" Fmt.(styled `Bold string) "coffee")] *)
 
-val confirm_or_abort : question:('a, unit) Logs.msgf -> yes:bool -> (unit, Rresult.R.msg) result
+val confirm_or_abort :
+  question:('a, unit) Logs.msgf -> yes:bool -> (unit, Rresult.R.msg) result
 (** Same as [confirm] but returns [Ok ()] for yes and [Error (`Msg "Aborting on user demand")] for
     no *)

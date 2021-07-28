@@ -1,4 +1,5 @@
-let plural fmt l = Fmt.using (function _ :: _ :: _ -> "s" | _ -> "") Fmt.string fmt l
+let plural fmt l =
+  Fmt.using (function _ :: _ :: _ -> "s" | _ -> "") Fmt.string fmt l
 
 module Styled = struct
   let header = Fmt.(styled `Blue (const string "==> "))
