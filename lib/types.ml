@@ -17,14 +17,13 @@
 module Opam = struct
   type package = { name : string; version : string option }
 
-  let default_version = "zdev"
+  let default_version = OpamPackage.Version.of_string "zdev"
 
-  let explicit_version p = match p.version with Some v -> v | None -> default_version
+  let explicit_version p =
+    match p.version with Some v -> OpamPackage.Version.of_string v | None -> default_version
 
   let package_to_opam p =
-    OpamPackage.create
-      (OpamPackage.Name.of_string p.name)
-      (OpamPackage.Version.of_string (explicit_version p))
+    OpamPackage.create (OpamPackage.Name.of_string p.name) (explicit_version p)
 
   let package_from_opam o =
     let name = OpamPackage.(Name.to_string (name o)) in
