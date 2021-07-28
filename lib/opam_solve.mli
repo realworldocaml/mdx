@@ -2,7 +2,6 @@ val calculate :
   build_only:bool ->
   allow_jbuilder:bool ->
   local_opam_files:(OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
-  local_packages:Types.Opam.package list ->
   ?ocaml_version:string ->
   OpamStateTypes.unlocked OpamStateTypes.switch_state ->
   (Opam.Package_summary.t list, [> `Msg of string ]) result

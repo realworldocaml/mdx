@@ -1,5 +1,7 @@
 val plural : 'a list Fmt.t
 
+val plural_int : int Fmt.t
+
 module Styled : sig
   val header : unit Fmt.t
 
