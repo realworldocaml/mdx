@@ -2,6 +2,10 @@
 
 ### Added
 
+- When querying the solver for the local packages, if no explicit version was
+  provided, use the value of the version field in the opam files instead of the
+  default `zdev` if it is defined (#183, @emillon)
+
 ### Changed
 
 ### Deprecated
