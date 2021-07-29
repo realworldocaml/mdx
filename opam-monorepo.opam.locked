@@ -12,7 +12,7 @@ depends: [
   "base-threads" {= "base"}
   "base-unix" {= "base"}
   "bigarray-compat" {= "1.0.0"}
-  "bigstringaf" {= "0.7.0"}
+  "bigstringaf" {= "0.8.0"}
   "bos" {= "0.2.0+dune"}
   "cmdliner" {= "1.0.4+dune"}
   "conf-pkg-config" {= "2"}
@@ -33,7 +33,7 @@ depends: [
   "ocaml-config" {= "2"}
   "ocaml-options-vanilla" {= "1"}
   "ocaml-syntax-shims" {= "1.0.0"}
-  "ocaml-version" {= "3.1.0"}
+  "ocaml-version" {= "3.2.0"}
   "ocamlfind" {= "1.8.1+dune"}
   "ocamlgraph" {= "2.0.0"}
   "ocplib-endian" {= "1.1"}
@@ -64,14 +64,15 @@ depexts: [
   ["pkgconf"] {os = "freebsd"}
   ["pkgconf"] {os-distribution = "alpine"}
   ["pkgconf"] {os-distribution = "arch"}
+  ["pkgconf-pkg-config"] {os-distribution = "fedora"}
+  ["pkgconf-pkg-config"] {os-distribution = "mageia"}
   ["pkgconf-pkg-config"] {os-distribution = "centos" & os-version >= "8"}
+  ["pkgconf-pkg-config"] {os-distribution = "ol" & os-version >= "8"}
   ["pkgconf-pkg-config"] {os-distribution = "rhel" & os-version >= "8"}
-  ["pkgconfig"] {os-distribution = "fedora"}
-  ["pkgconfig"] {os-distribution = "mageia"}
   ["pkgconfig"] {os-distribution = "nixos"}
-  ["pkgconfig"] {os-distribution = "ol"}
   ["pkgconfig"] {os = "macos" & os-distribution = "macports"}
   ["pkgconfig"] {os-distribution = "centos" & os-version <= "7"}
+  ["pkgconfig"] {os-distribution = "ol" & os-version <= "7"}
   ["pkgconfig"] {os-distribution = "rhel" & os-version <= "7"}
   ["system:pkgconf"] {os = "win32" & os-distribution = "cygwinports"}
 ]
@@ -100,8 +101,8 @@ pin-depends: [
     "https://github.com/mirage/bigarray-compat/archive/v1.0.0.tar.gz"
   ]
   [
-    "bigstringaf.0.7.0"
-    "https://github.com/inhabitedtype/bigstringaf/archive/0.7.0.tar.gz"
+    "bigstringaf.0.8.0"
+    "https://github.com/inhabitedtype/bigstringaf/archive/0.8.0.tar.gz"
   ]
   [
     "bos.0.2.0+dune"
@@ -160,8 +161,8 @@ pin-depends: [
     "https://github.com/ocaml-ppx/ocaml-syntax-shims/releases/download/1.0.0/ocaml-syntax-shims-1.0.0.tbz"
   ]
   [
-    "ocaml-version.3.1.0"
-    "https://github.com/ocurrent/ocaml-version/releases/download/v3.1.0/ocaml-version-v3.1.0.tbz"
+    "ocaml-version.3.2.0"
+    "https://github.com/ocurrent/ocaml-version/releases/download/v3.2.0/ocaml-version-v3.2.0.tbz"
   ]
   [
     "ocamlfind.1.8.1+dune"
@@ -372,9 +373,9 @@ x-opam-monorepo-duniverse-dirs: [
     ["md5=5104768c404ea92fd0a53a5b0f75cd50"]
   ]
   [
-    "https://github.com/inhabitedtype/bigstringaf/archive/0.7.0.tar.gz"
+    "https://github.com/inhabitedtype/bigstringaf/archive/0.8.0.tar.gz"
     "bigstringaf"
-    ["md5=3e47593200b77fa6dd2754d37e9cbe19"]
+    ["md5=c3b8164c1ed1eba9977dcd0c5490e61d"]
   ]
   [
     "https://github.com/janestreet/base/archive/v0.14.1.tar.gz"
@@ -498,11 +499,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/ocurrent/ocaml-version/releases/download/v3.1.0/ocaml-version-v3.1.0.tbz"
+    "https://github.com/ocurrent/ocaml-version/releases/download/v3.2.0/ocaml-version-v3.2.0.tbz"
     "ocaml-version"
     [
-      "sha256=ac7ba16a09d8f72212742f3936980fbfaebb698c7bbf625182af7d6b2c3cde5f"
-      "sha512=6e11823531f1f70b5d4b90ed9f2fcc22cbf83924a7a0ef40eebc4b80598db6acdaca97f1d379e01860513d5dda492f5bc4d944f0c1dd7df491b2f36a0f729bb5"
+      "sha256=a643dd6ef10676855916a1d45c69070587088673da00a2867a52251390bb7461"
+      "sha512=85e104d347c52e3be00e4e4d675e99dc43bf57aebd08c9934e70608a2657bfa5be1d8c9aa897dac4ce6e2da9175d3ac0eb22baa2851f4edc88063fede6b9b650"
     ]
   ]
   [
