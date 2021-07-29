@@ -86,31 +86,29 @@ let is_duniverse_repo (repo : OpamTypes.repository) =
   let url = OpamUrl.to_string repo.repo_url in
   String.equal url Config.duniverse_opam_repo
 
-let check_repo_config ~global_state ~switch_state =
-  OpamRepositoryState.with_ `Lock_none global_state (fun repo_state ->
-      let repos = current_repos ~repo_state ~switch_state in
-      let dune_universe_is_configured =
-        List.exists ~f:is_duniverse_repo repos
-      in
-      if not dune_universe_is_configured then
-        Logs.warn (fun l ->
-            l
-              "The dune-universe opam-repository isn't set in the current \
-               switch. It contains dune ports for some opam packages. Note \
-               that %a will fail if not all of the project dependencies use \
-               dune as their build system. Adding this opam-repository to your \
-               current switch will help with that. If you wish to do so, run \
-               the following command:\n\
-               opam repository add dune-universe %s"
-              Fmt.(styled `Bold string)
-              "opam monorepo lock" Config.duniverse_opam_repo))
+let check_repo_config ~switch_state ~repo_state =
+  let repos = current_repos ~repo_state ~switch_state in
+  let dune_universe_is_configured = List.exists ~f:is_duniverse_repo repos in
+  if not dune_universe_is_configured then
+    Logs.warn (fun l ->
+        l
+          "The dune-universe opam-repository isn't set in the current switch. \
+           It contains dune ports for some opam packages. Note that %a will \
+           fail if not all of the project dependencies use dune as their build \
+           system. Adding this opam-repository to your current switch will \
+           help with that. If you wish to do so, run the following command:\n\
+           opam repository add dune-universe %s"
+          Fmt.(styled `Bold string)
+          "opam monorepo lock" Config.duniverse_opam_repo)
 
 let calculate_opam ~build_only ~local_opam_files ~ocaml_version =
   OpamGlobalState.with_ `Lock_none (fun global_state ->
-      OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
-          check_repo_config ~global_state ~switch_state;
-          Opam_solve.calculate ~build_only ~local_opam_files ?ocaml_version
-            switch_state))
+      OpamRepositoryState.with_ `Lock_none global_state (fun repo_state ->
+          OpamSwitchState.with_ ~rt:repo_state `Lock_none global_state
+            (fun switch_state ->
+              check_repo_config ~switch_state ~repo_state;
+              Opam_solve.calculate ~build_only ~local_opam_files ?ocaml_version
+                switch_state)))
 
 let filter_local_packages ~explicit_list local_paths =
   let res =
