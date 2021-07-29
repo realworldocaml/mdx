@@ -1,5 +1,7 @@
-let plural fmt l =
-  Fmt.using (function _ :: _ :: _ -> "s" | _ -> "") Fmt.string fmt l
+let plural_int fmt =
+  Fmt.using (fun n -> if n > 1 then "s" else "") Fmt.string fmt
+
+let plural fmt l = Fmt.using List.length plural_int fmt l
 
 module Styled = struct
   let header = Fmt.(styled `Blue (const string "==> "))
@@ -11,8 +13,6 @@ module Styled = struct
   let branch = Fmt.(styled `Cyan string)
 
   let commit = branch
-
-  let package = Fmt.(styled `Yellow Types.Opam.pp_package)
 
   let package_name = Fmt.(styled `Yellow string)
 

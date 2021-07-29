@@ -184,6 +184,5 @@ let local_package_version opam_file ~explicit_version =
   match explicit_version with
   | Some v -> v
   | None ->
-      Option.value
-        (OpamFile.OPAM.version_opt opam_file)
-        ~default:Types.Opam.default_version
+      let default = OpamPackage.Version.of_string "zdev" in
+      Option.value (OpamFile.OPAM.version_opt opam_file) ~default

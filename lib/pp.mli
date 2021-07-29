@@ -1,5 +1,7 @@
 val plural : 'a list Fmt.t
 
+val plural_int : int Fmt.t
+
 module Styled : sig
   val header : unit Fmt.t
 
@@ -10,8 +12,6 @@ module Styled : sig
   val branch : string Fmt.t
 
   val commit : string Fmt.t
-
-  val package : Types.Opam.package Fmt.t
 
   val package_name : string Fmt.t
 

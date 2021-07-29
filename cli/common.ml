@@ -5,10 +5,6 @@ module Arg = struct
 
   let fpath = Cmdliner.Arg.conv ~docv:"PATH" (Fpath.of_string, Fpath.pp)
 
-  let package =
-    let parse s = Ok (Types.Opam.package_from_string s) in
-    Cmdliner.Arg.conv ~docv:"PACKAGE" (parse, Types.Opam.pp_package)
-
   let repo =
     let doc = "Path to Git repository to store vendored code in." in
     named
