@@ -11,7 +11,13 @@ let local_packages ~recurse ?filter t =
   else
     let traverse =
       if recurse then
-        `Sat (fun p -> Ok (not (List.mem (Fpath.to_string (Fpath.base p)) ~set:folder_blacklist)))
+        `Sat
+          (fun p ->
+            Ok
+              (not
+                 (List.mem
+                    (Fpath.to_string (Fpath.base p))
+                    ~set:folder_blacklist)))
       else `Sat (fun p -> Ok (Fpath.equal p t))
     in
     let accept_name =
@@ -32,8 +38,9 @@ let local_packages ~recurse ?filter t =
     |> Result.map_error ~f:(fun (_, a, b) ->
            `Msg
              (Printf.sprintf
-                "Conflicting definitions for the same package have been found:\n- %s\n- %s"
-                (Fpath.to_string a) (Fpath.to_string b)))
+                "Conflicting definitions for the same package have been found:\n\
+                 - %s\n\
+                 - %s" (Fpath.to_string a) (Fpath.to_string b)))
 
 let dune_project t = Fpath.(t / "dune-project")
 
@@ -51,7 +58,9 @@ let lockfile ?local_packages:lp t =
     | Some lp -> Ok lp
     | None ->
         local_packages ~recurse:false t >>| fun lp ->
-        List.map ~f:(fun (name, _) -> { Types.Opam.name; version = None }) (String.Map.bindings lp)
+        List.map
+          ~f:(fun (name, _) -> { Types.Opam.name; version = None })
+          (String.Map.bindings lp)
   in
   local_packages >>= fun pkgs ->
   match pkgs with

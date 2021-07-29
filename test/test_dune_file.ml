@@ -4,14 +4,19 @@ module Lang = struct
       let test_name = Printf.sprintf "Lang.parse_version: %s" version in
       let test_fun () =
         let actual = Duniverse_lib.Dune_file.Lang.parse_version version in
-        Alcotest.(check (result (pair int int) Testable.r_msg)) test_name expected actual
+        Alcotest.(check (result (pair int int) Testable.r_msg))
+          test_name expected actual
       in
       (test_name, `Quick, test_fun)
     in
     [
       make_test ~version:"1.6" ~expected:(Ok (1, 6)) ();
-      make_test ~version:"1.x" ~expected:(Error (`Msg "Invalid dune lang version: 1.x")) ();
-      make_test ~version:"ver" ~expected:(Error (`Msg "Invalid dune lang version: ver")) ();
+      make_test ~version:"1.x"
+        ~expected:(Error (`Msg "Invalid dune lang version: 1.x"))
+        ();
+      make_test ~version:"ver"
+        ~expected:(Error (`Msg "Invalid dune lang version: ver"))
+        ();
     ]
 
   let parse_stanza =
@@ -19,7 +24,8 @@ module Lang = struct
       let test_name = Printf.sprintf "Lang.parse_stanza: %s" stanza in
       let test_fun () =
         let actual = Duniverse_lib.Dune_file.Lang.parse_stanza stanza in
-        Alcotest.(check (result (pair int int) Testable.r_msg)) test_name expected actual
+        Alcotest.(check (result (pair int int) Testable.r_msg))
+          test_name expected actual
       in
       (test_name, `Quick, test_fun)
     in
@@ -49,4 +55,5 @@ module Lang = struct
     ]
 end
 
-let suite = ("Dune_file", Lang.parse_version @ Lang.parse_stanza @ Lang.is_stanza)
+let suite =
+  ("Dune_file", Lang.parse_version @ Lang.parse_stanza @ Lang.is_stanza)

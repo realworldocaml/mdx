@@ -51,7 +51,12 @@ module Repo : sig
   val pp : 'ref Fmt.t -> 'ref t Fmt.t
 
   module Package : sig
-    type t = { opam : Opam.t; dev_repo : string; url : unresolved Url.t; hashes : OpamHash.t list }
+    type t = {
+      opam : Opam.t;
+      dev_repo : string;
+      url : unresolved Url.t;
+      hashes : OpamHash.t list;
+    }
 
     val equal : t -> t -> bool
 
@@ -81,7 +86,8 @@ val from_package_summaries :
     It filters out virtual packages and packages with unknown dev-repo.  *)
 
 val resolve :
-  resolve_ref:(repo:string -> ref:unresolved -> (resolved, Rresult.R.msg) result) ->
+  resolve_ref:
+    (repo:string -> ref:unresolved -> (resolved, Rresult.R.msg) result) ->
   unresolved Repo.t list ->
   (t, Rresult.R.msg) result
 (** Apply the given [resolve_ref] function to bind each source repo to a specific commit

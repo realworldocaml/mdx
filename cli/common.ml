@@ -14,24 +14,31 @@ module Arg = struct
     named
       (fun x -> `Repo x)
       Cmdliner.Arg.(
-        value & opt fpath (Fpath.v (Sys.getcwd ())) & info [ "r"; "repo" ] ~docv:"TARGET_REPO" ~doc)
+        value
+        & opt fpath (Fpath.v (Sys.getcwd ()))
+        & info [ "r"; "repo" ] ~docv:"TARGET_REPO" ~doc)
 
   let yes =
     let doc = "Do not prompt for confirmation and always assume yes" in
-    named (fun x -> `Yes x) Cmdliner.Arg.(value & flag & info [ "y"; "yes" ] ~doc)
+    named
+      (fun x -> `Yes x)
+      Cmdliner.Arg.(value & flag & info [ "y"; "yes" ] ~doc)
 
-  let non_empty_list_opt = Cmdliner.Term.pure (function [] -> None | l -> Some l)
+  let non_empty_list_opt =
+    Cmdliner.Term.pure (function [] -> None | l -> Some l)
 
   let duniverse_repos =
     let open Cmdliner in
     let docv = "REPOSITORIES" in
     let doc =
-      "The list of $(docv) from your duniverse to process. If none is provided, all will be \
-       processed."
+      "The list of $(docv) from your duniverse to process. If none is \
+       provided, all will be processed."
     in
     named
       (fun x -> `Duniverse_repos x)
-      Term.(non_empty_list_opt $ Arg.(value & pos_all string [] & info ~doc ~docv []))
+      Term.(
+        non_empty_list_opt
+        $ Arg.(value & pos_all string [] & info ~doc ~docv []))
 
   let thread_safe_reporter reporter =
     let lock = Mutex.create () in
@@ -66,7 +73,8 @@ end
 module Logs = struct
   let app ?src f =
     Logs.app ?src (fun l ->
-        f (fun ?header ?tags fmt -> l ?header ?tags ("%a" ^^ fmt) Duniverse_lib.Pp.Styled.header ()))
+        f (fun ?header ?tags fmt ->
+            l ?header ?tags ("%a" ^^ fmt) Duniverse_lib.Pp.Styled.header ()))
 end
 
 (** Filters the duniverse according to the CLI provided list of repos *)
@@ -74,7 +82,9 @@ let filter_duniverse ~to_consider (duniverse : Duniverse.t) =
   match to_consider with
   | None -> Ok duniverse
   | Some to_consider -> (
-      let repos_map = String.Map.of_list_map_exn duniverse ~f:(fun src -> (src.dir, src)) in
+      let repos_map =
+        String.Map.of_list_map_exn duniverse ~f:(fun src -> (src.dir, src))
+      in
       let unmatched, found =
         List.partition_map to_consider ~f:(fun asked ->
             match String.Map.find repos_map asked with
@@ -85,6 +95,7 @@ let filter_duniverse ~to_consider (duniverse : Duniverse.t) =
       | [] -> Ok found
       | _ ->
           let sep fmt () = Fmt.pf fmt " " in
-          Rresult.R.error_msgf "The following repos are not in your duniverse: %a"
+          Rresult.R.error_msgf
+            "The following repos are not in your duniverse: %a"
             Fmt.(list ~sep string)
             unmatched)

@@ -8,8 +8,10 @@ let test_repo_name =
     (test_name, `Quick, test_fun)
   in
   [
-    make_test ~dev_repo:"git://github.com/ocamllabs/opam-monorepo" ~expected:"opam-monorepo" ();
-    make_test ~dev_repo:"git://github.com/ocamllabs/opam-monorepo.git" ~expected:"opam-monorepo" ();
+    make_test ~dev_repo:"git://github.com/ocamllabs/opam-monorepo"
+      ~expected:"opam-monorepo" ();
+    make_test ~dev_repo:"git://github.com/ocamllabs/opam-monorepo.git"
+      ~expected:"opam-monorepo" ();
     make_test ~dev_repo:"git+https://github.com/ocamllabs/opam-monorepo.git"
       ~expected:"opam-monorepo" ();
   ]

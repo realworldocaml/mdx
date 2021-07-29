@@ -19,11 +19,15 @@ module List = struct
   let map ~f l =
     let rec aux acc = function
       | [] -> Ok (List.rev acc)
-      | hd :: tl -> ( match f hd with Ok hd' -> aux (hd' :: acc) tl | Error err -> Error err)
+      | hd :: tl -> (
+          match f hd with
+          | Ok hd' -> aux (hd' :: acc) tl
+          | Error err -> Error err)
     in
     aux [] l
 
-  let rec iter ~f l = match l with [] -> Ok () | hd :: tl -> f hd >>= fun () -> iter ~f tl
+  let rec iter ~f l =
+    match l with [] -> Ok () | hd :: tl -> f hd >>= fun () -> iter ~f tl
 
   let all =
     let rec loop acc = function
@@ -33,5 +37,7 @@ module List = struct
     fun l -> loop [] l
 
   let rec fold_left t ~f ~init =
-    match t with [] -> Ok init | x :: xs -> f init x >>= fun init -> fold_left xs ~f ~init
+    match t with
+    | [] -> Ok init
+    | x :: xs -> f init x >>= fun init -> fold_left xs ~f ~init
 end

@@ -27,7 +27,8 @@ let base_packages =
     "ocaml-variants";
   ]
 
-let duniverse_opam_repo = "git+https://github.com/dune-universe/opam-overlays.git"
+let duniverse_opam_repo =
+  "git+https://github.com/dune-universe/opam-overlays.git"
 
 let dune_get = Fpath.v "dune-get"
 

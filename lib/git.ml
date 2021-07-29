@@ -8,9 +8,13 @@ module Ls_remote = struct
   let parse_output_line s =
     match String.extract_blank_separated_words s with
     | [ commit; ref ] -> Ok (commit, ref)
-    | _ -> Error (`Msg (Printf.sprintf "Invalid git ls-remote output line: %S" s))
+    | _ ->
+        Error (`Msg (Printf.sprintf "Invalid git ls-remote output line: %S" s))
 
-  type search_result = { maybe_packed : string option; not_packed : string option }
+  type search_result = {
+    maybe_packed : string option;
+    not_packed : string option;
+  }
 
   let interpret_search_result sr =
     match sr with
@@ -22,8 +26,10 @@ module Ls_remote = struct
   let search_ref target lines =
     let target_not_packed = target ^ non_packed_suffix in
     let f acc (commit, full_ref) =
-      if String.equal full_ref target then { acc with maybe_packed = Some commit }
-      else if String.equal full_ref target_not_packed then { acc with not_packed = Some commit }
+      if String.equal full_ref target then
+        { acc with maybe_packed = Some commit }
+      else if String.equal full_ref target_not_packed then
+        { acc with not_packed = Some commit }
       else acc
     in
     List.fold_left ~f ~init:{ maybe_packed = None; not_packed = None } lines
@@ -33,7 +39,8 @@ module Ls_remote = struct
     match output_lines with
     | [ "" ] -> Error `No_such_ref
     | _ -> (
-        Result.List.map ~f:parse_output_line output_lines >>= fun parsed_lines ->
+        Result.List.map ~f:parse_output_line output_lines
+        >>= fun parsed_lines ->
         let search prefix =
           let result = search_ref (prefix ^ ref) parsed_lines in
           interpret_search_result result
@@ -54,7 +61,8 @@ module Ls_remote = struct
          ~none:
            (`Msg
              (Printf.sprintf
-                "Invalid `git ls-remote --symref` output. Failed to extract branch from ref `%s`."
+                "Invalid `git ls-remote --symref` output. Failed to extract \
+                 branch from ref `%s`."
                 branch_ref))
 
   let branch_of_symref ~symref output_lines =
@@ -62,7 +70,10 @@ module Ls_remote = struct
     | [] -> Error `Not_a_symref
     | [ ref ] -> extract_branch ref
     | _ ->
-        Error (`Msg "Invalid `git ls-remote --symref` output. Too many lines starting by `ref:`.")
+        Error
+          (`Msg
+            "Invalid `git ls-remote --symref` output. Too many lines starting \
+             by `ref:`.")
 end
 
 module Ref = struct
@@ -79,5 +90,6 @@ module Ref = struct
   let equal_resolved r r' = equal r.t r'.t && String.equal r.commit r'.commit
 
   let pp_resolved fmt resolved =
-    Format.fprintf fmt "@[<hov 2>{ t = %a;@ commit = %s }@]" pp resolved.t resolved.commit
+    Format.fprintf fmt "@[<hov 2>{ t = %a;@ commit = %s }@]" pp resolved.t
+      resolved.commit
 end

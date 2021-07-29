@@ -24,7 +24,8 @@ module Arg : sig
   (** CLI flag to skip any prompt and perform actions straight away. The value of this flag
       must be passed to [Prompt.confirm]. *)
 
-  val duniverse_repos : [ `Duniverse_repos of string list option ] Cmdliner.Term.t
+  val duniverse_repos :
+    [ `Duniverse_repos of string list option ] Cmdliner.Term.t
   (** CLI arguments consisting of the list of source deps repo to process. If [None],
       the whole duniverse should be processed. If [Some l] then [l] is non empty. *)
 
@@ -37,6 +38,8 @@ module Arg : sig
 end
 
 val filter_duniverse :
-  to_consider:string list option -> Duniverse.t -> (Duniverse.t, Rresult.R.msg) result
+  to_consider:string list option ->
+  Duniverse.t ->
+  (Duniverse.t, Rresult.R.msg) result
 (** Filters the duniverse according to the CLI provided list of repos or returns an error
     if some of the provided packages don't match any of the duniverse repositories. *)

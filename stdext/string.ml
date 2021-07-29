@@ -20,7 +20,9 @@ let rec check_prefix s ~prefix len i =
   i = len || (s.[i] = prefix.[i] && check_prefix s ~prefix len (i + 1))
 
 let rec check_suffix s ~suffix suffix_len offset i =
-  i = suffix_len || (s.[offset + i] = suffix.[i] && check_suffix s ~suffix suffix_len offset (i + 1))
+  i = suffix_len
+  || s.[offset + i] = suffix.[i]
+     && check_suffix s ~suffix suffix_len offset (i + 1)
 
 let is_prefix s ~prefix =
   let len = length s in
@@ -40,7 +42,8 @@ let drop_prefix s ~prefix =
 
 let drop_suffix s ~suffix =
   if is_suffix s ~suffix then
-    if length s = length suffix then Some s else Some (sub s ~pos:0 ~len:(length s - length suffix))
+    if length s = length suffix then Some s
+    else Some (sub s ~pos:0 ~len:(length s - length suffix))
   else None
 
 let index = index_opt
@@ -50,11 +53,13 @@ let rindex = rindex_opt
 let lsplit2 s ~on =
   match index s on with
   | None -> None
-  | Some i -> Some (sub s ~pos:0 ~len:i, sub s ~pos:(i + 1) ~len:(length s - i - 1))
+  | Some i ->
+      Some (sub s ~pos:0 ~len:i, sub s ~pos:(i + 1) ~len:(length s - i - 1))
 
 let rsplit2 s ~on =
   match rindex s on with
   | None -> None
-  | Some i -> Some (sub s ~pos:0 ~len:i, sub s ~pos:(i + 1) ~len:(length s - i - 1))
+  | Some i ->
+      Some (sub s ~pos:0 ~len:i, sub s ~pos:(i + 1) ~len:(length s - i - 1))
 
 module Map = Map.Make (String)
