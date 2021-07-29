@@ -8,6 +8,9 @@
 
 ### Fixed
 
+- Improve `lock` performance (about 2x faster) by loading the repository state
+  only once (#188, @emillon)
+
 ### Removed
 
 ### Security
