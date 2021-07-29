@@ -9,9 +9,6 @@ module Raw : sig
 
   val duniverse_dune_content : string list
   (** The content of the duniverse/dune file as a list of lines *)
-
-  val duniverse_minimum_lang : string
-  (** The lang stanza setting the dune language to the minimum version required by duniverse *)
 end
 
 module Lang : sig
@@ -24,13 +21,18 @@ module Lang : sig
   val duniverse_minimum_version : version
   (** The minimum dune lang version required by duniverse *)
 
-  val parse_version : string -> (version, Rresult.R.msg) result
+  val from_content : string -> (version option, [> `Msg of string ]) result
+  (** Extract the lang version from the content of the entire dune-project *)
 
-  val parse_stanza : string -> (version, Rresult.R.msg) result
-  (** Parse the given lang stanza and return the dune language version *)
+  val update : version:version -> string -> string
+  (** Update the content of the entire dune-project, setting the lang version
+      to [version].
+      Return the string unmodified if there was previously no lang stanza. *)
 
-  val is_stanza : string -> bool
-  (** Tells whether the given dune-project file line is a lang stanza *)
+  val append : version:version -> string -> string
+  (** Append a lang stanza, using the given version to the dune-project
+      content.
+      Assume there is no lang stanza. *)
 end
 
 module Project : sig

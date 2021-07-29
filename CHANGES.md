@@ -15,6 +15,9 @@
 - Improve `lock` performance (about 2x faster) by loading the repository state
   only once (#188, @emillon)
 
+- Fix a bug where the dune-project parsing in the `pull` command would fail
+  if it used CRLF for new lines. (#191, @NathanReb)
+
 ### Removed
 
 ### Security

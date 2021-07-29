@@ -3,39 +3,77 @@ open Import
 module Lang = struct
   type version = int * int
 
+  let pp_version fmt (major, minor) = Format.fprintf fmt "%d.%d" major minor
+
+  let version_to_string version = Format.asprintf "%a" pp_version version
+
+  let stanza_regexp =
+    let open Re in
+    seq
+      [
+        bol;
+        char '(';
+        rep blank;
+        str "lang";
+        rep1 blank;
+        str "dune";
+        rep1 blank;
+        group (rep1 digit);
+        char '.';
+        group (rep1 digit);
+        rep blank;
+        char ')';
+        rep blank;
+        opt (char '\r');
+        eol;
+      ]
+
+  let from_match group =
+    let major_str = Re.Group.get group 1 in
+    let minor_str = Re.Group.get group 2 in
+    match (int_of_string_opt major_str, int_of_string_opt minor_str) with
+    | Some major, Some minor -> Ok (major, minor)
+    | _ ->
+        Printf.ksprintf
+          (fun msg -> Error (`Msg msg))
+          "Invalid dune lang version: %s.%s" major_str minor_str
+
+  let from_content content =
+    let open Result.O in
+    let cregexp = Re.compile stanza_regexp in
+    match Re.all cregexp content with
+    | [] -> Ok None
+    | [ group ] -> from_match group >>= fun version -> Ok (Some version)
+    | _ ->
+        Printf.ksprintf
+          (fun msg -> Error (`Msg msg))
+          "Invalid dune-project file: Multiple lang stanzas"
+
+  let update_stanza ~version group =
+    let new_ver = version_to_string version in
+    let old_ver =
+      Printf.sprintf "%s.%s" (Re.Group.get group 1) (Re.Group.get group 2)
+    in
+    let stanza = Re.Group.get group 0 in
+    Base.String.substr_replace_first ~pattern:old_ver ~with_:new_ver stanza
+
+  let update ~version content =
+    let cregexp = Re.compile stanza_regexp in
+    Re.replace ~all:false cregexp ~f:(update_stanza ~version) content
+
+  let stanza version = Format.asprintf "(lang dune %a)" pp_version version
+
+  let append ~version content =
+    let contains_crlf = Base.String.is_substring ~substring:"\r\n" content in
+    let newline = if contains_crlf then "\r\n" else "\n" in
+    stanza version ^ newline ^ content
+
   let compare_version (major, minor) (major', minor') =
     match Int.compare major major' with
     | 0 -> Int.compare minor minor'
     | _ as ord -> ord
 
-  let pp_version fmt (major, minor) = Format.fprintf fmt "%d.%d" major minor
-
-  let parse_version s =
-    let err () =
-      Error (`Msg (Printf.sprintf "Invalid dune lang version: %s" s))
-    in
-    match String.split_on_char ~sep:'.' s with
-    | [ major; minor ] -> (
-        match (int_of_string_opt major, int_of_string_opt minor) with
-        | Some major, Some minor -> Ok (major, minor)
-        | _ -> err ())
-    | _ -> err ()
-
-  let parse_stanza s =
-    let content =
-      let open Option.O in
-      String.drop_prefix ~prefix:"(" s >>= String.drop_suffix ~suffix:")"
-      >>| fun content -> String.split_on_char ~sep:' ' content
-    in
-    match content with
-    | Some [ "lang"; "dune"; version ] -> parse_version version
-    | _ -> Error (`Msg (Printf.sprintf "Invalid lang stanza: %s" s))
-
-  let is_stanza s = String.is_prefix ~prefix:"(lang " s
-
   let duniverse_minimum_version = (1, 11)
-
-  let stanza version = Format.asprintf "(lang dune %a)" pp_version version
 end
 
 module Raw = struct
@@ -65,8 +103,6 @@ module Raw = struct
       "";
       vendored_dirs "*";
     ]
-
-  let duniverse_minimum_lang = Lang.stanza Lang.duniverse_minimum_version
 end
 
 module Project = struct
