@@ -63,7 +63,7 @@ module Lang = struct
 
   let stanza version = Format.asprintf "(lang dune %a)" pp_version version
 
-  let append ~version content =
+  let prepend ~version content =
     let contains_crlf = Base.String.is_substring ~substring:"\r\n" content in
     let newline = if contains_crlf then "\r\n" else "\n" in
     stanza version ^ newline ^ content

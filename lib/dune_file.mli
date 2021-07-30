@@ -29,8 +29,8 @@ module Lang : sig
       to [version].
       Return the string unmodified if there was previously no lang stanza. *)
 
-  val append : version:version -> string -> string
-  (** Append a lang stanza, using the given version to the dune-project
+  val prepend : version:version -> string -> string
+  (** Prepend a lang stanza, using the given version to the dune-project
       content.
       Assume there is no lang stanza. *)
 end

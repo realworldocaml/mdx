@@ -29,7 +29,7 @@ let suggest_setting_version ~yes ~dune_project_path ~content =
   Common.Logs.app (fun l ->
       l "Your dune-project file doesn't specify a dune language version");
   if should_update_lang ~yes () then (
-    let updated = Dune_file.Lang.append ~version:min_dune_ver content in
+    let updated = Dune_file.Lang.prepend ~version:min_dune_ver content in
     log_version_update ~dune_project_path;
     Bos.OS.File.write dune_project_path updated)
   else Ok ()

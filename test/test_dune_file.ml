@@ -53,11 +53,11 @@ module Lang = struct
         ~content:"(lang dune 1.2)\r\n(name my-project)\r\n" ();
     ]
 
-  let append =
+  let prepend =
     let make_test ~name ~version ~content ~expected () =
-      let test_name = Printf.sprintf "Lang.append: %s" name in
+      let test_name = Printf.sprintf "Lang.prepend: %s" name in
       let test_fun () =
-        let actual = Duniverse_lib.Dune_file.Lang.append ~version content in
+        let actual = Duniverse_lib.Dune_file.Lang.prepend ~version content in
         Alcotest.(check string) test_name expected actual
       in
       (test_name, `Quick, test_fun)
@@ -72,4 +72,4 @@ module Lang = struct
 end
 
 let suite =
-  ("Dune_file", List.concat [ Lang.from_content; Lang.update; Lang.append ])
+  ("Dune_file", List.concat [ Lang.from_content; Lang.update; Lang.prepend ])
