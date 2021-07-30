@@ -9,24 +9,25 @@ module Lang = struct
 
   let stanza_regexp =
     let open Re in
-    seq
-      [
-        bol;
-        char '(';
-        rep blank;
-        str "lang";
-        rep1 blank;
-        str "dune";
-        rep1 blank;
-        group (rep1 digit);
-        char '.';
-        group (rep1 digit);
-        rep blank;
-        char ')';
-        rep blank;
-        opt (char '\r');
-        eol;
-      ]
+    compile
+      (seq
+         [
+           bol;
+           char '(';
+           rep blank;
+           str "lang";
+           rep1 blank;
+           str "dune";
+           rep1 blank;
+           group (rep1 digit);
+           char '.';
+           group (rep1 digit);
+           rep blank;
+           char ')';
+           rep blank;
+           opt (char '\r');
+           eol;
+         ])
 
   let from_match group =
     let major_str = Re.Group.get group 1 in
@@ -40,8 +41,7 @@ module Lang = struct
 
   let from_content content =
     let open Result.O in
-    let cregexp = Re.compile stanza_regexp in
-    match Re.all cregexp content with
+    match Re.all stanza_regexp content with
     | [] -> Ok None
     | [ group ] -> from_match group >>= fun version -> Ok (Some version)
     | _ ->
@@ -58,8 +58,7 @@ module Lang = struct
     Base.String.substr_replace_first ~pattern:old_ver ~with_:new_ver stanza
 
   let update ~version content =
-    let cregexp = Re.compile stanza_regexp in
-    Re.replace ~all:false cregexp ~f:(update_stanza ~version) content
+    Re.replace ~all:false stanza_regexp ~f:(update_stanza ~version) content
 
   let stanza version = Format.asprintf "(lang dune %a)" pp_version version
 
