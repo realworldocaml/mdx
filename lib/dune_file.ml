@@ -1,4 +1,4 @@
-open Import
+open! Import
 
 module Lang = struct
   type version = int * int
@@ -12,7 +12,7 @@ module Lang = struct
     compile
       (seq
          [
-           bol;
+           bos;
            char '(';
            rep blank;
            str "lang";
@@ -37,17 +37,19 @@ module Lang = struct
     | _ ->
         Printf.ksprintf
           (fun msg -> Error (`Msg msg))
-          "Invalid dune lang version: %s.%s" major_str minor_str
+          "Invalid dune-project file: invalid lang version %s.%s" major_str
+          minor_str
 
   let from_content content =
-    let open Result.O in
     match Re.all stanza_regexp content with
-    | [] -> Ok None
-    | [ group ] -> from_match group >>= fun version -> Ok (Some version)
+    | [ group ] -> from_match group
     | _ ->
+        (* We match on [bos], meaning the only possible case here is the empty
+           list *)
         Printf.ksprintf
           (fun msg -> Error (`Msg msg))
-          "Invalid dune-project file: Multiple lang stanzas"
+          "Invalid dune-project file: It does not start with a valid lang \
+           stanza"
 
   let update_stanza ~version group =
     let new_ver = version_to_string version in
@@ -59,13 +61,6 @@ module Lang = struct
 
   let update ~version content =
     Re.replace ~all:false stanza_regexp ~f:(update_stanza ~version) content
-
-  let stanza version = Format.asprintf "(lang dune %a)" pp_version version
-
-  let prepend ~version content =
-    let contains_crlf = Base.String.is_substring ~substring:"\r\n" content in
-    let newline = if contains_crlf then "\r\n" else "\n" in
-    stanza version ^ newline ^ content
 
   let compare_version (major, minor) (major', minor') =
     match Int.compare major major' with

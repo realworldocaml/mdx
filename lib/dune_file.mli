@@ -21,18 +21,13 @@ module Lang : sig
   val duniverse_minimum_version : version
   (** The minimum dune lang version required by duniverse *)
 
-  val from_content : string -> (version option, [> `Msg of string ]) result
+  val from_content : string -> (version, [> `Msg of string ]) result
   (** Extract the lang version from the content of the entire dune-project *)
 
   val update : version:version -> string -> string
   (** Update the content of the entire dune-project, setting the lang version
       to [version].
       Return the string unmodified if there was previously no lang stanza. *)
-
-  val prepend : version:version -> string -> string
-  (** Prepend a lang stanza, using the given version to the dune-project
-      content.
-      Assume there is no lang stanza. *)
 end
 
 module Project : sig

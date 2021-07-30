@@ -18,6 +18,10 @@
 - Fix a bug where the dune-project parsing in the `pull` command would fail
   if it used CRLF for new lines. (#191, @NathanReb)
 
+- Simply warn instead of exiting when the dune-project file can't be parsed
+  by `pull` as it only use it to suggest updating the lang version for
+  convenience (#191, @NathanReb)
+
 ### Removed
 
 ### Security

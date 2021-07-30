@@ -25,15 +25,6 @@ let suggest_updating_version ~yes ~version ~dune_project_path ~content =
     Bos.OS.File.write dune_project_path updated)
   else Ok ()
 
-let suggest_setting_version ~yes ~dune_project_path ~content =
-  Common.Logs.app (fun l ->
-      l "Your dune-project file doesn't specify a dune language version");
-  if should_update_lang ~yes () then (
-    let updated = Dune_file.Lang.prepend ~version:min_dune_ver content in
-    log_version_update ~dune_project_path;
-    Bos.OS.File.write dune_project_path updated)
-  else Ok ()
-
 let check_dune_lang_version ~yes ~repo =
   let open Result.O in
   let dune_project_path = Fpath.(repo / "dune-project") in
@@ -42,10 +33,11 @@ let check_dune_lang_version ~yes ~repo =
   Bos.OS.File.exists dune_project_path >>= fun found_dune_project ->
   if found_dune_project then
     Bos.OS.File.read dune_project_path >>= fun content ->
-    Dune_file.Lang.from_content content >>= fun version ->
-    match version with
-    | None -> suggest_setting_version ~yes ~dune_project_path ~content
-    | Some version -> (
+    match Dune_file.Lang.from_content content with
+    | Error (`Msg msg) ->
+        Logs.warn (fun l -> l "%s" msg);
+        Ok ()
+    | Ok version -> (
         let compared =
           Dune_file.Lang.(compare_version version duniverse_minimum_version)
         in
