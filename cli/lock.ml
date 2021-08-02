@@ -78,7 +78,8 @@ let resolve_ref deps =
   in
   Duniverse.resolve ~resolve_ref deps
 
-let current_repos ~repo_state ~switch_state =
+let current_repos ~switch_state =
+  let repo_state = switch_state.OpamStateTypes.switch_repos in
   let switch_repos = OpamSwitchState.repos_list switch_state in
   List.map ~f:(OpamRepositoryState.get_repo repo_state) switch_repos
 
@@ -86,8 +87,8 @@ let is_duniverse_repo (repo : OpamTypes.repository) =
   let url = OpamUrl.to_string repo.repo_url in
   String.equal url Config.duniverse_opam_repo
 
-let check_repo_config ~switch_state ~repo_state =
-  let repos = current_repos ~repo_state ~switch_state in
+let check_repo_config ~switch_state =
+  let repos = current_repos ~switch_state in
   let dune_universe_is_configured = List.exists ~f:is_duniverse_repo repos in
   if not dune_universe_is_configured then
     Logs.warn (fun l ->
@@ -103,12 +104,10 @@ let check_repo_config ~switch_state ~repo_state =
 
 let calculate_opam ~build_only ~local_opam_files ~ocaml_version =
   OpamGlobalState.with_ `Lock_none (fun global_state ->
-      OpamRepositoryState.with_ `Lock_none global_state (fun repo_state ->
-          OpamSwitchState.with_ ~rt:repo_state `Lock_none global_state
-            (fun switch_state ->
-              check_repo_config ~switch_state ~repo_state;
-              Opam_solve.calculate ~build_only ~local_opam_files ?ocaml_version
-                switch_state)))
+      OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
+          check_repo_config ~switch_state;
+          Opam_solve.calculate ~build_only ~local_opam_files ?ocaml_version
+            switch_state))
 
 let filter_local_packages ~explicit_list local_paths =
   let res =
