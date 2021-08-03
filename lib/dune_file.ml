@@ -35,8 +35,7 @@ module Lang = struct
     match (int_of_string_opt major_str, int_of_string_opt minor_str) with
     | Some major, Some minor -> Ok (major, minor)
     | _ ->
-        Printf.ksprintf
-          (fun msg -> Error (`Msg msg))
+        Rresult.R.error_msgf
           "Invalid dune-project file: invalid lang version %s.%s" major_str
           minor_str
 
@@ -46,8 +45,7 @@ module Lang = struct
     | _ ->
         (* We match on [bos], meaning the only possible case here is the empty
            list *)
-        Printf.ksprintf
-          (fun msg -> Error (`Msg msg))
+        Rresult.R.error_msg
           "Invalid dune-project file: It does not start with a valid lang \
            stanza"
 
