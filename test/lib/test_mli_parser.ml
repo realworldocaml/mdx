@@ -11,7 +11,7 @@ let mli =
 
     {[List.map (fun x -> x * x) [1; 2; 3]]}
 
-    {[
+    {@ocaml [
       # List.map (fun x -> x * x) [(1 + 9); 2; 3]
       - : int list = [100; 4; 9]
       # List.map (fun x -> x * x) [1; 2; 3]
@@ -20,7 +20,7 @@ let mli =
 *)
 val foo : string
 
-(** {[1 + 1 = 3]} *)
+(** {@ocaml [1 + 1 = 3]} *)
 val bar : string
 |}
 
@@ -53,7 +53,7 @@ let test_parse_mli =
  Block {loc: File "_none_", line 9; section: None; labels: [];
         header: Some ocaml;
         contents: ["List.map (fun x -> x * x) [1; 2; 3]"]; value: OCaml};
- Text "]}"; Text "\n\n    "; Text "{[";
+ Text "]}"; Text "\n\n    "; Text "{@"; Text "ocaml"; Text "[";
  Block {loc: File "_none_", lines 11-16; section: None; labels: [];
         header: Some ocaml;
         contents: ["# List.map (fun x -> x * x) [(1 + 9); 2; 3]";
@@ -61,7 +61,8 @@ let test_parse_mli =
                    "# List.map (fun x -> x * x) [1; 2; 3]";
                    "- : int list = [1; 4; 9]"];
         value: Toplevel};
- Text "    ]}"; Text "\n*)\nval foo : string\n\n(** "; Text "{[";
+ Text "    ]}"; Text "\n*)\nval foo : string\n\n(** "; Text "{@";
+ Text "ocaml"; Text "[";
  Block {loc: File "_none_", line 20; section: None; labels: [];
         header: Some ocaml; contents: ["1 + 1 = 3"]; value: OCaml};
  Text "]}";|x})
