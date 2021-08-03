@@ -2,11 +2,6 @@ open Import
 
 let min_dune_ver = Dune_file.Lang.duniverse_minimum_version
 
-let update_lang ~content =
-  List.map content ~f:(fun line ->
-      if Dune_file.Lang.is_stanza line then Dune_file.Raw.duniverse_minimum_lang
-      else line)
-
 let should_update_lang ~yes () =
   Prompt.confirm
     ~question:(fun l -> l "Should I update your dune-project?")
@@ -25,18 +20,9 @@ let suggest_updating_version ~yes ~version ~dune_project_path ~content =
   Common.Logs.app (fun l ->
       l "Duniverse requires version %a or above" pp_required min_dune_ver);
   if should_update_lang ~yes () then (
-    let updated = update_lang ~content @ [ "" ] in
+    let updated = Dune_file.Lang.update ~version:min_dune_ver content in
     log_version_update ~dune_project_path;
-    Bos.OS.File.write_lines dune_project_path updated)
-  else Ok ()
-
-let suggest_setting_version ~yes ~dune_project_path ~content =
-  Common.Logs.app (fun l ->
-      l "Your dune-project file doesn't specify a dune language version");
-  if should_update_lang ~yes () then (
-    let updated = Dune_file.Raw.duniverse_minimum_lang :: content in
-    log_version_update ~dune_project_path;
-    Persist.write_lines_hum dune_project_path updated)
+    Bos.OS.File.write dune_project_path updated)
   else Ok ()
 
 let check_dune_lang_version ~yes ~repo =
@@ -46,12 +32,12 @@ let check_dune_lang_version ~yes ~repo =
       l "Looking for dune-project file in %a" Pp.Styled.path dune_project_path);
   Bos.OS.File.exists dune_project_path >>= fun found_dune_project ->
   if found_dune_project then
-    Bos.OS.File.read_lines dune_project_path >>= fun content ->
-    let lang_stanza = List.find_opt ~f:Dune_file.Lang.is_stanza content in
-    match lang_stanza with
-    | None -> suggest_setting_version ~yes ~dune_project_path ~content
-    | Some s -> (
-        Dune_file.Lang.parse_stanza s >>= fun version ->
+    Bos.OS.File.read dune_project_path >>= fun content ->
+    match Dune_file.Lang.from_content content with
+    | Error (`Msg msg) ->
+        Logs.warn (fun l -> l "%s" msg);
+        Ok ()
+    | Ok version -> (
         let compared =
           Dune_file.Lang.(compare_version version duniverse_minimum_version)
         in
