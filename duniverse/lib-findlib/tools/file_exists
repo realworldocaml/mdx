@@ -1,5 +1,0 @@
-#! /bin/sh
-
-# Approximation of: test -e $1
-
-test -d "$1" -o -f "$1"

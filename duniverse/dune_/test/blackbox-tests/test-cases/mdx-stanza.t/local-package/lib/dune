@@ -1,4 +1,0 @@
-(library
- (name public_lib)
- (public_name pkg.public-lib)
- (modules public_lib))

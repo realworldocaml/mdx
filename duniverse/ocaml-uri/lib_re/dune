@@ -1,5 +1,0 @@
-(library
- (name uri_re)
- (public_name uri-re)
- (wrapped false)
- (libraries re.posix stringext))

@@ -1,5 +1,0 @@
-(library
- (name vlib_native_only)
- (public_name vlib.nativeonly)
- (virtual_modules virt_module)
- (modes native))
