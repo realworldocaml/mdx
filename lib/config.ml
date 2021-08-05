@@ -47,3 +47,5 @@ let ocaml_src_dir = Fpath.(bootstrap_src_dir / "ocaml")
 let dune_src_dir = Fpath.(bootstrap_src_dir / "dune")
 
 let dune_latest_tag = "2.6.0" (* TODO get from opam metadata *)
+
+let lockfile_ext = ".opam.locked"
