@@ -13,9 +13,7 @@ module Ocf = Ocamlformat_rpc_lib
 
 let log = Format.printf
 
-let supported_versions = ["v1"]
-
-type state = Uninitialized | Running of Ocf.V1.Client.t | Errored
+type state = Uninitialized | Running of Ocf.Client.t | Errored
 
 let state : state ref = ref Uninitialized
 
@@ -27,9 +25,9 @@ let start () =
       let prog = Fpath.to_string cmd_path in
       let input, output = Unix.open_process_args prog argv in
       let pid = Unix.process_pid (input, output) in
-      let client = Ocf.V1.Client.mk ~pid input output in
+      let client = Ocf.Client.mk ~pid input output in
       state := Running client ;
-      Ocf.V1.Client.config ["profile", "janestreet"] client >>| fun () ->
+      Ocf.Client.config ["profile", "janestreet"] client >>| fun () ->
       client
     with
   | exception _ ->
@@ -53,9 +51,9 @@ let () =
   | Error `No_process -> exit 1
   | Ok client -> (
       let rec loop () =
-        let cmd = Ocf.V1.Command.read_input stdin in
-        let out = Ocf.V1.Client.query cmd client in
-        Ocf.V1.Command.output stdout out ;
+        let cmd = Ocf.Command.read_input stdin in
+        let out = Ocf.Client.query cmd client in
+        Ocf.Command.output stdout out ;
         match out with
         | `Halt -> ()
         | _ -> loop ()

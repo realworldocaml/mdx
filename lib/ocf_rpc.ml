@@ -4,9 +4,7 @@ module Ocf = Ocamlformat_rpc_lib
 module Result = Util.Result
 open Result.Infix
 
-let supported_versions = [ "v1" ]
-
-type state = Uninitialized | Running of Ocf.client | Errored
+type state = Uninitialized | Running of Ocf.Client.t | Errored
 
 let state : state ref = ref Uninitialized
 
@@ -23,14 +21,12 @@ let rpc_path () =
         env_var
 
 let start () =
-  Result.map_error ~f:err @@ rpc_path () >>= fun (cmd_name, cmd_path) ->
+  Result.map_error ~f:err @@ rpc_path () >>| fun (cmd_name, cmd_path) ->
   let argv = [| cmd_name |] in
   let prog = Fpath.to_string cmd_path in
   let input, output = Unix.open_process_args prog argv in
   let pid = Unix.process_pid (input, output) in
-  Result.map_error ~f:err
-  @@ Ocf.pick_client ~pid input output supported_versions
-  >>| fun client ->
+  let client = Ocf.Client.mk ~pid input output in
   state := Running client;
   client
 
@@ -47,7 +43,7 @@ let try_format_as_list ?(toplevel = false) l cl =
   in
   let whole = Astring.String.concat ~sep:"\n" l in
   if toplevel then
-    match Ocf.format whole cl with
+    match Ocf.Client.format whole cl with
     | exception _ -> l
     | Error _ -> l
     | Ok fmted -> (
@@ -58,7 +54,7 @@ let try_format_as_list ?(toplevel = false) l cl =
     match Astring.String.cuts ~sep:";;" whole with
     | [] -> []
     | [ x ] -> (
-        match Ocf.format x cl with
+        match Ocf.Client.format x cl with
         | exception _ -> l
         | Error _ -> l
         | Ok fmted -> (
@@ -72,7 +68,7 @@ let try_format_as_list ?(toplevel = false) l cl =
             (fun phrase ->
               if Astring.String.(is_empty (trim phrase)) then []
               else
-                match Ocf.format phrase cl with
+                match Ocf.Client.format phrase cl with
                 | exception _ ->
                     Astring.String.cuts ~sep:"\n" ~empty:true
                       (add_semisemi phrase)
@@ -93,15 +89,16 @@ let get_client () =
   match !state with
   | Uninitialized -> start ()
   | Running cl ->
-      let i, _ = Unix.waitpid [ WNOHANG ] (Ocf.pid cl) in
+      let i, _ = Unix.waitpid [ WNOHANG ] (Ocf.Client.pid cl) in
       if i = 0 then Ok cl else start ()
   | Errored -> Error `No_process
 
 let halt () =
-  match get_client () >>= Ocf.halt with (exception _) | Error _ | Ok () -> ()
+  match get_client () >>= Ocf.Client.halt with
+  | (exception _) | Error _ | Ok () -> ()
 
 let try_config x =
-  match get_client () >>= Ocf.config x with
+  match get_client () >>= Ocf.Client.config x with
   | (exception _) | Error _ | Ok () -> ()
 
 let try_format_as_list ?toplevel x =
