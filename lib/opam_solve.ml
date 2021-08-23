@@ -133,9 +133,9 @@ let calculate_raw ~build_only ~allow_jbuilder ~ocaml_version ~local_packages
 
 let get_opam_info ~pin_depends ~switch_state pkg =
   let opam_file =
-    if OpamPackage.Name.Map.mem pkg.OpamPackage.name pin_depends then
-      snd (OpamPackage.Name.Map.find pkg.OpamPackage.name pin_depends)
-    else OpamSwitchState.opam switch_state pkg
+    match OpamPackage.Name.Map.find_opt pkg.OpamPackage.name pin_depends with
+    | Some (_version, opam_file) -> opam_file
+    | None -> OpamSwitchState.opam switch_state pkg
   in
   Opam.Package_summary.from_opam ~pkg opam_file
 
