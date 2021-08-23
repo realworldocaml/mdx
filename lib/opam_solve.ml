@@ -100,17 +100,27 @@ let depend_on_compiler_variants local_packages =
       Opam.depends_on_compiler_variants depends)
     local_packages
 
+exception Pinned_local_package
+
+let fixed_packages ~local_packages ~pin_depends =
+  try
+    Ok
+      (OpamPackage.Name.Map.union
+         (fun _local _pin -> raise Pinned_local_package)
+         local_packages pin_depends)
+  with Pinned_local_package ->
+    Rresult.R.error_msg
+      "You have a locally defined package in a pin-depends field of another \
+       locally defined package"
+
 let calculate_raw ~build_only ~allow_jbuilder ~ocaml_version ~local_packages
     ~pin_depends switch_state =
+  let open Rresult.R.Infix in
   let local_packages_names = OpamPackage.Name.Map.keys local_packages in
   let names_set = OpamPackage.Name.Set.of_list local_packages_names in
   let test = if build_only then OpamPackage.Name.Set.empty else names_set in
   let constraints = constraints ~ocaml_version in
-  let fixed_packages =
-    OpamPackage.Name.Map.union
-      (fun _local pin -> pin)
-      local_packages pin_depends
-  in
+  fixed_packages ~local_packages ~pin_depends >>= fun fixed_packages ->
   let context =
     Switch_and_local_packages_context.create ~test ~allow_jbuilder ~constraints
       ~fixed_packages switch_state
