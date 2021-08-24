@@ -173,6 +173,7 @@ let root_pin_depends local_opam_files =
     (fun _pkg (_version, opam_file) acc ->
       OpamFile.OPAM.pin_depends opam_file @ acc)
     local_opam_files []
+  |> Pin_depends.sort_uniq
 
 let pull_pin_depends ~global_state
     (pin_depends : (OpamPackage.t * OpamUrl.t) list) =
@@ -203,7 +204,8 @@ let pull_pin_depends ~global_state
     |> Result.List.all >>| OpamPackage.Name.Map.of_list
 
 let get_pin_depends ~global_state local_opam_files =
-  let root_pin_depends = root_pin_depends local_opam_files in
+  let open Rresult.R.Infix in
+  root_pin_depends local_opam_files >>= fun root_pin_depends ->
   pull_pin_depends ~global_state root_pin_depends
 
 let calculate_opam ~build_only ~allow_jbuilder ~local_opam_files ~ocaml_version

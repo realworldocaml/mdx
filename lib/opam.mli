@@ -42,6 +42,8 @@ module Pp : sig
   val package : OpamPackage.t Fmt.t
 
   val hash : OpamHash.t Fmt.t
+
+  val url : OpamUrl.t Fmt.t
 end
 
 val depends_on_dune : allow_jbuilder:bool -> OpamTypes.filtered_formula -> bool
