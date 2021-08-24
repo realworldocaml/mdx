@@ -180,9 +180,6 @@ let pull_pin_depends ~global_state
   if List.is_empty pin_depends then Ok OpamPackage.Name.Map.empty
   else
     let pins_tmp_dir = Fpath.v "/tmp/opam-monorepo/pins/" in
-    let cache_dir =
-      OpamRepositoryPath.download_cache global_state.OpamStateTypes.root
-    in
     Logs.debug (fun l ->
         l "Pulling pin depends: %a"
           Fmt.(list ~sep:(unit " ") Fmt.(styled `Yellow string))
@@ -190,21 +187,16 @@ let pull_pin_depends ~global_state
     let open Result.O in
     let command (pkg, url) =
       let label = OpamPackage.to_string pkg in
-      let out_dir = Fpath.(pins_tmp_dir / label) in
+      let dir = Fpath.(pins_tmp_dir / label) in
       let open OpamProcess.Job.Op in
-      OpamRepository.pull_tree ~cache_dir label
-        (OpamFilename.Dir.of_string (Fpath.to_string out_dir))
-        [] [ url ]
-      @@| function
-      | Result _ | Up_to_date _ ->
-          let opam_path =
-            Fpath.(out_dir / OpamPackage.name_to_string pkg |> add_ext "opam")
-          in
-          read_opam opam_path >>= fun opam ->
-          let opam = OpamFile.OPAM.with_url (OpamFile.URL.create url) opam in
-          Ok (OpamPackage.name pkg, (OpamPackage.version pkg, opam))
-      | Not_available (_, long_msg) ->
-          Error (`Msg (Printf.sprintf "Failed to pull %s: %s" label long_msg))
+      Opam.pull_tree ~url ~hashes:[] ~dir global_state @@| fun result ->
+      result >>= fun () ->
+      let opam_path =
+        Fpath.(dir / OpamPackage.name_to_string pkg |> add_ext "opam")
+      in
+      read_opam opam_path >>= fun opam ->
+      let opam = OpamFile.OPAM.with_url (OpamFile.URL.create url) opam in
+      Ok (OpamPackage.name pkg, (OpamPackage.version pkg, opam))
     in
     let jobs = !OpamStateConfig.r.dl_jobs in
     OpamParallel.map ~jobs ~command pin_depends
