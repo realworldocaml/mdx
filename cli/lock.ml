@@ -176,14 +176,14 @@ let root_pin_depends local_opam_files =
   |> Pin_depends.sort_uniq
 
 let pull_pin_depends ~global_state pin_depends =
+  let open Result.O in
   if List.is_empty pin_depends then Ok OpamPackage.Name.Map.empty
   else
-    let pins_tmp_dir = Fpath.v "/tmp/opam-monorepo/pins/" in
+    Bos.OS.Dir.tmp "opam-monorepo-pins-%s" >>= fun pins_tmp_dir ->
     Logs.debug (fun l ->
         l "Pulling pin depends: %a"
           Fmt.(list ~sep:(unit " ") Fmt.(styled `Yellow string))
           (List.map ~f:(fun (pkg, _) -> OpamPackage.to_string pkg) pin_depends));
-    let open Result.O in
     let by_urls = OpamUrl.Map.bindings (Pin_depends.group_by_url pin_depends) in
     let elm_from_pkg ~dir ~url pkg =
       let opam_path =
