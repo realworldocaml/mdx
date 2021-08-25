@@ -175,9 +175,7 @@ let root_pin_depends local_opam_files =
     local_opam_files []
   |> Pin_depends.sort_uniq
 
-let pull_pin_depends ~global_state
-    (pin_depends : (OpamPackage.t * OpamUrl.t) list) =
-  (* TODO: Group pin-depends with the same url. *)
+let pull_pin_depends ~global_state pin_depends =
   if List.is_empty pin_depends then Ok OpamPackage.Name.Map.empty
   else
     let pins_tmp_dir = Fpath.v "/tmp/opam-monorepo/pins/" in
@@ -186,12 +184,8 @@ let pull_pin_depends ~global_state
           Fmt.(list ~sep:(unit " ") Fmt.(styled `Yellow string))
           (List.map ~f:(fun (pkg, _) -> OpamPackage.to_string pkg) pin_depends));
     let open Result.O in
-    let command (pkg, url) =
-      let label = OpamPackage.to_string pkg in
-      let dir = Fpath.(pins_tmp_dir / label) in
-      let open OpamProcess.Job.Op in
-      Opam.pull_tree ~url ~hashes:[] ~dir global_state @@| fun result ->
-      result >>= fun () ->
+    let by_urls = OpamUrl.Map.bindings (Pin_depends.group_by_url pin_depends) in
+    let elm_from_pkg ~dir ~url pkg =
       let opam_path =
         Fpath.(dir / OpamPackage.name_to_string pkg |> add_ext "opam")
       in
@@ -199,14 +193,20 @@ let pull_pin_depends ~global_state
       let opam = OpamFile.OPAM.with_url (OpamFile.URL.create url) opam in
       Ok (OpamPackage.name pkg, (OpamPackage.version pkg, opam))
     in
+    let command (url, pkgs) =
+      let label = Filename.remove_extension (OpamUrl.basename url) in
+      let dir = Fpath.(pins_tmp_dir / label) in
+      let open OpamProcess.Job.Op in
+      Opam.pull_tree ~url ~hashes:[] ~dir global_state @@| fun result ->
+      result >>= fun () -> Result.List.map ~f:(elm_from_pkg ~dir ~url) pkgs
+    in
     let jobs = !OpamStateConfig.r.dl_jobs in
-    OpamParallel.map ~jobs ~command pin_depends
-    |> Result.List.all >>| OpamPackage.Name.Map.of_list
+    OpamParallel.map ~jobs ~command by_urls |> Result.List.all >>| fun elms ->
+    OpamPackage.Name.Map.of_list (List.concat elms)
 
 let get_pin_depends ~global_state local_opam_files =
   let open Rresult.R.Infix in
-  root_pin_depends local_opam_files >>= fun root_pin_depends ->
-  pull_pin_depends ~global_state root_pin_depends
+  root_pin_depends local_opam_files >>= pull_pin_depends ~global_state
 
 let calculate_opam ~build_only ~allow_jbuilder ~local_opam_files ~ocaml_version
     =

@@ -27,3 +27,9 @@ let sort_uniq pin_depends =
   in
   Result.List.fold_left ~init:OpamPackage.Name.Map.empty ~f:add pin_depends
   >>| fun map -> OpamPackage.Name.Map.values map
+
+let group_by_url t_list =
+  List.fold_left
+    ~f:(fun acc (pkg, url) ->
+      OpamUrl.Map.update url (fun l -> pkg :: l) [ pkg ] acc)
+    ~init:OpamUrl.Map.empty t_list
