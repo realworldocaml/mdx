@@ -10,6 +10,8 @@
 
 #### Fixed
 
+- Remove trailing whitespaces that were added to indent empty lines (#341, @gpetiot)
+
 #### Removed
 
 #### Security
