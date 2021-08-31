@@ -127,6 +127,13 @@ module Ls_remote = struct
         ~lines:[ "001   refs/heads/xabc" ]
         ~expected:(Error `No_such_ref)
         ();
+      make_test ~name:"Ref is a commit" ~ref:"000456"
+        ~lines:[ "00017f   refs/heads/master"; "000456   refs/heads/abc" ]
+        ~expected:(Ok "000456") ();
+      make_test ~name:"Ref looks like a commit"
+        ~ref:"7af9de1c4c468d8fd0f2870b98355803bcfd76f7"
+        ~lines:[ "000000   refs/heads/master" ]
+        ~expected:(Ok "7af9de1c4c468d8fd0f2870b98355803bcfd76f7") ();
     ]
 
   let test_branch_of_symref =
