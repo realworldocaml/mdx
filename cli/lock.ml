@@ -102,13 +102,6 @@ let check_repo_config ~switch_state =
           Fmt.(styled `Bold string)
           "opam monorepo lock" Config.duniverse_opam_repo)
 
-let calculate_opam ~build_only ~local_opam_files ~ocaml_version =
-  OpamGlobalState.with_ `Lock_none (fun global_state ->
-      OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
-          check_repo_config ~switch_state;
-          Opam_solve.calculate ~build_only ~local_opam_files ?ocaml_version
-            switch_state))
-
 let filter_local_packages ~explicit_list local_paths =
   let res =
     List.fold_left
@@ -174,6 +167,56 @@ let lockfile_path ~explicit_lockfile ~local_packages repo =
       Repo.lockfile
         ~local_packages:(List.map ~f:Package_argument.name local_packages)
         repo
+
+let root_pin_depends local_opam_files =
+  OpamPackage.Name.Map.fold
+    (fun _pkg (_version, opam_file) acc ->
+      OpamFile.OPAM.pin_depends opam_file @ acc)
+    local_opam_files []
+  |> Pin_depends.sort_uniq
+
+let pull_pin_depends ~global_state pin_depends =
+  let open Result.O in
+  if List.is_empty pin_depends then Ok OpamPackage.Name.Map.empty
+  else
+    Bos.OS.Dir.tmp "opam-monorepo-pins-%s" >>= fun pins_tmp_dir ->
+    Logs.debug (fun l ->
+        l "Pulling pin depends: %a"
+          Fmt.(list ~sep:(unit " ") Fmt.(styled `Yellow string))
+          (List.map ~f:(fun (pkg, _) -> OpamPackage.to_string pkg) pin_depends));
+    let by_urls = OpamUrl.Map.bindings (Pin_depends.group_by_url pin_depends) in
+    let elm_from_pkg ~dir ~url pkg =
+      let opam_path =
+        Fpath.(dir / OpamPackage.name_to_string pkg |> add_ext "opam")
+      in
+      read_opam opam_path >>= fun opam ->
+      let opam = OpamFile.OPAM.with_url (OpamFile.URL.create url) opam in
+      Ok (OpamPackage.name pkg, (OpamPackage.version pkg, opam))
+    in
+    let command (url, pkgs) =
+      let label = Filename.remove_extension (OpamUrl.basename url) in
+      let dir = Fpath.(pins_tmp_dir / label) in
+      let open OpamProcess.Job.Op in
+      Opam.pull_tree ~url ~hashes:[] ~dir global_state @@| fun result ->
+      result >>= fun () -> Result.List.map ~f:(elm_from_pkg ~dir ~url) pkgs
+    in
+    let jobs = !OpamStateConfig.r.dl_jobs in
+    OpamParallel.map ~jobs ~command by_urls |> Result.List.all >>| fun elms ->
+    OpamPackage.Name.Map.of_list (List.concat elms)
+
+let get_pin_depends ~global_state local_opam_files =
+  let open Rresult.R.Infix in
+  root_pin_depends local_opam_files >>= pull_pin_depends ~global_state
+
+let calculate_opam ~build_only ~allow_jbuilder ~local_opam_files ~ocaml_version
+    =
+  let open Rresult.R.Infix in
+  OpamGlobalState.with_ `Lock_none (fun global_state ->
+      OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
+          check_repo_config ~switch_state;
+          get_pin_depends ~global_state local_opam_files >>= fun pin_depends ->
+          Opam_solve.calculate ~build_only ~allow_jbuilder ~local_opam_files
+            ~pin_depends ?ocaml_version switch_state))
 
 let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only)
     (`Allow_jbuilder allow_jbuilder) (`Ocaml_version ocaml_version)

@@ -9,6 +9,9 @@
 - Add a `-l`/`--lockfile` command line option to explicitly set the lockfile
   to use or generate in `pull` or `lock` (#163, @NathanReb)
 
+- Honor `pin-depends` field in opam files. When present, these will be used by
+  the solver (#153, #159, #167, @rizo, @TheLortex, @NathanReb).
+
 ### Changed
 
 ### Deprecated

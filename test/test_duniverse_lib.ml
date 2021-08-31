@@ -7,5 +7,6 @@ let () =
       Test_git.suite;
       Test_opam.suite;
       Test_parallel.suite;
+      Test_pin_depends.suite;
       Test_uri_utils.suite;
     ]

@@ -6,7 +6,7 @@ module Switch_and_local_packages_context : sig
   val create :
     ?test:OpamPackage.Name.Set.t ->
     allow_jbuilder:bool ->
-    local_packages:
+    fixed_packages:
       (OpamPackage.Version.t * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     constraints:OpamFormula.version_constraint OpamTypes.name_map ->
     OpamStateTypes.unlocked OpamStateTypes.switch_state ->
@@ -14,7 +14,7 @@ module Switch_and_local_packages_context : sig
 end = struct
   type t = {
     switch_context : Opam_0install.Switch_context.t;
-    local_packages :
+    fixed_packages :
       (OpamPackage.Version.t * OpamFile.OPAM.t) OpamPackage.Name.Map.t;
     allow_jbuilder : bool;
   }
@@ -27,11 +27,11 @@ end = struct
     | Non_dune -> Fmt.pf fmt "Doesn't build with dune"
     | Switch_rejection r -> Opam_0install.Switch_context.pp_rejection fmt r
 
-  let create ?test ~allow_jbuilder ~local_packages ~constraints switch_state =
+  let create ?test ~allow_jbuilder ~fixed_packages ~constraints switch_state =
     let switch_context =
       Opam_0install.Switch_context.create ?test ~constraints switch_state
     in
-    { switch_context; local_packages; allow_jbuilder }
+    { switch_context; fixed_packages; allow_jbuilder }
 
   let is_valid_candidate ~allow_jbuilder ~name ~version opam_file =
     let pkg = OpamPackage.create name version in
@@ -57,8 +57,8 @@ end = struct
             else (version, Error Non_dune))
       versions
 
-  let candidates { switch_context; local_packages; allow_jbuilder } name =
-    match OpamPackage.Name.Map.find_opt name local_packages with
+  let candidates { switch_context; fixed_packages; allow_jbuilder } name =
+    match OpamPackage.Name.Map.find_opt name fixed_packages with
     | Some (version, opam_file) -> [ (version, Ok opam_file) ]
     | None ->
         Opam_0install.Switch_context.candidates switch_context name
@@ -100,15 +100,30 @@ let depend_on_compiler_variants local_packages =
       Opam.depends_on_compiler_variants depends)
     local_packages
 
+exception Pinned_local_package
+
+let fixed_packages ~local_packages ~pin_depends =
+  try
+    Ok
+      (OpamPackage.Name.Map.union
+         (fun _local _pin -> raise Pinned_local_package)
+         local_packages pin_depends)
+  with Pinned_local_package ->
+    Rresult.R.error_msg
+      "You have a locally defined package in a pin-depends field of another \
+       locally defined package"
+
 let calculate_raw ~build_only ~allow_jbuilder ~ocaml_version ~local_packages
-    switch_state =
+    ~pin_depends switch_state =
+  let open Rresult.R.Infix in
   let local_packages_names = OpamPackage.Name.Map.keys local_packages in
   let names_set = OpamPackage.Name.Set.of_list local_packages_names in
   let test = if build_only then OpamPackage.Name.Set.empty else names_set in
   let constraints = constraints ~ocaml_version in
+  fixed_packages ~local_packages ~pin_depends >>= fun fixed_packages ->
   let context =
     Switch_and_local_packages_context.create ~test ~allow_jbuilder ~constraints
-      ~local_packages switch_state
+      ~fixed_packages switch_state
   in
   let allow_compiler_variants = depend_on_compiler_variants local_packages in
   let request = request ~allow_compiler_variants local_packages_names in
@@ -126,17 +141,21 @@ let calculate_raw ~build_only ~allow_jbuilder ~ocaml_version ~local_packages
       in
       Ok deps
 
-let get_opam_info ~switch_state pkg =
-  let opam_file = OpamSwitchState.opam switch_state pkg in
+let get_opam_info ~pin_depends ~switch_state pkg =
+  let opam_file =
+    match OpamPackage.Name.Map.find_opt pkg.OpamPackage.name pin_depends with
+    | Some (_version, opam_file) -> opam_file
+    | None -> OpamSwitchState.opam switch_state pkg
+  in
   Opam.Package_summary.from_opam ~pkg opam_file
 
 (* TODO catch exceptions and turn to error *)
 
-let calculate ~build_only ~allow_jbuilder ~local_opam_files ?ocaml_version
-    switch_state =
+let calculate ~build_only ~allow_jbuilder ~local_opam_files ~pin_depends
+    ?ocaml_version switch_state =
   let open Rresult.R.Infix in
   calculate_raw ~build_only ~allow_jbuilder ~ocaml_version
-    ~local_packages:local_opam_files switch_state
+    ~local_packages:local_opam_files ~pin_depends switch_state
   >>= fun deps ->
   Logs.app (fun l ->
       l "%aFound %a opam dependencies for the root package%a." Pp.Styled.header
@@ -151,4 +170,4 @@ let calculate ~build_only ~allow_jbuilder ~local_opam_files ?ocaml_version
   Logs.app (fun l ->
       l "%aQuerying opam database for their metadata and Dune compatibility."
         Pp.Styled.header ());
-  Ok (List.map ~f:(get_opam_info ~switch_state) deps)
+  Ok (List.map ~f:(get_opam_info ~pin_depends ~switch_state) deps)
