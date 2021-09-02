@@ -8,6 +8,6 @@ This shell block contains an empty line within a padded block:
 This toplevel block contains an empty line within a padded block:
 
 ```ocaml
- # print_newline
+ # print_newline;;
 
 ```
