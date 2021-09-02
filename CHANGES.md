@@ -8,6 +8,8 @@
 
 #### Deprecated
 
+- Add a deprecation warning for toplevel blocks that are not terminated with `;;` (#342, @Leonidas-from-XIV)
+
 #### Fixed
 
 - Fix accidental redirect of stderr to stdout (#343, @Leonidas-from-XIV)
