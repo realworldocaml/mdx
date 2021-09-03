@@ -10,6 +10,8 @@
 
 #### Fixed
 
+- Fix accidental redirect of stderr to stdout (#343, @Leonidas-from-XIV)
+
 #### Removed
 
 #### Security
