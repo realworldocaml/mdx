@@ -27,12 +27,15 @@ let warn ?replacement s ~since =
 module Missing_double_semicolon = struct
   let missing_semicolon = ref false
 
-  let check_toplevel : Toplevel.t -> unit = function
-    | toplevel -> (
-        match List.rev toplevel.command with
-        | cmd :: _ when not @@ Astring.String.is_suffix ~affix:";;" cmd ->
-            missing_semicolon := true
-        | _ -> ())
+  let check_toplevel : Toplevel.t -> unit =
+   fun toplevel ->
+    match List.rev toplevel.command with
+    | cmd :: _ ->
+        let ends_with_semi =
+          cmd |> Astring.String.trim |> Astring.String.is_suffix ~affix:";;"
+        in
+        if not ends_with_semi then missing_semicolon := true
+    | [] -> ()
 
   let check_block block = List.iter check_toplevel block
 
