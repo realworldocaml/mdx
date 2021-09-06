@@ -10,6 +10,7 @@
 
 #### Fixed
 
+- Fix accidental redirect of stderr to stdout (#343, @Leonidas-from-XIV)
 - Remove trailing whitespaces that were added to indent empty lines (#341, @gpetiot)
 
 #### Removed
