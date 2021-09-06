@@ -115,7 +115,7 @@ let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
           | `Ellipsis -> Output.pp ~pad ppf `Ellipsis
           | `Output line ->
               let line = ansi_color_strip line in
-              Output.pp ~pad ppf (`Output line))
+              Output.pp ?syntax ~pad ppf (`Output line))
         output;
       Cram.pp_exit_code ~pad ppf n)
     tests;
