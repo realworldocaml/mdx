@@ -1,4 +1,4 @@
-## unreleased
+## 0.2.4
 
 ### Added
 
@@ -11,10 +11,6 @@
 
 - Honor `pin-depends` field in opam files. When present, these will be used by
   the solver (#153, #159, #167, @rizo, @TheLortex, @NathanReb).
-
-### Changed
-
-### Deprecated
 
 ### Fixed
 
@@ -37,10 +33,6 @@
   resolution when the ref is actually a commit pointed by a remote branch or 
   when it looks like a commit (hexadecimal characters only, at least 7 
   characters-long). (#195, fixes #127, @TheLortex)
-
-### Removed
-
-### Security
 
 ## 0.2.3
 
