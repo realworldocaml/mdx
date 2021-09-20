@@ -25,7 +25,7 @@ let init_opam () =
   OpamFormatConfig.init ();
   OpamCoreConfig.init ~safe_mode:true ();
   OpamRepositoryConfig.init ();
-  OpamStateConfig.init ()
+  OpamStateConfig.init ~root_dir:root ()
 
 let () =
   init_opam ();
