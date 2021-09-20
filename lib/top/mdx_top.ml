@@ -15,7 +15,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Mdx.Compat
 open Compat_top
 
 type directive = Directory of string | Load of string
@@ -39,7 +38,7 @@ let redirect ~f =
     read_up_to := pos;
     Buffer.add_channel buf ic len
   in
-  try_finally
+  Misc.try_finally
     (fun () -> f ~capture)
     ~always:(fun () ->
       close_in_noerr ic;
@@ -335,7 +334,7 @@ let protect_vars =
   fun vars ~f ->
     let backup = List.map (fun (V (r, _)) -> V (r, !r)) vars in
     set_vars vars;
-    try_finally f ~always:(fun () -> set_vars backup)
+    Misc.try_finally f ~always:(fun () -> set_vars backup)
 
 let capture_compiler_stuff ppf ~f =
   protect_vars [ V (Location.formatter_for_warnings, ppf) ] ~f

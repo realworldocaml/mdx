@@ -1,5 +1,3 @@
-val try_finally : always:(unit -> unit) -> (unit -> 'a) -> 'a
-
 val map_error_loc :
   f:(Location.t -> Location.t) -> Location.error -> Location.error
 
