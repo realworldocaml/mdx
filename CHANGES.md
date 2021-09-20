@@ -10,6 +10,9 @@
 
 #### Removed
 
+- Dropped compatibility with older OCaml versions. The minimal supported range
+  is 4.08 to 4.13 now (#345, @Leonidas-from-XIV)
+
 #### Security
 
 ### 1.11.0
