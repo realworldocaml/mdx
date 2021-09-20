@@ -8,6 +8,9 @@
 
 ### Fixed
 
+- Fix setting `OPAMROOT` to accept non-default paths (#197, #198,
+  @Leonidas-from-XIV)
+
 ### Removed
 
 ### Security
