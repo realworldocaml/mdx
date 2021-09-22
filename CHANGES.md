@@ -1,3 +1,20 @@
+## unreleased
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Fixed
+
+- Fix setting `OPAMROOT` to accept non-default paths (#197, #198,
+  @Leonidas-from-XIV)
+
+### Removed
+
+### Security
+
 ## 0.2.4
 
 ### Added
