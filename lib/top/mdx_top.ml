@@ -38,9 +38,9 @@ let redirect ~f =
     read_up_to := pos;
     Buffer.add_channel buf ic len
   in
-  Misc.try_finally
+  Fun.protect
     (fun () -> f ~capture)
-    ~always:(fun () ->
+    ~finally:(fun () ->
       close_in_noerr ic;
       Unix.close fd_out;
       Unix.dup2 stdout_backup Unix.stdout;
@@ -366,7 +366,7 @@ let protect_vars =
   fun vars ~f ->
     let backup = List.map (fun (V (r, _)) -> V (r, !r)) vars in
     set_vars vars;
-    Misc.try_finally f ~always:(fun () -> set_vars backup)
+    Fun.protect f ~finally:(fun () -> set_vars backup)
 
 let capture_compiler_stuff ppf ~f =
   protect_vars [ V (Location.formatter_for_warnings, ppf) ] ~f
