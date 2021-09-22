@@ -133,7 +133,7 @@ let parse_mli file_contents =
             (slice lines ~start:!cursor ~end_:code_block.location.start)
         in
         let column = code_block.location.start.column in
-        let contents = Compat.String.split_on_char '\n' code_block.contents in
+        let contents = String.split_on_char '\n' code_block.contents in
         let block =
           match
             Block.mk ~loc ~section:None ~labels:[] ~header:(Some OCaml)
@@ -162,7 +162,7 @@ let parse_mli file_contents =
   in
   if eof_is_beyond_location !cursor then
     let remainder = slice lines ~start:!cursor ~end_:eof in
-    if not (Compat.String.equal remainder "") then tokens @ [ Text remainder ]
+    if not (String.equal remainder "") then tokens @ [ Text remainder ]
     else tokens
   else tokens
 

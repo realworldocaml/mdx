@@ -15,7 +15,6 @@
  *)
 
 open Result
-open Compat
 open Util.Result.Infix
 
 module Header = struct
