@@ -78,6 +78,10 @@ module Lexbuf = struct
     | Parser.SEMISEMI -> lexbuf.Lexing.lex_last_action
     | _ -> assert false
 
+  let map_error_loc ~f (error : Location.error) =
+    let f_msg (msg : Location.msg) = { msg with loc = f msg.loc } in
+    { error with main = f_msg error.main; sub = List.map f_msg error.sub }
+
   let shift_location_error start =
     map_error_loc ~f:(shift_toplevel_location ~start)
 
@@ -104,6 +108,12 @@ module Phrase = struct
   let result t = t.parsed
 
   let start t = t.startpos
+
+  let error_of_exn exn =
+    match Location.error_of_exn exn with
+    | None -> None
+    | Some `Already_displayed -> None
+    | Some (`Ok error) -> Some error
 
   let parse lines =
     let contents = String.concat "\n" lines in
@@ -143,6 +153,13 @@ module Phrase = struct
     let lines = if ends_by_semi_semi lines then lines else lines @ [ ";;" ] in
     match parse lines with exception End_of_file -> None | t -> Some t
 
+  (** Returns the name of the toplevel directive or [None] if the given phrase
+    is not a directive *)
+  let top_directive_name (toplevel_phrase : Parsetree.toplevel_phrase) =
+    match toplevel_phrase with
+    | Ptop_def _ -> None
+    | Ptop_dir { pdir_name = { txt; _ }; _ } -> Some txt
+
   let is_findlib_directive =
     let findlib_directive = function
       | "require" | "use" | "camlp4o" | "camlp4r" | "thread" -> true
@@ -150,7 +167,7 @@ module Phrase = struct
     in
     function
     | { parsed = Ok toplevel_phrase; _ } -> (
-        match Compat_top.top_directive_name toplevel_phrase with
+        match top_directive_name toplevel_phrase with
         | Some dir -> findlib_directive dir
         | None -> false)
     | _ -> false
@@ -212,6 +229,11 @@ module Rewrite = struct
         | _ -> path)
     | _ -> path
 
+  let rec get_id_in_path = function
+    | Path.Pident id -> id
+    | Path.Pdot (p, _) -> get_id_in_path p
+    | Path.Papply (_, p) -> get_id_in_path p
+
   let is_persistent_value env longident =
     let is_persistent_path p = Ident.persistent (get_id_in_path p) in
     try is_persistent_path (fst (Compat_top.lookup_value longident env))
@@ -271,9 +293,19 @@ module Rewrite = struct
           Ptop_def pstr)
     | _ -> phrase
 
+  (** [top_directive require "pkg"] builds the AST for [#require "pkg"] *)
+  let top_directive_require pkg =
+    Parsetree.Ptop_dir
+      {
+        pdir_name = { txt = "require"; loc = Location.none };
+        pdir_arg =
+          Some { pdira_desc = Pdir_string pkg; pdira_loc = Location.none };
+        pdir_loc = Location.none;
+      }
+
   let preload verbose ppf =
     let require pkg =
-      let p = Compat_top.top_directive_require pkg in
+      let p = top_directive_require pkg in
       let _ = Toploop.execute_phrase verbose ppf p in
       ()
     in
@@ -428,11 +460,54 @@ let eval t cmd =
           |> List.concat
           |> fun x -> if !errors then Result.Error x else Result.Ok x))
 
+let add_directive ~name ~doc kind =
+  let directive =
+    match kind with
+    | `Bool f -> Toploop.Directive_bool f
+    | `Show_prim to_sig ->
+        let show_prim to_sig lid =
+          let env = !Toploop.toplevel_env in
+          let loc = Location.none in
+          try
+            let s =
+              match lid with
+              | Longident.Lident s -> s
+              | Longident.Ldot (_, s) -> s
+              | Longident.Lapply _ ->
+                  Format.printf "Invalid path %a@." Printtyp.longident lid;
+                  raise Exit
+            in
+            let id = Ident.create_persistent s in
+            let sg = to_sig env loc id lid in
+            Printtyp.wrap_printing_env ~error:false env (fun () ->
+                Format.printf "@[%a@]@." Printtyp.signature sg)
+          with
+          | Not_found -> Format.printf "@[Unknown element.@]@."
+          | Exit -> ()
+        in
+        Toploop.Directive_ident (show_prim to_sig)
+  in
+  Toploop.add_directive name directive { section = "Environment queries"; doc }
+
 let all_show_funs = ref []
 
 let reg_show_prim name to_sig doc =
   all_show_funs := to_sig :: !all_show_funs;
   add_directive ~name ~doc (`Show_prim to_sig)
+
+let sig_value id desc = Types.Sig_value (id, desc, Exported)
+
+let sig_type id desc = Types.Sig_type (id, desc, Trec_not, Exported)
+
+let sig_typext id ext = Types.Sig_typext (id, ext, Text_exception, Exported)
+
+let sig_module id md = Types.Sig_module (id, Mp_present, md, Trec_not, Exported)
+
+let sig_modtype id desc = Types.Sig_modtype (id, desc, Exported)
+
+let sig_class id desc = Types.Sig_class (id, desc, Trec_not, Exported)
+
+let sig_class_type id desc = Types.Sig_class_type (id, desc, Trec_not, Exported)
 
 let show_val () =
   reg_show_prim "show_val"
@@ -468,6 +543,31 @@ let show_exception () =
       in
       [ sig_typext id ext ])
     "Print the signature of the corresponding exception."
+
+let mty_path =
+  let open Types in
+  function
+  | Mty_alias path -> Some path
+  | Mty_ident _ | Mty_signature _ | Mty_functor _ -> None
+
+let map_sig_attributes ~f =
+  let open Types in
+  List.map (function
+    | Sig_module (id, mp, md, rs, visibility) ->
+        Sig_module
+          ( id,
+            mp,
+            { md with md_attributes = f md.md_attributes },
+            rs,
+            visibility )
+    | item -> item)
+
+let attribute ~name ~payload =
+  {
+    Parsetree.attr_name = name;
+    attr_payload = payload;
+    attr_loc = Location.none;
+  }
 
 let show_module () =
   let open Types in
@@ -631,6 +731,8 @@ let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates
   t
 
 let envs = Hashtbl.create 8
+
+let is_predef_or_global id = Ident.is_predef id || Ident.global id
 
 let rec save_summary acc s =
   let default_case summary = save_summary acc summary in
