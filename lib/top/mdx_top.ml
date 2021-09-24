@@ -636,35 +636,6 @@ let verbose t =
 let silent t =
   add_directive ~name:"silent" ~doc:"Be silent" (`Bool (fun x -> t.silent <- x))
 
-(* BLACK MAGIC: patch field of a module at runtime *)
-let monkey_patch (type a) (m : a) (type b) (prj : unit -> b) (v : b) =
-  let m = Obj.repr m in
-  let v = Obj.repr v in
-  let v' = Obj.repr (prj ()) in
-  if v' == v then ()
-  else
-    try
-      for i = 0 to Obj.size m - 1 do
-        if Obj.field m i == v' then (
-          Obj.set_field m i v;
-          if Obj.repr (prj ()) == v then raise Exit;
-          Obj.set_field m i v')
-      done;
-      invalid_arg "monkey_patch: field not found"
-    with Exit -> ()
-
-let patch_env () =
-  let module M = struct
-    module type T = module type of Env
-
-    let field () = Env.without_cmis
-
-    let replacement f x = f x
-
-    let () = monkey_patch (module Env : T) field replacement
-  end in
-  ()
-
 let protect f arg =
   try
     let _ = f arg in
@@ -703,7 +674,6 @@ let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates
   Mdx.Compat.init_path ();
   Toploop.toplevel_env := Compmisc.initial_env ();
   Sys.interactive := false;
-  patch_env ();
   List.iter
     (function
       | Directory path -> Topdirs.dir_directory path
