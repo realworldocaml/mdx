@@ -1,4 +1,0 @@
-PKG cmdliner uchar bytes
-S src
-S test
-B _build/**

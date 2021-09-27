@@ -1,3 +1,0 @@
-(library
- (libraries exe)
- (name foo))

@@ -1,1 +1,0 @@
-include Automaton_stack_intf.Automaton_stack

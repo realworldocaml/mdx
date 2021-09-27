@@ -1,8 +1,0 @@
-<?xml version="1.0" ?>
-<interface xmlns="http://zero-install.sourceforge.net/2004/injector/interface">
-  <name>Hello</name>
-  <summary>Hello</summary>
-  <replaced-by interface='http://localhost:8000/Hello'/>
-
-  <implementation version='0' id='.'/>
-</interface>
