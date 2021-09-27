@@ -1,12 +1,4 @@
 (library
  (name duniverse_cli)
- (libraries
-  duniverse_lib
-  fmt.cli
-  fmt.tty
-  logs.cli
-  logs.fmt
-  cmdliner
-  lwt.unix
-  dune-build-info
-  ocaml-version))
+ (libraries duniverse_lib fmt.cli fmt.tty logs.cli logs.fmt cmdliner lwt.unix
+   dune-build-info ocaml-version))
