@@ -1,3 +1,5 @@
+[![Build Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fci.ocamllabs.io%2Fbadge%2Focamllabs%2Fopam-monorepo%2Fmain&logo=ocaml)](https://ci.ocamllabs.io/github/ocamllabs/opam-monorepo)
+
 # opam-monorepo
 
 `opam-monorepo` is an opam plugin designed to assemble standalone dune workspaces
