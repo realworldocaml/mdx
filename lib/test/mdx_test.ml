@@ -321,6 +321,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
             Toplevel.of_lines ~syntax ~loc:t.loc t.contents
           in
           Deprecated.Missing_double_semicolon.check_block phrases;
+          let phrases = Deprecated.Missing_double_semicolon.fix phrases in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:(fun () ->
               assert (syntax <> Some Cram);
