@@ -37,7 +37,11 @@ val init :
   t
 (** [init ()] is a new configuration value. *)
 
-val eval : t -> string list -> (string list, string list) result
+val eval :
+  suppress:[ `Nothing | `Types | `Signatures ] ->
+  t ->
+  string list ->
+  (string list, string list) result
 (** [eval t p] evaluates the toplevel phrase [p] (possibly spawning on
     mulitple lines) with the configuration value [t]. *)
 

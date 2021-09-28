@@ -2,6 +2,8 @@
 
 #### Added
 
+- Allow suppressing throwback of type definitions (#284, @gpetiot)
+
 #### Changed
 
 #### Deprecated

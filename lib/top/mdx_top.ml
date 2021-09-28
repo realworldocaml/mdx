@@ -401,7 +401,24 @@ let cut_into_sentences l =
 
 let errors = ref false
 
-let eval t cmd =
+let filter_types = function
+  | (Outcometree.Osig_typext _ | Osig_type _), _ -> false
+  | _ -> true
+
+let filter_signatures = function
+  | ( ( Outcometree.Osig_class_type _ | Osig_typext _ | Osig_modtype _
+      | Osig_type _ ),
+      _ ) ->
+      false
+  | _ -> true
+
+let filter ~suppress signs =
+  match suppress with
+  | `Nothing -> signs
+  | `Types -> List.filter filter_types signs
+  | `Signatures -> List.filter filter_signatures signs
+
+let eval ~suppress t cmd =
   let buf = Buffer.create 1024 in
   let ppf = Format.formatter_of_out_channel stderr in
   errors := false;
@@ -416,13 +433,17 @@ let eval t cmd =
           lines := s :: !lines
     in
     let out_phrase' = !Oprint.out_phrase in
+    let print_phrase ppf p =
+      capture ();
+      out_phrase' ppf p;
+      capture ()
+    in
     let out_phrase ppf phr =
       match phr with
       | Outcometree.Ophr_exception _ -> out_phrase' ppf phr
-      | _ ->
-          capture ();
-          out_phrase' ppf phr;
-          capture ()
+      | Outcometree.Ophr_signature signs ->
+          print_phrase ppf (Outcometree.Ophr_signature (filter ~suppress signs))
+      | Outcometree.Ophr_eval _ -> print_phrase ppf phr
     in
     Oprint.out_phrase := out_phrase;
     let restore () = Oprint.out_phrase := out_phrase' in

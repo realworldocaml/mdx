@@ -120,10 +120,10 @@ let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
     tests;
   Block.pp_footer ?syntax ppf t
 
-let eval_test ?block ?root c cmd =
+let eval_test ?block ?root c cmd ~suppress =
   Log.debug (fun l -> l "eval_test %a" Fmt.(Dump.list (Fmt.fmt "%S")) cmd);
   let root = root_dir ?root ?block () in
-  with_dir root (fun () -> Mdx_top.eval c cmd)
+  with_dir root (fun () -> Mdx_top.eval c cmd ~suppress)
 
 let err_eval ~cmd lines =
   Fmt.epr "Got an error while evaluating:\n---\n%a\n---\n%a\n%!"
@@ -133,8 +133,8 @@ let err_eval ~cmd lines =
     lines;
   exit 1
 
-let eval_raw ?block ?root c cmd =
-  match eval_test ?block ?root c cmd with
+let eval_raw ?block ?root c cmd ~suppress =
+  match eval_test ?block ?root c cmd ~suppress with
   | Ok _ -> ()
   | Error e -> err_eval ~cmd e
 
@@ -146,7 +146,7 @@ let split_lines lines =
   in
   List.fold_left aux [] (List.rev lines)
 
-let eval_ocaml ~block ?syntax ?root c ppf cmd errors =
+let eval_ocaml ~block ?syntax ?root c ppf cmd errors ~suppress =
   let update ~errors = function
     | { Block.value = OCaml v; _ } as b ->
         { b with value = OCaml { v with errors } }
@@ -155,7 +155,7 @@ let eval_ocaml ~block ?syntax ?root c ppf cmd errors =
   in
   let contains_warnings = String.is_infix ~affix:"Warning" in
   let lines =
-    match eval_test ?root ~block c cmd with
+    match eval_test ?root ~block c cmd ~suppress with
     | Ok lines -> List.filter contains_warnings lines
     | Error lines -> lines
   in
@@ -177,11 +177,11 @@ let eval_ocaml ~block ?syntax ?root c ppf cmd errors =
 
 let lines = function Ok x | Error x -> x
 
-let run_toplevel_tests ?syntax ?root c ppf tests t =
+let run_toplevel_tests ?syntax ?root c ppf tests t ~suppress =
   Block.pp_header ?syntax ppf t;
   List.iter
     (fun (test : Toplevel.t) ->
-      let lines = lines (eval_test ?root ~block:t c test.command) in
+      let lines = lines (eval_test ?root ~block:t c test.command ~suppress) in
       let lines = split_lines lines in
       let output =
         let output = List.map output_from_line lines in
@@ -273,7 +273,7 @@ let preludes ~prelude ~prelude_str =
 
 let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
     ~verbose_findlib ~prelude ~prelude_str ~file ~section ~root ~force_output
-    ~output ~directives ~packages ~predicates =
+    ~output ~directives ~packages ~predicates ~suppress =
   Printexc.record_backtrace record_backtrace;
   let syntax =
     match syntax with Some syntax -> Some syntax | None -> Syntax.infer ~file
@@ -300,7 +300,8 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
           let det () =
             assert (syntax <> Some Cram);
             Mdx_top.in_env env (fun () ->
-                eval_ocaml ~block:t ?syntax ?root c ppf t.contents errors)
+                eval_ocaml ~block:t ?syntax ?root c ppf t.contents errors
+                  ~suppress)
           in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:det ~det
@@ -329,7 +330,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
                 (fun (phrase : Toplevel.t) ->
                   match
                     Mdx_top.in_env env (fun () ->
-                        eval_test ~block:t ?root c phrase.command)
+                        eval_test ~block:t ?root c phrase.command ~suppress)
                   with
                   | Ok _ -> ()
                   | Error e ->
@@ -340,7 +341,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
             ~det:(fun () ->
               assert (syntax <> Some Cram);
               Mdx_top.in_env env (fun () ->
-                  run_toplevel_tests ?syntax ?root c ppf phrases t)))
+                  run_toplevel_tests ?syntax ?root c ppf phrases t ~suppress)))
     else print_block ()
   in
   let gen_corrected file_contents items =
@@ -349,7 +350,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
     let buf = Buffer.create (String.length file_contents + 1024) in
     let ppf = Format.formatter_of_buffer buf in
     let envs = Document.envs items in
-    let eval lines () = eval_raw ?root c lines in
+    let eval lines () = eval_raw ?root c lines ~suppress in
     let eval_in_env lines env = Mdx_top.in_env env (eval lines) in
     List.iter
       (function

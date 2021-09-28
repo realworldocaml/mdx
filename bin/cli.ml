@@ -153,3 +153,32 @@ let setup =
   named
     (fun x -> `Setup x)
     Term.(const setup_log $ Fmt_cli.style_renderer () $ Logs_cli.level ())
+
+let suppressed_conv =
+  let sparse, sprint = Arg.string in
+  let parse s =
+    match sparse s with
+    | `Ok "nothing" -> Ok `Nothing
+    | `Ok "types" -> Ok `Types
+    | `Ok "signatures" -> Ok `Signatures
+    | `Ok _ -> Error (`Msg "invalid value for option --suppress")
+    | `Error msg -> Error (`Msg msg)
+  in
+  let print fmt = function
+    | `Nothing -> sprint fmt "nothing"
+    | `Types -> sprint fmt "types"
+    | `Signatures -> sprint fmt "signatures"
+  in
+  Arg.conv (parse, print)
+
+let suppress =
+  let doc =
+    "Suppress type definitions from being thrown back to the user after being \
+     declared as toplevel items. $(b,nothing) does not suppress anything, \
+     default behavior. $(b,types) suppresses the restatement of top-level \
+     type-definitions only. $(b,signatures) additionally suppresses include \
+     val and module declarations."
+  in
+  named
+    (fun x -> `Suppress x)
+    Arg.(value & opt suppressed_conv `Nothing & info ~doc [ "suppress" ])
