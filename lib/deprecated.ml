@@ -30,20 +30,13 @@ module Missing_double_semicolon = struct
   let ends_with_semi cmd =
     cmd |> Astring.String.trim |> Astring.String.is_suffix ~affix:";;"
 
-  let check_toplevel : Toplevel.t -> unit =
-   fun toplevel ->
-    match List.rev toplevel.command with
-    | cmd :: _ when not @@ ends_with_semi cmd -> missing_semicolon := true
-    | _ :: _ -> ()
-    | [] -> ()
-
-  let check_block block = List.iter check_toplevel block
-
   let fix_toplevel : Toplevel.t -> Toplevel.t =
    fun toplevel ->
     let rec fix_command = function
       | [] -> []
-      | [ cmd ] when not @@ ends_with_semi cmd -> [ Printf.sprintf "%s;;" cmd ]
+      | [ cmd ] when not @@ ends_with_semi cmd ->
+          missing_semicolon := true;
+          [ Printf.sprintf "%s;;" cmd ]
       | [ cmd ] -> [ cmd ]
       | x :: xs -> x :: fix_command xs
     in
