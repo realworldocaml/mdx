@@ -50,8 +50,6 @@ module Missing_double_semicolon = struct
         "Warning: OCaml toplevel block without trailing ;; detected in file \
          '%s'.\n\
          Non-semicolon terminated phrases are deprecated.\n\
-         MDX 2.x accepts them as input but will output them with ;; appended.\n\
-         In MDX 3.0 support for toplevel blocks without ;; will be removed \
-         completely.\n"
+         In MDX 3.0 support for toplevel blocks without ;; will be removed.\n"
         filename
 end
