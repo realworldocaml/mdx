@@ -107,9 +107,16 @@ Here is an examples of toplevel OCaml code:
 
 ### File sync
 `mdx` is also capable of including content from files in fenced code blocks
-using the label `file`. When an OCaml file is included it can be automatically
-sliced if it contains annotations such as `[@@@part "partName"]` and if the
-block has the label `part=partName`:
+using the label `file`. OCaml files can be sliced using named blocks:
+
+```ocaml
+(* $MDX part-begin=partName *)
+let meaning_of_life () =
+  print_endline "42"
+(* $MDX part-end *)
+```
+
+These can then be included in the document:
 
     <!-- $MDX file=sync_to_md.ml,part=partName -->
     ```ocaml
