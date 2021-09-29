@@ -2,6 +2,9 @@
 
 #### Added
 
+- Add trailing `;;` to the output of toplevel phrases that were missing it.
+  (#346, @Leonidas-from-XIV)
+
 #### Changed
 
 #### Deprecated

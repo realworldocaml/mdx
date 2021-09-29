@@ -286,7 +286,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
 
   let test_block ~ppf ~temp_file t =
     let print_block () = Block.pp ?syntax ppf t in
-    if Block.is_active ?section t then (
+    if Block.is_active ?section t then
       match Block.value t with
       | Raw _ -> print_block ()
       | Include { file_included; file_kind = Fk_ocaml { part_included } } ->
@@ -320,7 +320,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
             let syntax = Util.Option.value syntax ~default:Normal in
             Toplevel.of_lines ~syntax ~loc:t.loc t.contents
           in
-          Deprecated.Missing_double_semicolon.check_block phrases;
+          let phrases = Deprecated.Missing_double_semicolon.fix phrases in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:(fun () ->
               assert (syntax <> Some Cram);
@@ -340,7 +340,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
             ~det:(fun () ->
               assert (syntax <> Some Cram);
               Mdx_top.in_env env (fun () ->
-                  run_toplevel_tests ?syntax ?root c ppf phrases t)))
+                  run_toplevel_tests ?syntax ?root c ppf phrases t))
     else print_block ()
   in
   let gen_corrected file_contents items =
