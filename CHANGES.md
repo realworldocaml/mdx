@@ -16,6 +16,9 @@
 
 - Better errors for `opam-monorepo depext`, especially for non-interactive
   shells (#216, @samoht)
+- Properly detect all opam packages defined in the current repository, preventing it
+  from later pulling duplicates into the duniverse if they were part of the target packages
+  dependencies. (#203, @Leonidas-from-XIV)
 
 ### Removed
 

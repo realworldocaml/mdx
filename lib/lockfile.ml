@@ -97,11 +97,15 @@ module Version = struct
 end
 
 module Root_packages = struct
-  type t = string list
+  type t = OpamPackage.Name.Set.t
 
   let to_opam_value t =
     let open OpamParserTypes.FullPos in
-    let sorted = List.sort ~cmp:String.compare t in
+    let sorted =
+      t |> OpamPackage.Name.Set.elements
+      |> List.map ~f:OpamPackage.Name.to_string
+      |> List.sort ~cmp:String.compare
+    in
     let pelem =
       List
         (Pos.with_default_pos
@@ -110,14 +114,16 @@ module Root_packages = struct
     Pos.with_default_pos pelem
 
   let from_opam_value value =
+    let open Result.O in
     let open OpamParserTypes.FullPos in
     let elm_from_value { pelem; _ } =
       match pelem with
-      | String s -> Ok s
+      | String s -> Ok (OpamPackage.Name.of_string s)
       | _ -> value_errorf ~value "Expected a string"
     in
     match value.pelem with
-    | List { pelem; _ } -> Result.List.map ~f:elm_from_value pelem
+    | List { pelem; _ } ->
+        Result.List.map ~f:elm_from_value pelem >>| OpamPackage.Name.Set.of_list
     | _ -> value_errorf ~value "Expected a list"
 
   let field =
