@@ -1,0 +1,53 @@
+N0REP0
+### <pkg:foo.1>
+opam-version: "2.0"
+build: ["opam" "option" "jobs" "--safe" "--cli=2.1"]
+flags: compiler
+### <pkg:bar.1>
+opam-version: "2.0"
+build: ["opam" "option" "jobs" "--safe" "--cli=2.1"]
+### <pkg:baz.1>
+opam-version: "2.0"
+flags: compiler
+build: ["sh" "./prefix"]
+install: ["cp" "pref" "%{lib}%/prefix"]
+### <pkg:baz.1:prefix>
+opam var prefix --safe > pref
+### opam update
+
+<><> Updating package repositories ><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file://${BASEDIR}/REPO
+Now run 'opam upgrade' to apply any package updates.
+### # switch not undefined for opam calls in build, on build creation
+### opam switch create undef-prefix baz
+
+<><> Installing new switch packages <><><><><><><><><><><><><><><><><><><><><><>
+Switch invariant: ["baz"]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed baz.1
+Done.
+### cat $OPAMROOT/undef-prefix/lib/prefix
+${BASEDIR}/OPAM/undef-prefix
+### # No deadlock on concurent opam calls in build
+### opam switch create nohang foo bar | unordered
+
+<><> Installing new switch packages <><><><><><><><><><><><><><><><><><><><><><>
+Switch invariant: ["foo" "bar"]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed bar.1
+-> installed foo.1
+Done.
+### # switch propagation to opam calls in build
+### opam switch create undef-switch --empty
+### opam switch nohang
+### opam install baz --sw undef-switch
+The following actions will be performed:
+  - install baz 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed baz.1
+Done.
+### cat $OPAMROOT/undef-switch/lib/prefix
+${BASEDIR}/OPAM/undef-switch
