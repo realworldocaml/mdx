@@ -1,3 +1,0 @@
-(executable
- (name extract_args)
- (libraries str))
