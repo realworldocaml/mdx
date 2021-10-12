@@ -10,6 +10,8 @@
 
 - Fix setting `OPAMROOT` to accept non-default paths (#197, #198,
   @Leonidas-from-XIV)
+- Fix a bug where opam-monorepo would erase the opam cache by upgrading
+  opam-libs from `2.1~rc2` to `2.1` (#204, @NathanReb)
 
 ### Removed
 
