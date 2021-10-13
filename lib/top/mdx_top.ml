@@ -674,7 +674,7 @@ let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates
   Clflags.native_code := true;
   Clflags.real_paths := false;
   Opttoploop.set_paths ();
-  Jit.init_top ();
+  Ocaml_jit.Jit.init_top ();
   Mdx.Compat.init_path ();
   Opttoploop.toplevel_env := Compmisc.initial_env ();
   Sys.interactive := false;
