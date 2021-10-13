@@ -670,7 +670,7 @@ let in_words s =
   in
   split 0 0
 
-let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates () =
+let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates:_ () =
   Clflags.native_code := true;
   Clflags.real_paths := false;
   Opttoploop.set_paths ();
@@ -683,14 +683,8 @@ let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates
       | Directory path -> Opttopdirs.dir_directory path
       | Load path -> Opttopdirs.dir_load Format.err_formatter path)
     directives;
-  Opttopfind.don't_load_deeply packages;
-  Opttopfind.add_predicates predicates;
   (* [require] directive is overloaded to toggle the [errors] reference when
      an exception is raised. *)
-  Opttoploop.add_directive "require"
-    (Opttoploop.Directive_string
-       (fun s -> protect Opttopfind.load_deeply (in_words s)))
-    { Opttoploop.section = "Loading code"; doc = "Load an ocamlfind package" };
   let t = { verbose = v; silent = s; verbose_findlib } in
   show ();
   show_val ();
