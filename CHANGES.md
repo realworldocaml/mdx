@@ -8,6 +8,9 @@
 
 ### Fixed
 
+- Fix tool name in generated dune file so that it does not refer to the tool as
+  `duniverse` (#206, @emillon)
+
 ### Removed
 
 ### Security
