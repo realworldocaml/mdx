@@ -164,7 +164,7 @@ let git_default_branch ~remote () =
   | Ok branch -> Ok branch
   | Error `Not_a_symref ->
       R.error_msg
-        (Fmt.strf
+        (Fmt.str
            "unable to parse `git ls-remote --symref %s HEAD` output: not a \
             symref."
            remote)

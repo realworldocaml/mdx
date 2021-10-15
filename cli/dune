@@ -1,4 +1,4 @@
 (library
  (name duniverse_cli)
  (libraries duniverse_lib fmt.cli fmt.tty logs.cli logs.fmt cmdliner
-   dune-build-info ocaml-version))
+   dune-build-info ocaml-version opam-state))

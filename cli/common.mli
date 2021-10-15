@@ -44,3 +44,8 @@ val filter_duniverse :
   (Duniverse.t, Rresult.R.msg) result
 (** Filters the duniverse according to the CLI provided list of repos or returns an error
     if some of the provided packages don't match any of the duniverse repositories. *)
+
+val find_lockfile :
+  explicit_lockfile:Fpath.t option ->
+  Fpath.t ->
+  (Lockfile.t, Rresult.R.msg) result

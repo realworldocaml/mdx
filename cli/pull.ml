@@ -49,44 +49,10 @@ let check_dune_lang_version ~yes ~repo =
     Logs.debug (fun l -> l "No dune-project found");
     Ok ())
 
-let root_lockfiles repo =
-  let open Result.O in
-  Bos.OS.Dir.contents ~dotfiles:false repo >>| fun content ->
-  List.filter
-    ~f:(fun path ->
-      let is_file =
-        match Bos.OS.File.exists path with Ok b -> b | _ -> false
-      in
-      is_file && Fpath.has_ext Config.lockfile_ext path)
-    content
-
-let find_lockfile ~explicit_lockfile repo =
-  let open Result.O in
-  match explicit_lockfile with
-  | Some file -> Ok file
-  | None -> (
-      root_lockfiles repo >>= function
-      | [] ->
-          Rresult.R.error_msg
-            "No lockfile: try running `opam monorepo lock` first"
-      | [ file ] -> Ok file
-      | lockfile_paths ->
-          let sep = Fmt.(const char ' ') in
-          Rresult.R.error_msgf
-            "Found several lockfiles: %a\n\
-             Please pick one explicitly using the %a option"
-            (Fmt.list ~sep Pp.Styled.path)
-            lockfile_paths
-            Fmt.(styled `Bold string)
-            "--lockfile")
-
 let run (`Yes yes) (`Repo repo) (`Lockfile explicit_lockfile)
     (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
-  find_lockfile ~explicit_lockfile repo >>= fun lockfile_path ->
-  Common.Logs.app (fun l ->
-      l "Pulling lockfile %a" Pp.Styled.path lockfile_path);
-  Lockfile.load ~file:lockfile_path >>= fun lockfile ->
+  Common.find_lockfile ~explicit_lockfile repo >>= fun lockfile ->
   Lockfile.to_duniverse lockfile >>= function
   | [] ->
       Common.Logs.app (fun l ->

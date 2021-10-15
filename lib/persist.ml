@@ -23,7 +23,7 @@ let load_sexp label conv file =
   try Sexplib.Sexp.of_string b |> conv |> R.ok
   with exn ->
     R.error_msg
-      (Fmt.strf "Error parsing %a: %s" Fpath.pp file (Printexc.to_string exn))
+      (Fmt.str "Error parsing %a: %s" Fpath.pp file (Printexc.to_string exn))
 
 let save_sexp label conv file v =
   Logs.debug (fun l -> l "Writing file %a for %s" Fpath.pp file label);

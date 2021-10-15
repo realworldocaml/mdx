@@ -105,3 +105,40 @@ let filter_duniverse ~to_consider (duniverse : Duniverse.t) =
             "The following repos are not in your duniverse: %a"
             Fmt.(list ~sep string)
             unmatched)
+
+let root_lockfiles repo =
+  let open Result.O in
+  Bos.OS.Dir.contents ~dotfiles:false repo >>| fun content ->
+  List.filter
+    ~f:(fun path ->
+      let is_file =
+        match Bos.OS.File.exists path with Ok b -> b | _ -> false
+      in
+      is_file && Fpath.has_ext Config.lockfile_ext path)
+    content
+
+let find_lockfile_aux ~explicit_lockfile repo =
+  let open Result.O in
+  match explicit_lockfile with
+  | Some file -> Ok file
+  | None -> (
+      root_lockfiles repo >>= function
+      | [] ->
+          Rresult.R.error_msg
+            "No lockfile: try running `opam monorepo lock` first"
+      | [ file ] -> Ok file
+      | lockfile_paths ->
+          let sep = Fmt.(const char ' ') in
+          Rresult.R.error_msgf
+            "Found several lockfiles: %a\n\
+             Please pick one explicitly using the %a option"
+            (Fmt.list ~sep Pp.Styled.path)
+            lockfile_paths
+            Fmt.(styled `Bold string)
+            "--lockfile")
+
+let find_lockfile ~explicit_lockfile repo =
+  let open Result.O in
+  find_lockfile_aux ~explicit_lockfile repo >>= fun file ->
+  Logs.app (fun l -> l "Pulling lockfile %a" Pp.Styled.path file);
+  Lockfile.load ~file
