@@ -278,6 +278,8 @@ type t = {
   depexts : Depexts.t;
 }
 
+let depexts t = t.depexts
+
 let create ~root_packages ~package_summaries ~root_depexts ~duniverse () =
   let version = Version.current in
   let depends = Depends.from_package_summaries package_summaries in

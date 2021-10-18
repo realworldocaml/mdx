@@ -165,7 +165,7 @@ let calculate ~build_only ~allow_jbuilder ~local_opam_files ~pin_depends
         (OpamPackage.Name.Map.cardinal local_opam_files));
   Logs.info (fun l ->
       l "The dependencies are: %a"
-        Fmt.(list ~sep:(unit ",@ ") Opam.Pp.package)
+        Fmt.(list ~sep:(any ",@ ") Opam.Pp.package)
         deps);
   Logs.app (fun l ->
       l "%aQuerying opam database for their metadata and Dune compatibility."

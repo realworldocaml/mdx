@@ -57,7 +57,7 @@ let check_root_packages ~local_packages =
             local_packages Pp.plural local_packages);
       Logs.info (fun l ->
           l "Root package%a: %a." Pp.plural local_packages
-            Fmt.(list ~sep:(unit ",@ ") Package_argument.pp_styled)
+            Fmt.(list ~sep:(any ",@ ") Package_argument.pp_styled)
             local_packages);
       Ok ()
 
@@ -182,7 +182,7 @@ let pull_pin_depends ~global_state pin_depends =
     Bos.OS.Dir.tmp "opam-monorepo-pins-%s" >>= fun pins_tmp_dir ->
     Logs.debug (fun l ->
         l "Pulling pin depends: %a"
-          Fmt.(list ~sep:(unit " ") Fmt.(styled `Yellow string))
+          Fmt.(list ~sep:(any " ") Fmt.(styled `Yellow string))
           (List.map ~f:(fun (pkg, _) -> OpamPackage.to_string pkg) pin_depends));
     let by_urls = OpamUrl.Map.bindings (Pin_depends.group_by_url pin_depends) in
     let elm_from_pkg ~dir ~url pkg =
@@ -303,9 +303,7 @@ let ocaml_version =
 
 let info =
   let exits = Term.default_exits in
-  let doc =
-    Fmt.strf "analyse opam files to generate a project-wide lock file"
-  in
+  let doc = Fmt.str "analyse opam files to generate a project-wide lock file" in
   let man =
     [
       `S Manpage.s_description;

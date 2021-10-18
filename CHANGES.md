@@ -2,6 +2,9 @@
 
 ### Added
 
+- Add a depext subcommand to install the external system dependencies listed
+  in lock file (#207, @samoht)
+
 ### Changed
 
 ### Deprecated
@@ -56,8 +59,8 @@
   the repository's root. (#163, @NathanReb)
 
 - Fix failure when a package is pinned to a specific commit. `lock` now skips
-  resolution when the ref is actually a commit pointed by a remote branch or 
-  when it looks like a commit (hexadecimal characters only, at least 7 
+  resolution when the ref is actually a commit pointed by a remote branch or
+  when it looks like a commit (hexadecimal characters only, at least 7
   characters-long). (#195, fixes #127, @TheLortex)
 
 ## 0.2.3
@@ -76,9 +79,9 @@
 ### Changed
 
 - Exclude packages depending on `jbuilder` from the lock step. Since dune 2.0, `jbuild` files are
-  not supported. A new `--allow-jbuilder` option have been added to enable the old behavior. 
+  not supported. A new `--allow-jbuilder` option have been added to enable the old behavior.
 - Recognize packages with an optional dependency on dune as building with dune. This allows
-  opam-monorepo to rightfully recognize `opam-file-format` latest versions as building with 
+  opam-monorepo to rightfully recognize `opam-file-format` latest versions as building with
   dune. (#176, @NathanReb)
 - Only print the full list of selected root packages once and only in verbose mode, simply printing
   the number in the default logs. (#173, @NathanReb)
