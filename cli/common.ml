@@ -106,23 +106,12 @@ let filter_duniverse ~to_consider (duniverse : Duniverse.t) =
             Fmt.(list ~sep string)
             unmatched)
 
-let root_lockfiles repo =
-  let open Result.O in
-  Bos.OS.Dir.contents ~dotfiles:false repo >>| fun content ->
-  List.filter
-    ~f:(fun path ->
-      let is_file =
-        match Bos.OS.File.exists path with Ok b -> b | _ -> false
-      in
-      is_file && Fpath.has_ext Config.lockfile_ext path)
-    content
-
 let find_lockfile_aux ~explicit_lockfile repo =
   let open Result.O in
   match explicit_lockfile with
   | Some file -> Ok file
   | None -> (
-      root_lockfiles repo >>= function
+      Repo.local_lockfiles repo >>= function
       | [] ->
           Rresult.R.error_msg
             "No lockfile: try running `opam monorepo lock` first"

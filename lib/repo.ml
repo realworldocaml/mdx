@@ -72,3 +72,14 @@ let lockfile ?local_packages:lp t =
       let name = OpamPackage.Name.to_string name in
       Ok (lockfile ~name t)
   | _ -> project_name t >>= fun name -> Ok (lockfile ~name t)
+
+let local_lockfiles repo =
+  let open Result.O in
+  Bos.OS.Dir.contents ~dotfiles:false repo >>| fun content ->
+  List.filter
+    ~f:(fun path ->
+      let is_file =
+        match Bos.OS.File.exists path with Ok b -> b | _ -> false
+      in
+      is_file && Fpath.has_ext Config.lockfile_ext path)
+    content

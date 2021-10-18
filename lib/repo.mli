@@ -30,3 +30,7 @@ val lockfile :
     at the root of the repo.
     One can provide [local_packages] if they were already computed are if only a subset
     of the local packages must be taken into account. *)
+
+val local_lockfiles : t -> (Fpath.t list, Rresult.R.msg) result
+(** Returns all the lockfiles located at the root of the project i.e. all
+    .opam.locked files. *)
