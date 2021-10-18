@@ -56,5 +56,4 @@ let duniverse ~full ~repo ~global_state ~trim_clone duniverse =
     pre_pull_clean_up ~full ~duniverse_dir duniverse >>= fun () ->
     Bos.OS.Dir.create duniverse_dir >>= fun _created ->
     mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
-    pull_source_dependencies ~global_state ~trim_clone ~duniverse_dir
-      duniverse
+    pull_source_dependencies ~global_state ~trim_clone ~duniverse_dir duniverse
