@@ -34,7 +34,10 @@ module Arg = struct
     Cmdliner.Term.pure (function [] -> None | l -> Some l)
 
   let keep_git_dir =
-    let doc = "Keep the `.git' directory after pulling the vendored soruces." in
+    let doc =
+      "Keep the `.git' directory if the pulled vendored source is a git \
+       repository."
+    in
     named
       (fun x -> `Keep_git_dir x)
       Cmdliner.Arg.(value & flag & info [ "keep-git-dir" ] ~doc)
