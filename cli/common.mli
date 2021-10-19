@@ -30,7 +30,7 @@ module Arg : sig
   (** CLI arguments consisting of the list of source deps repo to process. If [None],
       the whole duniverse should be processed. If [Some l] then [l] is non empty. *)
 
-  val keep_clone : [ `Keep_clone of bool ] Cmdliner.Term.t
+  val keep_git_dir : [ `Keep_git_dir of bool ] Cmdliner.Term.t
   (** CLI flag to keep the [.git] directory after pulling the vendored sources. *)
 
   val setup_logs : unit -> unit Cmdliner.Term.t

@@ -50,7 +50,7 @@ let check_dune_lang_version ~yes ~repo =
     Ok ())
 
 let run (`Yes yes) (`Repo repo) (`Lockfile explicit_lockfile)
-    (`Keep_clone keep_clone) (`Duniverse_repos duniverse_repos) () =
+    (`Keep_git_dir keep_git_dir) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
   Common.find_lockfile ~explicit_lockfile repo >>= fun lockfile ->
   Lockfile.to_duniverse lockfile >>= function
@@ -64,8 +64,8 @@ let run (`Yes yes) (`Repo repo) (`Lockfile explicit_lockfile)
       >>= fun duniverse ->
       check_dune_lang_version ~yes ~repo >>= fun () ->
       OpamGlobalState.with_ `Lock_none (fun global_state ->
-          Pull.duniverse ~global_state ~repo ~full ~trim_clone:(not keep_clone)
-            duniverse)
+          Pull.duniverse ~global_state ~repo ~full
+            ~trim_clone:(not keep_git_dir) duniverse)
 
 let info =
   let open Cmdliner in
@@ -91,7 +91,7 @@ let term =
   Cmdliner.Term.(
     term_result
       (const run $ Common.Arg.yes $ Common.Arg.repo $ Common.Arg.lockfile
-     $ Common.Arg.keep_clone $ Common.Arg.duniverse_repos
+     $ Common.Arg.keep_git_dir $ Common.Arg.duniverse_repos
      $ Common.Arg.setup_logs ()))
 
 let cmd = (term, info)
