@@ -4,6 +4,9 @@
 
 ### Changed
 
+- Only warn users about missing dune-ports repo in OPAM switch if no solution
+  can be found due to packages not building with dune (#210, @Leonidas-from-XIV)
+
 ### Deprecated
 
 ### Fixed
