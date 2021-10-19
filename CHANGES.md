@@ -1,4 +1,4 @@
-## unreleased
+## 0.2.6
 
 ### Added
 
@@ -7,18 +7,10 @@
 - Add the `--keep-git-dir` flag to the `pull` command that can be used to keep
   the [.git] directory after pulling the vendored sources. (#160, @rizo)
 
-### Changed
-
-### Deprecated
-
 ### Fixed
 
 - Fix tool name in generated dune file so that it does not refer to the tool as
   `duniverse` (#206, @emillon)
-
-### Removed
-
-### Security
 
 ## 0.2.5
 
