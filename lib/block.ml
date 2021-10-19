@@ -42,7 +42,6 @@ module Header = struct
 end
 
 type section = int * string
-
 type cram_value = { language : [ `Sh | `Bash ]; non_det : Label.non_det option }
 
 type ocaml_value = {
@@ -52,9 +51,7 @@ type ocaml_value = {
 }
 
 type toplevel_value = { env : Ocaml_env.t; non_det : Label.non_det option }
-
 type include_ocaml_file = { part_included : string option }
-
 type include_other_file = { header : Header.t option }
 
 type include_file_kind =
@@ -62,7 +59,6 @@ type include_file_kind =
   | Fk_other of include_other_file
 
 type include_value = { file_included : string; file_kind : include_file_kind }
-
 type raw_value = { header : Header.t option }
 
 type value =
@@ -87,7 +83,6 @@ type t = {
 }
 
 let dump_string ppf s = Fmt.pf ppf "%S" s
-
 let dump_section = Fmt.(Dump.pair int string)
 
 let header t =
@@ -195,7 +190,6 @@ let pp ?syntax ppf b =
   pp_errors ppf b
 
 let directory t = t.dir
-
 let file t = match t.value with Include t -> Some t.file_included | _ -> None
 
 let non_det t =
@@ -206,13 +200,9 @@ let non_det t =
   | Include _ | Raw _ -> None
 
 let skip t = t.skip
-
 let set_variables t = t.set_variables
-
 let unset_variables t = t.unset_variables
-
 let value t = t.value
-
 let section t = t.section
 
 let guess_ocaml_kind contents =
@@ -234,7 +224,6 @@ let ends_by_semi_semi c =
   | _ -> false
 
 let pp_line_directive ppf (file, line) = Fmt.pf ppf "#%d %S" line file
-
 let line_directive = Fmt.to_to_string pp_line_directive
 
 let executable_contents ~syntax b =

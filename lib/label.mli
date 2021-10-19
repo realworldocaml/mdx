@@ -18,7 +18,6 @@ module Relation : sig
   type t = Eq | Neq | Le | Lt | Ge | Gt
 
   val pp : Format.formatter -> t -> unit
-
   val compare : t -> int -> int -> bool
 
   val raw_parse : string -> string * (t * string) option

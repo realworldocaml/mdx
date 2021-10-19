@@ -17,7 +17,6 @@
 open Cmdliner
 
 let cmds = [ Test.cmd; Pp.cmd; Deps.cmd; Dune_gen.cmd ]
-
 let main (`Setup ()) = `Help (`Pager, None)
 
 let main =

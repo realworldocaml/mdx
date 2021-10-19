@@ -24,11 +24,8 @@ module Part = struct
   }
 
   let v ~name ~sep_indent ~body = { name; sep_indent; body }
-
   let name { name; _ } = name
-
   let sep_indent { sep_indent; _ } = sep_indent
-
   let body { body; _ } = body
 end
 

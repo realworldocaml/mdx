@@ -85,5 +85,4 @@ let cmd =
     Term.info "ocaml-mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man )
 
 let main () = Term.(exit_status @@ eval cmd)
-
 let () = main ()

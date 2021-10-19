@@ -19,7 +19,6 @@ open Result
 module Result = struct
   module Infix = struct
     let ( >>= ) r f = match r with Ok x -> f x | Error _ as e -> e
-
     let ( >>| ) r f = match r with Ok x -> Ok (f x) | Error _ as e -> e
 
     let ( >>! ) r f =
@@ -64,7 +63,6 @@ end
 
 module Option = struct
   let is_some = function Some _ -> true | None -> false
-
   let value ~default = function Some v -> v | None -> default
 end
 

@@ -379,16 +379,12 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
 
 module Package = struct
   let unix = "unix"
-
   let findlib_top = "findlib.top"
-
   let findlib_internal = "findlib.internal"
-
   let compilerlibs_toplevel = "compiler-libs.toplevel"
 end
 
 module Predicate = struct
   let byte = "byte"
-
   let toploop = "toploop"
 end
