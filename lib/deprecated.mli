@@ -19,6 +19,5 @@ val warn : ?replacement:string -> string -> since:string -> unit
 
 module Missing_double_semicolon : sig
   val fix : Toplevel.t list -> Toplevel.t list
-
   val report : filename:string -> unit
 end

@@ -1,5 +1,4 @@
 val lookup_type : Longident.t -> Env.t -> Path.t
-
 val lookup_value : Longident.t -> Env.t -> Path.t * Types.value_description
 
 val find_value :

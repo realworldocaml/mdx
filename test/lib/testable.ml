@@ -21,5 +21,4 @@ let ocaml_delimiter =
   Alcotest.testable pp ( = )
 
 let block = Alcotest.testable Mdx.Block.dump ( = )
-
 let header = Alcotest.testable Mdx.Block.Header.pp ( = )

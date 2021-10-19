@@ -15,9 +15,7 @@
  *)
 
 type syntax = Syntax.t = Normal | Cram | Mli
-
 type line = Section of (int * string) | Text of string | Block of Block.t
-
 type t = line list
 
 let pp_line ?syntax ppf (l : line) =
