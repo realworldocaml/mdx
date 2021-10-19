@@ -2,6 +2,7 @@ val duniverse :
   full:bool ->
   repo:Fpath.t ->
   global_state:OpamStateTypes.unlocked OpamStateTypes.global_state ->
+  trim_clone:bool ->
   Duniverse.t ->
   (unit, [> Rresult.R.msg ]) result
 (** [duniverse ~full ~repo ~global_state duniverse]
