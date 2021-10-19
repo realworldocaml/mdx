@@ -5,7 +5,7 @@
 - Add a depext subcommand to install the external system dependencies listed
   in lock file (#207, @samoht)
 - Add the `--keep-git-dir` flag to the `pull` command that can be used to keep
-the [.git] directory after pulling the vendored sources.
+  the [.git] directory after pulling the vendored sources. (#160, @rizo)
 
 ### Changed
 
