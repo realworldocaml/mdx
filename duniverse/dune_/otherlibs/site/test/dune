@@ -1,4 +1,0 @@
-(cram
- (deps
-  (package dune)
-  (package dune-site)))

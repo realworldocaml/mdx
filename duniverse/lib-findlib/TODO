@@ -1,6 +1,0 @@
-Document archive(plugin)
-
-Suggestion (gasche): -show-command only outputs the constructed
-command, but does not run it.
-
-Get ready for -ppx

@@ -1,4 +1,0 @@
-(install
-  (package 0install)
-  (section doc)
-  (files COPYING))
