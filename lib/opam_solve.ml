@@ -1,7 +1,11 @@
 open Import
 
 module Switch_and_local_packages_context : sig
-  include Opam_0install.S.CONTEXT
+  type r =
+    | Non_dune
+    | Switch_rejection of Opam_0install.Switch_context.rejection
+
+  include Opam_0install.S.CONTEXT with type rejection = r
 
   val create :
     ?test:OpamPackage.Name.Set.t ->
@@ -19,9 +23,11 @@ end = struct
     allow_jbuilder : bool;
   }
 
-  type rejection =
+  type r =
     | Non_dune
     | Switch_rejection of Opam_0install.Switch_context.rejection
+
+  type rejection = r
 
   let pp_rejection fmt = function
     | Non_dune -> Fmt.pf fmt "Doesn't build with dune"
@@ -129,7 +135,7 @@ let calculate_raw ~build_only ~allow_jbuilder ~ocaml_version ~local_packages
   let request = request ~allow_compiler_variants local_packages_names in
   let result = Local_solver.solve context request in
   match result with
-  | Error e -> Error (`Msg (Local_solver.diagnostics e))
+  | Error e -> Error (`Diagnostics e)
   | Ok selections ->
       let packages = Local_solver.packages_of_result selections in
       let deps =
@@ -140,6 +146,35 @@ let calculate_raw ~build_only ~allow_jbuilder ~ocaml_version ~local_packages
           packages
       in
       Ok deps
+
+type diagnostics = Local_solver.diagnostics
+
+let diagnostics_message diagnostics =
+  `Msg (Local_solver.diagnostics diagnostics)
+
+module Pkg_map = Local_solver.Solver.Output.RoleMap
+
+let no_version_builds_with_dune component =
+  let rejects, _reason = Local_solver.Diagnostics.Component.rejects component in
+  match rejects with
+  | [] -> false
+  | _ ->
+      List.for_all
+        ~f:(fun (_, reason) ->
+          match reason with
+          | `Model_rejection Switch_and_local_packages_context.Non_dune -> true
+          | _ -> false)
+        rejects
+
+let not_buildable_with_dune diagnostics =
+  let rolemap = Local_solver.diagnostics_rolemap diagnostics in
+  Pkg_map.fold
+    (fun pkg component acc ->
+      match no_version_builds_with_dune component with
+      | false -> acc
+      | true -> pkg :: acc)
+    rolemap []
+  |> List.filter_map ~f:Local_solver.package_name
 
 let get_opam_info ~pin_depends ~switch_state pkg =
   let opam_file =

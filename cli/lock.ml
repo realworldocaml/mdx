@@ -87,21 +87,24 @@ let is_duniverse_repo (repo : OpamTypes.repository) =
   let url = OpamUrl.to_string repo.repo_url in
   String.equal url Config.duniverse_opam_repo
 
-let check_dune_universe_repo ~switch_state =
+let check_dune_universe_repo ~switch_state non_dune_packages =
   let repos = current_repos ~switch_state in
   let dune_universe_is_configured = List.exists ~f:is_duniverse_repo repos in
   if not dune_universe_is_configured then
     Logs.warn (fun l ->
         l
-          "Couldn't calculate a set of packages to satisfy the requuest. Note \
+          "Couldn't calculate a set of packages to satisfy the request. Note \
            that %a will fail if not all of the project dependencies use dune \
-           as their build system. To solve this issue there exists a \
-           dune-universe opam-repository which conains dune ports for some \
-           opam packages, but it is currently not set in your current switch. \
-           If you wish do set it up, run the following command:\n\
+           as their build system, in your project that would be %a. To solve \
+           this issue there exists a dune-universe opam-repository which \
+           contains dune ports for some opam packages, but it is currently not \
+           set in your current switch. If you wish do set it up, run the \
+           following command:\n\
            opam repository add dune-universe %s"
           Fmt.(styled `Bold string)
-          "opam monorepo lock" Config.duniverse_opam_repo)
+          "opam monorepo lock"
+          Fmt.(list ~sep:comma Opam.Pp.package_name)
+          non_dune_packages Config.duniverse_opam_repo)
 
 let filter_local_packages ~explicit_list local_paths =
   let res =
@@ -209,6 +212,15 @@ let get_pin_depends ~global_state local_opam_files =
   let open Rresult.R.Infix in
   root_pin_depends local_opam_files >>= pull_pin_depends ~global_state
 
+let interpret_solver_error ~switch_state = function
+  | `Msg _ as err -> err
+  | `Diagnostics d ->
+      (match Opam_solve.not_buildable_with_dune d with
+      | [] -> ()
+      | offending_packages ->
+          check_dune_universe_repo ~switch_state offending_packages);
+      Opam_solve.diagnostics_message d
+
 let calculate_opam ~build_only ~allow_jbuilder ~local_opam_files ~ocaml_version
     =
   let open Rresult.R.Infix in
@@ -217,9 +229,7 @@ let calculate_opam ~build_only ~allow_jbuilder ~local_opam_files ~ocaml_version
           get_pin_depends ~global_state local_opam_files >>= fun pin_depends ->
           Opam_solve.calculate ~build_only ~allow_jbuilder ~local_opam_files
             ~pin_depends ?ocaml_version switch_state
-          |> Result.map_error ~f:(fun err ->
-                 check_dune_universe_repo ~switch_state;
-                 err)))
+          |> Result.map_error ~f:(interpret_solver_error ~switch_state)))
 
 let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only)
     (`Allow_jbuilder allow_jbuilder) (`Ocaml_version ocaml_version)

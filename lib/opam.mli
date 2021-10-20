@@ -41,6 +41,8 @@ end
 module Pp : sig
   val package : OpamPackage.t Fmt.t
 
+  val package_name : OpamPackage.Name.t Fmt.t
+
   val hash : OpamHash.t Fmt.t
 
   val url : OpamUrl.t Fmt.t
