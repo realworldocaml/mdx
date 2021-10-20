@@ -98,7 +98,7 @@ let check_dune_universe_repo ~switch_state non_dune_packages =
            as their build system, in your project that would be %a. To solve \
            this issue there exists a dune-universe opam-repository which \
            contains dune ports for some opam packages, but it is currently not \
-           set in your current switch. If you wish do set it up, run the \
+           set in your current switch. If you wish to set it up, run the \
            following command:\n\
            opam repository add dune-universe %s"
           Fmt.(styled `Bold string)
