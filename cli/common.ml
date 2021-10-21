@@ -104,7 +104,7 @@ let filter_duniverse ~to_consider (duniverse : Duniverse.t) =
         String.Map.of_list_map_exn duniverse ~f:(fun src -> (src.dir, src))
       in
       let unmatched, found =
-        List.partition_map to_consider ~f:(fun asked ->
+        Import.List.partition_map to_consider ~f:(fun asked ->
             match String.Map.find repos_map asked with
             | None -> Left asked
             | Some found -> Right found)
@@ -138,8 +138,9 @@ let find_lockfile_aux ~explicit_lockfile repo =
             Fmt.(styled `Bold string)
             "--lockfile")
 
-let find_lockfile ~explicit_lockfile repo =
+let find_lockfile ~explicit_lockfile ?(quiet = false) repo =
   let open Result.O in
   find_lockfile_aux ~explicit_lockfile repo >>= fun file ->
-  Logs.app (fun l -> l "Using lockfile %a" Pp.Styled.path file);
+  if not quiet then
+    Logs.app (fun l -> l "Using lockfile %a" Pp.Styled.path file);
   Lockfile.load ~file

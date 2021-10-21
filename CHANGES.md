@@ -2,6 +2,9 @@
 
 ### Added
 
+- Add a list subcommand to list the packages available in the monorepo
+  (#217, @samoht)
+
 ### Changed
 
 - Only warn users about missing dune-ports repo in OPAM switch if no solution
