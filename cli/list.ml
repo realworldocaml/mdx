@@ -96,6 +96,10 @@ let run (`Root root) (`Lockfile explicit_lockfile) short () =
       ~init:(0, 0) pkgs
   in
   let pp = pp ~max_name ~max_version ~short in
+  if not short then
+    Common.Logs.app (fun l ->
+        let duniverse = Fpath.(v (Sys.getcwd ()) // Config.vendor_dir / "") in
+        l "The vendor directory is %a" Pp.Styled.path duniverse);
   List.iter ~f:(fun pkg -> Fmt.pr "%a\n" pp pkg) pkgs
 
 open Cmdliner
@@ -117,9 +121,8 @@ let info =
       `P
         "Unless the --short switch is used, the output format displays one \
          package per line, and each line contains the name of the package, the \
-         installed version and a source location. In color mode, root packages \
-         (as opposed to automatically installed ones because of dependencies) \
-         are underlined.";
+         installed version and a source location. In color mode, pinned \
+         packages and packages defined in overlays have a blue version.";
     ]
   in
   Term.info "list" ~doc ~exits ~man
