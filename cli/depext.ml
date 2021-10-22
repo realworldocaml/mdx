@@ -1,8 +1,19 @@
 open Import
 
+let should_install ~yes pkgs =
+  Prompt.confirm
+    ~question:(fun l ->
+      l
+        "@[<hov 2>The following packages will be installed through %a:@ \
+         %a@].@.Do you want to continue?"
+        Fmt.(styled `Underline string)
+        "sudo"
+        Fmt.(list ~sep:(any "@ ") (styled `Bold string))
+        pkgs)
+    ~yes
+
 let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
   let open Result.O in
-  if yes then OpamCoreConfig.update ~confirm_level:`unsafe_yes ();
   Common.find_lockfile ~explicit_lockfile root >>= fun lockfile ->
   let depexts = Lockfile.depexts lockfile in
   OpamGlobalState.with_ `Lock_none (fun global_state ->
@@ -16,15 +27,21 @@ let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
           ~init:OpamSysPkg.Set.empty depexts
       in
       let pkgs, _ = OpamSysInteract.packages_status pkgs in
-      let pkgl = OpamSysPkg.Set.elements pkgs in
-      match pkgl with
-      | [] -> ()
+      let pkgs_list = OpamSysPkg.Set.elements pkgs in
+      match pkgs_list with
+      | [] -> Ok ()
       | _ ->
-          if dry_run then
-            let pkgs = List.map ~f:OpamSysPkg.to_string pkgl in
-            Fmt.pr "%s\n%!" (String.concat ~sep:" " pkgs)
-          else OpamSysInteract.install pkgs);
-  Ok ()
+          let pkgs_str = List.map ~f:OpamSysPkg.to_string pkgs_list in
+          if dry_run then (
+            Fmt.pr "%s\n%!" (String.concat ~sep:" " pkgs_str);
+            Ok ())
+          else if should_install ~yes pkgs_str then
+            try
+              OpamCoreConfig.update ~confirm_level:`unsafe_yes ();
+              OpamSysInteract.install pkgs;
+              Ok ()
+            with Failure msg -> Error (`Msg msg)
+          else Ok ())
 
 open Cmdliner
 
