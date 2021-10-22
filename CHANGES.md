@@ -13,6 +13,9 @@
 
 ### Fixed
 
+- Better errors for `opam-monorepo depext`, especially for non-interactive
+  shells (#216, @samoht)
+
 ### Removed
 
 ### Security
