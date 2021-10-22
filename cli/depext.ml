@@ -1,9 +1,9 @@
 open Import
 
-let run (`Repo repo) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
+let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
   let open Result.O in
   if yes then OpamCoreConfig.update ~confirm_level:`unsafe_yes ();
-  Common.find_lockfile ~explicit_lockfile repo >>= fun lockfile ->
+  Common.find_lockfile ~explicit_lockfile root >>= fun lockfile ->
   let depexts = Lockfile.depexts lockfile in
   OpamGlobalState.with_ `Lock_none (fun global_state ->
       let env = OpamPackageVar.resolve_global global_state in
@@ -51,7 +51,7 @@ let dry_run =
 let term =
   let open Term in
   term_result
-    (const run $ Common.Arg.repo $ Common.Arg.lockfile $ dry_run
+    (const run $ Common.Arg.root $ Common.Arg.lockfile $ dry_run
    $ Common.Arg.yes $ Common.Arg.setup_logs ())
 
 let cmd = (term, info)

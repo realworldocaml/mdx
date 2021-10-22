@@ -25,9 +25,9 @@ let suggest_updating_version ~yes ~version ~dune_project_path ~content =
     Bos.OS.File.write dune_project_path updated)
   else Ok ()
 
-let check_dune_lang_version ~yes ~repo =
+let check_dune_lang_version ~yes ~root =
   let open Result.O in
-  let dune_project_path = Fpath.(repo / "dune-project") in
+  let dune_project_path = Fpath.(root / "dune-project") in
   Logs.debug (fun l ->
       l "Looking for dune-project file in %a" Pp.Styled.path dune_project_path);
   Bos.OS.File.exists dune_project_path >>= fun found_dune_project ->
@@ -49,10 +49,10 @@ let check_dune_lang_version ~yes ~repo =
     Logs.debug (fun l -> l "No dune-project found");
     Ok ())
 
-let run (`Yes yes) (`Repo repo) (`Lockfile explicit_lockfile)
+let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
     (`Keep_git_dir keep_git_dir) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
-  Common.find_lockfile ~explicit_lockfile repo >>= fun lockfile ->
+  Common.find_lockfile ~explicit_lockfile root >>= fun lockfile ->
   Lockfile.to_duniverse lockfile >>= function
   | [] ->
       Common.Logs.app (fun l ->
@@ -62,9 +62,9 @@ let run (`Yes yes) (`Repo repo) (`Lockfile explicit_lockfile)
       let full = match duniverse_repos with None -> true | _ -> false in
       Common.filter_duniverse ~to_consider:duniverse_repos duniverse
       >>= fun duniverse ->
-      check_dune_lang_version ~yes ~repo >>= fun () ->
+      check_dune_lang_version ~yes ~root >>= fun () ->
       OpamGlobalState.with_ `Lock_none (fun global_state ->
-          Pull.duniverse ~global_state ~repo ~full
+          Pull.duniverse ~global_state ~root ~full
             ~trim_clone:(not keep_git_dir) duniverse)
 
 let info =
@@ -90,7 +90,7 @@ let info =
 let term =
   Cmdliner.Term.(
     term_result
-      (const run $ Common.Arg.yes $ Common.Arg.repo $ Common.Arg.lockfile
+      (const run $ Common.Arg.yes $ Common.Arg.root $ Common.Arg.lockfile
      $ Common.Arg.keep_git_dir $ Common.Arg.duniverse_repos
      $ Common.Arg.setup_logs ()))
 

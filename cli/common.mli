@@ -14,7 +14,7 @@ module Arg : sig
 
   val fpath : Fpath.t Cmdliner.Arg.converter
 
-  val repo : [ `Repo of Fpath.t ] Cmdliner.Term.t
+  val root : [ `Root of Fpath.t ] Cmdliner.Term.t
   (** CLI option to specify the root directory of the project. Used to find root packages,
       duniverse files and directories. Defaults to the current directory. *)
 

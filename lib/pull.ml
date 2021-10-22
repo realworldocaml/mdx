@@ -48,11 +48,11 @@ let pre_pull_clean_up ~full ~duniverse_dir duniverse =
         Bos.OS.Dir.delete ~must_exist:false ~recurse:true
           Fpath.(duniverse_dir / dir))
 
-let duniverse ~full ~repo ~global_state ~trim_clone duniverse =
+let duniverse ~full ~root ~global_state ~trim_clone duniverse =
   if List.is_empty duniverse then Ok ()
   else
     let open Result.O in
-    let duniverse_dir = Fpath.(repo // Config.vendor_dir) in
+    let duniverse_dir = Fpath.(root // Config.vendor_dir) in
     pre_pull_clean_up ~full ~duniverse_dir duniverse >>= fun () ->
     Bos.OS.Dir.create duniverse_dir >>= fun _created ->
     mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->

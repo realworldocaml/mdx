@@ -5,14 +5,17 @@ module Arg = struct
 
   let fpath = Cmdliner.Arg.conv ~docv:"PATH" (Fpath.of_string, Fpath.pp)
 
-  let repo =
-    let doc = "Path to Git repository to store vendored code in." in
+  let root =
+    let doc =
+      "Use this directory as the project root instead of the current working \
+       directory."
+    in
     named
-      (fun x -> `Repo x)
+      (fun x -> `Root x)
       Cmdliner.Arg.(
         value
         & opt fpath (Fpath.v (Sys.getcwd ()))
-        & info [ "r"; "repo" ] ~docv:"TARGET_REPO" ~doc)
+        & info [ "r"; "root" ] ~docv:"DIR" ~doc)
 
   let lockfile =
     let doc =
