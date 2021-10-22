@@ -6,7 +6,7 @@
 
 - Only warn users about missing dune-ports repo in OPAM switch if no solution
   can be found due to packages not building with dune (#210, @Leonidas-from-XIV)
-- Rename `Cli.Common.repo` into `Cli.Common.root` to make it more
+- Rename the `--repo` option to `--root` to make it more
   straightforward  that this is referring to the project root (#218, @samoht)
 
 ### Deprecated
