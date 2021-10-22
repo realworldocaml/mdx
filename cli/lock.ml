@@ -231,11 +231,11 @@ let calculate_opam ~build_only ~allow_jbuilder ~local_opam_files ~ocaml_version
             ~pin_depends ?ocaml_version switch_state
           |> Result.map_error ~f:(interpret_solver_error ~switch_state)))
 
-let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only)
+let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     (`Allow_jbuilder allow_jbuilder) (`Ocaml_version ocaml_version)
     (`Local_packages lp) (`Lockfile explicit_lockfile) () =
   let open Rresult.R.Infix in
-  local_packages ~recurse ~explicit_list:lp repo >>= fun local_paths ->
+  local_packages ~recurse ~explicit_list:lp root >>= fun local_paths ->
   let local_packages =
     List.map
       ~f:(fun (name, (version, _)) -> Package_argument.make ~name ~version)
@@ -243,7 +243,7 @@ let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only)
   in
   check_root_packages ~local_packages >>= fun () ->
   local_paths_to_opam_map local_paths >>= fun local_opam_files ->
-  lockfile_path ~explicit_lockfile ~local_packages repo >>= fun lockfile_path ->
+  lockfile_path ~explicit_lockfile ~local_packages root >>= fun lockfile_path ->
   calculate_opam ~build_only ~allow_jbuilder ~ocaml_version ~local_opam_files
   >>= fun package_summaries ->
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
@@ -349,7 +349,7 @@ let info =
 let term =
   let open Term in
   term_result
-    (const run $ Common.Arg.repo $ recurse_opam $ build_only $ allow_jbuilder
+    (const run $ Common.Arg.root $ recurse_opam $ build_only $ allow_jbuilder
    $ ocaml_version $ packages $ Common.Arg.lockfile $ Common.Arg.setup_logs ())
 
 let cmd = (term, info)
