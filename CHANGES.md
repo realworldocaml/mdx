@@ -8,6 +8,7 @@
   can be found due to packages not building with dune (#210, @Leonidas-from-XIV)
 - Rename the `--repo` option to `--root` to make it more
   straightforward  that this is referring to the project root (#218, @samoht)
+- Improve the wording of the lockfile selection log (#<PR_NUMBER>, @NathanReb)
 
 ### Deprecated
 
