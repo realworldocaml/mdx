@@ -141,5 +141,5 @@ let find_lockfile_aux ~explicit_lockfile repo =
 let find_lockfile ~explicit_lockfile repo =
   let open Result.O in
   find_lockfile_aux ~explicit_lockfile repo >>= fun file ->
-  Logs.app (fun l -> l "Pulling lockfile %a" Pp.Styled.path file);
+  Logs.app (fun l -> l "Using lockfile %a" Pp.Styled.path file);
   Lockfile.load ~file
