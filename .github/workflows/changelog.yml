@@ -18,8 +18,3 @@ jobs:
         BASE_REF: ${{ github.event.pull_request.base.ref }}
       run: |
         ! git diff --exit-code origin/$BASE_REF -- CHANGES.md
-  PR-Number-Update:
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Update PR number
-        uses: tarides/pr-number-action@v1
