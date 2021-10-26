@@ -7,14 +7,13 @@ on:
 
 jobs:
   Changelog-Entry-Check:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
 
     steps:
-    - uses: actions/checkout@v1
-
-    - name: git diff
-      if: ${{ !contains(github.event.pull_request.labels.*.name, 'no changelog') }}
+    - uses: actions/checkout@v2
+    - uses: Zomzog/changelog-checker@v1.2.0
+      with:
+        fileName: CHANGES.md
+        checkNotification: Simple
       env:
-        BASE_REF: ${{ github.event.pull_request.base.ref }}
-      run: |
-        ! git diff --exit-code origin/$BASE_REF -- CHANGES.md
+        GITHUB_TOKEN: ${{ github.token }}
