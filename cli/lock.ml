@@ -219,8 +219,10 @@ let select_explicitly_specified ~local_packages ~explicitly_specified =
 let filter_root_packages root packages =
   OpamPackage.Name.Map.filter
     (fun _key (_, path) ->
-      match Fpath.relativize ~root path with
-      | None -> false
+      match Fpath.rem_prefix root path with
+      | None ->
+          (* `packages` contains a path not within `root`, this shouldn't happen and is a bug *)
+          assert false
       | Some path ->
           let filename = path |> Fpath.filename |> Fpath.v in
           Fpath.equal filename path)
