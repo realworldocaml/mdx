@@ -40,7 +40,7 @@ let pp_locks_field fmt dirs_and_files =
   match dirs_and_files with
   | [] -> ()
   | locks ->
-      Fmt.pf fmt " (locks @[%a@])\n" Fmt.(list ~sep:(unit "@\n") string) locks
+      Fmt.pf fmt " (locks @[%a@])\n" Fmt.(list ~sep:(any "@\n") string) locks
 
 let pp_rules ~nd ~prelude ~md_file ~ml_files ~dirs ~root ~packages ~locks fmt
     options =

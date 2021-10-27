@@ -128,9 +128,9 @@ let eval_test ?block ?root c cmd =
 
 let err_eval ~cmd lines =
   Fmt.epr "Got an error while evaluating:\n---\n%a\n---\n%a\n%!"
-    Fmt.(list ~sep:(unit "\n") string)
+    Fmt.(list ~sep:(any "\n") string)
     cmd
-    Fmt.(list ~sep:(unit "\n") string)
+    Fmt.(list ~sep:(any "\n") string)
     lines;
   exit 1
 
