@@ -130,12 +130,12 @@ let target_depexts opam_files target_packages =
       | true -> OpamFile.OPAM.depexts opam_file :: acc)
     opam_files []
 
-let lockfile_path ~explicit_lockfile ~packages repo =
+let lockfile_path ~explicit_lockfile ~target_packages repo =
   match explicit_lockfile with
   | Some path -> Ok path
   | None ->
       Project.lockfile
-        ~local_packages:(OpamPackage.Name.Set.elements packages)
+        ~local_packages:(OpamPackage.Name.Set.elements target_packages)
         repo
 
 let root_pin_depends local_opam_files =
@@ -305,7 +305,7 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
   >>= fun target_packages ->
   check_target_packages target_packages >>= fun () ->
   local_paths_to_opam_map local_packages >>= fun opam_files ->
-  lockfile_path ~explicit_lockfile ~packages:target_packages root
+  lockfile_path ~explicit_lockfile ~target_packages root
   >>= fun lockfile_path ->
   calculate_opam ~build_only ~allow_jbuilder ~ocaml_version
     ~local_opam_files:opam_files ~target_packages
