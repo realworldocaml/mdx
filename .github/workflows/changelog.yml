@@ -7,13 +7,7 @@ on:
 
 jobs:
   Changelog-Entry-Check:
+    name: Check Changelog Action
     runs-on: ubuntu-20.04
-
     steps:
-    - uses: actions/checkout@v2
-    - uses: Zomzog/changelog-checker@v1.2.0
-      with:
-        fileName: CHANGES.md
-        checkNotification: Simple
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
+      - uses: tarides/changelog-check-action@v1
