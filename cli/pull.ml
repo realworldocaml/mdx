@@ -27,7 +27,7 @@ let suggest_updating_version ~yes ~version ~dune_project_path ~content =
 
 let check_dune_lang_version ~yes ~root =
   let open Result.O in
-  let dune_project_path = Fpath.(root / "dune-project") in
+  let dune_project_path = Repo.dune_project root in
   Logs.debug (fun l ->
       l "Looking for dune-project file in %a" Pp.Styled.path dune_project_path);
   Bos.OS.File.exists dune_project_path >>= fun found_dune_project ->
