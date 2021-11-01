@@ -132,10 +132,10 @@ let local_packages ~recurse ~explicit_list repo =
   let open Rresult.R.Infix in
   match explicit_list with
   | [] ->
-      Repo.local_packages ~recurse repo >>| fun local_paths ->
+      Project.local_packages ~recurse repo >>| fun local_paths ->
       String.Map.map ~f:(fun path -> (None, path)) local_paths
   | _ ->
-      Repo.local_packages ~recurse:true
+      Project.local_packages ~recurse:true
         ~filter:(List.map ~f:Package_argument.name explicit_list)
         repo
       >>= fun local_paths -> filter_local_packages ~explicit_list local_paths
@@ -168,7 +168,7 @@ let lockfile_path ~explicit_lockfile ~local_packages repo =
   match explicit_lockfile with
   | Some path -> Ok path
   | None ->
-      Repo.lockfile
+      Project.lockfile
         ~local_packages:(List.map ~f:Package_argument.name local_packages)
         repo
 

@@ -49,7 +49,7 @@ let local_packages ~recurse ?filter t =
 
 let dune_project t = Fpath.(t / "dune-project")
 
-let project_name t =
+let name t =
   let open Result.O in
   let dune_project = dune_project t in
   Dune_file.Raw.as_sexps dune_project >>= Dune_file.Project.name
@@ -71,7 +71,7 @@ let lockfile ?local_packages:lp t =
   | [ name ] ->
       let name = OpamPackage.Name.to_string name in
       Ok (lockfile ~name t)
-  | _ -> project_name t >>= fun name -> Ok (lockfile ~name t)
+  | _ -> name t >>= fun name -> Ok (lockfile ~name t)
 
 let local_lockfiles repo =
   let open Result.O in
