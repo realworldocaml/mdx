@@ -1,0 +1,90 @@
+{0 Labels}
+
+MDX blocks behaviour can be customised through the use of labels.
+
+This section documents in detail what each existing label does and how to use
+it.
+
+{1:dir Dir}
+
+{2 Description}
+
+{2 Syntax}
+
+{2 Applies to}
+
+{2 Default}
+
+{1:source_tree Source Tree}
+
+{2 Description}
+
+{2 Syntax}
+
+{2 Applies to}
+
+{2 Default}
+
+{1:file File}
+
+{2 Description}
+
+{2 Syntax}
+
+{2 Applies to}
+
+{2 Default}
+
+{1:part Part}
+
+{2 Description}
+
+{2 Syntax}
+
+{2 Applies to}
+
+{2 Default}
+
+{1:env Env}
+
+{2 Description}
+
+This label allows you to assign an environment to an OCaml block. That means
+you benefit from whole the code that has been previously evaluated in that
+environment, be it from other code blocks or {{!page-preludes}preludes}.
+
+{2 Syntax}
+
+[env=<value>]
+
+The environement label expects a single string value which corresponds to the
+name of the environment to use.
+
+[.mli] example:
+{v
+(** Here is how to use this function:
+  {@ocaml env=foo[
+  # f 0;;
+  - : int = 0
+  ]} *)
+v}
+
+[.md] example:
+{@markdown[
+Here is how to use this function:
+<!-- $MDX env=foo -->
+```ocaml
+# f 0;;
+- : int = 0
+```
+]}
+
+{2 Applies to}
+
+- {{!page-types_of_blocks.ocaml_toplevel} OCaml Toplevel Blocks}
+- {{!page-types_of_blocks.ocaml} OCaml Blocks}
+
+{2 Default}
+
+When absent, the block will be evaluated in the default environment, e.g.
+the environment shared by all blocks without an [env] label.

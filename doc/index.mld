@@ -1,0 +1,111 @@
+{0 MDX Manual}
+
+Welcome to the MDX Manual!
+
+MDX is a tool to help developpers and authors keep their documentation
+up-to-date.
+It ensures that the code examples you write compile and behave the way you
+expect them to by actually running them.
+
+It is for example used to verify all of
+{{:https://dev.realworldocaml.org/}Realworlocaml}'s examples!
+
+MDX is released on opam. You can install it in your switch by running:
+{@sh[
+  opam install mdx
+]}
+
+{1 Table of Content}
+- {{!page-markdown_syntax}Markdown MDX Syntax}
+- {{!page-mli_syntax}.mli MDX Syntax}
+- {{!page-types_of_blocks}Types of Blocks}
+- {{!page-labels}Labels}
+- {{!page-dune_stanza}Dune stanza}
+- {{!page-preludes}Preludes}
+- {{!page-using_libs}Using Libraries in your code examples}
+
+{1 Basic Usage}
+
+You can use MDX with your Markdown or [.mli] documentation, where it will ensure
+the correctness of code respectively written in multi-line code blocks and
+verbatim code blocks.
+
+To enable MDX, you need to add [(mdx)] stanzas to the right dune files. Before
+that you will need to enable MDX for your project by adding the following to
+your [dune-project]:
+
+{@dune[
+  (using mdx 0.2)
+]}
+
+You can then add the following in the relevant dune file:
+{@dune[
+  (mdx)
+]}
+That will enable MDX on all markdown files in the folder.
+The MDX stanza can be further configured. If you want to know more about it,
+visit the {{!page-mdx_dune_stanza}corresponding section of this manual} or the
+one in
+{{:https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4}dune's manual}.
+
+MDX supports various type of code blocks but the most common are OCaml toplevel
+blocks so we'll look at one of those for our example. In a markdown file, you
+would write something along those lines:
+
+{@markdown[
+  Let's look at how good OCaml is with integers and strings:
+  ```ocaml
+  # 1 + 2;;
+  - : int = 2
+  # "a" ^ "bc";;
+  - : string = "ab"
+  ```
+]}
+
+The content of the toplevel blocks looks just like an interactive toplevel
+session. Phrases, i.e. the toplevel "input", start with a [#] and end with [;;].
+Each of them is followed by the toplevel evaluation, or "output" which you
+probably are already familiar with.
+
+Now you probably have noticed that [1 + 2] is not equal to [3] nor ["a" ^ "bc"]
+to ["ab"]. Somebody must have updated the phrases but they then forgot to update
+the evaluation.
+
+That's exactly what MDX is here for!
+
+If MDX were enabled for this file and they ran [dune runtest], here's what they
+would have gotten:
+
+{@sh[
+  $ dune runtest
+  File "README.md", line 1, characters 0-0:
+         git (internal) (exit 1)
+  (cd _build/default && /usr/bin/git --no-pager diff --no-index --color=always -u README.md .mdx/README.md.corrected)
+  diff --git a/README.md b/.mdx/README.md.corrected
+  index 181b86f..458ecec 100644
+  --- a/README.md
+  +++ b/.mdx/README.md.corrected
+  @@ -1,13 +1,13 @@
+  Let's look at how good OCaml is with integers and strings:
+  ```ocaml
+  # 1 + 2;;
+  -- : int = 2
+  +- : int = 3
+  # "a" ^ "bc";;
+  -- : string = "ab"
+  +- : string = "abc"
+  ```
+]}
+
+The test run just failed and dune is showing the diff between what we have
+locally and what should be, according to MDX.
+This uses dune's promotion workflow so at this point you can either investigate
+it further if you're surprised by this diff or if you're happy with it, simply
+accept it by running:
+
+{@sh[
+  dune promote
+]}
+
+Now the documentation is up-to-date and running [dune runtest] again should be
+successful!
