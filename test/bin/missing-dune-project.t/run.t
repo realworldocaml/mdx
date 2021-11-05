@@ -1,12 +1,10 @@
-Let us setup a simple project with two local packages, defined at the root
+We have a simple project with two local packages, defined at the root
 
-  $ cat > a.opam << EOF
-  > opam-version: "2.0"
-  > EOF
+  $ cat a.opam
+  opam-version: "2.0"
 
-  $ cat > b.opam << EOF
-  > opam-version: "2.0"
-  > EOF
+  $ cat b.opam
+  opam-version: "2.0"
 
 The project has no dune-project file. That means that if we run `opam-monorepo lock`,
 it will have more than onw target: `a` and `b`. It therefore has to determine the name of the
