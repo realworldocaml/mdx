@@ -41,16 +41,9 @@ let name t =
 
 let lockfile ~name t = Fpath.(t / (name ^ Config.lockfile_ext))
 
-let lockfile ?local_packages:lp t =
+let lockfile ~target_packages t =
   let open Result.O in
-  let local_packages =
-    match lp with
-    | Some lp -> Ok lp
-    | None -> local_packages ~recurse:false t >>| List.map ~f:fst
-  in
-
-  local_packages >>= fun names ->
-  match names with
+  match target_packages with
   | [ name ] ->
       let name = OpamPackage.Name.to_string name in
       Ok (lockfile ~name t)

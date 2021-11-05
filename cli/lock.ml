@@ -135,7 +135,7 @@ let lockfile_path ~explicit_lockfile ~target_packages repo =
   | Some path -> Ok path
   | None ->
       Project.lockfile
-        ~local_packages:(OpamPackage.Name.Set.elements target_packages)
+        ~target_packages:(OpamPackage.Name.Set.elements target_packages)
         repo
 
 let root_pin_depends local_opam_files =
