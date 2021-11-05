@@ -1,6 +1,8 @@
-(lang dune 2.6)
+(lang dune 2.7)
 (generate_opam_files true)
 (name opam-monorepo)
+
+(cram enable)
 
 (source (github ocamllabs/opam-monorepo))
 (license ISC)
