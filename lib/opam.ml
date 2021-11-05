@@ -175,14 +175,13 @@ module Package_summary = struct
 end
 
 module Pp = struct
-  let package fmt p = Format.fprintf fmt "%s" (OpamPackage.to_string p)
+  let package = Fmt.using OpamPackage.to_string Fmt.string
 
-  let package_name fmt p =
-    Format.fprintf fmt "%s" (OpamPackage.Name.to_string p)
+  let package_name = Fmt.using OpamPackage.Name.to_string Fmt.string
 
   let hash = Hash.pp
 
-  let url fmt url = Format.fprintf fmt "%s" (OpamUrl.to_string url)
+  let url = Fmt.using OpamUrl.to_string Fmt.string
 end
 
 let local_package_version opam_file ~explicit_version =

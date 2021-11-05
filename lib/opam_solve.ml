@@ -8,7 +8,7 @@ module Switch_and_local_packages_context : sig
   include Opam_0install.S.CONTEXT with type rejection = r
 
   val create :
-    ?test:OpamPackage.Name.Set.t ->
+    ?install_test_deps_for:OpamPackage.Name.Set.t ->
     allow_jbuilder:bool ->
     fixed_packages:
       (OpamPackage.Version.t * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
@@ -33,9 +33,11 @@ end = struct
     | Non_dune -> Fmt.pf fmt "Doesn't build with dune"
     | Switch_rejection r -> Opam_0install.Switch_context.pp_rejection fmt r
 
-  let create ?test ~allow_jbuilder ~fixed_packages ~constraints switch_state =
+  let create ?install_test_deps_for ~allow_jbuilder ~fixed_packages ~constraints
+      switch_state =
     let switch_context =
-      Opam_0install.Switch_context.create ?test ~constraints switch_state
+      Opam_0install.Switch_context.create ?test:install_test_deps_for
+        ~constraints switch_state
     in
     { switch_context; fixed_packages; allow_jbuilder }
 
@@ -120,19 +122,20 @@ let fixed_packages ~local_packages ~pin_depends =
        locally defined package"
 
 let calculate_raw ~build_only ~allow_jbuilder ~ocaml_version ~local_packages
-    ~pin_depends switch_state =
+    ~target_packages ~pin_depends switch_state =
   let open Rresult.R.Infix in
-  let local_packages_names = OpamPackage.Name.Map.keys local_packages in
-  let names_set = OpamPackage.Name.Set.of_list local_packages_names in
-  let test = if build_only then OpamPackage.Name.Set.empty else names_set in
+  let target_packages_names = OpamPackage.Name.Set.elements target_packages in
+  let install_test_deps_for =
+    if build_only then OpamPackage.Name.Set.empty else target_packages
+  in
   let constraints = constraints ~ocaml_version in
   fixed_packages ~local_packages ~pin_depends >>= fun fixed_packages ->
   let context =
-    Switch_and_local_packages_context.create ~test ~allow_jbuilder ~constraints
-      ~fixed_packages switch_state
+    Switch_and_local_packages_context.create ~install_test_deps_for
+      ~allow_jbuilder ~constraints ~fixed_packages switch_state
   in
   let allow_compiler_variants = depend_on_compiler_variants local_packages in
-  let request = request ~allow_compiler_variants local_packages_names in
+  let request = request ~allow_compiler_variants target_packages_names in
   let result = Local_solver.solve context request in
   match result with
   | Error e -> Error (`Diagnostics e)
@@ -142,7 +145,13 @@ let calculate_raw ~build_only ~allow_jbuilder ~ocaml_version ~local_packages
         List.filter
           ~f:(fun pkg ->
             let name = OpamPackage.name pkg in
-            not (OpamPackage.Name.Set.mem name names_set))
+            let in_target_packages =
+              OpamPackage.Name.Set.mem name target_packages
+            in
+            let in_fixed_packages =
+              OpamPackage.Name.Map.mem name fixed_packages
+            in
+            (not in_target_packages) && not in_fixed_packages)
           packages
       in
       Ok deps
@@ -186,18 +195,18 @@ let get_opam_info ~pin_depends ~switch_state pkg =
 
 (* TODO catch exceptions and turn to error *)
 
-let calculate ~build_only ~allow_jbuilder ~local_opam_files ~pin_depends
-    ?ocaml_version switch_state =
+let calculate ~build_only ~allow_jbuilder ~local_opam_files ~target_packages
+    ~pin_depends ?ocaml_version switch_state =
   let open Rresult.R.Infix in
   calculate_raw ~build_only ~allow_jbuilder ~ocaml_version
-    ~local_packages:local_opam_files ~pin_depends switch_state
+    ~local_packages:local_opam_files ~target_packages ~pin_depends switch_state
   >>= fun deps ->
   Logs.app (fun l ->
-      l "%aFound %a opam dependencies for the root package%a." Pp.Styled.header
-        ()
+      l "%aFound %a opam dependencies for the target package%a."
+        Pp.Styled.header ()
         Fmt.(styled `Green int)
         (List.length deps) Pp.plural_int
-        (OpamPackage.Name.Map.cardinal local_opam_files));
+        (OpamPackage.Name.Set.cardinal target_packages));
   Logs.info (fun l ->
       l "The dependencies are: %a"
         Fmt.(list ~sep:(any ",@ ") Opam.Pp.package)

@@ -1,4 +1,3 @@
-open Import
 (** Utility functions to extract project specific path and values *)
 
 type t = Fpath.t
@@ -8,13 +7,15 @@ type t = Fpath.t
 
 val local_packages :
   recurse:bool ->
-  ?filter:OpamPackage.Name.t list ->
   t ->
-  (Fpath.t String.Map.t, [> `Msg of string ]) result
-(** Returns the locally defined opam packages as a map from package names to
+  ((OpamPackage.Name.t * Fpath.t) list, [> Rresult.R.msg ]) result
+(** Returns the locally defined opam packages as an association list from package names to
     to the corresponding .opam file path.
-    Only considers packages defined at the repo's root unless [recurse] is [true].
-    Only considers packages listed in [filter] if the parameter is used.  *)
+    Only considers packages defined at the repo's root unless [recurse] is [true].  *)
+
+val all_local_packages :
+  t -> ((OpamPackage.Name.t * Fpath.t) list, [> Rresult.R.msg ]) result
+(** [all_local_packages t] is [local_packages ~recurse:true t].  *)
 
 val dune_project : t -> Fpath.t
 (** Returns the path to the dune-project file. *)

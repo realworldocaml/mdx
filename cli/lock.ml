@@ -3,8 +3,6 @@ open Import
 module Package_argument : sig
   type t
 
-  val make : name:string -> version:OpamPackage.Version.t option -> t
-
   val name : t -> OpamPackage.Name.t
 
   val version : t -> OpamPackage.Version.t option
@@ -43,8 +41,9 @@ end = struct
   let pp_styled ppf t = Fmt.to_to_string pp t |> Pp.Styled.package_name ppf
 end
 
-let check_root_packages ~local_packages =
-  let count = List.length local_packages in
+let check_target_packages packages =
+  let count = OpamPackage.Name.Set.cardinal packages in
+  let set ?sep pp_elt = Fmt.iter ?sep OpamPackage.Name.Set.iter pp_elt in
   match count with
   | 0 ->
       Rresult.R.error_msg
@@ -53,12 +52,12 @@ let check_root_packages ~local_packages =
          them manually via 'opam monorepo lock <packages>'."
   | _ ->
       Common.Logs.app (fun l ->
-          l "Using %d locally scanned package%a as the root%a." count Pp.plural
-            local_packages Pp.plural local_packages);
+          l "Using %d locally scanned package%a as the target%a." count
+            Pp.plural_int count Pp.plural_int count);
       Logs.info (fun l ->
-          l "Root package%a: %a." Pp.plural local_packages
-            Fmt.(list ~sep:(any ",@ ") Package_argument.pp_styled)
-            local_packages);
+          l "Target package%a: %a." Pp.plural_int count
+            Fmt.(set ~sep:(any ",@ ") Opam.Pp.package_name)
+            packages);
       Ok ()
 
 let opam_to_git_remote remote =
@@ -106,40 +105,6 @@ let check_dune_universe_repo ~switch_state non_dune_packages =
           Fmt.(list ~sep:comma Opam.Pp.package_name)
           non_dune_packages Config.duniverse_opam_repo)
 
-let filter_local_packages ~explicit_list local_paths =
-  let res =
-    List.fold_left
-      ~f:(fun acc pkg ->
-        let name = Package_argument.name pkg |> OpamPackage.Name.to_string in
-        match (acc, String.Map.find local_paths name) with
-        | Error _, Some _ -> acc
-        | Error l, None -> Error (name :: l)
-        | Ok _, None -> Error [ name ]
-        | Ok filtered, Some path ->
-            let version = Package_argument.version pkg in
-            Ok (String.Map.set filtered name (version, path)))
-      ~init:(Ok String.Map.empty) explicit_list
-  in
-  Result.map_error res ~f:(fun l ->
-      let msg =
-        Fmt.str "The following packages have no local opam files: %a"
-          Fmt.(list ~sep:sp string)
-          l
-      in
-      `Msg msg)
-
-let local_packages ~recurse ~explicit_list repo =
-  let open Rresult.R.Infix in
-  match explicit_list with
-  | [] ->
-      Project.local_packages ~recurse repo >>| fun local_paths ->
-      String.Map.map ~f:(fun path -> (None, path)) local_paths
-  | _ ->
-      Project.local_packages ~recurse:true
-        ~filter:(List.map ~f:Package_argument.name explicit_list)
-        repo
-      >>= fun local_paths -> filter_local_packages ~explicit_list local_paths
-
 let read_opam fpath =
   let filename =
     OpamFile.make (OpamFilename.of_string (Fpath.to_string fpath))
@@ -150,26 +115,27 @@ let read_opam fpath =
 
 let local_paths_to_opam_map local_paths =
   let open Result.O in
-  let bindings = String.Map.bindings local_paths in
+  let bindings = OpamPackage.Name.Map.bindings local_paths in
   Result.List.map bindings ~f:(fun (name, (explicit_version, path)) ->
       read_opam path >>| fun opam_file ->
-      let name = OpamPackage.Name.of_string name in
       let version = Opam.local_package_version opam_file ~explicit_version in
       (name, (version, opam_file)))
   >>| OpamPackage.Name.Map.of_list
 
-let root_depexts local_opam_files =
+let target_depexts opam_files target_packages =
   OpamPackage.Name.Map.fold
-    (fun _pkg (_version, opam_file) acc ->
-      OpamFile.OPAM.depexts opam_file :: acc)
-    local_opam_files []
+    (fun pkg_name (_version, opam_file) acc ->
+      match OpamPackage.Name.Set.mem pkg_name target_packages with
+      | false -> acc
+      | true -> OpamFile.OPAM.depexts opam_file :: acc)
+    opam_files []
 
-let lockfile_path ~explicit_lockfile ~local_packages repo =
+let lockfile_path ~explicit_lockfile ~target_packages repo =
   match explicit_lockfile with
   | Some path -> Ok path
   | None ->
       Project.lockfile
-        ~local_packages:(List.map ~f:Package_argument.name local_packages)
+        ~local_packages:(OpamPackage.Name.Set.elements target_packages)
         repo
 
 let root_pin_depends local_opam_files =
@@ -222,37 +188,136 @@ let interpret_solver_error ~switch_state = function
       Opam_solve.diagnostics_message d
 
 let calculate_opam ~build_only ~allow_jbuilder ~local_opam_files ~ocaml_version
-    =
+    ~target_packages =
   let open Rresult.R.Infix in
   OpamGlobalState.with_ `Lock_none (fun global_state ->
       OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
           get_pin_depends ~global_state local_opam_files >>= fun pin_depends ->
           Opam_solve.calculate ~build_only ~allow_jbuilder ~local_opam_files
-            ~pin_depends ?ocaml_version switch_state
+            ~target_packages ~pin_depends ?ocaml_version switch_state
           |> Result.map_error ~f:(interpret_solver_error ~switch_state)))
+
+let select_explicitly_specified ~local_packages ~explicitly_specified =
+  List.fold_left
+    ~f:(fun acc specified ->
+      let key = Package_argument.name specified in
+      match (OpamPackage.Name.Map.mem key local_packages, acc) with
+      | false, Ok _ -> Error [ specified ]
+      | false, Error errors -> Error (specified :: errors)
+      | true, Error errors -> Error errors
+      | true, Ok selected -> Ok (OpamPackage.Name.Set.add key selected))
+    ~init:(Ok OpamPackage.Name.Set.empty) explicitly_specified
+  |> Result.map_error ~f:(fun missing_packages ->
+         let msg =
+           Fmt.str "Package%a %a specified but not found in repository"
+             Pp.plural missing_packages
+             Fmt.(list ~sep:comma Package_argument.pp_styled)
+             missing_packages
+         in
+         `Msg msg)
+
+let filter_root_packages root packages =
+  OpamPackage.Name.Map.filter
+    (fun _key (_, path) ->
+      match Fpath.rem_prefix root path with
+      | None ->
+          (* `packages` contains a path not within `root`, this shouldn't happen and is a bug *)
+          assert false
+      | Some path ->
+          let filename = path |> Fpath.filename |> Fpath.v in
+          Fpath.equal filename path)
+    packages
+
+let warn_duplicate_paths ~packages duplicates =
+  let pp_path_entry fmt = Fmt.pf fmt "- %a" Fpath.pp in
+  let pp_paths = Fmt.(list ~sep:(any "\n") pp_path_entry) in
+  let pp_package fmt (name, duplicate_paths, taken) =
+    Fmt.pf fmt
+      "Package %a is defined multiple times in the repository:\n\
+       %a\n\
+       We kept %a and discarded the others" Opam.Pp.package_name name pp_paths
+      duplicate_paths Fpath.pp taken
+  in
+  OpamPackage.Name.Map.iter
+    (fun name duplicate_paths ->
+      let _, selected_path = OpamPackage.Name.Map.find name packages in
+      Logs.warn (fun l ->
+          l "%a" pp_package (name, duplicate_paths, selected_path)))
+    duplicates
+
+let package_version_map ~versions packages =
+  let versions =
+    List.fold_left
+      ~f:(fun acc pkg_arg ->
+        match pkg_arg |> Package_argument.version with
+        | None -> acc
+        | Some pkg_version ->
+            let pkg_name = pkg_arg |> Package_argument.name in
+            OpamPackage.Name.Map.add pkg_name pkg_version acc)
+      ~init:OpamPackage.Name.Map.empty versions
+  in
+  let rec loop (packages, duplicates) = function
+    | [] -> (packages, duplicates)
+    | (pkg_name, path) :: xs -> (
+        match OpamPackage.Name.Map.find_opt pkg_name packages with
+        | Some (_, existing_path) ->
+            let dups =
+              match OpamPackage.Name.Map.find_opt pkg_name duplicates with
+              | None -> [ path; existing_path ]
+              | Some paths -> path :: paths
+            in
+            let duplicates =
+              OpamPackage.Name.Map.add pkg_name dups duplicates
+            in
+            loop (packages, duplicates) xs
+        | None ->
+            let pkg_version = OpamPackage.Name.Map.find_opt pkg_name versions in
+            let packages =
+              OpamPackage.Name.Map.add pkg_name (pkg_version, path) packages
+            in
+            loop (packages, duplicates) xs)
+  in
+  let packages, duplicates =
+    loop OpamPackage.Name.Map.(empty, empty) packages
+  in
+  warn_duplicate_paths ~packages duplicates;
+  packages
+
+let package_names m =
+  m |> OpamPackage.Name.Map.keys |> OpamPackage.Name.Set.of_list
+
+let target_packages ~local_packages ~recurse ~explicitly_specified repo =
+  match explicitly_specified with
+  | [] when recurse -> local_packages |> package_names |> Result.ok
+  | [] ->
+      local_packages |> filter_root_packages repo |> package_names |> Result.ok
+  | _ -> select_explicitly_specified ~local_packages ~explicitly_specified
+
+let local_packages ~versions repo =
+  let open Result.O in
+  Project.all_local_packages repo >>| package_version_map ~versions
 
 let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     (`Allow_jbuilder allow_jbuilder) (`Ocaml_version ocaml_version)
-    (`Local_packages lp) (`Lockfile explicit_lockfile) () =
+    (`Target_packages specified_packages) (`Lockfile explicit_lockfile) () =
   let open Rresult.R.Infix in
-  local_packages ~recurse ~explicit_list:lp root >>= fun local_paths ->
-  let local_packages =
-    List.map
-      ~f:(fun (name, (version, _)) -> Package_argument.make ~name ~version)
-      (String.Map.bindings local_paths)
-  in
-  check_root_packages ~local_packages >>= fun () ->
-  local_paths_to_opam_map local_paths >>= fun local_opam_files ->
-  lockfile_path ~explicit_lockfile ~local_packages root >>= fun lockfile_path ->
-  calculate_opam ~build_only ~allow_jbuilder ~ocaml_version ~local_opam_files
+  local_packages ~versions:specified_packages root >>= fun local_packages ->
+  target_packages ~local_packages ~recurse
+    ~explicitly_specified:specified_packages root
+  >>= fun target_packages ->
+  check_target_packages target_packages >>= fun () ->
+  local_paths_to_opam_map local_packages >>= fun opam_files ->
+  lockfile_path ~explicit_lockfile ~target_packages root
+  >>= fun lockfile_path ->
+  calculate_opam ~build_only ~allow_jbuilder ~ocaml_version
+    ~local_opam_files:opam_files ~target_packages
   >>= fun package_summaries ->
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
   compute_duniverse ~package_summaries >>= resolve_ref >>= fun duniverse ->
-  let root_packages = String.Map.keys local_paths in
-  let root_depexts = root_depexts local_opam_files in
+  let target_depexts = target_depexts opam_files target_packages in
   let lockfile =
-    Lockfile.create ~root_packages ~package_summaries ~root_depexts ~duniverse
-      ()
+    Lockfile.create ~root_packages:target_packages ~package_summaries
+      ~root_depexts:target_depexts ~duniverse ()
   in
   Lockfile.save ~file:lockfile_path lockfile >>= fun () ->
   Common.Logs.app (fun l ->
@@ -305,7 +370,7 @@ let packages =
   in
   let docv = "LOCAL_PACKAGE" in
   Common.Arg.named
-    (fun x -> `Local_packages x)
+    (fun x -> `Target_packages x)
     Arg.(value & pos_all Package_argument.converter [] & info ~doc ~docv [])
 
 let ocaml_version =
