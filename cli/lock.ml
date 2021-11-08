@@ -135,8 +135,14 @@ let lockfile_path ~explicit_lockfile ~target_packages repo =
   | Some path -> Ok path
   | None ->
       Project.lockfile
-        ~local_packages:(OpamPackage.Name.Set.elements target_packages)
+        ~target_packages:(OpamPackage.Name.Set.elements target_packages)
         repo
+      |> Result.map_error ~f:(function `Msg msg ->
+             Rresult.R.msgf
+               "Could not infer the target lockfile name: %s\n\
+                Try setting it explicitly using --lockfile or add a project \
+                name in a root dune-project file."
+               msg)
 
 let root_pin_depends local_opam_files =
   OpamPackage.Name.Map.fold

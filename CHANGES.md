@@ -19,6 +19,8 @@
 - Properly detect all opam packages defined in the current repository, preventing it
   from later pulling duplicates into the duniverse if they were part of the target packages
   dependencies. (#203, @Leonidas-from-XIV)
+- Properly report missing dune-project file when trying to determine the
+  to-be-genrated lockfile name (#227, @NathanReb)
 
 ### Removed
 

@@ -37,20 +37,17 @@ let dune_project t = Fpath.(t / "dune-project")
 let name t =
   let open Result.O in
   let dune_project = dune_project t in
-  Dune_file.Raw.as_sexps dune_project >>= Dune_file.Project.name
+  Bos.OS.File.exists dune_project >>= function
+  | true -> Dune_file.Raw.as_sexps dune_project >>= Dune_file.Project.name
+  | false ->
+      Rresult.R.error_msgf "Missing dune-project file at the root: %a" Fpath.pp
+        dune_project
 
 let lockfile ~name t = Fpath.(t / (name ^ Config.lockfile_ext))
 
-let lockfile ?local_packages:lp t =
+let lockfile ~target_packages t =
   let open Result.O in
-  let local_packages =
-    match lp with
-    | Some lp -> Ok lp
-    | None -> local_packages ~recurse:false t >>| List.map ~f:fst
-  in
-
-  local_packages >>= fun names ->
-  match names with
+  match target_packages with
   | [ name ] ->
       let name = OpamPackage.Name.to_string name in
       Ok (lockfile ~name t)

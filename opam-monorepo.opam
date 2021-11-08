@@ -13,7 +13,7 @@ license: "ISC"
 homepage: "https://github.com/ocamllabs/opam-monorepo"
 bug-reports: "https://github.com/ocamllabs/opam-monorepo/issues"
 depends: [
-  "dune" {>= "2.6"}
+  "dune" {>= "2.7"}
   "ocaml" {>= "4.08.0"}
   "dune-build-info"
   "base"
@@ -29,6 +29,7 @@ depends: [
   "sexplib"
   "uri"
   "alcotest" {with-test}
+  "odoc" {with-doc}
 ]
 conflicts: [
   "dune-build-info" {= "2.7.0" | = "2.7.1"}
