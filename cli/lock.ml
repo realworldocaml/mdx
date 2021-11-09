@@ -184,6 +184,10 @@ let get_pin_depends ~global_state local_opam_files =
   let open Rresult.R.Infix in
   root_pin_depends local_opam_files >>= pull_pin_depends ~global_state
 
+let display_verbose_diagnostics = function
+  | None -> false
+  | Some l -> l >= Logs.Info
+
 let interpret_solver_error ~switch_state = function
   | `Msg _ as err -> err
   | `Diagnostics d ->
@@ -191,7 +195,8 @@ let interpret_solver_error ~switch_state = function
       | [] -> ()
       | offending_packages ->
           check_dune_universe_repo ~switch_state offending_packages);
-      Opam_solve.diagnostics_message d
+      let verbose = display_verbose_diagnostics (Logs.level ()) in
+      Opam_solve.diagnostics_message ~verbose d
 
 let calculate_opam ~build_only ~allow_jbuilder ~local_opam_files ~ocaml_version
     ~target_packages =

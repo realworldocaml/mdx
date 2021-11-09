@@ -158,8 +158,8 @@ let calculate_raw ~build_only ~allow_jbuilder ~ocaml_version ~local_packages
 
 type diagnostics = Local_solver.diagnostics
 
-let diagnostics_message diagnostics =
-  `Msg (Local_solver.diagnostics diagnostics)
+let diagnostics_message ~verbose diagnostics =
+  `Msg (Local_solver.diagnostics ~verbose diagnostics)
 
 module Pkg_map = Local_solver.Solver.Output.RoleMap
 
