@@ -9,7 +9,7 @@
 - Rename the `--repo` option to `--root` to make it more
   straightforward  that this is referring to the project root (#218, @samoht)
 - Improve the wording of the lockfile selection log (#222, @NathanReb)
-- Display the full solver error with `--verbose` (#<PR_NUMBER>, @emillon)
+- Display the full solver error with `--verbose` (#229, @emillon)
 
 ### Deprecated
 
