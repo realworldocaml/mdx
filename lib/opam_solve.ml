@@ -145,13 +145,10 @@ let calculate_raw ~build_only ~allow_jbuilder ~ocaml_version ~local_packages
         List.filter
           ~f:(fun pkg ->
             let name = OpamPackage.name pkg in
-            let in_target_packages =
-              OpamPackage.Name.Set.mem name target_packages
+            let in_local_packages =
+              OpamPackage.Name.Map.mem name local_packages
             in
-            let in_fixed_packages =
-              OpamPackage.Name.Map.mem name fixed_packages
-            in
-            (not in_target_packages) && not in_fixed_packages)
+            not in_local_packages)
           packages
       in
       Ok deps
