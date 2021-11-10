@@ -22,10 +22,14 @@ and run the test with the exact same libraries used by the CI. To do so, run:
 opam monorepo pull
 ```
 
-If you don't already have the plugin install, opam will suggest that you install
+If you don't already have the plugin installed, opam will suggest that you install
 it. Once this is done it will proceed with actually running the plugin command.
 `opam monorepo pull` will fetch all the sources and properly set them up in a
 `duniverse/` folder.
+
+Note that this repository's lockfile should be handled using the latest released
+version of opam-monorepo, not the dev version. I.e. you should use the latest version
+available on opam.
 
 From there you can now run the usual dune commands to build and run the tests:
 ```
