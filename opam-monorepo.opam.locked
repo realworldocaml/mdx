@@ -3,7 +3,7 @@ synopsis: "opam-monorepo generated lockfile"
 maintainer: "opam-monorepo"
 depends: [
   "0install-solver" {= "2.17"}
-  "alcotest" {= "1.4.0"}
+  "alcotest" {= "1.5.0"}
   "angstrom" {= "0.15.0"}
   "astring" {= "0.8.5+dune"}
   "base" {= "v0.14.1"}
@@ -37,7 +37,7 @@ depends: [
   "ocamlfind" {= "1.8.1+dune"}
   "ocamlgraph" {= "2.0.0"}
   "ocplib-endian" {= "1.1"}
-  "opam-0install" {= "0.4.2"}
+  "opam-0install" {= "dev"}
   "opam-core" {= "2.1.0"}
   "opam-file-format" {= "2.1.3"}
   "opam-format" {= "2.1.0"}
@@ -54,7 +54,6 @@ depends: [
   "stringext" {= "1.6.0"}
   "uchar" {= "0.0.2+dune"}
   "uri" {= "4.2.0"}
-  "uuidm" {= "0.9.7+dune"}
   "uutf" {= "1.0.2+dune"}
 ]
 depexts: [
@@ -82,8 +81,8 @@ pin-depends: [
     "https://github.com/0install/0install/releases/download/v2.17/0install-v2.17.tbz"
   ]
   [
-    "alcotest.1.4.0"
-    "https://github.com/mirage/alcotest/releases/download/1.4.0/alcotest-mirage-1.4.0.tbz"
+    "alcotest.1.5.0"
+    "https://github.com/mirage/alcotest/releases/download/1.5.0/alcotest-js-1.5.0.tbz"
   ]
   [
     "angstrom.0.15.0"
@@ -177,8 +176,8 @@ pin-depends: [
     "https://github.com/OCamlPro/ocplib-endian/archive/1.1.tar.gz"
   ]
   [
-    "opam-0install.0.4.2"
-    "git+https://github.com/NathanReb/opam-0install-solver#0e3d946084d6da0aa33f0a0c61e0cc780025054e"
+    "opam-0install.dev"
+    "git+https://github.com/ocaml-opam/opam-0install-solver#c5b44d7b6f4aef3585e59b190efb3a1de343682c"
   ]
   ["opam-core.2.1.0" "https://github.com/ocaml/opam/archive/2.1.0.tar.gz"]
   [
@@ -233,10 +232,6 @@ pin-depends: [
     "https://github.com/mirage/ocaml-uri/releases/download/v4.2.0/uri-v4.2.0.tbz"
   ]
   [
-    "uuidm.0.9.7+dune"
-    "https://github.com/dune-universe/uuidm/archive/v0.9.7+dune.tar.gz"
-  ]
-  [
     "uutf.1.0.2+dune"
     "https://github.com/dune-universe/uutf/archive/v1.0.2+dune.tar.gz"
   ]
@@ -249,10 +244,6 @@ x-opam-monorepo-duniverse-dirs: [
       "sha256=1704e5d852bad79ef9f5b5b31146846420270411c5396434f6fe26577f2d0923"
       "sha512=6ac7f2c8719018414f2b08ab799e641e54c5689a38a85c4014d9f02bc4a14dcdbcd764dec63036fb4b0a0302e26f22d40473aded78b6a08d639849f3e365d42a"
     ]
-  ]
-  [
-    "git+https://github.com/NathanReb/opam-0install-solver#0e3d946084d6da0aa33f0a0c61e0cc780025054e"
-    "opam-0install-solver"
   ]
   [
     "https://github.com/OCamlPro/ocplib-endian/archive/1.1.tar.gz"
@@ -349,13 +340,6 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/dune-universe/uuidm/archive/v0.9.7+dune.tar.gz"
-    "uuidm"
-    [
-      "sha256=dcd5b3d52c5e64cfc96107603242c15820c37f12f8566f1ba233d4bd9c5c84eb"
-    ]
-  ]
-  [
     "https://github.com/dune-universe/uutf/archive/v1.0.2+dune.tar.gz"
     "uutf"
     [
@@ -388,11 +372,11 @@ x-opam-monorepo-duniverse-dirs: [
     ["md5=1b82dec78849680b49ae9a8a365b831b"]
   ]
   [
-    "https://github.com/mirage/alcotest/releases/download/1.4.0/alcotest-mirage-1.4.0.tbz"
+    "https://github.com/mirage/alcotest/releases/download/1.5.0/alcotest-js-1.5.0.tbz"
     "alcotest"
     [
-      "sha256=b1aaccfb2d651c902592c04953e2619169c91f797cf4f04a7dda2cab09b93ec1"
-      "sha512=8a13d5d4c8c77f115903e6b8e58160c6e6ec27870440bd38a674e9406f57f1eff299e65f006fd77728015d1a8f0ae30a714fe47e035824950a71ebfdff2cf3c9"
+      "sha256=54281907e02d78995df246dc2e10ed182828294ad2059347a1e3a13354848f6c"
+      "sha512=1aea91de40795ec4f6603d510107e4b663c1a94bd223f162ad231316d8595e9e098cabbe28a46bdcb588942f3d103d8377373d533bcc7413ba3868a577469b45"
     ]
   ]
   [
@@ -431,6 +415,10 @@ x-opam-monorepo-duniverse-dirs: [
       "sha256=d605e4065fa90a58800440ef2f33a2d931398bf2c22061a8acb7df845c0aac02"
       "sha512=d785bbabaff9f6bf601399149ef0a42e5e99647b54e27f97ef1625907793dda22a45bf83e0e8a1eba2c63634c5484b54739ff0904ef556f5fc592efa38af7505"
     ]
+  ]
+  [
+    "git+https://github.com/ocaml-opam/opam-0install-solver#c5b44d7b6f4aef3585e59b190efb3a1de343682c"
+    "opam-0install-solver"
   ]
   [
     "https://github.com/ocaml-ppx/ocaml-syntax-shims/releases/download/1.0.0/ocaml-syntax-shims-1.0.0.tbz"
