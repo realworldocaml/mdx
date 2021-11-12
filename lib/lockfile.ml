@@ -95,6 +95,7 @@ module Depends = struct
         let vendored =
           (not @@ Opam.Package_summary.is_base_package summary)
           && (not @@ Opam.Package_summary.is_virtual summary)
+          && summary.vendored
         in
         { vendored; package = summary.package })
 

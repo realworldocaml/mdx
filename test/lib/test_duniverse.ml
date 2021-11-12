@@ -23,9 +23,9 @@ let opam_factory ~name ~version =
   OpamPackage.create name version
 
 let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
-    ?(hashes = []) ?(depexts = []) () =
+    ?(hashes = []) ?(depexts = []) ?(vendored = true) () =
   let package = opam_factory ~name ~version in
-  { Opam.Package_summary.package; dev_repo; url_src; hashes; depexts }
+  { Opam.Package_summary.package; dev_repo; url_src; hashes; depexts; vendored }
 
 module Repo = struct
   module Package = struct
@@ -53,6 +53,11 @@ module Repo = struct
           ~expected:(Ok None) ();
         make_test ~name:"No dev_repo"
           ~summary:(summary_factory ?dev_repo:None ())
+          ~expected:(Ok None) ();
+        make_test ~name:"Non-vendored"
+          ~summary:
+            (summary_factory ~dev_repo:"d" ~url_src:(Other "u") ~name:"y"
+               ~version:"v" ~vendored:false ())
           ~expected:(Ok None) ();
         make_test ~name:"Regular"
           ~summary:

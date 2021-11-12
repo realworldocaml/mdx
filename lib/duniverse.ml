@@ -86,7 +86,9 @@ module Repo = struct
       in
       match ps with
       | _ when is_base_package ps -> Ok None
-      | { url_src = None; _ } | { dev_repo = None; _ } -> Ok None
+      | { url_src = None; _ } | { dev_repo = None; _ } | { vendored = false; _ }
+        ->
+          Ok None
       | { url_src = Some url_src; package; dev_repo = Some dev_repo; hashes; _ }
         ->
           let* url = url url_src in

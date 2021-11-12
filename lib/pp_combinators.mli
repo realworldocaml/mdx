@@ -18,3 +18,15 @@ module Ocaml : sig
 
   val pair : 'a Fmt.t -> 'b Fmt.t -> ('a * 'b) Fmt.t
 end
+
+module Opam : sig
+  module type Printable = sig
+    type t
+
+    val pp : t Fmt.t
+  end
+
+  module Make_Set (M : OpamStd.SET) (P : Printable with type t = M.elt) : sig
+    val pp : ?sep:unit Fmt.t -> M.t Fmt.t
+  end
+end
