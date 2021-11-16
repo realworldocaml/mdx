@@ -9,9 +9,11 @@ type t = {
   descr : string option;
 }
 
-let pad s n =
+(* Assumes max_len was correctly computed, otherwise the input string might be
+   truncated. *)
+let pad s max_len =
   let len = String.length s in
-  if len >= n then "" else String.make (n - len) ' '
+  String.init max_len ~f:(fun i -> if i < len then s.[i] else ' ')
 
 (* FIXME: replace this once we remember the remotes used during lock. *)
 let guess_pin ~version ~loc =
@@ -34,17 +36,15 @@ let compare_pkg x y = String.compare x.name y.name
 
 let pp ~max_name ~max_version ~short ppf t =
   if short then Fmt.string ppf t.name
-  else if t.pinned then
-    let p_name = pad t.name max_name in
-    let p_version = pad t.version max_version in
-    Fmt.pf ppf "%a%s %a%s %a" pp_name t.name p_name pp_pin_version t.version
-      p_version pp_pin_loc t.loc
   else
-    let p_name = pad t.name max_name in
-    let p_version = pad t.version max_version in
-    Fmt.pf ppf "%a%s %a%s %s" pp_name t.name p_name pp_version t.version
-      p_version
-      (match t.descr with None -> "--" | Some d -> d)
+    let padded_name = pad t.name max_name in
+    let padded_version = pad t.version max_version in
+    if t.pinned then
+      Fmt.pf ppf "%a %a %a" pp_name padded_name pp_pin_version padded_version
+        pp_pin_loc t.loc
+    else
+      Fmt.pf ppf "%a %a %s" pp_name padded_name pp_version padded_version
+        (match t.descr with None -> "--" | Some d -> d)
 
 let pkgs_of_repo (t : resolved Repo.t) =
   List.map
