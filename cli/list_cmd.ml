@@ -75,11 +75,12 @@ let with_descr pkgs =
                   (OpamPackage.Name.of_string pkg.name)
                   (OpamPackage.Version.of_string pkg.version)
               in
-              try
-                let opam = OpamSwitchState.opam switch_state opam in
-                let descr = OpamFile.OPAM.synopsis opam in
-                { pkg with descr }
-              with Not_found -> { pkg with pinned = true })
+              match OpamSwitchState.opam switch_state opam with
+              | opam -> { pkg with descr = OpamFile.OPAM.synopsis opam }
+              | exception Not_found ->
+                  (* This pkg.version doesn't exist in the switch and therefore
+                     comes from a pin *)
+                  { pkg with pinned = true })
             pkgs))
 
 let run (`Root root) (`Lockfile explicit_lockfile) short () =
