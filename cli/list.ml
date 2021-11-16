@@ -117,7 +117,9 @@ let info =
   let man =
     [
       `S Manpage.s_description;
-      `P "List selections of opam packages available in the monorepo.";
+      `P
+        "List the opam packages present in the lockfile that must be installed \
+         in source mode in the duniverse.";
       `P
         "Unless the --short switch is used, the output format displays one \
          package per line, and each line contains the name of the package, the \
