@@ -17,6 +17,6 @@ val calculate :
     If [build_only] then no test dependencies are taken into account. If [ocaml_version]
     is provided, the solution will contain that concrete version of ocaml. *)
 
-val diagnostics_message : diagnostics -> [> `Msg of string ]
+val diagnostics_message : verbose:bool -> diagnostics -> [> `Msg of string ]
 
 val not_buildable_with_dune : diagnostics -> OpamPackage.Name.t list
