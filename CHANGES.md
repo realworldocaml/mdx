@@ -2,7 +2,7 @@
 
 ### Added
 
-- Add a list subcommand to list the packages available in the monorepo
+- Add a list subcommand to list the duniverse packages in the lockfile
   (#217, @samoht)
 
 ### Changed
