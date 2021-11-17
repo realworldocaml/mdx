@@ -50,5 +50,6 @@ val filter_duniverse :
 
 val find_lockfile :
   explicit_lockfile:Fpath.t option ->
+  ?quiet:bool ->
   Fpath.t ->
   (Lockfile.t, Rresult.R.msg) result

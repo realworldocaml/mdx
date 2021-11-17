@@ -138,8 +138,9 @@ let find_lockfile_aux ~explicit_lockfile repo =
             Fmt.(styled `Bold string)
             "--lockfile")
 
-let find_lockfile ~explicit_lockfile repo =
+let find_lockfile ~explicit_lockfile ?(quiet = false) repo =
   let open Result.O in
   find_lockfile_aux ~explicit_lockfile repo >>= fun file ->
-  Logs.app (fun l -> l "Using lockfile %a" Pp.Styled.path file);
+  if not quiet then
+    Logs.app (fun l -> l "Using lockfile %a" Pp.Styled.path file);
   Lockfile.load ~file

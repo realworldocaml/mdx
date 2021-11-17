@@ -2,6 +2,9 @@
 
 ### Added
 
+- Add a list subcommand to list the duniverse packages in the lockfile
+  (#217, @samoht)
+
 ### Changed
 
 - Only warn users about missing dune-ports repo in OPAM switch if no solution
