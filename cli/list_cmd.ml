@@ -62,8 +62,7 @@ let pkgs_of_repo (t : resolved Repo.t) =
 let pkgs_of_duniverse t =
   let pkgs = List.map ~f:pkgs_of_repo t in
   let pkgs = List.flatten pkgs in
-  (* FIXME: why do we have duplicates here ? *)
-  List.sort_uniq ~cmp:compare_pkg pkgs
+  List.sort ~cmp:compare_pkg pkgs
 
 let with_descr pkgs =
   OpamGlobalState.with_ `Lock_none (fun global_state ->
