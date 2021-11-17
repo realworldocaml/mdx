@@ -11,11 +11,8 @@ type t = {
 
 (* Assumes max_len was correctly computed, otherwise the input string might be
    truncated. *)
-let pad s max_len =
-  let len = String.length s in
-  String.init max_len ~f:(fun i -> if i < len then s.[i] else ' ')
+let pad s max_len = Printf.sprintf "%-*s" max_len s
 
-(* FIXME: replace this once we remember the remotes used during lock. *)
 let guess_pin ~version ~loc =
   (* opam-overlays *)
   String.is_suffix ~suffix:"+dune" version
