@@ -308,7 +308,7 @@ let to_duniverse { duniverse_dirs; pin_depends; _ } =
   let packages_per_url =
     List.fold_left pin_depends ~init:OpamUrl.Map.empty
       ~f:(fun acc (package, url) ->
-        OpamUrl.Map.update url (fun l -> package :: l) [ package ] acc)
+        OpamUrl.Map.update url (fun l -> package :: l) [] acc)
     |> OpamUrl.Map.bindings
   in
   Result.List.map packages_per_url ~f:(fun (url, packages) ->
