@@ -62,7 +62,11 @@ let find_class_type env loc id =
 #endif
 
 let type_structure env str loc =
+#if OCAML_VERSION >= (4, 14, 0)
+  let tstr, _, _, _, env =
+#else
   let tstr, _, _, env =
+#endif
 #if OCAML_VERSION >= (4, 12, 0)
     let _ = loc in
     Typemod.type_structure env str
@@ -148,4 +152,18 @@ let ctype_is_equal =
   Ctype.is_equal
 #else
   Ctype.equal
+#endif
+
+let ctype_expand_head_and_get_desc env ty =
+#if OCAML_VERSION >= (4, 14, 0)
+  Types.get_desc (Ctype.expand_head env ty)
+#else
+  (Ctype.expand_head env ty).Types.desc
+#endif
+
+let ctype_get_desc ty =
+#if OCAML_VERSION >= (4, 14, 0)
+  Types.get_desc ty
+#else
+  (Ctype.repr ty).Types.desc
 #endif
