@@ -5,10 +5,10 @@ pin-depends: [
   ]
   [
     "opttopfind.0.1.0"
-    "git+https://github.com/NathanReb/opttopfind.git#0.1.0"
+    "git+https://github.com/NathanReb/opttopfind.git#janestreet"
   ]
   [
     "jit.0.1.0"
-    "git+https://github.com/NathanReb/ocaml-jit.git#0.1.0"
+    "git+https://github.com/NathanReb/ocaml-jit.git#janestreet"
   ]
 ]

@@ -21,7 +21,6 @@
  (depends
   (ocaml
    (>= 4.08.0))
-  ocamlfind
   (fmt (>= 0.8.7))
   (cppo :build)
   (csexp
