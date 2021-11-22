@@ -1,0 +1,11 @@
+{0 [opam monorepo] Docs}
+
+[opam-monorepo] is an Opam plugin that assembles a Dune workspace for an OCaml
+project using a precise lock file. When a project is in the same workspace as
+all of its dependencies, it's self-contained, so Dune can build it without
+relying on Opam or external system libraries.
+
+Table of contents:
+- {{!page-faq}A FAQ} to answer common questions about [opam monorepo]
+- {{!page-concepts}A description of the concepts} behind [opam monorepo].
+- Some {{!page-workflows}common workflows} used in [opam monorepo] projects.

@@ -1,0 +1,52 @@
+{1 FAQ}
+
+{2 Is This For Me?}
+
+This might be the right thing for you if all your dependencies use Dune and you
+are under full control of the build and deployment pipeline for your piece of
+software (e.g., if you are in a position to write a [dune-workspace] file).
+
+For example:
+- You are building and deploying a piece of software in a Docker image.
+- You are building a website using a static-site generator and examples checked
+  with MDX.
+- You are checking the impact of some changes in a library and all packages that
+  depend on it.
+
+{2 About Opam}
+
+Opam is a package manager that
+- determines which versions of a library to use for a project
+- executes build instructions for each of them so that a compiled form is
+  available
+
+Instead of the second step, [opam-monorepo] copies the source code of these
+dependencies into a Dune workspace, which Dune compiles directly.
+
+In a way, this is a new kind of package management that uses source code in
+every step:
+
+- "Binary" package managers (apt, rpm) download the code as binary and install
+  it as binary.
+- "Source" package managers download the code as source and install it as
+  binary. Opam is in this category.
+- opam-monorepo downloads code as source and installs it as source.
+
+{2 New Workflows [opam-monorepo] Enable}
+
+With the sources available, certain tasks are easier:
+- Using Merlin to navigate the project (there's no distinction between jumping
+  to a definition in the project’s code or in its dependencies)
+- Editing a dependency and rebuilding the project (even in watch mode)
+- Upstreaming changes made to dependencies (a dependency is just a subdirectory)
+- Cross-compilation - the details of how to build some native code can come late
+  in the pipeline, which isn't a problem if the sources are available
+
+{2 Why is [opam monorepo] an Opam Plugin?}
+
+Even though [opam-monorepo] doesn't require installing packages through Opam, it
+is  distributed as an Opam plugin. There are two reasons for this:
+- It uses Opam libraries internally to interact with the package repository and
+  respect the local Opam configuration (repositories, pins, etc.)
+- Opam plugins have a special behaviour; they can be installed globally, so one
+  does not have to install [opam-monorepo] through Opam in various projects.

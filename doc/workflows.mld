@@ -1,0 +1,137 @@
+{1 Workflows}
+
+This section documents day-to-day tasks in a project that uses [opam-monorepo].
+
+{2 Initial Setup}
+
+There are several ways to configure a project to use [opam-monorepo], depending
+on what is checked into Git.
+- {b (Recommended)} {e lockfile-in-git}: only check lockfile into Git. Everybody
+  gets a consistent view of the dependencies, but developers are responsible for
+running [opam monorepo pull].
+- {e duniverse-in-git}: check lockfile and duniverse folder into Git. This
+  ensures that the repository is self-contained, but it can be very large.
+- {e not-locked}: Everybody is responsible for generating a lockfile. Different
+  people can end up with different dependencies. This is not really an
+  [opam-monorepo] workflow, but it is a way [opam-monorepo] can be used to build
+  a project even if it doesn't use [opam-monorepo].
+
+As a summary:
+
+- {e lockfile-in-git}: opam file and lockfile checked in, duniverse ignored.
+- {e duniverse-in-git}: opam file, lockfile and duniverse checked in.
+- {e not-locked}: opam file checked in, lockfile and duniverse not checked in.
+
+We recommend using the {e lockfile-in-git} workflow. To enable it, first
+generate a lockfile (using [opam monorepo lock]), add it to your Git repository,
+together with [project.opam], and add [duniverse/] in [.gitignore].
+
+{2 Setting Up Continuous Integration}
+
+Note: if you use {{: https://ci.ocamllabs.io/} ocaml-ci}, you don't have
+anything to do. It will detect [opam-monorepo] builds and replace the Opam-based
+builds by an [opam-monorepo] aware build that implements the rest of this
+section.
+
+This section is useful if you want to implement a CI system based on
+[opam-monorepo].
+
+A build consists in three steps:
+{ol
+{- Set up the environment}
+{- Set up the workspace}
+{- Build the project}
+}
+
+{3 Set Up the Environment}
+
+In this context, "the environment" is a set of programs to be put in [$PATH]. An
+[opam-monorepo] build requires an OCaml compiler, Dune, and [opam-monorepo]. The
+project might require system packages ("depexts") too. It's possible to rely on
+[opam] to install this environment, but it's not technically required.
+
+The following assumes that Opam is being used.
+
+To set up the environment:
+- It's only necessary to have access to the lockfile (the Opam file, Duniverse
+  folder, and source code are not used)
+- Create an Opam switch compatible with the OCaml version mentioned in the
+  lockfile
+- Install Dune. The latest version usually works
+- Install [opam-monorepo]. The version to pick depends the lockfile format
+  version ([x-opam-monorepo-version] field in the lockfile). The rule is that a
+  lockfile with version {e 0.N} can be interpreted by [opam-monorepo] version
+  [0.N.*], but in most cases, [opam-monorepo] can read older versions. As
+  [opam-monorepo] reaches version 1.0.0, more stability guarantees will exist.
+- Install depexts. Since format version 0.2, all depexts are recorded in the
+  lockfile, so they can be listed using [opam show -f depexts
+  ./project.opam.locked]. In a future version, a command [opam monorepo depext]
+  will provide a way to install them directly.
+
+{3 Setup the Workspace}
+
+The next step is to set up a workspace that contains your project and its
+dependencies.
+- This step requires access to the lockfile and a way to download Opam packages.
+- Run [opam monorepo pull].
+
+{3 Build the Project}
+
+In this step, the workspace is ready, so [dune build] commands can succeed. The
+exact command to run depends on the project, but for CI, [dune build] followed
+by [dune runtest] is usually the right thing to do (or in a single step, [dune
+build @all @runtest]). If the goal of that pipeline is to produce release
+binaries, passing [--profile release] might be better. Consult the Dune
+documentation to know more about the difference.
+
+{3 Caching Strategies}
+
+This build skeleton can benefit from several caching strategies.
+The first one is to use a layering approach, e.g., by using Docker.
+
+Most of the steps only require the lockfile, so they can be cached and
+invalidated when the lockfile changes.
+
+For the OCaml compiler version, this can be a bit too conservative, as it will
+cause any change in the lockfile to rebuild a switch. Instead, it's possible to
+hardcode the OCaml compiler version in the Docker file, and only check that the
+version is correct during the "setup environment" phase.
+
+Doing only this will start all builds with an empty [_build] directory, so all
+dependencies need to be built each time. One solution to this is to persist the
+[_build] directory between builds. This can even be done across branches (the
+cache key is just the project name).
+
+For local development, this means that [_build] is expensive to rebuild
+(similarly to a local Opam switch). It is possible to set up a machine-global
+{{: https://dune.readthedocs.io/en/stable/caching.html} dune cache} to speed up
+rebuilds.
+
+{2 Upgrading all Dependencies}
+
+To upgrade dependencies, run [opam monorepo lock]. It will compute a new
+solution based on the constraints in [project.opam] and the current state of
+opam-repository. Then locally run [opam monorepo pull] to update the
+[duniverse/] folder.
+
+It is recommended to regularly create pull requests to update dependencies. When
+updating a local copy, developers will need to call [opam monorepo pull].
+
+{2 Adding a Dependency}
+
+Note: this section also applies to all the cases where there are changes to the
+dependencies in [project.opam], for example if a version constraint is modified.
+
+To add a dependency:
+- Add it to [project.opam] (directly or if you use opam file generation, add it
+  to [dune-project] and run [dune build]).
+- Regenerate the lock file using [opam monorepo lock].
+- Locally update the [duniverse/] folder using [opam monorepo pull].
+- Open a PR with the changes to [project.opam], the lockfile and optionally
+  [dune-project].
+
+This has the side effect of upgrading all dependencies too. To get a more
+conservative upgrade, one can do the upgrade in two steps:
+- First, open a PR to update all dependencies as described above.
+- Then open a PR adding a dependency. It will only contain changes relevant to
+  that dependency.

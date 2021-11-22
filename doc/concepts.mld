@@ -1,0 +1,18 @@
+{1 Concepts}
+
+An [opam-monorepo] project uses 3 components in the source tree:
+- a set of opam files containing specifications about the dependencies (for
+  example, a dependency on [lwt >= 4.0.0])
+- a lockfile (with extension [.opam.locked]) containing references to exact
+  dependencies (for example, [lwt = 4.2.1]) and how to get them (URLs, hashes,
+  etc.). It also contains information about transitive dependencies, not just
+  the ones mentioned in opam files.
+- a [duniverse] folder, which contains the sources for all the packages
+  mentioned in the lockfile
+
+The two important commands are:
+- [opam monorepo lock], which will read the Opam file and compute a solution
+  using the Opam repository and the Opam solver. It will create or update the
+  lockfile with this solution.
+- [opam monorepo pull] will read the lockfile, download the dependencies, and
+  unpack them into the [duniverse/] folder.
