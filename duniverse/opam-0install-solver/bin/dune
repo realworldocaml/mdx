@@ -1,0 +1,5 @@
+(executable
+ (name main)
+ (public_name opam-0install)
+ (package opam-0install)
+ (libraries opam-0install opam-state fmt cmdliner))

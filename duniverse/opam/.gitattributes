@@ -1,0 +1,24 @@
+# Default behaviour, for if core.autocrlf isn't set
+* text=auto
+
+# Shell scripts, autoconf, etc. must have LF endings, even on Windows
+*.sh text eol=lf
+configure text eol=lf -diff linguist-generated
+configure.ac text eol=lf
+msvs-detect text eol=lf
+check_linker text eol=lf
+*.m4 text eol=lf
+changelog_checker text eol=lf
+*.cmd text eol=crlf
+
+# For diffing simplicity, the patch re-write test uses LF endings on Windows
+tests/patcher-test.reference text eol=lf
+
+# Don't normalise patch files
+*.patch -text
+
+# Actual binary files
+*.pdf binary
+
+# Avoid conflicts in master_changes.md
+master_changes.md merge=union
