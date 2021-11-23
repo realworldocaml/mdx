@@ -1,4 +1,4 @@
-## unreleased
+## 0.2.7
 
 ### Added
 
@@ -14,8 +14,6 @@
 - Improve the wording of the lockfile selection log (#222, @NathanReb)
 - Display the full solver error with `--verbose` (#229, @emillon)
 
-### Deprecated
-
 ### Fixed
 
 - Better errors for `opam-monorepo depext`, especially for non-interactive
@@ -25,10 +23,6 @@
   dependencies. (#203, @Leonidas-from-XIV)
 - Properly report missing dune-project file when trying to determine the
   to-be-genrated lockfile name (#227, @NathanReb)
-
-### Removed
-
-### Security
 
 ## 0.2.6
 
