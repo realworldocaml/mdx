@@ -1,2 +1,0 @@
-(library (name parsexp_cinaps_helpers) (libraries base stdio gen_parsexp_lib)
- (preprocess (pps ppx_jane)))
