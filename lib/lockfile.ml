@@ -149,8 +149,23 @@ module Depends = struct
                a list equality constraints"))
 
   let one_to_formula (name, version) : OpamTypes.filtered_formula =
-    Atom
-      (OpamPackage.Name.of_string name, Atom (Constraint (`Eq, FString version)))
+    let package_name = OpamPackage.Name.of_string name in
+    let variable =
+      OpamFormula.Atom
+        (OpamTypes.Filter (OpamTypes.FIdent ([], Config.vendor_variable, None)))
+    in
+    let version_constraint =
+      OpamFormula.Atom (OpamTypes.Constraint (`Eq, OpamTypes.FString version))
+    in
+    let should_be_vendored =
+      not @@ List.exists ~f:(String.equal name) Config.base_packages
+    in
+    let formula =
+      match should_be_vendored with
+      | true -> OpamFormula.And (version_constraint, variable)
+      | false -> version_constraint
+    in
+    Atom (package_name, formula)
 
   let to_filtered_formula t =
     let sorted = List.sort ~cmp:(fun (n, _) (n', _) -> String.compare n n') t in
