@@ -136,17 +136,32 @@ module Depends = struct
   let from_package_summaries l =
     List.map l ~f:(fun (p : Opam.Package_summary.t) -> (p.name, p.version))
 
+  let variable_equal a b =
+    String.equal (OpamVariable.to_string a) (OpamVariable.to_string b)
+
   let from_filtered_formula formula =
     let open OpamTypes in
     let atoms = OpamFormula.ands_to_list formula in
     Result.List.map atoms ~f:(function
       | Atom (name, Atom (Constraint (`Eq, FString version))) ->
           Ok (OpamPackage.Name.to_string name, version)
+      | Atom
+          ( name,
+            And
+              ( Atom (Constraint (`Eq, FString version)),
+                Atom (Filter (FIdent ([], var, None))) ) )
+      | Atom
+          ( name,
+            And
+              ( Atom (Filter (FIdent ([], var, None))),
+                Atom (Constraint (`Eq, FString version)) ) )
+        when variable_equal var Config.vendor_variable ->
+          Ok (OpamPackage.Name.to_string name, version)
       | _ ->
           Error
             (`Msg
               "Invalid opam-monorepo lockfile: depends should be expressed as \
-               a list equality constraints"))
+               a list equality constraints optionally with a `vendor` variable"))
 
   let one_to_formula (name, version) : OpamTypes.filtered_formula =
     let package_name = OpamPackage.Name.of_string name in
