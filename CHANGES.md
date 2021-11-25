@@ -4,6 +4,11 @@
 
 ### Changed
 
+- Mark packages to be pulled by opam-monorepo with the `vendor` variable so
+  using OPAM with `opam install --deps-only --locked .` will not install
+  packages that will be installed with `opam-monorepo pull` (#<PR_NUMBER>,
+  @Leonidas-from-XIV)
+
 ### Deprecated
 
 ### Fixed
