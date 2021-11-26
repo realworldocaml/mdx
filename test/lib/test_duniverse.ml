@@ -19,6 +19,7 @@ end
 
 let summary_factory ?(name = "") ?(version = "") ?dev_repo ?url_src
     ?(hashes = []) ?(depexts = []) () =
+  let name = OpamPackage.Name.of_string name in
   { Opam.Package_summary.name; version; dev_repo; url_src; hashes; depexts }
 
 module Repo = struct
@@ -56,7 +57,8 @@ module Repo = struct
             (Ok
                (Some
                   {
-                    opam = { name = "y"; version = "v" };
+                    opam =
+                      { name = OpamPackage.Name.of_string "y"; version = "v" };
                     dev_repo = "d";
                     url = Other "u";
                     hashes = [];
@@ -73,7 +75,8 @@ module Repo = struct
             (Ok
                (Some
                   {
-                    opam = { name = "y"; version = "v" };
+                    opam =
+                      { name = OpamPackage.Name.of_string "y"; version = "v" };
                     dev_repo = "d";
                     url = Git { repo = "r"; ref = "master" };
                     hashes = [];
@@ -85,6 +88,7 @@ module Repo = struct
   let package_factory ?(name = "") ?(version = "") ?(dev_repo = "")
       ?(url = Duniverse.Repo.Url.Other "") ?(hashes = []) () =
     let open Duniverse.Repo.Package in
+    let name = OpamPackage.Name.of_string name in
     { opam = { name; version }; dev_repo; url; hashes }
 
   let test_from_packages =
@@ -111,7 +115,8 @@ module Repo = struct
             dir = "d";
             url = Other "u";
             hashes = [];
-            provided_packages = [ { name = "p"; version = "v" } ];
+            provided_packages =
+              [ { name = OpamPackage.Name.of_string "p"; version = "v" } ];
           }
         ();
       make_test ~name:"Uses repository name as dir"
@@ -126,7 +131,8 @@ module Repo = struct
             dir = "repo";
             url = Other "u";
             hashes = [];
-            provided_packages = [ { name = "p"; version = "v" } ];
+            provided_packages =
+              [ { name = OpamPackage.Name.of_string "p"; version = "v" } ];
           }
         ();
       make_test ~name:"Expection for dune"
@@ -141,7 +147,8 @@ module Repo = struct
             dir = "dune_";
             url = Other "u";
             hashes = [];
-            provided_packages = [ { name = "p"; version = "v" } ];
+            provided_packages =
+              [ { name = OpamPackage.Name.of_string "p"; version = "v" } ];
           }
         ();
       make_test ~name:"Add all to provided packages" ~dev_repo:"d"
@@ -159,8 +166,8 @@ module Repo = struct
             hashes = [];
             provided_packages =
               [
-                { name = "d"; version = "zdev" };
-                { name = "d-lwt"; version = "zdev" };
+                { name = OpamPackage.Name.of_string "d"; version = "zdev" };
+                { name = OpamPackage.Name.of_string "d-lwt"; version = "zdev" };
               ];
           }
         ();
@@ -179,7 +186,8 @@ module Repo = struct
             hashes = [];
             provided_packages =
               [
-                { name = "d"; version = "1" }; { name = "d-lwt"; version = "2" };
+                { name = OpamPackage.Name.of_string "d"; version = "1" };
+                { name = OpamPackage.Name.of_string "d-lwt"; version = "2" };
               ];
           }
         ();
@@ -222,7 +230,8 @@ let test_from_package_summaries =
                dir = "d";
                url = Other "u";
                hashes = [];
-               provided_packages = [ { name = "x"; version = "v" } ];
+               provided_packages =
+                 [ { name = OpamPackage.Name.of_string "x"; version = "v" } ];
              };
            ])
       ();
@@ -243,8 +252,8 @@ let test_from_package_summaries =
                hashes = [];
                provided_packages =
                  [
-                   { name = "y-lwt"; version = "v" };
-                   { name = "y"; version = "v" };
+                   { name = OpamPackage.Name.of_string "y-lwt"; version = "v" };
+                   { name = OpamPackage.Name.of_string "y"; version = "v" };
                  ];
              };
            ])

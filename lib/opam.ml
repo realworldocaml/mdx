@@ -121,9 +121,19 @@ module Depexts = struct
       t
 end
 
+module Pp = struct
+  let package = Fmt.using OpamPackage.to_string Fmt.string
+
+  let package_name = Fmt.using OpamPackage.Name.to_string Fmt.string
+
+  let hash = Hash.pp
+
+  let url = Fmt.using OpamUrl.to_string Fmt.string
+end
+
 module Package_summary = struct
   type t = {
-    name : string;
+    name : OpamPackage.Name.t;
     version : string;
     url_src : Url.t option;
     hashes : OpamHash.t list;
@@ -132,7 +142,7 @@ module Package_summary = struct
   }
 
   let equal { name; version; url_src; hashes; dev_repo; depexts } t' =
-    String.equal name t'.name
+    OpamPackage.Name.equal name t'.name
     && String.equal version t'.version
     && Option.equal Url.equal url_src t'.url_src
     && List.equal Hash.equal hashes t'.hashes
@@ -144,14 +154,14 @@ module Package_summary = struct
     Format.fprintf fmt
       "@[<hov 2>{ name = %a;@ version = %a;@ url_src = %a;@ hashes = %a;@ \
        dev_repo = %a;@ depexts = %a }@]"
-      string name string version
+      Pp.package_name name string version
       (option ~brackets:true Url.pp)
       url_src (list Hash.pp) hashes
       (option ~brackets:true string)
       dev_repo Depexts.pp depexts
 
   let from_opam ~pkg opam_file =
-    let name = OpamPackage.name_to_string pkg in
+    let name = OpamPackage.name pkg in
     let version = OpamPackage.version_to_string pkg in
     let url_field = OpamFile.OPAM.url opam_file in
     let url_src = Option.map ~f:Url.from_opam_field url_field in
@@ -170,18 +180,9 @@ module Package_summary = struct
     | _ -> false
 
   let is_base_package = function
-    | { name; _ } when List.mem name ~set:Config.base_packages -> true
+    | { name; _ } when OpamPackage.Name.Set.mem name Config.base_packages ->
+        true
     | _ -> false
-end
-
-module Pp = struct
-  let package = Fmt.using OpamPackage.to_string Fmt.string
-
-  let package_name = Fmt.using OpamPackage.Name.to_string Fmt.string
-
-  let hash = Hash.pp
-
-  let url = Fmt.using OpamUrl.to_string Fmt.string
 end
 
 let local_package_version opam_file ~explicit_version =

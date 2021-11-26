@@ -2,7 +2,7 @@ open Import
 open Duniverse
 
 type t = {
-  name : string;
+  name : OpamPackage.Name.t;
   version : string;
   loc : string;
   pinned : bool;
@@ -29,12 +29,12 @@ let pp_pin_version = Fmt.(styled `Blue string)
 let pp_pin_loc ppf s =
   Fmt.pf ppf "pinned at %a" Fmt.(styled `Underline string) s
 
-let compare_pkg x y = String.compare x.name y.name
+let compare_pkg x y = OpamPackage.Name.compare x.name y.name
 
 let pp ~max_name ~max_version ~short ppf t =
-  if short then Fmt.string ppf t.name
+  if short then Duniverse_lib.Opam.Pp.package_name ppf t.name
   else
-    let padded_name = pad t.name max_name in
+    let padded_name = pad (OpamPackage.Name.to_string t.name) max_name in
     let padded_version = pad t.version max_version in
     if t.pinned then
       Fmt.pf ppf "%a %a %a" pp_name padded_name pp_pin_version padded_version
@@ -67,8 +67,7 @@ let with_descr pkgs =
           List.map
             ~f:(fun pkg ->
               let opam =
-                OpamPackage.create
-                  (OpamPackage.Name.of_string pkg.name)
+                OpamPackage.create pkg.name
                   (OpamPackage.Version.of_string pkg.version)
               in
               match OpamSwitchState.opam switch_state opam with
@@ -88,7 +87,7 @@ let run (`Root root) (`Lockfile explicit_lockfile) short () =
   let max_name, max_version =
     List.fold_left
       ~f:(fun (max_name, max_version) t ->
-        ( max (String.length t.name) max_name,
+        ( max (String.length (OpamPackage.Name.to_string t.name)) max_name,
           max (String.length t.version) max_version ))
       ~init:(0, 0) pkgs
   in

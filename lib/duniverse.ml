@@ -6,25 +6,26 @@ type unresolved = Git.Ref.t
 type resolved = Git.Ref.resolved
 
 module Opam = struct
-  type t = { name : string; version : string }
+  type t = { name : OpamPackage.Name.t; version : string }
 
   let equal t t' =
     let { name; version } = t in
     let { name = name'; version = version' } = t' in
-    String.equal name name' && String.equal version version'
+    OpamPackage.Name.equal name name' && String.equal version version'
 
-  let pp fmt { name; version } = Format.fprintf fmt "%s.%s" name version
+  let pp fmt { name; version } =
+    Format.fprintf fmt "%a.%s" Opam.Pp.package_name name version
 
   let raw_pp fmt { name; version } =
     let open Pp_combinators.Ocaml in
-    Format.fprintf fmt "@[<hov 2>{ name = %a;@ version = %a }@]" string name
-      string version
+    Format.fprintf fmt "@[<hov 2>{ name = %a;@ version = %a }@]"
+      Opam.Pp.package_name name string version
 
   let to_opam { name = n; version = v } =
-    OpamPackage.(create (Name.of_string n) (Version.of_string v))
+    OpamPackage.(create n (Version.of_string v))
 
   let from_opam pkg =
-    let name = OpamPackage.name_to_string pkg in
+    let name = OpamPackage.name pkg in
     let version = OpamPackage.version_to_string pkg in
     { name; version }
 end
@@ -136,7 +137,8 @@ module Repo = struct
       | Other s -> s
     in
     let pp_package fmt { Package.opam = { name; version }; url; _ } =
-      Format.fprintf fmt "%s.%s: %s" name version (url_to_string url)
+      Format.fprintf fmt "%a.%s: %s" O.Pp.package_name name version
+        (url_to_string url)
     in
     let sep fmt () = Format.fprintf fmt "\n" in
     Logs.info (fun l ->

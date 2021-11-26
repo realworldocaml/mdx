@@ -131,25 +131,26 @@ module Root_packages = struct
 end
 
 module Depends = struct
-  type name = string
-
   type version = string
 
   type t = {
-    dependencies : (name * version) list;
+    dependencies : (OpamPackage.Name.t * version) list;
     vendored : OpamPackage.Name.Set.t;
   }
 
   let from_package_summaries l =
-    let non_virtuals =
+    let to_vendor =
       List.filter_map
         ~f:(fun summary ->
-          match summary.Opam.Package_summary.url_src with
-          | None -> None
-          | Some _ -> Some (OpamPackage.Name.of_string summary.name))
+          match Opam.Package_summary.is_base_package summary with
+          | true -> None
+          | false -> (
+              match Opam.Package_summary.is_virtual summary with
+              | true -> None
+              | false -> Some summary.name))
         l
     in
-    let vendored = OpamPackage.Name.Set.of_list non_virtuals in
+    let vendored = OpamPackage.Name.Set.of_list to_vendor in
     {
       dependencies =
         List.map l ~f:(fun (p : Opam.Package_summary.t) -> (p.name, p.version));
@@ -162,7 +163,7 @@ module Depends = struct
   let from_filtered_formula formula =
     let open OpamTypes in
     let atoms = OpamFormula.ands_to_list formula in
-    let dependency name version = (OpamPackage.Name.to_string name, version) in
+    let dependency name version = (name, version) in
     Result.List.fold_left atoms
       ~init:{ dependencies = []; vendored = OpamPackage.Name.Set.empty }
       ~f:(fun { dependencies; vendored } -> function
@@ -190,7 +191,6 @@ module Depends = struct
                a list equality constraints optionally with a `vendor` variable"))
 
   let one_to_formula vendored (name, version) : OpamTypes.filtered_formula =
-    let package_name = OpamPackage.Name.of_string name in
     let variable =
       OpamFormula.Atom
         (OpamTypes.Filter (OpamTypes.FIdent ([], Config.vendor_variable, None)))
@@ -198,21 +198,19 @@ module Depends = struct
     let version_constraint =
       OpamFormula.Atom (OpamTypes.Constraint (`Eq, OpamTypes.FString version))
     in
-    let in_base_packages =
-      List.exists ~f:(String.equal name) Config.base_packages
-    in
-    let is_vendored = OpamPackage.Name.Set.mem package_name vendored in
-    let should_be_vendored = (not in_base_packages) && is_vendored in
+    let is_vendored = OpamPackage.Name.Set.mem name vendored in
     let formula =
-      match should_be_vendored with
+      match is_vendored with
       | true -> OpamFormula.And (version_constraint, variable)
       | false -> version_constraint
     in
-    Atom (package_name, formula)
+    Atom (name, formula)
 
   let to_filtered_formula { dependencies; vendored } =
     let sorted =
-      List.sort ~cmp:(fun (n, _) (n', _) -> String.compare n n') dependencies
+      List.sort
+        ~cmp:(fun (n, _) (n', _) -> OpamPackage.Name.compare n n')
+        dependencies
     in
     match sorted with
     | [] -> OpamFormula.Empty

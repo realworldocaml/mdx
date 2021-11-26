@@ -13,6 +13,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *)
+open Import
 
 let base_packages =
   [
@@ -26,6 +27,8 @@ let base_packages =
     "ocaml-base-compiler";
     "ocaml-variants";
   ]
+  |> List.map ~f:OpamPackage.Name.of_string
+  |> OpamPackage.Name.Set.of_list
 
 let duniverse_opam_repo =
   "git+https://github.com/dune-universe/opam-overlays.git"

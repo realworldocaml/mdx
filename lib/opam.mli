@@ -14,7 +14,7 @@ end
 
 module Package_summary : sig
   type t = {
-    name : string;
+    name : OpamPackage.Name.t;
     version : string;
     url_src : Url.t option;
     hashes : OpamHash.t list;
