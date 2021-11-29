@@ -5,7 +5,7 @@ type unresolved = Git.Ref.t
 type resolved = Git.Ref.resolved
 
 module Opam : sig
-  type t = { name : OpamPackage.Name.t; version : OpamPackage.Version.t }
+  type t = OpamPackage.t
   (** Type of dependencies to install through opam *)
 
   val equal : t -> t -> bool

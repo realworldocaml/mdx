@@ -131,11 +131,7 @@ module Root_packages = struct
 end
 
 module Depends = struct
-  type dependency = {
-    name : OpamPackage.Name.t;
-    version : OpamPackage.Version.t;
-    vendored : bool;
-  }
+  type dependency = { package : OpamPackage.t; vendored : bool }
 
   type t = dependency list
 
@@ -145,7 +141,7 @@ module Depends = struct
           (not @@ Opam.Package_summary.is_base_package summary)
           && (not @@ Opam.Package_summary.is_virtual summary)
         in
-        { vendored; name = summary.name; version = summary.version })
+        { vendored; package = summary.package })
 
   let variable_equal a b =
     String.equal (OpamVariable.to_string a) (OpamVariable.to_string b)
@@ -156,7 +152,8 @@ module Depends = struct
     Result.List.map atoms ~f:(function
       | Atom (name, Atom (Constraint (`Eq, FString version))) ->
           let version = OpamPackage.Version.of_string version in
-          Ok { name; version; vendored = false }
+          let package = OpamPackage.create name version in
+          Ok { package; vendored = false }
       | Atom
           ( name,
             And
@@ -169,14 +166,17 @@ module Depends = struct
                 Atom (Constraint (`Eq, FString version)) ) )
         when variable_equal var Config.vendor_variable ->
           let version = OpamPackage.Version.of_string version in
-          Ok { name; version; vendored = true }
+          let package = OpamPackage.create name version in
+          Ok { package; vendored = true }
       | _ ->
           Error
             (`Msg
               "Invalid opam-monorepo lockfile: depends should be expressed as \
                a list equality constraints optionally with a `vendor` variable"))
 
-  let one_to_formula { name; version; vendored } : OpamTypes.filtered_formula =
+  let one_to_formula { package; vendored } : OpamTypes.filtered_formula =
+    let name = package.name in
+    let version = package.version in
     let variable =
       OpamFormula.Atom
         (OpamTypes.Filter (OpamTypes.FIdent ([], Config.vendor_variable, None)))
@@ -196,8 +196,8 @@ module Depends = struct
   let to_filtered_formula xs =
     let sorted =
       List.sort
-        ~cmp:(fun { name; _ } { name = name'; _ } ->
-          OpamPackage.Name.compare name name')
+        ~cmp:(fun { package; _ } { package = package'; _ } ->
+          OpamPackage.compare package package')
         xs
     in
     match sorted with

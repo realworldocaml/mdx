@@ -5,28 +5,23 @@ type unresolved = Git.Ref.t
 
 type resolved = Git.Ref.resolved
 
+(* TODO: remove? *)
 module Opam = struct
-  type t = { name : OpamPackage.Name.t; version : OpamPackage.Version.t }
+  type t = OpamPackage.t
 
-  let equal t t' =
-    let { name; version } = t in
-    let { name = name'; version = version' } = t' in
-    OpamPackage.Name.equal name name'
-    && OpamPackage.Version.equal version version'
+  let equal = OpamPackage.equal
 
-  let pp fmt { name; version } =
-    Format.fprintf fmt "%a.%a" Opam.Pp.package_name name Opam.Pp.version version
+  let pp fmt pkg =
+    Format.fprintf fmt "%a.%a" Opam.Pp.package_name pkg.OpamPackage.name
+      Opam.Pp.version pkg.version
 
-  let raw_pp fmt { name; version } =
+  let raw_pp fmt pkg =
     Format.fprintf fmt "@[<hov 2>{ name = %a;@ version = %a }@]"
-      Opam.Pp.package_name name Opam.Pp.version version
+      Opam.Pp.package_name pkg.OpamPackage.name Opam.Pp.version pkg.version
 
-  let to_opam { name; version } = OpamPackage.create name version
+  let to_opam x = x
 
-  let from_opam pkg =
-    let name = OpamPackage.name pkg in
-    let version = OpamPackage.version pkg in
-    { name; version }
+  let from_opam x = x
 end
 
 module Repo = struct
@@ -111,16 +106,10 @@ module Repo = struct
       match ps with
       | _ when is_base_package ps -> Ok None
       | { url_src = None; _ } | { dev_repo = None; _ } -> Ok None
-      | {
-       url_src = Some url_src;
-       name;
-       version;
-       dev_repo = Some dev_repo;
-       hashes;
-       _;
-      } ->
+      | { url_src = Some url_src; package; dev_repo = Some dev_repo; hashes; _ }
+        ->
           url url_src >>= fun url ->
-          Ok (Some { opam = { name; version }; dev_repo; url; hashes })
+          Ok (Some { opam = package; dev_repo; url; hashes })
   end
 
   type 'ref t = {

@@ -17,16 +17,15 @@ module Testable = struct
   end
 end
 
-let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
-    ?(hashes = []) ?(depexts = []) () =
-  let name = OpamPackage.Name.of_string name in
-  let version = OpamPackage.Version.of_string version in
-  { Opam.Package_summary.name; version; dev_repo; url_src; hashes; depexts }
-
 let opam_factory ~name ~version =
   let name = OpamPackage.Name.of_string name in
   let version = OpamPackage.Version.of_string version in
-  Duniverse.Opam.{ name; version }
+  OpamPackage.create name version
+
+let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
+    ?(hashes = []) ?(depexts = []) () =
+  let package = opam_factory ~name ~version in
+  { Opam.Package_summary.package; dev_repo; url_src; hashes; depexts }
 
 module Repo = struct
   module Package = struct
