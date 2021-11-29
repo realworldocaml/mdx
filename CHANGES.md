@@ -4,6 +4,7 @@
 
 - Add trailing `;;` to the output of toplevel phrases that were missing it.
   (#346, @Leonidas-from-XIV)
+- Make MDX compatible with OCaml 4.14 (#356, @NathanReb)
 
 #### Changed
 
