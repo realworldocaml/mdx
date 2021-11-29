@@ -48,7 +48,7 @@ let pp ~max_name ~max_version ~short ppf t =
 
 let pkgs_of_repo (t : resolved Repo.t) =
   List.map
-    ~f:(fun (pkg : Opam.t) ->
+    ~f:(fun (pkg : OpamPackage.t) ->
       let name = pkg.name in
       let version = pkg.version in
       let loc = Repo.Url.to_string t.url in

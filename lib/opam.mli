@@ -40,6 +40,8 @@ end
 module Pp : sig
   val package : OpamPackage.t Fmt.t
 
+  val raw_package : OpamPackage.t Fmt.t
+
   val package_name : OpamPackage.Name.t Fmt.t
 
   val version : OpamPackage.Version.t Fmt.t

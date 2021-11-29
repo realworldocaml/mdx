@@ -215,7 +215,7 @@ module Pin_depends = struct
     let open Duniverse.Repo in
     List.concat_map l ~f:(fun { provided_packages; url; _ } ->
         let url = Url.to_opam_url url in
-        List.map provided_packages ~f:(fun p -> (Duniverse.Opam.to_opam p, url)))
+        List.map provided_packages ~f:(fun p -> (p, url)))
 
   let sort t =
     List.sort ~cmp:(fun (pkg, _) (pkg', _) -> OpamPackage.compare pkg pkg') t
@@ -357,7 +357,7 @@ let to_duniverse { duniverse_dirs; pin_depends; _ } =
         OpamUrl.Map.update url (fun l -> package :: l) [] acc)
     |> OpamUrl.Map.bindings
   in
-  Result.List.map packages_per_url ~f:(fun (url, packages) ->
+  Result.List.map packages_per_url ~f:(fun (url, provided_packages) ->
       match OpamUrl.Map.find_opt url duniverse_dirs with
       | None ->
           let msg =
@@ -367,9 +367,6 @@ let to_duniverse { duniverse_dirs; pin_depends; _ } =
           in
           Error (`Msg msg)
       | Some (dir, hashes) ->
-          let provided_packages =
-            List.map packages ~f:Duniverse.Opam.from_opam
-          in
           url_to_duniverse_url url >>= fun url ->
           Ok { Duniverse.Repo.dir; url; hashes; provided_packages })
 

@@ -128,6 +128,10 @@ module Pp = struct
 
   let version = Fmt.using OpamPackage.Version.to_string Fmt.string
 
+  let raw_package fmt pkg =
+    Format.fprintf fmt "@[<hov 2>{ name = %a;@ version = %a }@]" package_name
+      pkg.OpamPackage.name version pkg.version
+
   let hash = Hash.pp
 
   let url = Fmt.using OpamUrl.to_string Fmt.string
