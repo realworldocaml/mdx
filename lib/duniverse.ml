@@ -6,27 +6,26 @@ type unresolved = Git.Ref.t
 type resolved = Git.Ref.resolved
 
 module Opam = struct
-  type t = { name : OpamPackage.Name.t; version : string }
+  type t = { name : OpamPackage.Name.t; version : OpamPackage.Version.t }
 
   let equal t t' =
     let { name; version } = t in
     let { name = name'; version = version' } = t' in
-    OpamPackage.Name.equal name name' && String.equal version version'
+    OpamPackage.Name.equal name name'
+    && OpamPackage.Version.equal version version'
 
   let pp fmt { name; version } =
-    Format.fprintf fmt "%a.%s" Opam.Pp.package_name name version
+    Format.fprintf fmt "%a.%a" Opam.Pp.package_name name Opam.Pp.version version
 
   let raw_pp fmt { name; version } =
-    let open Pp_combinators.Ocaml in
     Format.fprintf fmt "@[<hov 2>{ name = %a;@ version = %a }@]"
-      Opam.Pp.package_name name string version
+      Opam.Pp.package_name name Opam.Pp.version version
 
-  let to_opam { name = n; version = v } =
-    OpamPackage.(create n (Version.of_string v))
+  let to_opam { name; version } = OpamPackage.create name version
 
   let from_opam pkg =
     let name = OpamPackage.name pkg in
-    let version = OpamPackage.version_to_string pkg in
+    let version = OpamPackage.version pkg in
     { name; version }
 end
 
@@ -137,7 +136,7 @@ module Repo = struct
       | Other s -> s
     in
     let pp_package fmt { Package.opam = { name; version }; url; _ } =
-      Format.fprintf fmt "%a.%s: %s" O.Pp.package_name name version
+      Format.fprintf fmt "%a.%a: %s" O.Pp.package_name name O.Pp.version version
         (url_to_string url)
     in
     let sep fmt () = Format.fprintf fmt "\n" in
@@ -181,7 +180,7 @@ module Repo = struct
            need dune to provide that feature. *)
         let highest_version_package =
           List.max_exn packages ~compare:(fun p p' ->
-              OpamVersionCompare.compare p.Package.opam.version p'.opam.version)
+              OpamPackage.Version.compare p.Package.opam.version p'.opam.version)
         in
         log_url_selection ~dev_repo ~packages ~highest_version_package;
         let url = highest_version_package.url in

@@ -3,7 +3,7 @@ open Duniverse
 
 type t = {
   name : OpamPackage.Name.t;
-  version : string;
+  version : OpamPackage.Version.t;
   loc : string;
   pinned : bool;
   descr : string option;
@@ -14,6 +14,7 @@ type t = {
 let pad s max_len = Printf.sprintf "%-*s" max_len s
 
 let guess_pin ~version ~loc =
+  let version = OpamPackage.Version.to_string version in
   (* opam-overlays *)
   String.is_suffix ~suffix:"+dune" version
   || String.is_prefix ~prefix:"https://github.com/dune-universe" loc
@@ -35,7 +36,9 @@ let pp ~max_name ~max_version ~short ppf t =
   if short then Duniverse_lib.Opam.Pp.package_name ppf t.name
   else
     let padded_name = pad (OpamPackage.Name.to_string t.name) max_name in
-    let padded_version = pad t.version max_version in
+    let padded_version =
+      pad (OpamPackage.Version.to_string t.version) max_version
+    in
     if t.pinned then
       Fmt.pf ppf "%a %a %a" pp_name padded_name pp_pin_version padded_version
         pp_pin_loc t.loc
@@ -66,10 +69,7 @@ let with_descr pkgs =
       OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
           List.map
             ~f:(fun pkg ->
-              let opam =
-                OpamPackage.create pkg.name
-                  (OpamPackage.Version.of_string pkg.version)
-              in
+              let opam = OpamPackage.create pkg.name pkg.version in
               match OpamSwitchState.opam switch_state opam with
               | opam -> { pkg with descr = OpamFile.OPAM.synopsis opam }
               | exception Not_found ->
@@ -88,7 +88,9 @@ let run (`Root root) (`Lockfile explicit_lockfile) short () =
     List.fold_left
       ~f:(fun (max_name, max_version) t ->
         ( max (String.length (OpamPackage.Name.to_string t.name)) max_name,
-          max (String.length t.version) max_version ))
+          max
+            (String.length (OpamPackage.Version.to_string t.version))
+            max_version ))
       ~init:(0, 0) pkgs
   in
   let pp = pp ~max_name ~max_version ~short in

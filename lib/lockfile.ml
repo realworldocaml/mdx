@@ -131,10 +131,8 @@ module Root_packages = struct
 end
 
 module Depends = struct
-  type version = string
-
   type t = {
-    dependencies : (OpamPackage.Name.t * version) list;
+    dependencies : (OpamPackage.Name.t * OpamPackage.Version.t) list;
     vendored : OpamPackage.Name.Set.t;
   }
 
@@ -163,7 +161,10 @@ module Depends = struct
   let from_filtered_formula formula =
     let open OpamTypes in
     let atoms = OpamFormula.ands_to_list formula in
-    let dependency name version = (name, version) in
+    let dependency name version =
+      let version = OpamPackage.Version.of_string version in
+      (name, version)
+    in
     Result.List.fold_left atoms
       ~init:{ dependencies = []; vendored = OpamPackage.Name.Set.empty }
       ~f:(fun { dependencies; vendored } -> function
@@ -196,7 +197,9 @@ module Depends = struct
         (OpamTypes.Filter (OpamTypes.FIdent ([], Config.vendor_variable, None)))
     in
     let version_constraint =
-      OpamFormula.Atom (OpamTypes.Constraint (`Eq, OpamTypes.FString version))
+      OpamFormula.Atom
+        (OpamTypes.Constraint
+           (`Eq, OpamTypes.FString (OpamPackage.Version.to_string version)))
     in
     let is_vendored = OpamPackage.Name.Set.mem name vendored in
     let formula =

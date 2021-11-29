@@ -126,6 +126,8 @@ module Pp = struct
 
   let package_name = Fmt.using OpamPackage.Name.to_string Fmt.string
 
+  let version = Fmt.using OpamPackage.Version.to_string Fmt.string
+
   let hash = Hash.pp
 
   let url = Fmt.using OpamUrl.to_string Fmt.string
@@ -134,7 +136,7 @@ end
 module Package_summary = struct
   type t = {
     name : OpamPackage.Name.t;
-    version : string;
+    version : OpamPackage.Version.t;
     url_src : Url.t option;
     hashes : OpamHash.t list;
     dev_repo : string option;
@@ -143,7 +145,7 @@ module Package_summary = struct
 
   let equal { name; version; url_src; hashes; dev_repo; depexts } t' =
     OpamPackage.Name.equal name t'.name
-    && String.equal version t'.version
+    && OpamPackage.Version.equal version t'.version
     && Option.equal Url.equal url_src t'.url_src
     && List.equal Hash.equal hashes t'.hashes
     && Option.equal String.equal dev_repo t'.dev_repo
@@ -154,7 +156,7 @@ module Package_summary = struct
     Format.fprintf fmt
       "@[<hov 2>{ name = %a;@ version = %a;@ url_src = %a;@ hashes = %a;@ \
        dev_repo = %a;@ depexts = %a }@]"
-      Pp.package_name name string version
+      Pp.package_name name Pp.version version
       (option ~brackets:true Url.pp)
       url_src (list Hash.pp) hashes
       (option ~brackets:true string)
@@ -162,7 +164,7 @@ module Package_summary = struct
 
   let from_opam ~pkg opam_file =
     let name = OpamPackage.name pkg in
-    let version = OpamPackage.version_to_string pkg in
+    let version = OpamPackage.version pkg in
     let url_field = OpamFile.OPAM.url opam_file in
     let url_src = Option.map ~f:Url.from_opam_field url_field in
     let hashes =

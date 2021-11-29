@@ -15,7 +15,7 @@ end
 module Package_summary : sig
   type t = {
     name : OpamPackage.Name.t;
-    version : string;
+    version : OpamPackage.Version.t;
     url_src : Url.t option;
     hashes : OpamHash.t list;
     dev_repo : string option;
@@ -42,6 +42,8 @@ module Pp : sig
   val package : OpamPackage.t Fmt.t
 
   val package_name : OpamPackage.Name.t Fmt.t
+
+  val version : OpamPackage.Version.t Fmt.t
 
   val hash : OpamHash.t Fmt.t
 
