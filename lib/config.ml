@@ -13,6 +13,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *)
+open Import
 
 let base_packages =
   [
@@ -26,6 +27,8 @@ let base_packages =
     "ocaml-base-compiler";
     "ocaml-variants";
   ]
+  |> List.map ~f:OpamPackage.Name.of_string
+  |> OpamPackage.Name.Set.of_list
 
 let duniverse_opam_repo =
   "git+https://github.com/dune-universe/opam-overlays.git"
@@ -49,3 +52,6 @@ let dune_src_dir = Fpath.(bootstrap_src_dir / "dune")
 let dune_latest_tag = "2.6.0" (* TODO get from opam metadata *)
 
 let lockfile_ext = ".opam.locked"
+
+(* variable to use for vendoring *)
+let vendor_variable = OpamVariable.of_string "vendor"

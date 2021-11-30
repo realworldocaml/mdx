@@ -121,38 +121,50 @@ module Depexts = struct
       t
 end
 
+module Pp = struct
+  let package = Fmt.using OpamPackage.to_string Fmt.string
+
+  let package_name = Fmt.using OpamPackage.Name.to_string Fmt.string
+
+  let version = Fmt.using OpamPackage.Version.to_string Fmt.string
+
+  let raw_package fmt pkg =
+    Format.fprintf fmt "@[<hov 2>{ name = %a;@ version = %a }@]" package_name
+      pkg.OpamPackage.name version pkg.version
+
+  let hash = Hash.pp
+
+  let url = Fmt.using OpamUrl.to_string Fmt.string
+end
+
 module Package_summary = struct
   type t = {
-    name : string;
-    version : string;
+    package : OpamPackage.t;
     url_src : Url.t option;
     hashes : OpamHash.t list;
     dev_repo : string option;
     depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
   }
 
-  let equal { name; version; url_src; hashes; dev_repo; depexts } t' =
-    String.equal name t'.name
-    && String.equal version t'.version
+  let equal { package; url_src; hashes; dev_repo; depexts } t' =
+    OpamPackage.equal package t'.package
     && Option.equal Url.equal url_src t'.url_src
     && List.equal Hash.equal hashes t'.hashes
     && Option.equal String.equal dev_repo t'.dev_repo
     && Depexts.equal depexts t'.depexts
 
-  let pp fmt { name; version; url_src; hashes; dev_repo; depexts } =
+  let pp fmt { package; url_src; hashes; dev_repo; depexts } =
     let open Pp_combinators.Ocaml in
     Format.fprintf fmt
       "@[<hov 2>{ name = %a;@ version = %a;@ url_src = %a;@ hashes = %a;@ \
        dev_repo = %a;@ depexts = %a }@]"
-      string name string version
+      Pp.package_name package.name Pp.version package.version
       (option ~brackets:true Url.pp)
       url_src (list Hash.pp) hashes
       (option ~brackets:true string)
       dev_repo Depexts.pp depexts
 
-  let from_opam ~pkg opam_file =
-    let name = OpamPackage.name_to_string pkg in
-    let version = OpamPackage.version_to_string pkg in
+  let from_opam ~pkg:package opam_file =
     let url_field = OpamFile.OPAM.url opam_file in
     let url_src = Option.map ~f:Url.from_opam_field url_field in
     let hashes =
@@ -162,7 +174,7 @@ module Package_summary = struct
       Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file)
     in
     let depexts = OpamFile.OPAM.depexts opam_file in
-    { name; version; url_src; hashes; dev_repo; depexts }
+    { package; url_src; hashes; dev_repo; depexts }
 
   let is_virtual = function
     | { url_src = None; _ } -> true
@@ -170,18 +182,10 @@ module Package_summary = struct
     | _ -> false
 
   let is_base_package = function
-    | { name; _ } when List.mem name ~set:Config.base_packages -> true
+    | { package; _ }
+      when OpamPackage.Name.Set.mem package.name Config.base_packages ->
+        true
     | _ -> false
-end
-
-module Pp = struct
-  let package = Fmt.using OpamPackage.to_string Fmt.string
-
-  let package_name = Fmt.using OpamPackage.Name.to_string Fmt.string
-
-  let hash = Hash.pp
-
-  let url = Fmt.using OpamUrl.to_string Fmt.string
 end
 
 let local_package_version opam_file ~explicit_version =

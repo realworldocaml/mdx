@@ -1,21 +1,6 @@
-module O = Opam
-
 type unresolved = Git.Ref.t
 
 type resolved = Git.Ref.resolved
-
-module Opam : sig
-  type t = { name : string; version : string }
-  (** Type of dependencies to install through opam *)
-
-  val equal : t -> t -> bool
-
-  val pp : t Fmt.t
-
-  val to_opam : t -> OpamPackage.t
-
-  val from_opam : OpamPackage.t -> t
-end
 
 module Repo : sig
   module Url : sig
@@ -38,7 +23,7 @@ module Repo : sig
     dir : string;
     url : 'ref Url.t;
     hashes : OpamHash.t list;
-    provided_packages : Opam.t list;
+    provided_packages : OpamPackage.t list;
   }
   (** Type of dependencies to clone in the duniverse *)
 
@@ -52,7 +37,7 @@ module Repo : sig
 
   module Package : sig
     type t = {
-      opam : Opam.t;
+      opam : OpamPackage.t;
       dev_repo : string;
       url : unresolved Url.t;
       hashes : OpamHash.t list;
@@ -64,7 +49,7 @@ module Repo : sig
 
     val from_package_summary :
       get_default_branch:(string -> (string, Rresult.R.msg) result) ->
-      O.Package_summary.t ->
+      Opam.Package_summary.t ->
       (t option, [ `Msg of string ]) result
   end
 
@@ -80,7 +65,7 @@ val equal : t -> t -> bool
 
 val from_package_summaries :
   get_default_branch:(string -> (string, Rresult.R.msg) result) ->
-  O.Package_summary.t list ->
+  Opam.Package_summary.t list ->
   (unresolved Repo.t list, [ `Msg of string ]) result
 (** Build opamverse and duniverse from a list of [Types.Opam.entry] values.
     It filters out virtual packages and packages with unknown dev-repo.  *)

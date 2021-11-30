@@ -1,33 +1,8 @@
 open Import
-module O = Opam
 
 type unresolved = Git.Ref.t
 
 type resolved = Git.Ref.resolved
-
-module Opam = struct
-  type t = { name : string; version : string }
-
-  let equal t t' =
-    let { name; version } = t in
-    let { name = name'; version = version' } = t' in
-    String.equal name name' && String.equal version version'
-
-  let pp fmt { name; version } = Format.fprintf fmt "%s.%s" name version
-
-  let raw_pp fmt { name; version } =
-    let open Pp_combinators.Ocaml in
-    Format.fprintf fmt "@[<hov 2>{ name = %a;@ version = %a }@]" string name
-      string version
-
-  let to_opam { name = n; version = v } =
-    OpamPackage.(create (Name.of_string n) (Version.of_string v))
-
-  let from_opam pkg =
-    let name = OpamPackage.name_to_string pkg in
-    let version = OpamPackage.version_to_string pkg in
-    { name; version }
-end
 
 module Repo = struct
   module Url = struct
@@ -71,23 +46,23 @@ module Repo = struct
     let to_opam_url t = opam_url_from_string (to_string t)
 
     let from_opam_url opam_url =
-      match O.Url.from_opam opam_url with
-      | O.Url.Other s -> Ok (Other s)
-      | O.Url.Git { repo; ref = Some commit } ->
+      match Opam.Url.from_opam opam_url with
+      | Opam.Url.Other s -> Ok (Other s)
+      | Opam.Url.Git { repo; ref = Some commit } ->
           Ok (Git { repo; ref = { Git.Ref.t = commit; commit } })
       | _ -> Error (`Msg "Git URL must be resolved to a commit hash")
   end
 
   module Package = struct
     type t = {
-      opam : Opam.t;
+      opam : OpamPackage.t;
       dev_repo : string;
       url : unresolved Url.t;
       hashes : OpamHash.t list;
     }
 
     let equal t t' =
-      Opam.equal t.opam t'.opam
+      OpamPackage.equal t.opam t'.opam
       && String.equal t.dev_repo t'.dev_repo
       && Url.equal Git.Ref.equal t.url t'.url
 
@@ -95,14 +70,14 @@ module Repo = struct
       let open Pp_combinators.Ocaml in
       Format.fprintf fmt
         "@[<hov 2>{ opam = %a;@ dev_repo = %a;@ url = %a;@ hashes = %a }@]"
-        Opam.raw_pp opam string dev_repo (Url.pp Git.Ref.pp) url
-        (list O.Pp.hash) hashes
+        Opam.Pp.raw_package opam string dev_repo (Url.pp Git.Ref.pp) url
+        (list Opam.Pp.hash) hashes
 
     let from_package_summary ~get_default_branch ps =
-      let open O.Package_summary in
+      let open Opam.Package_summary in
       let open Result.O in
       let url ourl =
-        match (ourl : O.Url.t) with
+        match (ourl : Opam.Url.t) with
         | Other s -> Ok (Url.Other s)
         | Git { repo; ref = Some ref } -> Ok (Url.Git { repo; ref })
         | Git { repo; ref = None } ->
@@ -111,23 +86,17 @@ module Repo = struct
       match ps with
       | _ when is_base_package ps -> Ok None
       | { url_src = None; _ } | { dev_repo = None; _ } -> Ok None
-      | {
-       url_src = Some url_src;
-       name;
-       version;
-       dev_repo = Some dev_repo;
-       hashes;
-       _;
-      } ->
+      | { url_src = Some url_src; package; dev_repo = Some dev_repo; hashes; _ }
+        ->
           url url_src >>= fun url ->
-          Ok (Some { opam = { name; version }; dev_repo; url; hashes })
+          Ok (Some { opam = package; dev_repo; url; hashes })
   end
 
   type 'ref t = {
     dir : string;
     url : 'ref Url.t;
     hashes : OpamHash.t list;
-    provided_packages : Opam.t list;
+    provided_packages : OpamPackage.t list;
   }
 
   let log_url_selection ~dev_repo ~packages ~highest_version_package =
@@ -136,7 +105,8 @@ module Repo = struct
       | Other s -> s
     in
     let pp_package fmt { Package.opam = { name; version }; url; _ } =
-      Format.fprintf fmt "%s.%s: %s" name version (url_to_string url)
+      Format.fprintf fmt "%a.%a: %s" Opam.Pp.package_name name Opam.Pp.version
+        version (url_to_string url)
     in
     let sep fmt () = Format.fprintf fmt "\n" in
     Logs.info (fun l ->
@@ -179,7 +149,7 @@ module Repo = struct
            need dune to provide that feature. *)
         let highest_version_package =
           List.max_exn packages ~compare:(fun p p' ->
-              OpamVersionCompare.compare p.Package.opam.version p'.opam.version)
+              OpamPackage.Version.compare p.Package.opam.version p'.opam.version)
         in
         log_url_selection ~dev_repo ~packages ~highest_version_package;
         let url = highest_version_package.url in
@@ -198,16 +168,16 @@ module Repo = struct
     in
     String.equal dir dir'
     && Url.equal equal_ref url url'
-    && List.equal O.Hash.equal hashes hashes'
-    && List.equal Opam.equal provided_packages provided_packages'
+    && List.equal Opam.Hash.equal hashes hashes'
+    && List.equal OpamPackage.equal provided_packages provided_packages'
 
   let pp pp_ref fmt { dir; url; hashes; provided_packages } =
     let open Pp_combinators.Ocaml in
     Format.fprintf fmt
       "@[<hov 2>{ dir = %a;@ url = %a;@ hashes = %a;@ provided_packages = %a \
        }@]"
-      string dir (Url.pp pp_ref) url (list O.Pp.hash) hashes (list Opam.raw_pp)
-      provided_packages
+      string dir (Url.pp pp_ref) url (list Opam.Pp.hash) hashes
+      (list Opam.Pp.raw_package) provided_packages
 
   let resolve ~resolve_ref ({ url; _ } as t) =
     let open Result.O in

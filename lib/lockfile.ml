@@ -131,29 +131,75 @@ module Root_packages = struct
 end
 
 module Depends = struct
-  type t = (string * string) list
+  type dependency = { package : OpamPackage.t; vendored : bool }
+
+  type t = dependency list
 
   let from_package_summaries l =
-    List.map l ~f:(fun (p : Opam.Package_summary.t) -> (p.name, p.version))
+    List.map l ~f:(fun summary ->
+        let vendored =
+          (not @@ Opam.Package_summary.is_base_package summary)
+          && (not @@ Opam.Package_summary.is_virtual summary)
+        in
+        { vendored; package = summary.package })
+
+  let variable_equal a b =
+    String.equal (OpamVariable.to_string a) (OpamVariable.to_string b)
 
   let from_filtered_formula formula =
     let open OpamTypes in
     let atoms = OpamFormula.ands_to_list formula in
     Result.List.map atoms ~f:(function
       | Atom (name, Atom (Constraint (`Eq, FString version))) ->
-          Ok (OpamPackage.Name.to_string name, version)
+          let version = OpamPackage.Version.of_string version in
+          let package = OpamPackage.create name version in
+          Ok { package; vendored = false }
+      | Atom
+          ( name,
+            And
+              ( Atom (Constraint (`Eq, FString version)),
+                Atom (Filter (FIdent ([], var, None))) ) )
+      | Atom
+          ( name,
+            And
+              ( Atom (Filter (FIdent ([], var, None))),
+                Atom (Constraint (`Eq, FString version)) ) )
+        when variable_equal var Config.vendor_variable ->
+          let version = OpamPackage.Version.of_string version in
+          let package = OpamPackage.create name version in
+          Ok { package; vendored = true }
       | _ ->
           Error
             (`Msg
               "Invalid opam-monorepo lockfile: depends should be expressed as \
-               a list equality constraints"))
+               a list equality constraints optionally with a `vendor` variable"))
 
-  let one_to_formula (name, version) : OpamTypes.filtered_formula =
-    Atom
-      (OpamPackage.Name.of_string name, Atom (Constraint (`Eq, FString version)))
+  let one_to_formula { package; vendored } : OpamTypes.filtered_formula =
+    let name = package.name in
+    let version = package.version in
+    let variable =
+      OpamFormula.Atom
+        (OpamTypes.Filter (OpamTypes.FIdent ([], Config.vendor_variable, None)))
+    in
+    let version_constraint =
+      OpamFormula.Atom
+        (OpamTypes.Constraint
+           (`Eq, OpamTypes.FString (OpamPackage.Version.to_string version)))
+    in
+    let formula =
+      match vendored with
+      | true -> OpamFormula.And (version_constraint, variable)
+      | false -> version_constraint
+    in
+    Atom (name, formula)
 
-  let to_filtered_formula t =
-    let sorted = List.sort ~cmp:(fun (n, _) (n', _) -> String.compare n n') t in
+  let to_filtered_formula xs =
+    let sorted =
+      List.sort
+        ~cmp:(fun { package; _ } { package = package'; _ } ->
+          OpamPackage.compare package package')
+        xs
+    in
     match sorted with
     | [] -> OpamFormula.Empty
     | hd :: tl ->
@@ -169,7 +215,7 @@ module Pin_depends = struct
     let open Duniverse.Repo in
     List.concat_map l ~f:(fun { provided_packages; url; _ } ->
         let url = Url.to_opam_url url in
-        List.map provided_packages ~f:(fun p -> (Duniverse.Opam.to_opam p, url)))
+        List.map provided_packages ~f:(fun p -> (p, url)))
 
   let sort t =
     List.sort ~cmp:(fun (pkg, _) (pkg', _) -> OpamPackage.compare pkg pkg') t
@@ -311,7 +357,7 @@ let to_duniverse { duniverse_dirs; pin_depends; _ } =
         OpamUrl.Map.update url (fun l -> package :: l) [] acc)
     |> OpamUrl.Map.bindings
   in
-  Result.List.map packages_per_url ~f:(fun (url, packages) ->
+  Result.List.map packages_per_url ~f:(fun (url, provided_packages) ->
       match OpamUrl.Map.find_opt url duniverse_dirs with
       | None ->
           let msg =
@@ -321,9 +367,6 @@ let to_duniverse { duniverse_dirs; pin_depends; _ } =
           in
           Error (`Msg msg)
       | Some (dir, hashes) ->
-          let provided_packages =
-            List.map packages ~f:Duniverse.Opam.from_opam
-          in
           url_to_duniverse_url url >>= fun url ->
           Ok { Duniverse.Repo.dir; url; hashes; provided_packages })
 

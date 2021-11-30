@@ -17,9 +17,15 @@ module Testable = struct
   end
 end
 
-let summary_factory ?(name = "") ?(version = "") ?dev_repo ?url_src
+let opam_factory ~name ~version =
+  let name = OpamPackage.Name.of_string name in
+  let version = OpamPackage.Version.of_string version in
+  OpamPackage.create name version
+
+let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
     ?(hashes = []) ?(depexts = []) () =
-  { Opam.Package_summary.name; version; dev_repo; url_src; hashes; depexts }
+  let package = opam_factory ~name ~version in
+  { Opam.Package_summary.package; dev_repo; url_src; hashes; depexts }
 
 module Repo = struct
   module Package = struct
@@ -56,7 +62,7 @@ module Repo = struct
             (Ok
                (Some
                   {
-                    opam = { name = "y"; version = "v" };
+                    opam = opam_factory ~name:"y" ~version:"v";
                     dev_repo = "d";
                     url = Other "u";
                     hashes = [];
@@ -73,7 +79,7 @@ module Repo = struct
             (Ok
                (Some
                   {
-                    opam = { name = "y"; version = "v" };
+                    opam = opam_factory ~name:"y" ~version:"v";
                     dev_repo = "d";
                     url = Git { repo = "r"; ref = "master" };
                     hashes = [];
@@ -85,7 +91,8 @@ module Repo = struct
   let package_factory ?(name = "") ?(version = "") ?(dev_repo = "")
       ?(url = Duniverse.Repo.Url.Other "") ?(hashes = []) () =
     let open Duniverse.Repo.Package in
-    { opam = { name; version }; dev_repo; url; hashes }
+    let opam = opam_factory ~name ~version in
+    { opam; dev_repo; url; hashes }
 
   let test_from_packages =
     let make_test ~name ~dev_repo ~packages ~expected () =
@@ -111,7 +118,7 @@ module Repo = struct
             dir = "d";
             url = Other "u";
             hashes = [];
-            provided_packages = [ { name = "p"; version = "v" } ];
+            provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
           }
         ();
       make_test ~name:"Uses repository name as dir"
@@ -126,7 +133,7 @@ module Repo = struct
             dir = "repo";
             url = Other "u";
             hashes = [];
-            provided_packages = [ { name = "p"; version = "v" } ];
+            provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
           }
         ();
       make_test ~name:"Expection for dune"
@@ -141,7 +148,7 @@ module Repo = struct
             dir = "dune_";
             url = Other "u";
             hashes = [];
-            provided_packages = [ { name = "p"; version = "v" } ];
+            provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
           }
         ();
       make_test ~name:"Add all to provided packages" ~dev_repo:"d"
@@ -159,8 +166,8 @@ module Repo = struct
             hashes = [];
             provided_packages =
               [
-                { name = "d"; version = "zdev" };
-                { name = "d-lwt"; version = "zdev" };
+                opam_factory ~name:"d" ~version:"zdev";
+                opam_factory ~name:"d-lwt" ~version:"zdev";
               ];
           }
         ();
@@ -179,7 +186,8 @@ module Repo = struct
             hashes = [];
             provided_packages =
               [
-                { name = "d"; version = "1" }; { name = "d-lwt"; version = "2" };
+                opam_factory ~name:"d" ~version:"1";
+                opam_factory ~name:"d-lwt" ~version:"2";
               ];
           }
         ();
@@ -222,7 +230,7 @@ let test_from_package_summaries =
                dir = "d";
                url = Other "u";
                hashes = [];
-               provided_packages = [ { name = "x"; version = "v" } ];
+               provided_packages = [ opam_factory ~name:"x" ~version:"v" ];
              };
            ])
       ();
@@ -243,8 +251,8 @@ let test_from_package_summaries =
                hashes = [];
                provided_packages =
                  [
-                   { name = "y-lwt"; version = "v" };
-                   { name = "y"; version = "v" };
+                   opam_factory ~name:"y-lwt" ~version:"v";
+                   opam_factory ~name:"y" ~version:"v";
                  ];
              };
            ])
