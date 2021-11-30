@@ -189,25 +189,26 @@ let display_verbose_diagnostics = function
   | None -> false
   | Some l -> l >= Logs.Info
 
-let interpret_solver_error ~switch_state = function
+let interpret_solver_error ~switch_state solver = function
   | `Msg _ as err -> err
   | `Diagnostics d ->
-      (match Opam_solve.not_buildable_with_dune d with
+      (match Opam_solve.not_buildable_with_dune solver d with
       | [] -> ()
       | offending_packages ->
           check_dune_universe_repo ~switch_state offending_packages);
       let verbose = display_verbose_diagnostics (Logs.level ()) in
-      Opam_solve.diagnostics_message ~verbose d
+      Opam_solve.diagnostics_message ~verbose solver d
 
 let calculate_opam ~build_only ~allow_jbuilder ~local_opam_files ~ocaml_version
     ~target_packages =
   let open Result.O in
   OpamGlobalState.with_ `Lock_none (fun global_state ->
       OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
+          let solver = Opam_solve.local_opam_config_solver in
           let* pin_depends = get_pin_depends ~global_state local_opam_files in
           Opam_solve.calculate ~build_only ~allow_jbuilder ~local_opam_files
-            ~target_packages ~pin_depends ?ocaml_version switch_state
-          |> Result.map_error ~f:(interpret_solver_error ~switch_state)))
+            ~target_packages ~pin_depends ?ocaml_version solver switch_state
+          |> Result.map_error ~f:(interpret_solver_error ~switch_state solver)))
 
 let select_explicitly_specified ~local_packages ~explicitly_specified =
   List.fold_left
