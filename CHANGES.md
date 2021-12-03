@@ -8,6 +8,10 @@
 - Show an error message when the solver can't find any version that satisfies
   the requested version constraint in the user's OPAM file (#215, #248,
   @Leonidas-from-XIV)
+- Allow packages to be marked as being provided by OPAM and not to be pulled by
+  opam-monorepo. To control this a new optional OPAM file field,
+  `x-opam-monorepo-opam-provided` is introduced. Its value is a list of package
+  names that are to be excluded from being pulled (#234, @Leonidas-from-XIV)
 
 ### Changed
 

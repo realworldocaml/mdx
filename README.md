@@ -79,6 +79,17 @@ opam-repository) thanks to the `pin-depends`.
 You can use that property to your advantage by allowing one to choose between a "monorepo" or
 regular opam workflow depending on the situation.
 
+You can also exclude packages from being included into the set of packages to
+be vendored by opam-monorepo. To do so you can specify an additional field in
+your OPAM file:
+
+```
+x-opam-monorepo-opam-provided: ["ocamlformat" "patdiff"]
+```
+
+This will exclude the packages from the list of packages opam-monorepo will
+pull, so they can be installed via `opam` manually.
+
 ### opam monorepo pull
 
 The `pull` command fetches the sources using the URLs in the lockfile. It benefits from the opam
