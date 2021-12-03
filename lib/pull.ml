@@ -8,22 +8,24 @@ let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
   let url = Url.to_opam_url url in
   let open OpamProcess.Job.Op in
   Opam.pull_tree ~url ~hashes ~dir:output_dir global_state @@| fun result ->
-  result >>= fun () ->
+  let* () = result in
   if trim_clone then
-    Bos.OS.Dir.delete ~must_exist:false ~recurse:true
-      Fpath.(output_dir / ".git")
-    >>= fun () ->
+    let* () =
+      Bos.OS.Dir.delete ~must_exist:false ~recurse:true
+        Fpath.(output_dir / ".git")
+    in
     Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
   else Ok ()
 
 let pull_source_dependencies ?trim_clone ~global_state ~duniverse_dir src_deps =
   let open Result.O in
   let jobs = !OpamStateConfig.r.dl_jobs in
-  OpamParallel.map ~jobs
-    ~command:(pull ?trim_clone ~global_state ~duniverse_dir)
-    src_deps
-  |> Result.List.all
-  >>= fun _ ->
+  let* _ =
+    OpamParallel.map ~jobs
+      ~command:(pull ?trim_clone ~global_state ~duniverse_dir)
+      src_deps
+    |> Result.List.all
+  in
   let total = List.length src_deps in
   let pp_count = Pp.Styled.good Fmt.int in
   Logs.app (fun l ->
@@ -37,7 +39,7 @@ let mark_duniverse_content_as_vendored ~duniverse_dir =
   Logs.debug (fun l ->
       l "Writing %a:\n %s" Pp.Styled.path dune_file
         (String.concat ~sep:"\n" content));
-  Persist.write_lines_hum dune_file content >>= fun () ->
+  let* () = Persist.write_lines_hum dune_file content in
   Logs.debug (fun l -> l "Successfully wrote %a" Pp.Styled.path dune_file);
   Ok ()
 
@@ -53,7 +55,7 @@ let duniverse ~full ~root ~global_state ~trim_clone duniverse =
   else
     let open Result.O in
     let duniverse_dir = Fpath.(root // Config.vendor_dir) in
-    pre_pull_clean_up ~full ~duniverse_dir duniverse >>= fun () ->
-    Bos.OS.Dir.create duniverse_dir >>= fun _created ->
-    mark_duniverse_content_as_vendored ~duniverse_dir >>= fun () ->
+    let* () = pre_pull_clean_up ~full ~duniverse_dir duniverse in
+    let* _created = Bos.OS.Dir.create duniverse_dir in
+    let* () = mark_duniverse_content_as_vendored ~duniverse_dir in
     pull_source_dependencies ~global_state ~trim_clone ~duniverse_dir duniverse

@@ -15,28 +15,35 @@
  *)
 
 open Bos
-open Rresult
+open Import
+open Result.O
 open Astring
 
 let rec iter fn l =
-  match l with hd :: tl -> fn hd >>= fun () -> iter fn tl | [] -> Ok ()
+  match l with
+  | hd :: tl ->
+      let* () = fn hd in
+      iter fn tl
+  | [] -> Ok ()
 
 let err_log = OS.Cmd.err_file ~append:true Config.duniverse_log
 
 let run_and_log_s ?(ignore_error = false) cmd =
-  OS.File.tmp "duniverse-run-%s.stderr" >>= fun tmp_file ->
+  let* tmp_file = OS.File.tmp "duniverse-run-%s.stderr" in
   let err = OS.Cmd.err_file tmp_file in
   let res = OS.Cmd.(run_out ~err cmd |> out_string) in
   match ignore_error with
   | true -> (
       match res with
       | Ok (stdout, _) -> Ok stdout
-      | Error (`Msg _) -> OS.File.read tmp_file >>= fun stderr -> Ok stderr)
+      | Error (`Msg _) ->
+          let+ stderr = OS.File.read tmp_file in
+          stderr)
   | false -> (
       match res with
       | Ok (stdout, (_, `Exited 0)) -> Ok stdout
       | Ok (stdout, _) ->
-          OS.File.read tmp_file >>= fun stderr ->
+          let* stderr = OS.File.read tmp_file in
           Logs.err (fun l ->
               l "%a failed. Output was:@.%a%a"
                 Fmt.(styled `Cyan Cmd.pp)
@@ -47,21 +54,22 @@ let run_and_log_s ?(ignore_error = false) cmd =
       | Error (`Msg m) -> Error (`Msg m))
 
 let run_and_log ?ignore_error cmd =
-  run_and_log_s ?ignore_error cmd >>= fun _ -> Ok ()
+  let+ _ = run_and_log_s ?ignore_error cmd in
+  ()
 
 let run_and_log_l ?ignore_error cmd =
-  run_and_log_s ?ignore_error cmd >>= fun out ->
-  R.ok (String.cuts ~sep:"\n" out |> List.map String.trim)
+  let* out = run_and_log_s ?ignore_error cmd in
+  Result.ok (String.cuts ~sep:"\n" out |> List.map ~f:String.trim)
 
-let map fn l =
-  List.map fn l
+let map f l =
+  List.map ~f l
   |> List.fold_left
-       (fun acc b ->
+       ~f:(fun acc b ->
          match (acc, b) with
          | Ok acc, Ok v -> Ok (v :: acc)
          | Ok _acc, Error v -> Error v
          | (Error _ as e), _ -> e)
-       (Ok [])
+       ~init:(Ok [])
   |> function
   | Ok v -> Ok (List.rev v)
   | e -> e
@@ -84,32 +92,38 @@ let ocaml_version ?ocamlc () =
   | Error (`Msg _) -> Error (`Msg "unable to find an installed ocamlc")
 
 let install_ocaml_to ~prefix ~src () =
-  OS.Dir.with_current src
-    (fun () ->
-      run_and_log Cmd.(v "./configure" % "--prefix" % p prefix) >>= fun () ->
-      run_and_log Cmd.(v "make" % "-j" % "world.opt") >>= fun () ->
-      run_and_log Cmd.(v "make" % "install"))
-    ()
-  >>= fun x -> x
+  let* x =
+    OS.Dir.with_current src
+      (fun () ->
+        let* () = run_and_log Cmd.(v "./configure" % "--prefix" % p prefix) in
+        let* () = run_and_log Cmd.(v "make" % "-j" % "world.opt") in
+        run_and_log Cmd.(v "make" % "install"))
+      ()
+  in
+  x
 
 let install_dune_to ~prefix ~src () =
-  OS.Dir.with_current src
-    (fun () ->
-      OS.File.write Fpath.(v "dune-workspace") "(lang dune 1.0)" >>= fun () ->
-      run_and_log Cmd.(v "ocaml" % "configure.ml" % "--libdir" % p prefix)
-      >>= fun () ->
-      run_and_log Cmd.(v "ocaml" % "bootstrap.ml") >>= fun () ->
-      run_and_log
-        Cmd.(
-          v "./dune.exe" % "build" % "-p" % "dune" % "--profile"
-          % "dune-bootstrap")
-      >>= fun () ->
-      run_and_log
-        Cmd.(
-          v "./dune.exe" % "install" % "--root" % p src % "--prefix" % p prefix
-          % "dune"))
-    ()
-  >>= fun x -> x
+  let* x =
+    OS.Dir.with_current src
+      (fun () ->
+        let* () = OS.File.write Fpath.(v "dune-workspace") "(lang dune 1.0)" in
+        let* () =
+          run_and_log Cmd.(v "ocaml" % "configure.ml" % "--libdir" % p prefix)
+        in
+        let* () = run_and_log Cmd.(v "ocaml" % "bootstrap.ml") in
+        let* () =
+          run_and_log
+            Cmd.(
+              v "./dune.exe" % "build" % "-p" % "dune" % "--profile"
+              % "dune-bootstrap")
+        in
+        run_and_log
+          Cmd.(
+            v "./dune.exe" % "install" % "--root" % p src % "--prefix"
+            % p prefix % "dune"))
+      ()
+  in
+  x
 
 let run_git ?(ignore_error = false) ~repo args =
   run_and_log ~ignore_error Cmd.(v "git" % "-C" % p repo %% args)
@@ -159,11 +173,11 @@ let git_unshallow ~repo () = run_git ~repo Cmd.(v "fetch" % "--unshallow")
 
 let git_default_branch ~remote () =
   let cmd = Cmd.(v "git" % "ls-remote" % "--symref" % remote % "HEAD") in
-  run_and_log_l cmd >>= fun l ->
+  let* l = run_and_log_l cmd in
   match Git.Ls_remote.branch_of_symref ~symref:"HEAD" l with
   | Ok branch -> Ok branch
   | Error `Not_a_symref ->
-      R.error_msg
+      Rresult.R.error_msg
         (Fmt.str
            "unable to parse `git ls-remote --symref %s HEAD` output: not a \
             symref."
@@ -179,7 +193,7 @@ let git_checkout_or_branch ~repo branch =
   | Error (`Msg _) -> git_checkout ~args:(Cmd.v "-b") ~repo branch
 
 let git_add_and_commit ~repo ~message files =
-  run_git ~ignore_error:true ~repo Cmd.(v "add" %% files) >>= fun () ->
+  let* () = run_git ~ignore_error:true ~repo Cmd.(v "add" %% files) in
   run_git ~ignore_error:true ~repo Cmd.(v "commit" % "-m" % message %% files)
 
 let git_add_all_and_commit ~repo ~message () =
@@ -189,9 +203,10 @@ let git_merge ?(args = Cmd.empty) ~from ~repo () =
   run_git ~repo Cmd.(v "merge" %% args % from)
 
 let git_resolve ~remote ~ref =
-  run_and_log_l
-    Cmd.(v "git" % "ls-remote" % remote %% Git.Ls_remote.ref_arg ref)
-  >>= fun output ->
+  let* output =
+    run_and_log_l
+      Cmd.(v "git" % "ls-remote" % remote %% Git.Ls_remote.ref_arg ref)
+  in
   match Git.Ls_remote.commit_pointed_by ~ref output with
   | Ok commit -> Ok { Git.Ref.t = ref; commit }
   | Error `No_such_ref ->
@@ -212,7 +227,7 @@ let git_remote_remove ~repo ~remote_name =
   run_git ~repo Cmd.(v "remote" % "remove" % remote_name)
 
 let git_fetch_to ~repo ~remote_name ~ref ~branch ?(force = false) () =
-  run_git ~repo Cmd.(v "fetch" % remote_name % ref) >>= fun () ->
+  let* () = run_git ~repo Cmd.(v "fetch" % remote_name % ref) in
   run_git ~repo Cmd.(v "branch" %% on force (v "-f") % branch % "FETCH_HEAD")
 
 let git_submodule_add ~repo ~remote_name ~ref ~branch ~target_path
@@ -240,11 +255,13 @@ let git_clone ~branch ~remote ~output_dir =
       % branch % remote % p output_dir)
 
 let git_clone_or_pull ~branch ~remote ~output_dir =
-  OS.Dir.exists output_dir >>= function
+  let* dir_exists = OS.Dir.exists output_dir in
+  match dir_exists with
   | false -> git_clone ~branch ~remote ~output_dir
   | true ->
-      run_and_log Cmd.(v "git" % "-C" % p output_dir % "fetch" % "origin")
-      >>= fun () ->
+      let* () =
+        run_and_log Cmd.(v "git" % "-C" % p output_dir % "fetch" % "origin")
+      in
       run_and_log
         Cmd.(
           v "git" % "-C" % p output_dir % "reset" % "--hard"

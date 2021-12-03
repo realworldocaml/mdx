@@ -30,9 +30,9 @@ let check_dune_lang_version ~yes ~root =
   let dune_project_path = Project.dune_project root in
   Logs.debug (fun l ->
       l "Looking for dune-project file in %a" Pp.Styled.path dune_project_path);
-  Bos.OS.File.exists dune_project_path >>= fun found_dune_project ->
+  let* found_dune_project = Bos.OS.File.exists dune_project_path in
   if found_dune_project then
-    Bos.OS.File.read dune_project_path >>= fun content ->
+    let* content = Bos.OS.File.read dune_project_path in
     match Dune_file.Lang.from_content content with
     | Error (`Msg msg) ->
         Logs.warn (fun l -> l "%s" msg);
@@ -52,17 +52,19 @@ let check_dune_lang_version ~yes ~root =
 let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
     (`Keep_git_dir keep_git_dir) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
-  Common.find_lockfile ~explicit_lockfile root >>= fun lockfile ->
-  Lockfile.to_duniverse lockfile >>= function
+  let* lockfile = Common.find_lockfile ~explicit_lockfile root in
+  let* duniverse = Lockfile.to_duniverse lockfile in
+  match duniverse with
   | [] ->
       Common.Logs.app (fun l ->
           l "No dependencies to pull, there's nothing to be done here!");
       Ok ()
   | duniverse ->
       let full = match duniverse_repos with None -> true | _ -> false in
-      Common.filter_duniverse ~to_consider:duniverse_repos duniverse
-      >>= fun duniverse ->
-      check_dune_lang_version ~yes ~root >>= fun () ->
+      let* duniverse =
+        Common.filter_duniverse ~to_consider:duniverse_repos duniverse
+      in
+      let* () = check_dune_lang_version ~yes ~root in
       OpamGlobalState.with_ `Lock_none (fun global_state ->
           Pull.duniverse ~global_state ~root ~full
             ~trim_clone:(not keep_git_dir) duniverse)

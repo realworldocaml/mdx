@@ -81,14 +81,15 @@ module Repo = struct
         | Other s -> Ok (Url.Other s)
         | Git { repo; ref = Some ref } -> Ok (Url.Git { repo; ref })
         | Git { repo; ref = None } ->
-            get_default_branch repo >>= fun ref -> Ok (Url.Git { repo; ref })
+            let* ref = get_default_branch repo in
+            Ok (Url.Git { repo; ref })
       in
       match ps with
       | _ when is_base_package ps -> Ok None
       | { url_src = None; _ } | { dev_repo = None; _ } -> Ok None
       | { url_src = Some url_src; package; dev_repo = Some dev_repo; hashes; _ }
         ->
-          url url_src >>= fun url ->
+          let* url = url url_src in
           Ok (Some { opam = package; dev_repo; url; hashes })
   end
 
@@ -183,7 +184,7 @@ module Repo = struct
     let open Result.O in
     match (url : unresolved Url.t) with
     | Git { repo; ref } ->
-        resolve_ref ~repo ~ref >>= fun resolved_ref ->
+        let* resolved_ref = resolve_ref ~repo ~ref in
         let resolved_url = Url.Git { repo; ref = resolved_ref } in
         Ok { t with url = resolved_url }
     | Other s -> Ok { t with url = Other s }
@@ -211,7 +212,7 @@ let from_package_summaries ~get_default_branch summaries =
       ~f:(Repo.Package.from_package_summary ~get_default_branch)
       summaries
   in
-  Result.List.all results >>= fun pkg_opts ->
+  let* pkg_opts = Result.List.all results in
   let pkgs = List.filter_opt pkg_opts in
   let dev_repo_map = dev_repo_map_from_packages pkgs in
   let repos =

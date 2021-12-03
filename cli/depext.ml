@@ -14,7 +14,7 @@ let should_install ~yes pkgs =
 
 let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
   let open Result.O in
-  Common.find_lockfile ~explicit_lockfile root >>= fun lockfile ->
+  let* lockfile = Common.find_lockfile ~explicit_lockfile root in
   let depexts = Lockfile.depexts lockfile in
   OpamGlobalState.with_ `Lock_none (fun global_state ->
       let env = OpamPackageVar.resolve_global global_state in

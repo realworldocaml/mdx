@@ -80,8 +80,8 @@ let with_descr pkgs =
 
 let run (`Root root) (`Lockfile explicit_lockfile) short () =
   let open Result.O in
-  Common.find_lockfile ~explicit_lockfile ~quiet:short root >>= fun lockfile ->
-  Lockfile.to_duniverse lockfile >>| fun duniverse ->
+  let* lockfile = Common.find_lockfile ~explicit_lockfile ~quiet:short root in
+  let+ duniverse = Lockfile.to_duniverse lockfile in
   let pkgs = pkgs_of_duniverse duniverse in
   let pkgs = with_descr pkgs in
   let max_name, max_version =
