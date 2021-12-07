@@ -24,6 +24,16 @@ val foo : string
 val bar : string
 |}
 
+let labels =
+  {|(** This doc comment with labels should get parsed
+
+    {@ocaml [
+      # 1 + 1
+      - : int = 2
+    ]}
+*)
+|}
+
 let test_parse_mli =
   let make_test ~test_name ~mli ~expected () =
     let test_fun () =
@@ -66,6 +76,16 @@ let test_parse_mli =
  Block {loc: File "_none_", line 20; section: None; labels: [];
         header: Some ocaml; contents: ["1 + 1 = 3"]; value: OCaml};
  Text "]}";|x})
+      ();
+    make_test ~test_name:"labels" ~mli:labels
+      ~expected:
+        (Ok
+           {x|[Text "(** This doc comment with labels should get parsed\n\n    ";
+ Text "{@"; Text "ocaml"; Text "[";
+ Block {loc: File "_none_", lines 3-6; section: None; labels: [];
+        header: Some ocaml; contents: ["# 1 + 1"; "- : int = 2"];
+        value: Toplevel};
+ Text "    ]}";|x})
       ();
   ]
 
