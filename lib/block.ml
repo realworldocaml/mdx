@@ -131,7 +131,7 @@ let pp_lines syntax t =
         fun ppf -> Fmt.fmt "%*s%s" ppf (t.loc.loc_start.pos_cnum + 2) ""
     | _ -> Fmt.string
   in
-  Fmt.(list ~sep:(unit "\n") pp)
+  Fmt.(list ~sep:(any "\n") pp)
 
 let lstrip string =
   let hpad = Misc.hpad_of_lines [ string ] in
@@ -163,11 +163,11 @@ let pp_footer ?syntax ppf t =
 
 let pp_legacy_labels ppf = function
   | [] -> ()
-  | l -> Fmt.pf ppf " %a" Fmt.(list ~sep:(unit ",") Label.pp) l
+  | l -> Fmt.pf ppf " %a" Fmt.(list ~sep:(any ",") Label.pp) l
 
 let pp_labels ppf = function
   | [] -> ()
-  | l -> Fmt.pf ppf "<!-- $MDX %a -->\n" Fmt.(list ~sep:(unit ",") Label.pp) l
+  | l -> Fmt.pf ppf "<!-- $MDX %a -->\n" Fmt.(list ~sep:(any ",") Label.pp) l
 
 let pp_header ?syntax ppf t =
   match syntax with
