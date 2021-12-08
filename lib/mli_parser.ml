@@ -1,10 +1,12 @@
 module Code_block = struct
+  type metadata = {
+    language_tag : string Odoc_parser.Loc.with_location;
+    labels : string Odoc_parser.Loc.with_location option;
+  }
+
   type t = {
     location : Odoc_parser.Loc.span;
-    metadata :
-      (string Odoc_parser.Loc.with_location
-      * string Odoc_parser.Loc.with_location option)
-      option;
+    metadata : metadata option;
     contents : string;
   }
 end
@@ -57,6 +59,12 @@ let extract_code_blocks ~(location : Lexing.position) ~docstring =
       (fun block ->
         match Odoc_parser.Loc.value block with
         | `Code_block (metadata, { Odoc_parser.Loc.value = contents; _ }) ->
+            let metadata =
+              Option.map
+                (fun (language_tag, labels) ->
+                  Code_block.{ language_tag; labels })
+                metadata
+            in
             [ { Code_block.location = block.location; metadata; contents } ]
         | `List (_, _, lists) -> List.map acc lists |> List.concat
         | _ -> [])
@@ -125,8 +133,10 @@ let docstring_code_blocks str =
 
 let make_block ~loc code_block =
   let handle_header = function
-    | Some (lang_tag, labels) -> (
-        let header = Block.Header.of_string (Odoc_parser.Loc.value lang_tag) in
+    | Some Code_block.{ language_tag; labels } -> (
+        let header =
+          Block.Header.of_string (Odoc_parser.Loc.value language_tag)
+        in
         match labels with
         | None -> Ok (header, [])
         | Some labels -> (
@@ -149,13 +159,13 @@ let code_block_markup code_block =
   let open Document in
   let opening =
     match code_block.Code_block.metadata with
-    | Some (lang_tag, labels) ->
+    | Some { language_tag; labels } ->
         let labels =
           match labels with
           | Some s -> [ Text " "; Text (Odoc_parser.Loc.value s) ]
           | None -> []
         in
-        [ Text "{@"; Text (Odoc_parser.Loc.value lang_tag) ]
+        [ Text "{@"; Text (Odoc_parser.Loc.value language_tag) ]
         @ labels @ [ Text "[" ]
     | None -> [ Text "{[" ]
   in
