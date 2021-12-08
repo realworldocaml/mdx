@@ -2,6 +2,8 @@
 
 #### Added
 
+- Make MDX compatible with OCaml 4.14 (#356, @NathanReb)
+
 #### Changed
 
 #### Deprecated

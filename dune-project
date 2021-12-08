@@ -22,7 +22,7 @@
   (ocaml
    (>= 4.02.3))
   ocamlfind
-  (fmt (>= 0.8.5))
+  (fmt (and (>= 0.8.5) (< 0.8.10)))
   (cppo :build)
   (csexp
    (>= 1.3.2))

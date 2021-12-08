@@ -208,8 +208,8 @@ module Rewrite = struct
   let normalize_type_path env path =
     match Env.find_type path env with
     | { Types.type_manifest = Some ty; _ } -> (
-        match Ctype.expand_head env ty with
-        | { Types.desc = Types.Tconstr (path, _, _); _ } -> path
+        match Compat_top.ctype_expand_head_and_get_desc env ty with
+        | Types.Tconstr (path, _, _) -> path
         | _ -> path)
     | _ -> path
 
@@ -238,7 +238,7 @@ module Rewrite = struct
     match (pstr_item.Parsetree.pstr_desc, tstr_item.Typedtree.str_desc) with
     | ( Parsetree.Pstr_eval (e, _),
         Typedtree.Tstr_eval ({ Typedtree.exp_type = typ; _ }, _) ) -> (
-        match (Ctype.repr typ).Types.desc with
+        match Compat_top.ctype_get_desc typ with
         | Types.Tconstr (path, _, _) -> apply ts env pstr_item path e
         | _ -> pstr_item)
     | _ -> pstr_item

@@ -108,3 +108,7 @@ val top_directive_require : string -> Parsetree.toplevel_phrase
 
 val ctype_is_equal :
   Env.t -> bool -> Types.type_expr list -> Types.type_expr list -> bool
+
+val ctype_expand_head_and_get_desc : Env.t -> Types.type_expr -> Types.type_desc
+
+val ctype_get_desc : Types.type_expr -> Types.type_desc
