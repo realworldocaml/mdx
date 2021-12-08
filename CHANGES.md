@@ -1,18 +1,8 @@
-### unreleased
+### 1.11.1
 
 #### Added
 
 - Make MDX compatible with OCaml 4.14 (#356, @NathanReb)
-
-#### Changed
-
-#### Deprecated
-
-#### Fixed
-
-#### Removed
-
-#### Security
 
 ### 1.11.0
 
