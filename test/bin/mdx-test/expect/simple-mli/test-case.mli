@@ -46,3 +46,6 @@ val foo : string
 
 (** {@ocaml[1 + 1 = 3]} *)
 val bar : string
+
+(** {@ocaml skip [1 + 1 = 3]} *)
+val baz : string
