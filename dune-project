@@ -23,7 +23,7 @@
    (>= 4.08.0))
   ocamlfind
   (fmt (>= 0.8.7))
-  (cppo :build)
+  (cppo (and :build (>= 1.1.0)))
   (csexp
    (>= 1.3.2))
   astring
