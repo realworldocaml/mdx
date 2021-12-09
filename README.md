@@ -13,13 +13,6 @@ and to practice "literate programming" using markdown and OCaml.
 The test mode allows to ensure that shell scripts and OCaml fragments
 in the documentation always stays up-to-date.
 
-The blocks in markdown files can be parameterized by `mdx`-specific labels, that
-will change the way `mdx` interprets the block.
-The syntax is: `<!-- $MDX labels -->`, where `labels` is a list of valid labels
-separated by a comma. This line has to immediately precede the block it is
-attached to. Examples are given in the following sections.
-This syntax is the recommended way to define labels since `mdx` 1.7.0, to use the previous syntax please refer to the [mdx 1.6.0 README](https://github.com/realworldocaml/mdx/blob/1.6.0/README.md).
-
 `mdx` is released as a single binary (called `ocaml-mdx`) and
 can be installed using opam:
 
@@ -31,6 +24,33 @@ If you want to contribute or hack on the project, please see the
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Supported Extensions
+
+#### Labels
+
+The blocks in markdown files can be parameterized by `mdx`-specific labels, that
+will change the way `mdx` interprets the block.
+
+The syntax is: `<!-- $MDX LABELS -->`, where `LABELS` is a list of valid labels
+separated by a comma. This line has to immediately precede the block it is
+attached to.
+
+    <!-- $MDX LABELS -->
+    ```ocaml
+    ```
+
+This syntax is the recommended way to define labels since `mdx` 1.7.0, to use
+the previous syntax please refer to the
+[mdx 1.6.0 README](https://github.com/realworldocaml/mdx/blob/1.6.0/README.md).
+
+It is also possible to use labels in OCaml interface files (`mli`), the syntax
+for this is is slightly different to match the conventions of OCaml
+documentation comments:
+
+    (** This is an documentation comment with an ocaml block
+    {@ocaml LABELS [
+    ]}
+    *)
+
 
 #### Shell Scripts
 
