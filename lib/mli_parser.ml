@@ -140,10 +140,11 @@ let make_block ~loc code_block =
         match labels with
         | None -> Ok (header, [])
         | Some labels -> (
-            match Label.of_string (Odoc_parser.Loc.value labels) with
+            let labels = Odoc_parser.Loc.value labels |> String.trim in
+            match Label.of_string labels with
             | Ok labels -> Ok (header, labels)
-            | Error msgs ->
-                Error (List.hd msgs) (* TODO: Report precise location *)))
+            | Error msgs -> Error (List.hd msgs)
+            (* TODO: Report precise location *)))
     | None ->
         (* If not specified, blocks are run as ocaml blocks *)
         Ok (Some OCaml, [])
@@ -194,7 +195,8 @@ let parse_mli file_contents =
         let block =
           match make_block ~loc code_block with
           | Ok block -> Document.Block block
-          | Error _ -> failwith "Error creating block"
+          | Error (`Msg msg) ->
+              failwith (Fmt.str "Error creating block: %s" msg)
         in
         let opening, closing = code_block_markup code_block in
         cursor := code_block.location.end_;

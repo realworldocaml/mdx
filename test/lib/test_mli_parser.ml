@@ -24,10 +24,20 @@ val foo : string
 val bar : string
 |}
 
-let labels =
-  {|(** This doc comment with labels should get parsed
+let header =
+  {|(** This doc comment with a header should get parsed
 
     {@ocaml [
+      # 1 + 1
+      - : int = 2
+    ]}
+*)
+|}
+
+let label =
+  {|(** This doc comment with a label should get parsed
+
+    {@ocaml skip [
       # 1 + 1
       - : int = 2
     ]}
@@ -77,12 +87,22 @@ let test_parse_mli =
         header: Some ocaml; contents: ["1 + 1 = 3"]; value: OCaml};
  Text "]}";|x})
       ();
-    make_test ~test_name:"labels" ~mli:labels
+    make_test ~test_name:"header" ~mli:header
       ~expected:
         (Ok
-           {x|[Text "(** This doc comment with labels should get parsed\n\n    ";
+           {x|[Text "(** This doc comment with a header should get parsed\n\n    ";
  Text "{@"; Text "ocaml"; Text "[";
  Block {loc: File "_none_", lines 3-6; section: None; labels: [];
+        header: Some ocaml; contents: ["# 1 + 1"; "- : int = 2"];
+        value: Toplevel};
+ Text "    ]}";|x})
+      ();
+    make_test ~test_name:"label" ~mli:label
+      ~expected:
+        (Ok
+           {x|[Text "(** This doc comment with a label should get parsed\n\n    ";
+ Text "{@"; Text "ocaml"; Text " "; Text "skip "; Text "[";
+ Block {loc: File "_none_", lines 3-6; section: None; labels: [skip];
         header: Some ocaml; contents: ["# 1 + 1"; "- : int = 2"];
         value: Toplevel};
  Text "    ]}";|x})
