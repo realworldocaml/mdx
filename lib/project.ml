@@ -6,7 +6,7 @@ let folder_blacklist = [ "_build"; "_opam"; Fpath.to_string Config.vendor_dir ]
 
 let local_packages ~recurse t =
   let open Result.O in
-  Bos.OS.Dir.exists t >>= fun exists ->
+  let* exists = Bos.OS.Dir.exists t in
   if not exists then Ok []
   else
     let traverse =
@@ -37,7 +37,8 @@ let dune_project t = Fpath.(t / "dune-project")
 let name t =
   let open Result.O in
   let dune_project = dune_project t in
-  Bos.OS.File.exists dune_project >>= function
+  let* exists = Bos.OS.File.exists dune_project in
+  match exists with
   | true -> Dune_file.Raw.as_sexps dune_project >>= Dune_file.Project.name
   | false ->
       Rresult.R.error_msgf "Missing dune-project file at the root: %a" Fpath.pp
@@ -51,11 +52,13 @@ let lockfile ~target_packages t =
   | [ name ] ->
       let name = OpamPackage.Name.to_string name in
       Ok (lockfile ~name t)
-  | _ -> name t >>= fun name -> Ok (lockfile ~name t)
+  | _ ->
+      let+ name = name t in
+      lockfile ~name t
 
 let local_lockfiles repo =
   let open Result.O in
-  Bos.OS.Dir.contents ~dotfiles:false repo >>| fun content ->
+  let+ content = Bos.OS.Dir.contents ~dotfiles:false repo in
   List.filter
     ~f:(fun path ->
       let is_file =

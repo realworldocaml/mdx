@@ -15,14 +15,15 @@
  *)
 
 open Bos
-open Rresult
+open Import
+open Result.O
 
 let load_sexp label conv file =
   Logs.debug (fun l -> l "Reading file %a for %s" Fpath.pp file label);
-  OS.File.read file >>= fun b ->
-  try Sexplib.Sexp.of_string b |> conv |> R.ok
+  let* b = OS.File.read file in
+  try Sexplib.Sexp.of_string b |> conv |> Result.ok
   with exn ->
-    R.error_msg
+    Rresult.R.error_msg
       (Fmt.str "Error parsing %a: %s" Fpath.pp file (Printexc.to_string exn))
 
 let save_sexp label conv file v =

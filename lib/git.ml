@@ -52,8 +52,7 @@ module Ls_remote = struct
     | [ "" ] when looks_like_commit ref -> log_approx ()
     | [ "" ] -> Error `No_such_ref
     | _ -> (
-        Result.List.map ~f:parse_output_line output_lines
-        >>= fun parsed_lines ->
+        let* parsed_lines = Result.List.map ~f:parse_output_line output_lines in
         let search prefix =
           let result = search_ref (prefix ^ ref) parsed_lines in
           interpret_search_result result

@@ -272,7 +272,7 @@ module Duniverse_dirs = struct
            };
        _;
       } ->
-          Result.List.map ~f:hash_from_opam_value hashes >>= fun hashes ->
+          let* hashes = Result.List.map ~f:hash_from_opam_value hashes in
           Ok (OpamUrl.of_string url, (dir, hashes))
       | _ ->
           value_errorf ~value
@@ -280,7 +280,7 @@ module Duniverse_dirs = struct
     in
     match value with
     | { pelem = List { pelem = l; _ }; _ } ->
-        Result.List.map ~f:elm_from_opam_value l >>= fun bindings ->
+        let* bindings = Result.List.map ~f:elm_from_opam_value l in
         Ok (OpamUrl.Map.of_list bindings)
     | _ -> value_errorf ~value "Expected a list"
 
@@ -367,7 +367,7 @@ let to_duniverse { duniverse_dirs; pin_depends; _ } =
           in
           Error (`Msg msg)
       | Some (dir, hashes) ->
-          url_to_duniverse_url url >>= fun url ->
+          let* url = url_to_duniverse_url url in
           Ok { Duniverse.Repo.dir; url; hashes; provided_packages })
 
 let to_opam (t : t) =
@@ -384,31 +384,32 @@ let to_opam (t : t) =
 
 let from_opam ?file opam =
   let open Result.O in
-  Extra_field.get ?file Version.field opam >>= fun version ->
-  Version.compatible version >>= fun () ->
-  Extra_field.get ?file Root_packages.field opam >>= fun root_packages ->
-  Depends.from_filtered_formula (OpamFile.OPAM.depends opam) >>= fun depends ->
+  let* version = Extra_field.get ?file Version.field opam in
+  let* () = Version.compatible version in
+  let* root_packages = Extra_field.get ?file Root_packages.field opam in
+  let* depends = Depends.from_filtered_formula (OpamFile.OPAM.depends opam) in
   let pin_depends = OpamFile.OPAM.pin_depends opam in
-  Extra_field.get ?file Duniverse_dirs.field opam >>= fun duniverse_dirs ->
+  let* duniverse_dirs = Extra_field.get ?file Duniverse_dirs.field opam in
   let depexts = OpamFile.OPAM.depexts opam in
   Ok { version; root_packages; depends; pin_depends; duniverse_dirs; depexts }
 
 let save ~file t =
-  let open Result.O in
   let opam = to_opam t in
   Bos.OS.File.with_oc file
     (fun oc () ->
       OpamFile.OPAM.write_to_channel oc opam;
       Ok ())
     ()
-  >>= fun res -> res
+  |> Result.join
 
 let load ~file =
   let open Result.O in
   let filename = Fpath.to_string file in
-  Bos.OS.File.with_ic file
-    (fun ic () ->
-      let filename = OpamFile.make (OpamFilename.of_string filename) in
-      OpamFile.OPAM.read_from_channel ~filename ic)
-    ()
-  >>= fun opam -> from_opam ~file:filename opam
+  let* opam =
+    Bos.OS.File.with_ic file
+      (fun ic () ->
+        let filename = OpamFile.make (OpamFilename.of_string filename) in
+        OpamFile.OPAM.read_from_channel ~filename ic)
+      ()
+  in
+  from_opam ~file:filename opam

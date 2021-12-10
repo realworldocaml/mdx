@@ -10,6 +10,10 @@ module O : sig
   val ( >>= ) : ('a, 'err) t -> ('a -> ('b, 'err) t) -> ('b, 'err) t
 
   val ( >>| ) : ('a, 'err) t -> ('a -> 'b) -> ('b, 'err) t
+
+  val ( let* ) : ('a, 'err) t -> ('a -> ('b, 'err) t) -> ('b, 'err) t
+
+  val ( let+ ) : ('a, 'err) t -> ('a -> 'b) -> ('b, 'err) t
 end
 
 val map_error : f:('a -> 'b) -> ('ok, 'a) t -> ('ok, 'b) t

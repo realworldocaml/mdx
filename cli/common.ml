@@ -123,7 +123,8 @@ let find_lockfile_aux ~explicit_lockfile repo =
   match explicit_lockfile with
   | Some file -> Ok file
   | None -> (
-      Project.local_lockfiles repo >>= function
+      let* local_lockfiles = Project.local_lockfiles repo in
+      match local_lockfiles with
       | [] ->
           Rresult.R.error_msg
             "No lockfile: try running `opam monorepo lock` first"

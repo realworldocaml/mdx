@@ -117,7 +117,7 @@ let local_paths_to_opam_map local_paths =
   let open Result.O in
   let bindings = OpamPackage.Name.Map.bindings local_paths in
   Result.List.map bindings ~f:(fun (name, (explicit_version, path)) ->
-      read_opam path >>| fun opam_file ->
+      let+ opam_file = read_opam path in
       let version = Opam.local_package_version opam_file ~explicit_version in
       (name, (version, opam_file)))
   >>| OpamPackage.Name.Map.of_list
@@ -155,7 +155,7 @@ let pull_pin_depends ~global_state pin_depends =
   let open Result.O in
   if List.is_empty pin_depends then Ok OpamPackage.Name.Map.empty
   else
-    Bos.OS.Dir.tmp "opam-monorepo-pins-%s" >>= fun pins_tmp_dir ->
+    let* pins_tmp_dir = Bos.OS.Dir.tmp "opam-monorepo-pins-%s" in
     Logs.debug (fun l ->
         l "Pulling pin depends: %a"
           Fmt.(list ~sep:(any " ") Fmt.(styled `Yellow string))
@@ -165,7 +165,7 @@ let pull_pin_depends ~global_state pin_depends =
       let opam_path =
         Fpath.(dir / OpamPackage.name_to_string pkg |> add_ext "opam")
       in
-      read_opam opam_path >>= fun opam ->
+      let* opam = read_opam opam_path in
       let opam = OpamFile.OPAM.with_url (OpamFile.URL.create url) opam in
       Ok (OpamPackage.name pkg, (OpamPackage.version pkg, opam))
     in
@@ -174,14 +174,15 @@ let pull_pin_depends ~global_state pin_depends =
       let dir = Fpath.(pins_tmp_dir / label) in
       let open OpamProcess.Job.Op in
       Opam.pull_tree ~url ~hashes:[] ~dir global_state @@| fun result ->
-      result >>= fun () -> Result.List.map ~f:(elm_from_pkg ~dir ~url) pkgs
+      let* () = result in
+      Result.List.map ~f:(elm_from_pkg ~dir ~url) pkgs
     in
     let jobs = !OpamStateConfig.r.dl_jobs in
-    OpamParallel.map ~jobs ~command by_urls |> Result.List.all >>| fun elms ->
+    let+ elms = OpamParallel.map ~jobs ~command by_urls |> Result.List.all in
     OpamPackage.Name.Map.of_list (List.concat elms)
 
 let get_pin_depends ~global_state local_opam_files =
-  let open Rresult.R.Infix in
+  let open Result.O in
   root_pin_depends local_opam_files >>= pull_pin_depends ~global_state
 
 let display_verbose_diagnostics = function
@@ -200,10 +201,10 @@ let interpret_solver_error ~switch_state = function
 
 let calculate_opam ~build_only ~allow_jbuilder ~local_opam_files ~ocaml_version
     ~target_packages =
-  let open Rresult.R.Infix in
+  let open Result.O in
   OpamGlobalState.with_ `Lock_none (fun global_state ->
       OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
-          get_pin_depends ~global_state local_opam_files >>= fun pin_depends ->
+          let* pin_depends = get_pin_depends ~global_state local_opam_files in
           Opam_solve.calculate ~build_only ~allow_jbuilder ~local_opam_files
             ~target_packages ~pin_depends ?ocaml_version switch_state
           |> Result.map_error ~f:(interpret_solver_error ~switch_state)))
@@ -311,26 +312,27 @@ let local_packages ~versions repo =
 let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     (`Allow_jbuilder allow_jbuilder) (`Ocaml_version ocaml_version)
     (`Target_packages specified_packages) (`Lockfile explicit_lockfile) () =
-  let open Rresult.R.Infix in
-  local_packages ~versions:specified_packages root >>= fun local_packages ->
-  target_packages ~local_packages ~recurse
-    ~explicitly_specified:specified_packages root
-  >>= fun target_packages ->
-  check_target_packages target_packages >>= fun () ->
-  local_paths_to_opam_map local_packages >>= fun opam_files ->
-  lockfile_path ~explicit_lockfile ~target_packages root
-  >>= fun lockfile_path ->
-  calculate_opam ~build_only ~allow_jbuilder ~ocaml_version
-    ~local_opam_files:opam_files ~target_packages
-  >>= fun package_summaries ->
+  let open Result.O in
+  let* local_packages = local_packages ~versions:specified_packages root in
+  let* target_packages =
+    target_packages ~local_packages ~recurse
+      ~explicitly_specified:specified_packages root
+  in
+  let* () = check_target_packages target_packages in
+  let* opam_files = local_paths_to_opam_map local_packages in
+  let* lockfile_path = lockfile_path ~explicit_lockfile ~target_packages root in
+  let* package_summaries =
+    calculate_opam ~build_only ~allow_jbuilder ~ocaml_version
+      ~local_opam_files:opam_files ~target_packages
+  in
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
-  compute_duniverse ~package_summaries >>= resolve_ref >>= fun duniverse ->
+  let* duniverse = compute_duniverse ~package_summaries >>= resolve_ref in
   let target_depexts = target_depexts opam_files target_packages in
   let lockfile =
     Lockfile.create ~root_packages:target_packages ~package_summaries
       ~root_depexts:target_depexts ~duniverse ()
   in
-  Lockfile.save ~file:lockfile_path lockfile >>= fun () ->
+  let* () = Lockfile.save ~file:lockfile_path lockfile in
   Common.Logs.app (fun l ->
       l
         "Wrote lockfile with %a entries to %a. You can now run %a to fetch \

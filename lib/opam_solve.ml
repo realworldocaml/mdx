@@ -123,13 +123,13 @@ let fixed_packages ~local_packages ~pin_depends =
 
 let calculate_raw ~build_only ~allow_jbuilder ~ocaml_version ~local_packages
     ~target_packages ~pin_depends switch_state =
-  let open Rresult.R.Infix in
+  let open Result.O in
   let target_packages_names = OpamPackage.Name.Set.elements target_packages in
   let install_test_deps_for =
     if build_only then OpamPackage.Name.Set.empty else target_packages
   in
   let constraints = constraints ~ocaml_version in
-  fixed_packages ~local_packages ~pin_depends >>= fun fixed_packages ->
+  let* fixed_packages = fixed_packages ~local_packages ~pin_depends in
   let context =
     Switch_and_local_packages_context.create ~install_test_deps_for
       ~allow_jbuilder ~constraints ~fixed_packages switch_state
@@ -194,10 +194,12 @@ let get_opam_info ~pin_depends ~switch_state pkg =
 
 let calculate ~build_only ~allow_jbuilder ~local_opam_files ~target_packages
     ~pin_depends ?ocaml_version switch_state =
-  let open Rresult.R.Infix in
-  calculate_raw ~build_only ~allow_jbuilder ~ocaml_version
-    ~local_packages:local_opam_files ~target_packages ~pin_depends switch_state
-  >>= fun deps ->
+  let open Result.O in
+  let* deps =
+    calculate_raw ~build_only ~allow_jbuilder ~ocaml_version
+      ~local_packages:local_opam_files ~target_packages ~pin_depends
+      switch_state
+  in
   Logs.app (fun l ->
       l "%aFound %a opam dependencies for the target package%a."
         Pp.Styled.header ()

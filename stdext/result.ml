@@ -8,6 +8,10 @@ module O = struct
   let ( >>= ) res f = bind ~f res
 
   let ( >>| ) res f = map ~f res
+
+  let ( let* ) = ( >>= )
+
+  let ( let+ ) = ( >>| )
 end
 
 let map_error ~f = function Ok x -> Ok x | Error e -> Error (f e)
@@ -27,17 +31,25 @@ module List = struct
     aux [] l
 
   let rec iter ~f l =
-    match l with [] -> Ok () | hd :: tl -> f hd >>= fun () -> iter ~f tl
+    match l with
+    | [] -> Ok ()
+    | hd :: tl ->
+        let* () = f hd in
+        iter ~f tl
 
   let all =
     let rec loop acc = function
       | [] -> Ok (List.rev acc)
-      | t :: l -> t >>= fun x -> loop (x :: acc) l
+      | t :: l ->
+          let* x = t in
+          loop (x :: acc) l
     in
     fun l -> loop [] l
 
   let rec fold_left t ~f ~init =
     match t with
     | [] -> Ok init
-    | x :: xs -> f init x >>= fun init -> fold_left xs ~f ~init
+    | x :: xs ->
+        let* init = f init x in
+        fold_left xs ~f ~init
 end
