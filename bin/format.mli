@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2018 Thomas Gazagnaire <thomas@gazagnaire.org>
+ * Copyright (c) 2021 Guillaume Petiot <guillaume@tarides.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -16,15 +16,4 @@
 
 open Cmdliner
 
-let cmds = [ Test.cmd; Pp.cmd; Deps.cmd; Dune_gen.cmd; Format.cmd ]
-
-let main (`Setup ()) = `Help (`Pager, None)
-
-let main =
-  let doc = "Execute markdown files." in
-  let exits = Term.default_exits in
-  let man = [] in
-  ( Term.(ret (const main $ Cli.setup)),
-    Term.info "ocaml-mdx" ~version:"%%VERSION%%" ~doc ~exits ~man )
-
-let () = Term.(exit_status @@ eval_choice main cmds)
+val cmd : int Term.t * Term.info
