@@ -92,38 +92,34 @@ let ocaml_version ?ocamlc () =
   | Error (`Msg _) -> Error (`Msg "unable to find an installed ocamlc")
 
 let install_ocaml_to ~prefix ~src () =
-  let* x =
-    OS.Dir.with_current src
-      (fun () ->
-        let* () = run_and_log Cmd.(v "./configure" % "--prefix" % p prefix) in
-        let* () = run_and_log Cmd.(v "make" % "-j" % "world.opt") in
-        run_and_log Cmd.(v "make" % "install"))
-      ()
-  in
-  x
+  OS.Dir.with_current src
+    (fun () ->
+      let* () = run_and_log Cmd.(v "./configure" % "--prefix" % p prefix) in
+      let* () = run_and_log Cmd.(v "make" % "-j" % "world.opt") in
+      run_and_log Cmd.(v "make" % "install"))
+    ()
+  |> Result.join
 
 let install_dune_to ~prefix ~src () =
-  let* x =
-    OS.Dir.with_current src
-      (fun () ->
-        let* () = OS.File.write Fpath.(v "dune-workspace") "(lang dune 1.0)" in
-        let* () =
-          run_and_log Cmd.(v "ocaml" % "configure.ml" % "--libdir" % p prefix)
-        in
-        let* () = run_and_log Cmd.(v "ocaml" % "bootstrap.ml") in
-        let* () =
-          run_and_log
-            Cmd.(
-              v "./dune.exe" % "build" % "-p" % "dune" % "--profile"
-              % "dune-bootstrap")
-        in
+  OS.Dir.with_current src
+    (fun () ->
+      let* () = OS.File.write Fpath.(v "dune-workspace") "(lang dune 1.0)" in
+      let* () =
+        run_and_log Cmd.(v "ocaml" % "configure.ml" % "--libdir" % p prefix)
+      in
+      let* () = run_and_log Cmd.(v "ocaml" % "bootstrap.ml") in
+      let* () =
         run_and_log
           Cmd.(
-            v "./dune.exe" % "install" % "--root" % p src % "--prefix"
-            % p prefix % "dune"))
-      ()
-  in
-  x
+            v "./dune.exe" % "build" % "-p" % "dune" % "--profile"
+            % "dune-bootstrap")
+      in
+      run_and_log
+        Cmd.(
+          v "./dune.exe" % "install" % "--root" % p src % "--prefix" % p prefix
+          % "dune"))
+    ()
+  |> Result.join
 
 let run_git ?(ignore_error = false) ~repo args =
   run_and_log ~ignore_error Cmd.(v "git" % "-C" % p repo %% args)

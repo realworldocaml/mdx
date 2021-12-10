@@ -394,16 +394,13 @@ let from_opam ?file opam =
   Ok { version; root_packages; depends; pin_depends; duniverse_dirs; depexts }
 
 let save ~file t =
-  let open Result.O in
   let opam = to_opam t in
-  let* res =
-    Bos.OS.File.with_oc file
-      (fun oc () ->
-        OpamFile.OPAM.write_to_channel oc opam;
-        Ok ())
-      ()
-  in
-  res
+  Bos.OS.File.with_oc file
+    (fun oc () ->
+      OpamFile.OPAM.write_to_channel oc opam;
+      Ok ())
+    ()
+  |> Result.join
 
 let load ~file =
   let open Result.O in
