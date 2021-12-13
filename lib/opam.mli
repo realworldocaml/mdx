@@ -51,6 +51,35 @@ module Pp : sig
   val url : OpamUrl.t Fmt.t
 end
 
+module Extra_field : sig
+  (** Module for parsing and printing of opam file extensions
+      specific to opam-monorepo *)
+
+  type 'a t
+  (** Type of extra opam field holding values of type ['a]. *)
+
+  val make :
+    name:string ->
+    to_opam_value:('a -> OpamParserTypes.FullPos.value) ->
+    from_opam_value:
+      (OpamParserTypes.FullPos.value -> ('a, [ `Msg of string ]) result) ->
+    'a t
+  (** [make ~name ~to_opam_value ~from_opam_value] returns an extra field
+      which is named ["x-opam-monorepo-<name>"] and that is converted to and
+      from generic opam values using the provided functions. *)
+
+  val name : _ t -> string
+  (** Return the full name of the field *)
+
+  val set : 'a t -> 'a -> OpamFile.OPAM.t -> OpamFile.OPAM.t
+  (** Sets the field in the given opam file, potentially overwriting the
+      previous value. *)
+
+  val get : 'a t -> OpamFile.OPAM.t -> ('a, [ `Msg of string ]) result option
+  (** Returns the optional value of the given extra field in the given opam
+      file. *)
+end
+
 val depends_on_dune : allow_jbuilder:bool -> OpamTypes.filtered_formula -> bool
 (** Returns whether the given depends field formula contains a dependency to dune or jbuilder *)
 

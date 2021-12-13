@@ -23,24 +23,10 @@ let value_errorf ~value fmt =
   Pos.errorf ~pos fmt
 
 module Extra_field = struct
-  type 'a t = {
-    name : string;
-    to_opam_value : 'a -> OpamParserTypes.FullPos.value;
-    from_opam_value :
-      OpamParserTypes.FullPos.value -> ('a, [ `Msg of string ]) result;
-  }
-
-  let make ~name ~to_opam_value ~from_opam_value =
-    {
-      name = Printf.sprintf "x-opam-monorepo-%s" name;
-      to_opam_value;
-      from_opam_value;
-    }
-
-  let add t a opam = OpamFile.OPAM.add_extension opam t.name (t.to_opam_value a)
+  include Opam.Extra_field
 
   let get ?file t opam =
-    match OpamFile.OPAM.extended opam t.name t.from_opam_value with
+    match get t opam with
     | Some result -> result
     | None ->
         let file_suffix_opt = Option.map ~f:(Printf.sprintf " %s") file in
@@ -48,7 +34,7 @@ module Extra_field = struct
         Error
           (`Msg
             (Printf.sprintf "Missing %s field in opam-monorepo lockfile%s"
-               t.name file_suffix))
+               (name t) file_suffix))
 end
 
 module Version = struct
@@ -363,7 +349,8 @@ let to_duniverse { duniverse_dirs; pin_depends; _ } =
           let msg =
             Printf.sprintf
               "Invalid opam-monorepo lockfile: Missing dir for %s in %s"
-              (OpamUrl.to_string url) Duniverse_dirs.field.name
+              (OpamUrl.to_string url)
+              (Extra_field.name Duniverse_dirs.field)
           in
           Error (`Msg msg)
       | Some (dir, hashes) ->
@@ -378,9 +365,9 @@ let to_opam (t : t) =
   |> with_depends (Depends.to_filtered_formula t.depends)
   |> with_pin_depends (Pin_depends.sort t.pin_depends)
   |> with_depexts t.depexts
-  |> Extra_field.add Version.field t.version
-  |> Extra_field.add Root_packages.field t.root_packages
-  |> Extra_field.add Duniverse_dirs.field t.duniverse_dirs
+  |> Extra_field.set Version.field t.version
+  |> Extra_field.set Root_packages.field t.root_packages
+  |> Extra_field.set Duniverse_dirs.field t.duniverse_dirs
 
 let from_opam ?file opam =
   let open Result.O in

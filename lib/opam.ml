@@ -194,3 +194,25 @@ let local_package_version opam_file ~explicit_version =
   | None ->
       let default = OpamPackage.Version.of_string "zdev" in
       Option.value (OpamFile.OPAM.version_opt opam_file) ~default
+
+module Extra_field = struct
+  type 'a t = {
+    name : string;
+    to_opam_value : 'a -> OpamParserTypes.FullPos.value;
+    from_opam_value :
+      OpamParserTypes.FullPos.value -> ('a, [ `Msg of string ]) result;
+  }
+
+  let make ~name ~to_opam_value ~from_opam_value =
+    {
+      name = Printf.sprintf "x-opam-monorepo-%s" name;
+      to_opam_value;
+      from_opam_value;
+    }
+
+  let name t = t.name
+
+  let set t a opam = OpamFile.OPAM.add_extension opam t.name (t.to_opam_value a)
+
+  let get t opam = OpamFile.OPAM.extended opam t.name t.from_opam_value
+end
