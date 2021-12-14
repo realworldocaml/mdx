@@ -1,14 +1,10 @@
-### unreleased
+### 2.0.0
 
 #### Added
 
 - Add trailing `;;` to the output of toplevel phrases that were missing it.
   (#346, @Leonidas-from-XIV)
 - Make MDX compatible with OCaml 4.14 (#356, @NathanReb)
-
-#### Changed
-
-#### Deprecated
 
 #### Fixed
 
@@ -25,8 +21,6 @@
 - Remove support for `require-package` label, use the `mdx` stanza in dune
   instead. This label was only used for the `rule` command and can now be
   safely removed. (#363, @Leonidas-from-XIV)
-
-#### Security
 
 ### 1.11.0
 
