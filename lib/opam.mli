@@ -76,8 +76,8 @@ module Extra_field : sig
       previous value. *)
 
   val get : 'a t -> OpamFile.OPAM.t -> ('a, [ `Msg of string ]) result option
-  (** Returns the optional value of the given extra field in the given opam
-      file. *)
+  (** Returns the value of the given extra field in the given opam file if
+      the extra field is set. *)
 end
 
 val depends_on_dune : allow_jbuilder:bool -> OpamTypes.filtered_formula -> bool
