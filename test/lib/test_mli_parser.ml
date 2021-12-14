@@ -101,7 +101,7 @@ let test_parse_mli =
       ~expected:
         (Ok
            {x|[Text "(** This doc comment with a label should get parsed\n\n    ";
- Text "{@"; Text "ocaml"; Text " "; Text "skip "; Text "[";
+ Text "{@"; Text "ocaml"; Text " "; Text "skip"; Text "[";
  Block {loc: File "_none_", lines 3-6; section: None; labels: [skip];
         header: Some ocaml; contents: ["# 1 + 1"; "- : int = 2"];
         value: Toplevel};
