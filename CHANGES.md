@@ -22,6 +22,9 @@
   is 4.08 to 4.13 now (#345, @Leonidas-from-XIV)
 - Do not install deprecated `mdx` binary anymore (#274, @gpetiot)
 - Remove deprecated `rule` command (#312, @gpetiot)
+- Remove support for `require-package` label, use the `mdx` stanza in dune
+  instead. This label was only used for the `rule` command and can now be
+  safely removed. (#363, @Leonidas-from-XIV)
 
 #### Security
 
