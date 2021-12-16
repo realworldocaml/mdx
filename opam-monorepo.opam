@@ -11,6 +11,7 @@ authors: [
 ]
 license: "ISC"
 homepage: "https://github.com/ocamllabs/opam-monorepo"
+doc: "https://ocamllabs.github.io/opam-monorepo"
 bug-reports: "https://github.com/ocamllabs/opam-monorepo/issues"
 depends: [
   "dune" {>= "2.7"}

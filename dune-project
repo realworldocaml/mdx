@@ -8,6 +8,7 @@
 (license ISC)
 (authors "Anil Madhavapeddy" "Nathan Rebours" "Lucas Pluvinage" "Jules Aguillon")
 (maintainers "anil@recoil.org")
+(documentation "https://ocamllabs.github.io/opam-monorepo")
 
 (package
  (name opam-monorepo)
