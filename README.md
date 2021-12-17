@@ -1,10 +1,12 @@
-[![Build Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fci.ocamllabs.io%2Fbadge%2Focamllabs%2Fopam-monorepo%2Fmain&logo=ocaml)](https://ci.ocamllabs.io/github/ocamllabs/opam-monorepo)
+[![Build Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fci.ocamllabs.io%2Fbadge%2Focamllabs%2Fopam-monorepo%2Fmain&logo=ocaml)](https://ci.ocamllabs.io/github/ocamllabs/opam-monorepo) [![Documentation](https://img.shields.io/badge/doc-online-blue)](https://ocamllabs.io/opam-monorepo/opam-monorepo/index.html)
 
 # opam-monorepo
 
 `opam-monorepo` is an opam plugin designed to assemble standalone dune workspaces
 with your projects and all of their dependencies, letting you build it all from scratch
 using only `dune` and `ocaml`.
+
+[Documentation on opam-monorepo](https://ocamllabs.io/opam-monorepo/opam-monorepo/index.html) is available in the repository as well as available online.
 
 ## Installation
 
