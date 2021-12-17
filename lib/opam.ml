@@ -216,3 +216,25 @@ module Extra_field = struct
 
   let get t opam = OpamFile.OPAM.extended opam t.name t.from_opam_value
 end
+
+module Pos = struct
+  open OpamParserTypes.FullPos
+
+  let default = { filename = "None"; start = (0, 0); stop = (0, 0) }
+
+  let from_value { pos; _ } = pos
+
+  let with_default pelem = { pos = default; pelem }
+
+  let errorf ~pos fmt =
+    let startl, startc = pos.start in
+    let stopl, stopc = pos.stop in
+    Format.ksprintf
+      (fun msg -> Error (`Msg msg))
+      ("Error in opam-monorepo lockfile %s, [%d:%d]-[%d:%d]: " ^^ fmt)
+      pos.filename startl startc stopl stopc
+
+  let value_errorf ~value fmt =
+    let pos = from_value value in
+    errorf ~pos fmt
+end
