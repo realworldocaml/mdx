@@ -6,7 +6,7 @@
 with your projects and all of their dependencies, letting you build it all from scratch
 using only `dune` and `ocaml`.
 
-Online documentation is available [here](https://ocamllabs.io/opam-monorepo/opam-monorepo/index.html).
+[Documentation on opam-monorepo](https://ocamllabs.io/opam-monorepo/opam-monorepo/index.html) is available in the repository as well as available online.
 
 ## Installation
 
