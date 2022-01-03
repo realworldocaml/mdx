@@ -30,9 +30,9 @@
 
     A shell block:
 
-    {@sh set-FOO=Hello,set-BAR=Bash[$ echo $FOO $BAR
-Hello Bash
-
+    {@sh set-FOO=Hello,set-BAR=Bash[
+      $ echo $FOO $BAR
+      Hello Bash
     ]}
 
     A block that doesn't run:
