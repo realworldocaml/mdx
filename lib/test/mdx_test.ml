@@ -118,7 +118,7 @@ let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
         output;
       Cram.pp_exit_code ~pad ppf n)
     tests;
-  Block.pp_footer ?syntax ppf t
+  match syntax with Some Syntax.Mli -> () | _ -> Block.pp_footer ?syntax ppf t
 
 let eval_test ?block ?root c cmd =
   Log.debug (fun l -> l "eval_test %a" Fmt.(Dump.list (Fmt.fmt "%S")) cmd);
@@ -305,7 +305,11 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
           with_non_det non_deterministic non_det ~command:print_block
             ~output:det ~det
       | Cram { language = _; non_det } ->
-          let pad, tests = Cram.of_lines t.contents in
+          let pad, tests =
+            Cram.of_lines
+              ~syntax:(Option.value ~default:Normal syntax)
+              ~loc:t.loc t.contents
+          in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:(fun () ->
               print_block ();
