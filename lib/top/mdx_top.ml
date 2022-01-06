@@ -106,7 +106,6 @@ module Phrase = struct
   }
 
   let result t = t.parsed
-
   let start t = t.startpos
 
   let error_of_exn exn =
@@ -383,7 +382,6 @@ let trim_line str =
     else String.sub str trim_from (trim_to - trim_from)
 
 let rtrim l = List.rev (ltrim (List.rev l))
-
 let trim l = ltrim (rtrim (List.map trim_line l))
 
 let cut_into_sentences l =
@@ -496,17 +494,11 @@ let reg_show_prim name to_sig doc =
   add_directive ~name ~doc (`Show_prim to_sig)
 
 let sig_value id desc = Types.Sig_value (id, desc, Exported)
-
 let sig_type id desc = Types.Sig_type (id, desc, Trec_not, Exported)
-
 let sig_typext id ext = Types.Sig_typext (id, ext, Text_exception, Exported)
-
 let sig_module id md = Types.Sig_module (id, Mp_present, md, Trec_not, Exported)
-
 let sig_modtype id desc = Types.Sig_modtype (id, desc, Exported)
-
 let sig_class id desc = Types.Sig_class (id, desc, Trec_not, Exported)
-
 let sig_class_type id desc = Types.Sig_class_type (id, desc, Trec_not, Exported)
 
 let show_val () =
@@ -701,7 +693,6 @@ let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates
   t
 
 let envs = Hashtbl.create 8
-
 let is_predef_or_global id = Ident.is_predef id || Ident.global id
 
 let rec save_summary acc s =
@@ -729,7 +720,6 @@ let rec save_summary acc s =
     ~value_unbound:default_case ~module_unbound:default_case
 
 let default_env = ref (Compmisc.initial_env ())
-
 let first_call = ref true
 
 let env_deps env =

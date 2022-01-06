@@ -20,9 +20,7 @@ module Header : sig
   type t = Shell of [ `Sh | `Bash ] | OCaml | Other of string
 
   val pp : Format.formatter -> t -> unit
-
   val of_string : string -> t option
-
   val infer_from_file : string -> t option
 end
 
