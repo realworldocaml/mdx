@@ -131,9 +131,9 @@ let lstrip string =
 
 let pp_contents ?syntax ppf t =
   match (syntax, t.contents) with
-  | Some Syntax.Mli, [ _ ] -> Fmt.pf ppf "%s" (String.concat "\n" t.contents)
-  | Some Syntax.Mli, _ ->
-      Fmt.pf ppf "\n%a" (pp_lines syntax t) (List.map lstrip t.contents)
+  | Some Syntax.Mli, [ line ] -> Fmt.pf ppf "%s" line
+  | Some Syntax.Mli, lines ->
+      Fmt.pf ppf "@\n%a@\n" (pp_lines syntax t) (List.map lstrip lines)
   | (Some Cram | Some Normal | None), [] -> ()
   | (Some Cram | Some Normal | None), _ ->
       Fmt.pf ppf "%a\n" (pp_lines syntax t) t.contents
@@ -146,10 +146,9 @@ let pp_errors ppf t =
       Fmt.string ppf "```\n"
   | _ -> ()
 
-let pp_footer ?syntax ppf t =
+let pp_footer ?syntax ppf _ =
   match syntax with
-  | Some Syntax.Mli ->
-      if List.length t.contents = 1 then Fmt.pf ppf "" else Fmt.pf ppf "\n"
+  | Some Syntax.Mli -> ()
   | Some Syntax.Cram -> ()
   | _ -> Fmt.string ppf "```\n"
 

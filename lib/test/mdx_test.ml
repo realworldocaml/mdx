@@ -118,7 +118,7 @@ let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
         output;
       Cram.pp_exit_code ~pad ppf n)
     tests;
-  match syntax with Some Syntax.Mli -> () | _ -> Block.pp_footer ?syntax ppf t
+  Block.pp_footer ?syntax ppf t
 
 let eval_test ?block ?root c cmd =
   Log.debug (fun l -> l "eval_test %a" Fmt.(Dump.list (Fmt.fmt "%S")) cmd);
@@ -197,7 +197,7 @@ let run_toplevel_tests ?syntax ?root c ppf tests t =
               Output.pp ~pad ppf (`Output line))
         output)
     tests;
-  match syntax with Some Syntax.Mli -> () | _ -> Block.pp_footer ?syntax ppf t
+  Block.pp_footer ?syntax ppf t
 
 type file = { first : Mdx.Part.file; current : Mdx.Part.file }
 
