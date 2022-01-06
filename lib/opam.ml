@@ -231,7 +231,7 @@ module Pos = struct
     let stopl, stopc = pos.stop in
     Format.ksprintf
       (fun msg -> Error (`Msg msg))
-      ("Error in opam-monorepo lockfile %s, [%d:%d]-[%d:%d]: " ^^ fmt)
+      ("Error in opam file %s, [%d:%d]-[%d:%d]: " ^^ fmt)
       pos.filename startl startc stopl stopc
 
   let value_errorf ~value fmt =
