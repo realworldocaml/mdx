@@ -47,8 +47,8 @@ for this is is slightly different to match the conventions of OCaml
 documentation comments:
 
     (** This is an documentation comment with an ocaml block
-    {@ocaml LABELS [
-    ]}
+        {@ocaml LABELS [
+        ]}
     *)
 
 
