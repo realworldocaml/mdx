@@ -218,16 +218,16 @@ module Extra_field = struct
 end
 
 module Pos = struct
-  open OpamParserTypes.FullPos
+  module Full_pos = OpamParserTypes.FullPos
 
-  let default = { filename = "None"; start = (0, 0); stop = (0, 0) }
+  let default = { Full_pos.filename = "None"; start = (0, 0); stop = (0, 0) }
 
-  let from_value { pos; _ } = pos
+  let from_value { Full_pos.pos; _ } = pos
 
-  let with_default pelem = { pos = default; pelem }
+  let with_default pelem = { Full_pos.pos = default; pelem }
 
   let errorf ~pos fmt =
-    let startl, startc = pos.start in
+    let startl, startc = pos.Full_pos.start in
     let stopl, stopc = pos.stop in
     Format.ksprintf
       (fun msg -> Error (`Msg msg))
