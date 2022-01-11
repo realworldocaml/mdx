@@ -216,3 +216,25 @@ module Extra_field = struct
 
   let get t opam = OpamFile.OPAM.extended opam t.name t.from_opam_value
 end
+
+module Pos = struct
+  module Full_pos = OpamParserTypes.FullPos
+
+  let default = { Full_pos.filename = "None"; start = (0, 0); stop = (0, 0) }
+
+  let from_value { Full_pos.pos; _ } = pos
+
+  let with_default pelem = { Full_pos.pos = default; pelem }
+
+  let errorf ~pos fmt =
+    let startl, startc = pos.Full_pos.start in
+    let stopl, stopc = pos.stop in
+    Format.ksprintf
+      (fun msg -> Error (`Msg msg))
+      ("Error in opam file %s, [%d:%d]-[%d:%d]: " ^^ fmt)
+      pos.filename startl startc stopl stopc
+
+  let value_errorf ~value fmt =
+    let pos = from_value value in
+    errorf ~pos fmt
+end

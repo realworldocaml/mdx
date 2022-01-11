@@ -80,6 +80,22 @@ module Extra_field : sig
       the extra field is set. *)
 end
 
+module Pos : sig
+  val default : OpamParserTypes.FullPos.pos
+
+  val with_default : 'a -> 'a OpamParserTypes.FullPos.with_pos
+
+  val errorf :
+    pos:OpamParserTypes.FullPos.pos ->
+    ('a, unit, string, ('b, [> `Msg of string ]) result) format4 ->
+    'a
+
+  val value_errorf :
+    value:OpamParserTypes.FullPos.value ->
+    ('a, unit, string, ('b, [> `Msg of string ]) result) format4 ->
+    'a
+end
+
 val depends_on_dune : allow_jbuilder:bool -> OpamTypes.filtered_formula -> bool
 (** Returns whether the given depends field formula contains a dependency to dune or jbuilder *)
 
