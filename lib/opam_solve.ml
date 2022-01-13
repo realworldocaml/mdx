@@ -176,9 +176,12 @@ let not_buildable_with_dune diagnostics =
   let rolemap = Local_solver.diagnostics_rolemap diagnostics in
   Pkg_map.fold
     (fun pkg component acc ->
-      match no_version_builds_with_dune component with
-      | false -> acc
-      | true -> pkg :: acc)
+      match Local_solver.Diagnostics.Component.selected_impl component with
+      | Some _ -> acc
+      | None -> (
+          match no_version_builds_with_dune component with
+          | false -> acc
+          | true -> pkg :: acc))
     rolemap []
   |> List.filter_map ~f:Local_solver.package_name
 

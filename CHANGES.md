@@ -13,6 +13,9 @@
 
 ### Fixed
 
+- Fix a bug where a package which had a single version that built with dune and got selected by the solver
+  would be reported has having no version building with dune. (#245, @Leonidas-from-XIV)
+
 ### Removed
 
 ### Security
