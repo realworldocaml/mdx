@@ -238,3 +238,29 @@ module Pos = struct
     let pos = from_value value in
     errorf ~pos fmt
 end
+
+module Value = struct
+  module String = struct
+    let from_value value =
+      match (value : OpamParserTypes.FullPos.value) with
+      | { pelem = String s; _ } -> Ok s
+      | { pos; _ } -> Pos.errorf ~pos "Expected a string"
+
+    let to_value s = Pos.with_default (OpamParserTypes.FullPos.String s)
+  end
+
+  module List = struct
+    let from_value ~elm_from_value value =
+      match (value : OpamParserTypes.FullPos.value) with
+      | { pelem = List { pelem; _ }; _ } ->
+          Result.List.map ~f:elm_from_value pelem
+      | { pos; _ } -> Pos.errorf ~pos "Expected a list"
+
+    let to_value ~elm_to_value l =
+      let pelem =
+        OpamParserTypes.FullPos.List
+          (Pos.with_default (List.map ~f:elm_to_value l))
+      in
+      Pos.with_default pelem
+  end
+end

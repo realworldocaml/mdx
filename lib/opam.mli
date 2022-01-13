@@ -96,6 +96,30 @@ module Pos : sig
     'a
 end
 
+module Value : sig
+  (** Utilities to convert base opam values to/from ocaml *)
+
+  module String : sig
+    val to_value : string -> OpamParserTypes.FullPos.value
+
+    val from_value :
+      OpamParserTypes.FullPos.value -> (string, Rresult.R.msg) result
+  end
+
+  module List : sig
+    val to_value :
+      elm_to_value:('a -> OpamParserTypes.FullPos.value) ->
+      'a list ->
+      OpamParserTypes.FullPos.value
+
+    val from_value :
+      elm_from_value:
+        (OpamParserTypes.FullPos.value -> ('a, Rresult.R.msg) result) ->
+      OpamParserTypes.FullPos.value ->
+      ('a list, Rresult.R.msg) result
+  end
+end
+
 val depends_on_dune : allow_jbuilder:bool -> OpamTypes.filtered_formula -> bool
 (** Returns whether the given depends field formula contains a dependency to dune or jbuilder *)
 
