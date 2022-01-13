@@ -13,6 +13,11 @@
 
 ### Fixed
 
+- Only show an error that there are no packages that build with dune when there
+  is no solution. The code would otherwise report an that no packages build
+  with dune if the selected package builds with dune, leading to confusion.
+  (#245, @Leonidas-from-XIV)
+
 ### Removed
 
 ### Security
