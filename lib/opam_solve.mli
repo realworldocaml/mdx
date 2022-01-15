@@ -40,3 +40,8 @@ val diagnostics_message :
 
 val not_buildable_with_dune :
   (_, 'diagnostics) t -> 'diagnostics -> OpamPackage.Name.t list
+
+val no_matching_versions :
+  (_, 'diagnostics) t ->
+  'diagnostics ->
+  (OpamPackage.Name.t * OpamFormula.version_formula) list

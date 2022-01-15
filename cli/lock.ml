@@ -192,9 +192,36 @@ let display_verbose_diagnostics = function
   | None -> false
   | Some l -> l >= Logs.Info
 
+let could_not_determine_version offending_packages =
+  let f (relop, version) =
+    let pp_relop fmt = function
+      | `Eq -> Fmt.pf fmt "="
+      | `Geq -> Fmt.pf fmt ">="
+      | `Gt -> Fmt.pf fmt ">"
+      | `Leq -> Fmt.pf fmt "<="
+      | `Lt -> Fmt.pf fmt "<"
+      | `Neq -> Fmt.pf fmt "!="
+    in
+    Fmt.str "%a %a" pp_relop relop Opam.Pp.version version
+  in
+  let s = OpamFormula.string_of_formula f in
+  let pp_version_formula = Fmt.using s Fmt.string in
+  let pp_offending_package =
+    Fmt.pair ~sep:Fmt.sp Opam.Pp.package_name pp_version_formula
+  in
+  let pp_offending_packages = Fmt.list ~sep:Fmt.comma pp_offending_package in
+  Logs.err (fun l ->
+      l
+        "Could not find any package that would satisfy the version constrants: \
+         %a"
+        pp_offending_packages offending_packages)
+
 let interpret_solver_error ~repositories solver = function
   | `Msg _ as err -> err
   | `Diagnostics d ->
+      (match Opam_solve.no_matching_versions solver d with
+      | [] -> ()
+      | offending_packages -> could_not_determine_version offending_packages);
       (match Opam_solve.not_buildable_with_dune solver d with
       | [] -> ()
       | offending_packages ->

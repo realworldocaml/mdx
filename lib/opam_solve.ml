@@ -179,6 +179,9 @@ module type OPAM_MONOREPO_SOLVER = sig
   val diagnostics_message : verbose:bool -> diagnostics -> [> `Msg of string ]
 
   val not_buildable_with_dune : diagnostics -> OpamPackage.Name.t list
+
+  val no_matching_versions :
+    diagnostics -> (OpamPackage.Name.t * OpamFormula.version_formula) list
 end
 
 module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
@@ -250,6 +253,68 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
         | true -> pkg :: acc)
       rolemap []
     |> List.filter_map ~f:Solver.package_name
+
+  let no_matching_versions diagnostics =
+    let rolemap = Solver.diagnostics_rolemap diagnostics in
+    Pkg_map.fold
+      (fun pkg component acc ->
+        match Solver.Diagnostics.Component.selected_impl component with
+        | Some _ -> acc
+        | None -> (
+            match Solver.package_name pkg with
+            | None -> acc
+            | Some pkg_name -> (
+                let rejects, _reason =
+                  Solver.Diagnostics.Component.rejects component
+                in
+                (* In the rejected candidates, try to find one where it had failed a version restriction and extract that one *)
+                let version_restriction =
+                  List.find_map
+                    ~f:(fun (_model, reason) ->
+                      match reason with
+                      | `FailsRestriction restriction ->
+                          let _, version_restriction =
+                            Solver.formula restriction
+                          in
+                          Some version_restriction
+                      | _ -> None)
+                    rejects
+                in
+                match version_restriction with
+                | None -> acc
+                | Some version_restriction -> (
+                    (* find only the model rejections that is those that we have rejected as e.g. not building with dune *)
+                    let model_rejected =
+                      List.filter_map
+                        ~f:(fun (model, reason) ->
+                          match reason with
+                          | `Model_rejection _ -> Some model
+                          | _ -> None)
+                        rejects
+                    in
+                    let all_failures_due_to_version =
+                      List.for_all
+                        ~f:(fun model ->
+                          match Solver.version model with
+                          | None -> true
+                          | Some rejected_package ->
+                              let rejected_version =
+                                OpamPackage.version rejected_package
+                              in
+                              let failed_due_to_version =
+                                OpamFormula.check_version_formula
+                                  version_restriction rejected_version
+                                |> not
+                              in
+                              failed_due_to_version)
+                        model_rejected
+                    in
+                    match
+                      (List.length model_rejected, all_failures_due_to_version)
+                    with
+                    | 0, _ | _, false -> acc
+                    | _, true -> (pkg_name, version_restriction) :: acc))))
+      rolemap []
 
   let get_opam_info ~context pkg =
     match Context.opam_file context pkg with
@@ -424,3 +489,16 @@ let not_buildable_with_dune :
     t
   in
   Solver.not_buildable_with_dune diagnostics
+
+let no_matching_versions :
+    type context diagnostics.
+    (context, diagnostics) t ->
+    diagnostics ->
+    (OpamPackage.Name.t * OpamFormula.version_formula) list =
+ fun t diagnostics ->
+  let (module Solver : OPAM_MONOREPO_SOLVER
+        with type diagnostics = diagnostics
+         and type input = context) =
+    t
+  in
+  Solver.no_matching_versions diagnostics
