@@ -113,13 +113,12 @@ module Value : sig
 
   module List : sig
     val to_value :
-      elm_to_value:('a -> OpamParserTypes.FullPos.value) ->
+      ('a -> OpamParserTypes.FullPos.value) ->
       'a list ->
       OpamParserTypes.FullPos.value
 
     val from_value :
-      elm_from_value:
-        (OpamParserTypes.FullPos.value -> ('a, Rresult.R.msg) result) ->
+      (OpamParserTypes.FullPos.value -> ('a, Rresult.R.msg) result) ->
       OpamParserTypes.FullPos.value ->
       ('a list, Rresult.R.msg) result
   end

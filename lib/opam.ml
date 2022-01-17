@@ -254,13 +254,13 @@ module Value = struct
   end
 
   module List = struct
-    let from_value ~elm_from_value value =
+    let from_value elm_from_value value =
       match (value : OpamParserTypes.FullPos.value) with
       | { pelem = List { pelem; _ }; _ } ->
           Result.List.map ~f:elm_from_value pelem
       | _ -> Pos.unexpected_value_error ~expected:"a list" value
 
-    let to_value ~elm_to_value l =
+    let to_value elm_to_value l =
       let pelem =
         OpamParserTypes.FullPos.List
           (Pos.with_default (List.map ~f:elm_to_value l))

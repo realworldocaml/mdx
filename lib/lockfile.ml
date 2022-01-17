@@ -68,7 +68,7 @@ module Root_packages = struct
       |> List.map ~f:OpamPackage.Name.to_string
       |> List.sort ~cmp:String.compare
     in
-    Opam.Value.List.to_value ~elm_to_value:Opam.Value.String.to_value sorted
+    Opam.Value.List.to_value Opam.Value.String.to_value sorted
 
   let from_opam_value value =
     let open Result.O in
@@ -76,7 +76,7 @@ module Root_packages = struct
       let+ str = Opam.Value.String.from_value value in
       OpamPackage.Name.of_string str
     in
-    Opam.Value.List.from_value ~elm_from_value value
+    Opam.Value.List.from_value elm_from_value value
     >>| OpamPackage.Name.Set.of_list
 
   let field =
@@ -197,38 +197,35 @@ module Duniverse_dirs = struct
     let open OpamParserTypes.FullPos in
     let open Result.O in
     let elm_from_value value =
-      let* l = Opam.Value.List.from_value ~elm_from_value:Result.ok value in
+      let* l = Opam.Value.List.from_value Result.ok value in
       match l with
       | [ { pelem = String url; _ }; { pelem = String dir; _ } ] ->
           Ok (OpamUrl.of_string url, (dir, []))
       | [ { pelem = String url; _ }; { pelem = String dir; _ }; hashes ] ->
           let* hashes =
-            Opam.Value.List.from_value ~elm_from_value:hash_from_opam_value
-              hashes
+            Opam.Value.List.from_value hash_from_opam_value hashes
           in
           Ok (OpamUrl.of_string url, (dir, hashes))
       | _ ->
           Opam.Pos.unexpected_value_error
             ~expected:"a list [ \"url\" \"repo name\" [<hashes>] ]" value
     in
-    let* bindings = Opam.Value.List.from_value ~elm_from_value value in
+    let* bindings = Opam.Value.List.from_value elm_from_value value in
     Ok (OpamUrl.Map.of_list bindings)
 
   let one_to_opam_value (url, (dir, hashes)) =
     let url = Opam.Value.String.to_value (OpamUrl.to_string url) in
     let dir = Opam.Value.String.to_value dir in
-    let list = Opam.Value.List.to_value ~elm_to_value:Fun.id in
+    let list = Opam.Value.List.to_value Fun.id in
     match hashes with
     | [] -> list [ url; dir ]
     | _ ->
-        let hashes =
-          Opam.Value.List.to_value ~elm_to_value:hash_to_opam_value hashes
-        in
+        let hashes = Opam.Value.List.to_value hash_to_opam_value hashes in
         list [ url; dir; hashes ]
 
   let to_opam_value t =
     let l = OpamUrl.Map.bindings t in
-    Opam.Value.List.to_value ~elm_to_value:one_to_opam_value l
+    Opam.Value.List.to_value one_to_opam_value l
 
   let field =
     Extra_field.make ~name:"duniverse-dirs" ~to_opam_value ~from_opam_value
