@@ -237,6 +237,10 @@ module Pos = struct
   let value_errorf ~value fmt =
     let pos = from_value value in
     errorf ~pos fmt
+
+  let unexpected_value_error ~expected value =
+    value_errorf ~value "Expected %s, got: %s" expected
+      (OpamPrinter.FullPos.value value)
 end
 
 module Value = struct
@@ -244,7 +248,7 @@ module Value = struct
     let from_value value =
       match (value : OpamParserTypes.FullPos.value) with
       | { pelem = String s; _ } -> Ok s
-      | { pos; _ } -> Pos.errorf ~pos "Expected a string"
+      | _ -> Pos.unexpected_value_error ~expected:"a string" value
 
     let to_value s = Pos.with_default (OpamParserTypes.FullPos.String s)
   end
@@ -254,7 +258,7 @@ module Value = struct
       match (value : OpamParserTypes.FullPos.value) with
       | { pelem = List { pelem; _ }; _ } ->
           Result.List.map ~f:elm_from_value pelem
-      | { pos; _ } -> Pos.errorf ~pos "Expected a list"
+      | _ -> Pos.unexpected_value_error ~expected:"a list" value
 
     let to_value ~elm_to_value l =
       let pelem =

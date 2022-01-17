@@ -94,6 +94,11 @@ module Pos : sig
     value:OpamParserTypes.FullPos.value ->
     ('a, unit, string, ('b, [> `Msg of string ]) result) format4 ->
     'a
+
+  val unexpected_value_error :
+    expected:string ->
+    OpamParserTypes.FullPos.value ->
+    (_, [> `Msg of string ]) result
 end
 
 module Value : sig

@@ -208,8 +208,8 @@ module Duniverse_dirs = struct
           in
           Ok (OpamUrl.of_string url, (dir, hashes))
       | _ ->
-          Opam.Pos.value_errorf ~value
-            "Expected a list [ \"url\" \"repo name\" [<hashes>] ]"
+          Opam.Pos.unexpected_value_error
+            ~expected:"a list [ \"url\" \"repo name\" [<hashes>] ]" value
     in
     let* bindings = Opam.Value.List.from_value ~elm_from_value value in
     Ok (OpamUrl.Map.of_list bindings)
