@@ -94,6 +94,34 @@ module Pos : sig
     value:OpamParserTypes.FullPos.value ->
     ('a, unit, string, ('b, [> `Msg of string ]) result) format4 ->
     'a
+
+  val unexpected_value_error :
+    expected:string ->
+    OpamParserTypes.FullPos.value ->
+    (_, [> `Msg of string ]) result
+end
+
+module Value : sig
+  (** Utilities to convert base opam values to/from ocaml *)
+
+  module String : sig
+    val to_value : string -> OpamParserTypes.FullPos.value
+
+    val from_value :
+      OpamParserTypes.FullPos.value -> (string, Rresult.R.msg) result
+  end
+
+  module List : sig
+    val to_value :
+      ('a -> OpamParserTypes.FullPos.value) ->
+      'a list ->
+      OpamParserTypes.FullPos.value
+
+    val from_value :
+      (OpamParserTypes.FullPos.value -> ('a, Rresult.R.msg) result) ->
+      OpamParserTypes.FullPos.value ->
+      ('a list, Rresult.R.msg) result
+  end
 end
 
 val depends_on_dune : allow_jbuilder:bool -> OpamTypes.filtered_formula -> bool

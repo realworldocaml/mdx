@@ -49,13 +49,12 @@ module Version = struct
               your opam-monorepo plugin."
              pp t))
 
-  let to_opam_value t =
-    Opam.Pos.with_default (OpamParserTypes.FullPos.String (to_string t))
+  let to_opam_value t = Opam.Value.String.to_value (to_string t)
 
   let from_opam_value value =
-    match (value : OpamParserTypes.FullPos.value) with
-    | { pelem = String s; _ } -> from_string s
-    | _ -> Opam.Pos.value_errorf ~value "Expected a string"
+    let open Result.O in
+    let* str = Opam.Value.String.from_value value in
+    from_string str
 
   let field = Extra_field.make ~name:"version" ~to_opam_value ~from_opam_value
 end
@@ -64,31 +63,21 @@ module Root_packages = struct
   type t = OpamPackage.Name.Set.t
 
   let to_opam_value t =
-    let open OpamParserTypes.FullPos in
     let sorted =
       t |> OpamPackage.Name.Set.elements
       |> List.map ~f:OpamPackage.Name.to_string
       |> List.sort ~cmp:String.compare
     in
-    let pelem =
-      List
-        (Opam.Pos.with_default
-           (List.map ~f:(fun s -> Opam.Pos.with_default (String s)) sorted))
-    in
-    Opam.Pos.with_default pelem
+    Opam.Value.List.to_value Opam.Value.String.to_value sorted
 
   let from_opam_value value =
     let open Result.O in
-    let open OpamParserTypes.FullPos in
-    let elm_from_value { pelem; _ } =
-      match pelem with
-      | String s -> Ok (OpamPackage.Name.of_string s)
-      | _ -> Opam.Pos.value_errorf ~value "Expected a string"
+    let elm_from_value value =
+      let+ str = Opam.Value.String.from_value value in
+      OpamPackage.Name.of_string str
     in
-    match value.pelem with
-    | List { pelem; _ } ->
-        Result.List.map ~f:elm_from_value pelem >>| OpamPackage.Name.Set.of_list
-    | _ -> Opam.Pos.value_errorf ~value "Expected a list"
+    Opam.Value.List.from_value elm_from_value value
+    >>| OpamPackage.Name.Set.of_list
 
   let field =
     Extra_field.make ~name:"root-packages" ~to_opam_value ~from_opam_value
@@ -195,74 +184,48 @@ module Duniverse_dirs = struct
         OpamUrl.Map.add (Url.to_opam_url url) (dir, hashes) acc)
 
   let hash_to_opam_value hash =
-    Opam.Pos.with_default
-      (OpamParserTypes.FullPos.String (OpamHash.to_string hash))
+    Opam.Value.String.to_value (OpamHash.to_string hash)
 
   let hash_from_opam_value value =
-    let open OpamParserTypes.FullPos in
-    match value with
-    | { pelem = String s; pos } -> (
-        match OpamHash.of_string_opt s with
-        | Some hash -> Ok hash
-        | None -> Opam.Pos.errorf ~pos "Invalid hash: %s" s)
-    | _ -> Opam.Pos.value_errorf ~value "Expected a hash string representation"
+    let open Result.O in
+    let* str = Opam.Value.String.from_value value in
+    match OpamHash.of_string_opt str with
+    | Some hash -> Ok hash
+    | None -> Opam.Pos.value_errorf ~value "Invalid hash: %s" str
 
   let from_opam_value value =
     let open OpamParserTypes.FullPos in
     let open Result.O in
-    let elm_from_opam_value value =
-      match value with
-      | {
-       pelem =
-         List
-           {
-             pelem = [ { pelem = String url; _ }; { pelem = String dir; _ } ];
-             _;
-           };
-       _;
-      } ->
+    let elm_from_value value =
+      let* l = Opam.Value.List.from_value Result.ok value in
+      match l with
+      | [ { pelem = String url; _ }; { pelem = String dir; _ } ] ->
           Ok (OpamUrl.of_string url, (dir, []))
-      | {
-       pelem =
-         List
-           {
-             pelem =
-               [
-                 { pelem = String url; _ };
-                 { pelem = String dir; _ };
-                 { pelem = List { pelem = hashes; _ }; _ };
-               ];
-             _;
-           };
-       _;
-      } ->
-          let* hashes = Result.List.map ~f:hash_from_opam_value hashes in
+      | [ { pelem = String url; _ }; { pelem = String dir; _ }; hashes ] ->
+          let* hashes =
+            Opam.Value.List.from_value hash_from_opam_value hashes
+          in
           Ok (OpamUrl.of_string url, (dir, hashes))
       | _ ->
-          Opam.Pos.value_errorf ~value
-            "Expected a list [ \"url\" \"repo name\" [<hashes>] ]"
+          Opam.Pos.unexpected_value_error
+            ~expected:"a list [ \"url\" \"repo name\" [<hashes>] ]" value
     in
-    match value with
-    | { pelem = List { pelem = l; _ }; _ } ->
-        let* bindings = Result.List.map ~f:elm_from_opam_value l in
-        Ok (OpamUrl.Map.of_list bindings)
-    | _ -> Opam.Pos.value_errorf ~value "Expected a list"
+    let* bindings = Opam.Value.List.from_value elm_from_value value in
+    Ok (OpamUrl.Map.of_list bindings)
 
   let one_to_opam_value (url, (dir, hashes)) =
-    let open OpamParserTypes.FullPos in
-    let url = Opam.Pos.with_default (String (OpamUrl.to_string url)) in
-    let dir = Opam.Pos.with_default (String dir) in
-    let hashes = List.map ~f:hash_to_opam_value hashes in
-    let list l = Opam.Pos.(with_default (List (with_default l))) in
+    let url = Opam.Value.String.to_value (OpamUrl.to_string url) in
+    let dir = Opam.Value.String.to_value dir in
+    let list = Opam.Value.List.to_value Fun.id in
     match hashes with
     | [] -> list [ url; dir ]
-    | _ -> list [ url; dir; list hashes ]
+    | _ ->
+        let hashes = Opam.Value.List.to_value hash_to_opam_value hashes in
+        list [ url; dir; hashes ]
 
   let to_opam_value t =
-    let open OpamParserTypes.FullPos in
     let l = OpamUrl.Map.bindings t in
-    Opam.Pos.with_default
-      (List (Opam.Pos.with_default (List.map l ~f:one_to_opam_value)))
+    Opam.Value.List.to_value one_to_opam_value l
 
   let field =
     Extra_field.make ~name:"duniverse-dirs" ~to_opam_value ~from_opam_value
