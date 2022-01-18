@@ -5,6 +5,9 @@
 - Add opam extensions `x-opam-monorepo-opam-repositories` and
   `x-opam-monorepo-global-opam-vars` to make `lock` fully reproducible.
   (#250, #253, @NathanReb)
+- Show an error message when the solver can't find any version that satisfies
+  the requested version constraint in the user's OPAM file (#215, #248,
+  @Leonidas-from-XIV)
 
 ### Changed
 
