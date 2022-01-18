@@ -260,60 +260,59 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
       (fun pkg component acc ->
         match Solver.Diagnostics.Component.selected_impl component with
         | Some _ -> acc
-        | None -> (
-            match Solver.package_name pkg with
-            | None -> acc
-            | Some pkg_name -> (
-                let rejects, _reason =
-                  Solver.Diagnostics.Component.rejects component
-                in
-                (* In the rejected candidates, try to find one where it had failed a version restriction and extract that one *)
-                let version_restriction =
-                  List.find_map
-                    ~f:(fun (_model, reason) ->
-                      match reason with
-                      | `FailsRestriction restriction ->
-                          let _, version_restriction =
-                            Solver.formula restriction
-                          in
-                          Some version_restriction
-                      | _ -> None)
-                    rejects
-                in
-                match version_restriction with
-                | None -> acc
-                | Some version_restriction -> (
-                    (* find only the model rejections that is those that we have rejected as e.g. not building with dune *)
-                    let model_rejected =
-                      List.filter_map
-                        ~f:(fun (model, reason) ->
-                          match reason with
-                          | `Model_rejection _ -> Some model
-                          | _ -> None)
-                        rejects
-                    in
-                    let all_failures_due_to_version =
-                      List.for_all
-                        ~f:(fun model ->
-                          match Solver.version model with
-                          | None -> true
-                          | Some rejected_package ->
-                              let rejected_version =
-                                OpamPackage.version rejected_package
-                              in
-                              let failed_due_to_version =
-                                OpamFormula.check_version_formula
-                                  version_restriction rejected_version
-                                |> not
-                              in
-                              failed_due_to_version)
-                        model_rejected
-                    in
-                    match
-                      (List.length model_rejected, all_failures_due_to_version)
-                    with
-                    | 0, _ | _, false -> acc
-                    | _, true -> (pkg_name, version_restriction) :: acc))))
+        | None ->
+            (* short-circuit skip of fold *)
+            let ( let* ) a f = match a with Some a -> f a | None -> acc in
+
+            let* pkg_name = Solver.package_name pkg in
+            let rejects, _reason =
+              Solver.Diagnostics.Component.rejects component
+            in
+            (* In the rejected candidates, try to find one where it had failed a version restriction and extract that one *)
+            let* version_restriction =
+              List.find_map
+                ~f:(fun (_model, reason) ->
+                  match reason with
+                  | `FailsRestriction restriction ->
+                      let _, version_restriction = Solver.formula restriction in
+                      Some version_restriction
+                  | _ -> None)
+                rejects
+            in
+            (* find only the model rejections that is those that we have rejected as e.g. not building with dune *)
+            let model_rejected =
+              List.filter_map
+                ~f:(fun (model, reason) ->
+                  match reason with
+                  | `Model_rejection _ -> Some model
+                  | _ -> None)
+                rejects
+            in
+            (* make sure the list is not empty *)
+            let* _ = List.nth_opt model_rejected 0 in
+            let all_failures_due_to_version =
+              List.for_all
+                ~f:(fun model ->
+                  match Solver.version model with
+                  | None -> true
+                  | Some rejected_package ->
+                      let rejected_version =
+                        OpamPackage.version rejected_package
+                      in
+                      let failed_due_to_version =
+                        OpamFormula.check_version_formula version_restriction
+                          rejected_version
+                        |> not
+                      in
+                      failed_due_to_version)
+                model_rejected
+            in
+            let* failed_pkg =
+              match all_failures_due_to_version with
+              | false -> None
+              | true -> Some (pkg_name, version_restriction)
+            in
+            failed_pkg :: acc)
       rolemap []
 
   let get_opam_info ~context pkg =
