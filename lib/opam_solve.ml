@@ -266,19 +266,17 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
             let* pkg_name = Solver.package_name pkg in
             let notes = Solver.Diagnostics.Component.notes component in
             (* In the rejected candidates, try to find one where it had failed a version restriction and extract that one *)
-            let* version_restriction =
+            let* _, version_restriction =
               List.find_map
                 ~f:(function
+                  | UserRequested restriction -> Some restriction
                   | Restricts (_other_role, _impl, restrictions) -> (
                       match restrictions with
                       | [] -> None
-                      | restriction :: _ ->
-                          let _, version_restriction =
-                            Solver.formula restriction
-                          in
-                          Some version_restriction)
+                      | restriction :: _ -> Some restriction)
                   | _ -> None)
                 notes
+              |> Option.map ~f:Solver.formula
             in
             let rejects, _reason =
               Solver.Diagnostics.Component.rejects component
