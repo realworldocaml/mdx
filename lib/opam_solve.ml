@@ -263,21 +263,25 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
         | None ->
             (* short-circuit skip of fold *)
             let ( let* ) a f = match a with Some a -> f a | None -> acc in
-
             let* pkg_name = Solver.package_name pkg in
-            let rejects, _reason =
-              Solver.Diagnostics.Component.rejects component
-            in
+            let notes = Solver.Diagnostics.Component.notes component in
             (* In the rejected candidates, try to find one where it had failed a version restriction and extract that one *)
             let* version_restriction =
               List.find_map
-                ~f:(fun (_model, reason) ->
-                  match reason with
-                  | `FailsRestriction restriction ->
-                      let _, version_restriction = Solver.formula restriction in
-                      Some version_restriction
+                ~f:(function
+                  | Restricts (_other_role, _impl, restrictions) -> (
+                      match restrictions with
+                      | [] -> None
+                      | restriction :: _ ->
+                          let _, version_restriction =
+                            Solver.formula restriction
+                          in
+                          Some version_restriction)
                   | _ -> None)
-                rejects
+                notes
+            in
+            let rejects, _reason =
+              Solver.Diagnostics.Component.rejects component
             in
             (* find only the model rejections that is those that we have rejected as e.g. not building with dune *)
             let model_rejected =
