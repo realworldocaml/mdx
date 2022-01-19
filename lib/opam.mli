@@ -75,7 +75,7 @@ module Extra_field : sig
   (** Sets the field in the given opam file, potentially overwriting the
       previous value. *)
 
-  val get : 'a t -> OpamFile.OPAM.t -> ('a, [ `Msg of string ]) result option
+  val get : 'a t -> OpamFile.OPAM.t -> ('a option, [ `Msg of string ]) result
   (** Returns the value of the given extra field in the given opam file if
       the extra field is set. *)
 end

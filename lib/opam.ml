@@ -214,7 +214,11 @@ module Extra_field = struct
 
   let set t a opam = OpamFile.OPAM.add_extension opam t.name (t.to_opam_value a)
 
-  let get t opam = OpamFile.OPAM.extended opam t.name t.from_opam_value
+  let get t opam =
+    let open Result.O in
+    match OpamFile.OPAM.extended opam t.name t.from_opam_value with
+    | None -> Ok None
+    | Some r -> r >>| Option.some
 end
 
 module Pos = struct

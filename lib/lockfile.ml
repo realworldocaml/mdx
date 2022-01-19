@@ -4,8 +4,10 @@ module Extra_field = struct
   include Opam.Extra_field
 
   let get ?file t opam =
-    match get t opam with
-    | Some result -> result
+    let open Result.O in
+    let* value_opt = get t opam in
+    match value_opt with
+    | Some result -> Ok result
     | None ->
         let file_suffix_opt = Option.map ~f:(Printf.sprintf " %s") file in
         let file_suffix = Option.value ~default:"" file_suffix_opt in
