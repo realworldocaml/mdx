@@ -290,13 +290,15 @@ end
 
 type explicit_repos = string list
 
+type opam_env = OpamVariable.variable_contents String.Map.t
+
 type switch = OpamStateTypes.unlocked OpamStateTypes.switch_state
 
-module Multi_dir_context : BASE_CONTEXT with type input = explicit_repos =
-struct
+module Multi_dir_context :
+  BASE_CONTEXT with type input = opam_env * explicit_repos = struct
   include Opam_0install.Dir_context
 
-  type input = string list
+  type input = opam_env * explicit_repos
   (** A list of repo URLs *)
 
   type nonrec t = t list
@@ -305,14 +307,14 @@ struct
       First repo in the list as higher priority. If two repos provide the same version
       of a package, the one from the highest priority repo will be used, the other
       discared by [candidates]. *)
-  let create ?test ~constraints paths =
+  let create ?test ~constraints (env, paths) =
+    let env varname = String.Map.find_opt varname env in
     match paths with
     | [] ->
         invalid_arg
           "Multi_dir_context should be instanciated with at least one repo"
     | _ ->
-        (* TODO: properly set the env *)
-        List.map ~f:(create ?test ~constraints ~env:(fun _ -> None)) paths
+        List.map ~f:(create ?test ~constraints ~env) paths
 
   let merge_candidates acc candidates =
     List.fold_left ~init:acc candidates ~f:(fun acc (version, opam_file_res) ->
@@ -361,7 +363,8 @@ type explicit_repos_diagnostics = Explicit_repos_solver.diagnostics
 let local_opam_config_solver : (switch, switch_diagnostics) t =
   (module Local_opam_config_solver)
 
-let explicit_repos_solver : (explicit_repos, explicit_repos_diagnostics) t =
+let explicit_repos_solver :
+    (opam_env * explicit_repos, explicit_repos_diagnostics) t =
   (module Explicit_repos_solver)
 
 let calculate :

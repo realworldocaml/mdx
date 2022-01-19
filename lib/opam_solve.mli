@@ -1,4 +1,8 @@
+open Import
+
 type explicit_repos = string list
+
+type opam_env = OpamVariable.variable_contents String.Map.t
 
 type switch = OpamStateTypes.unlocked OpamStateTypes.switch_state
 
@@ -10,7 +14,8 @@ type explicit_repos_diagnostics
 
 val local_opam_config_solver : (switch, switch_diagnostics) t
 
-val explicit_repos_solver : (explicit_repos, explicit_repos_diagnostics) t
+val explicit_repos_solver :
+  (opam_env * explicit_repos, explicit_repos_diagnostics) t
 
 val calculate :
   build_only:bool ->
