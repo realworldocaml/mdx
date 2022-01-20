@@ -33,4 +33,6 @@ type config = {
 
 val extract_config : OpamFile.OPAM.t -> (config, Rresult.R.msg) result
 
+val set_config : config -> OpamFile.OPAM.t -> OpamFile.OPAM.t
+
 val merge_config : config list -> (config, Rresult.R.msg) result

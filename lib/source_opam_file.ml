@@ -138,6 +138,15 @@ let extract_config opam_file =
   let* repositories = Opam.Extra_field.get Opam_repositories.field opam_file in
   Ok { global_vars; repositories }
 
+let set_field field var opam_file =
+  Option.map_default ~default:opam_file var ~f:(fun v ->
+      Opam.Extra_field.set field v opam_file)
+
+let set_config config opam_file =
+  opam_file
+  |> set_field Opam_global_vars.field config.global_vars
+  |> set_field Opam_repositories.field config.repositories
+
 let merge_field f a b =
   let open Result.O in
   match (a, b) with

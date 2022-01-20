@@ -383,8 +383,8 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
   let* duniverse = compute_duniverse ~package_summaries >>= resolve_ref in
   let target_depexts = target_depexts opam_files target_packages in
   let lockfile =
-    Lockfile.create ~root_packages:target_packages ~package_summaries
-      ~root_depexts:target_depexts ~duniverse ()
+    Lockfile.create ~source_config ~root_packages:target_packages
+      ~package_summaries ~root_depexts:target_depexts ~duniverse ()
   in
   let* () = Lockfile.save ~file:lockfile_path lockfile in
   Common.Logs.app (fun l ->

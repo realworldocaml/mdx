@@ -257,17 +257,27 @@ type t = {
   pin_depends : Pin_depends.t;
   duniverse_dirs : Duniverse_dirs.t;
   depexts : Depexts.t;
+  source_config : Source_opam_file.config;
 }
 
 let depexts t = t.depexts
 
-let create ~root_packages ~package_summaries ~root_depexts ~duniverse () =
+let create ~source_config ~root_packages ~package_summaries ~root_depexts
+    ~duniverse () =
   let version = Version.current in
   let depends = Depends.from_package_summaries package_summaries in
   let pin_depends = Pin_depends.from_duniverse duniverse in
   let duniverse_dirs = Duniverse_dirs.from_duniverse duniverse in
   let depexts = Depexts.all ~root_depexts ~package_summaries in
-  { version; root_packages; depends; pin_depends; duniverse_dirs; depexts }
+  {
+    version;
+    root_packages;
+    depends;
+    pin_depends;
+    duniverse_dirs;
+    depexts;
+    source_config;
+  }
 
 let url_to_duniverse_url url =
   let url_res = Duniverse.Repo.Url.from_opam_url url in
@@ -311,6 +321,7 @@ let to_opam (t : t) =
   |> Extra_field.set Version.field t.version
   |> Extra_field.set Root_packages.field t.root_packages
   |> Extra_field.set Duniverse_dirs.field t.duniverse_dirs
+  |> Source_opam_file.set_config t.source_config
 
 let from_opam ?file opam =
   let open Result.O in
@@ -321,7 +332,17 @@ let from_opam ?file opam =
   let pin_depends = OpamFile.OPAM.pin_depends opam in
   let* duniverse_dirs = Extra_field.get ?file Duniverse_dirs.field opam in
   let depexts = OpamFile.OPAM.depexts opam in
-  Ok { version; root_packages; depends; pin_depends; duniverse_dirs; depexts }
+  let* source_config = Source_opam_file.extract_config opam in
+  Ok
+    {
+      version;
+      root_packages;
+      depends;
+      pin_depends;
+      duniverse_dirs;
+      depexts;
+      source_config;
+    }
 
 let save ~file t =
   let opam = to_opam t in
