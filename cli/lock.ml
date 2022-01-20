@@ -204,7 +204,8 @@ let interpret_solver_error ~repositories solver = function
 
 let pull_repository url =
   match (OpamUrl.local_dir url, url.backend) with
-  | Some path, `rsync -> Ok (OpamFilename.Dir.to_string path)
+  | Some path, `rsync ->
+    Ok (OpamFilename.Dir.to_string OpamFilename.Op.(path / "packages"))
   | _ ->
       (* TODO before release *)
       Rresult.R.error_msg
