@@ -236,6 +236,9 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder ~local_opam_files
       match (source_config : Source_opam_file.config) with
       | { repositories = Some repositories; _ } ->
           let repositories = OpamUrl.Set.elements repositories in
+          Logs.info
+            (fun l -> l "Solve using explicit repositories:\n%a"
+                Fmt.(list ~sep:(const char '\n') Opam.Pp.url) repositories);
           let* local_repo_dirs = pull_repositories repositories in
           let opam_env = extract_opam_env ~source_config global_state in
           let solver = Opam_solve.explicit_repos_solver in
@@ -245,6 +248,9 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder ~local_opam_files
           |> Result.map_error ~f:(interpret_solver_error ~repositories solver)
       | { repositories = None; _ } ->
           OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
+            Logs.info
+              (fun l -> l "Solve using current opam switch: %s"
+                      (OpamSwitch.to_string switch_state.switch));
               let solver = Opam_solve.local_opam_config_solver in
               Opam_solve.calculate ~build_only ~allow_jbuilder ~local_opam_files
                 ~target_packages ~pin_depends ?ocaml_version solver switch_state
