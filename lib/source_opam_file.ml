@@ -1,40 +1,67 @@
 open Import
 
-module type EXTENSION = sig
-  (** The type of modules used to extract data stored in opam extensions *)
-
-  type t
-  (** The type of the data encoded in the extension *)
-
-  val field : t Opam.Extra_field.t
-
-  val merge : t list -> (t, Rresult.R.msg) result
-  (** Function to merge the extensions into a single one when it appears
-    in the metadata of several target packages *)
-end
-
-module Opam_repositories = struct
+module Opam_repositories : sig
   type t = OpamUrl.Set.t
 
-  let url_from_opam_value value =
+  val merge : t list -> (t, Rresult.R.msg) result
+
+  val get :
+    opam_monorepo_cwd:string ->
+    OpamFile.OPAM.t ->
+    (t option, Rresult.R.msg) result
+
+  val set : opam_monorepo_cwd:string -> t -> OpamFile.OPAM.t -> OpamFile.OPAM.t
+end = struct
+  type t = OpamUrl.Set.t
+
+  let opam_monorepo_cwd_var = "$OPAM_MONOREPO_CWD"
+
+  let opam_monorepo_cwd_var_regexp =
+    let open Re in
+    compile (str opam_monorepo_cwd_var)
+
+  let rewrite_url_in ~opam_monorepo_cwd url_str =
+    Re.replace_string opam_monorepo_cwd_var_regexp ~by:opam_monorepo_cwd url_str
+
+  let rewrite_url_out ~opam_monorepo_cwd_regexp url_str =
+    Re.replace_string opam_monorepo_cwd_regexp ~by:opam_monorepo_cwd_var url_str
+
+  let url_from_opam_value ~opam_monorepo_cwd value =
     let open Result.O in
     let+ url_string = Opam.Value.String.from_value value in
-    OpamUrl.of_string url_string
+    OpamUrl.of_string (rewrite_url_in ~opam_monorepo_cwd url_string)
 
-  let url_to_opam_value url = Opam.Value.String.to_value (OpamUrl.to_string url)
+  let url_to_opam_value ~opam_monorepo_cwd_regexp url =
+    Opam.Value.String.to_value
+      (rewrite_url_out ~opam_monorepo_cwd_regexp (OpamUrl.to_string url))
 
-  let from_opam_value value =
+  let from_opam_value ~opam_monorepo_cwd value =
     let open Result.O in
-    let+ l = Opam.Value.List.from_value url_from_opam_value value in
+    let+ l =
+      Opam.Value.List.from_value (url_from_opam_value ~opam_monorepo_cwd) value
+    in
     OpamUrl.Set.of_list l
 
-  let to_opam_value t =
-    let elements = OpamUrl.Set.elements t in
-    Opam.Value.List.to_value url_to_opam_value elements
+  let to_opam_value ~opam_monorepo_cwd =
+    let opam_monorepo_cwd_regexp = Re.(compile (str opam_monorepo_cwd)) in
+    fun t ->
+      let elements = OpamUrl.Set.elements t in
+      Opam.Value.List.to_value
+        (url_to_opam_value ~opam_monorepo_cwd_regexp)
+        elements
 
-  let field =
-    Opam.Extra_field.make ~name:"opam-repositories" ~from_opam_value
-      ~to_opam_value
+  let field ~opam_monorepo_cwd =
+    Opam.Extra_field.make ~name:"opam-repositories"
+      ~from_opam_value:(from_opam_value ~opam_monorepo_cwd)
+      ~to_opam_value:(to_opam_value ~opam_monorepo_cwd)
+
+  let get ~opam_monorepo_cwd opam =
+    let field = field ~opam_monorepo_cwd in
+    Opam.Extra_field.get field opam
+
+  let set ~opam_monorepo_cwd t opam =
+    let field = field ~opam_monorepo_cwd in
+    Opam.Extra_field.set field t opam
 
   let merge = function
     | [] -> Ok OpamUrl.Set.empty
@@ -107,6 +134,10 @@ module Opam_global_vars = struct
     Opam.Extra_field.make ~name:"global-opam-vars" ~to_opam_value
       ~from_opam_value
 
+  let get opam = Opam.Extra_field.get field opam
+
+  let set t opam = Opam.Extra_field.set field t opam
+
   let merge = function
     | [] -> Ok String.Map.empty
     | hd :: tl -> (
@@ -132,20 +163,19 @@ type config = {
   repositories : Opam_repositories.t option;
 }
 
-let extract_config opam_file =
+let extract_config ~opam_monorepo_cwd opam_file =
   let open Result.O in
-  let* global_vars = Opam.Extra_field.get Opam_global_vars.field opam_file in
-  let* repositories = Opam.Extra_field.get Opam_repositories.field opam_file in
+  let* global_vars = Opam_global_vars.get opam_file in
+  let* repositories = Opam_repositories.get ~opam_monorepo_cwd opam_file in
   Ok { global_vars; repositories }
 
-let set_field field var opam_file =
-  Option.map_default ~default:opam_file var ~f:(fun v ->
-      Opam.Extra_field.set field v opam_file)
+let set_field set var opam_file =
+  Option.map_default ~default:opam_file var ~f:(fun v -> set v opam_file)
 
-let set_config config opam_file =
+let set_config ~opam_monorepo_cwd config opam_file =
   opam_file
-  |> set_field Opam_global_vars.field config.global_vars
-  |> set_field Opam_repositories.field config.repositories
+  |> set_field Opam_global_vars.set config.global_vars
+  |> set_field (Opam_repositories.set ~opam_monorepo_cwd) config.repositories
 
 let merge_field f a b =
   let open Result.O in
@@ -171,3 +201,8 @@ let merge_config = function
   | hd :: tl ->
       Result.List.fold_left tl ~init:hd ~f:(fun config config' ->
           merge_config_pair config config')
+
+let opam_monorepo_cwd_from_root path =
+  if Fpath.is_rel path then
+    invalid_arg "OPAM_MONOREPO_CWD must be an absolute path";
+  Fpath.(to_string (normalize path))

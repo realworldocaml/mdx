@@ -205,7 +205,7 @@ let interpret_solver_error ~repositories solver = function
 let pull_repository url =
   match (OpamUrl.local_dir url, url.backend) with
   | Some path, `rsync ->
-    Ok (OpamFilename.Dir.to_string OpamFilename.Op.(path / "packages"))
+      Ok (OpamFilename.Dir.to_string OpamFilename.Op.(path / "packages"))
   | _ ->
       (* TODO before release *)
       Rresult.R.error_msg
@@ -236,9 +236,10 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder ~local_opam_files
       match (source_config : Source_opam_file.config) with
       | { repositories = Some repositories; _ } ->
           let repositories = OpamUrl.Set.elements repositories in
-          Logs.info
-            (fun l -> l "Solve using explicit repositories:\n%a"
-                Fmt.(list ~sep:(const char '\n') Opam.Pp.url) repositories);
+          Logs.info (fun l ->
+              l "Solve using explicit repositories:\n%a"
+                Fmt.(list ~sep:(const char '\n') Opam.Pp.url)
+                repositories);
           let* local_repo_dirs = pull_repositories repositories in
           let opam_env = extract_opam_env ~source_config global_state in
           let solver = Opam_solve.explicit_repos_solver in
@@ -248,9 +249,9 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder ~local_opam_files
           |> Result.map_error ~f:(interpret_solver_error ~repositories solver)
       | { repositories = None; _ } ->
           OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
-            Logs.info
-              (fun l -> l "Solve using current opam switch: %s"
-                      (OpamSwitch.to_string switch_state.switch));
+              Logs.info (fun l ->
+                  l "Solve using current opam switch: %s"
+                    (OpamSwitch.to_string switch_state.switch));
               let solver = Opam_solve.local_opam_config_solver in
               Opam_solve.calculate ~build_only ~allow_jbuilder ~local_opam_files
                 ~target_packages ~pin_depends ?ocaml_version solver switch_state
@@ -358,14 +359,15 @@ let local_packages ~versions repo =
   let open Result.O in
   Project.all_local_packages repo >>| package_version_map ~versions
 
-let extract_source_config ~opam_files target_packages =
+let extract_source_config ~opam_monorepo_cwd ~opam_files target_packages =
   let open Result.O in
   let target_opam_files =
     List.map (OpamPackage.Name.Set.elements target_packages) ~f:(fun name ->
         snd (OpamPackage.Name.Map.find name opam_files))
   in
   let* source_config_list =
-    Result.List.map target_opam_files ~f:Source_opam_file.extract_config
+    Result.List.map target_opam_files
+      ~f:(Source_opam_file.extract_config ~opam_monorepo_cwd)
   in
   Source_opam_file.merge_config source_config_list
 
@@ -381,7 +383,10 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
   let* () = check_target_packages target_packages in
   let* opam_files = local_paths_to_opam_map local_packages in
   let* lockfile_path = lockfile_path ~explicit_lockfile ~target_packages root in
-  let* source_config = extract_source_config ~opam_files target_packages in
+  let opam_monorepo_cwd = Source_opam_file.opam_monorepo_cwd_from_root root in
+  let* source_config =
+    extract_source_config ~opam_monorepo_cwd ~opam_files target_packages
+  in
   let* package_summaries =
     calculate_opam ~source_config ~build_only ~allow_jbuilder ~ocaml_version
       ~local_opam_files:opam_files ~target_packages
@@ -393,7 +398,7 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     Lockfile.create ~source_config ~root_packages:target_packages
       ~package_summaries ~root_depexts:target_depexts ~duniverse ()
   in
-  let* () = Lockfile.save ~file:lockfile_path lockfile in
+  let* () = Lockfile.save ~opam_monorepo_cwd ~file:lockfile_path lockfile in
   Common.Logs.app (fun l ->
       l
         "Wrote lockfile with %a entries to %a. You can now run %a to fetch \
