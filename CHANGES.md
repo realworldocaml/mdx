@@ -2,6 +2,10 @@
 
 ### Added
 
+- Add opam extensions `x-opam-monorepo-opam-repositories` and
+  `x-opam-monorepo-global-opam-vars` to make `lock` fully reproducible.
+  (#250, @NathanReb)
+
 ### Changed
 
 - Mark packages to be pulled by opam-monorepo with the `vendor` variable so
