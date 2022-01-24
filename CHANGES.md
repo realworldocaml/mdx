@@ -2,6 +2,9 @@
 
 #### Added
 
+- Add support for adding language tags and metadata labels in `mli` files.
+  (#339, #357, @julow, @Leonidas-from-XIV)
+
 #### Changed
 
 #### Deprecated

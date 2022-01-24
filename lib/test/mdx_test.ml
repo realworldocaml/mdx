@@ -197,7 +197,7 @@ let run_toplevel_tests ?syntax ?root c ppf tests t =
               Output.pp ~pad ppf (`Output line))
         output)
     tests;
-  match syntax with Some Syntax.Mli -> () | _ -> Block.pp_footer ?syntax ppf t
+  Block.pp_footer ?syntax ppf t
 
 type file = { first : Mdx.Part.file; current : Mdx.Part.file }
 
@@ -305,7 +305,11 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
           with_non_det non_deterministic non_det ~command:print_block
             ~output:det ~det
       | Cram { language = _; non_det } ->
-          let pad, tests = Cram.of_lines t.contents in
+          let pad, tests =
+            Cram.of_lines
+              ~syntax:(Option.value ~default:Normal syntax)
+              ~loc:t.loc t.contents
+          in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:(fun () ->
               print_block ();
