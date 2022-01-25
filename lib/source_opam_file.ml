@@ -163,8 +163,14 @@ type config = {
   repositories : Opam_repositories.t option;
 }
 
+let opam_monorepo_cwd_from_root path =
+  if Fpath.is_rel path then
+    invalid_arg "OPAM_MONOREPO_CWD must be an absolute path";
+  Fpath.(to_string (normalize path))
+
 let extract_config ~opam_monorepo_cwd opam_file =
   let open Result.O in
+  let opam_monorepo_cwd = opam_monorepo_cwd_from_root opam_monorepo_cwd in
   let* global_vars = Opam_global_vars.get opam_file in
   let* repositories = Opam_repositories.get ~opam_monorepo_cwd opam_file in
   Ok { global_vars; repositories }
@@ -173,6 +179,7 @@ let set_field set var opam_file =
   Option.map_default ~default:opam_file var ~f:(fun v -> set v opam_file)
 
 let set_config ~opam_monorepo_cwd config opam_file =
+  let opam_monorepo_cwd = opam_monorepo_cwd_from_root opam_monorepo_cwd in
   opam_file
   |> set_field Opam_global_vars.set config.global_vars
   |> set_field (Opam_repositories.set ~opam_monorepo_cwd) config.repositories
@@ -201,8 +208,3 @@ let merge_config = function
   | hd :: tl ->
       Result.List.fold_left tl ~init:hd ~f:(fun config config' ->
           merge_config_pair config config')
-
-let opam_monorepo_cwd_from_root path =
-  if Fpath.is_rel path then
-    invalid_arg "OPAM_MONOREPO_CWD must be an absolute path";
-  Fpath.(to_string (normalize path))

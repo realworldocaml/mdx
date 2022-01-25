@@ -385,9 +385,8 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
   let* () = check_target_packages target_packages in
   let* opam_files = local_paths_to_opam_map local_packages in
   let* lockfile_path = lockfile_path ~explicit_lockfile ~target_packages root in
-  let opam_monorepo_cwd = Source_opam_file.opam_monorepo_cwd_from_root root in
   let* source_config =
-    extract_source_config ~opam_monorepo_cwd ~opam_files target_packages
+    extract_source_config ~opam_monorepo_cwd:root ~opam_files target_packages
   in
   let* package_summaries =
     calculate_opam ~source_config ~build_only ~allow_jbuilder ~ocaml_version
@@ -400,7 +399,9 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     Lockfile.create ~source_config ~root_packages:target_packages
       ~package_summaries ~root_depexts:target_depexts ~duniverse ()
   in
-  let* () = Lockfile.save ~opam_monorepo_cwd ~file:lockfile_path lockfile in
+  let* () =
+    Lockfile.save ~opam_monorepo_cwd:root ~file:lockfile_path lockfile
+  in
   Common.Logs.app (fun l ->
       l
         "Wrote lockfile with %a entries to %a. You can now run %a to fetch \

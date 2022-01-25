@@ -144,5 +144,4 @@ let find_lockfile ~explicit_lockfile ?(quiet = false) root =
   find_lockfile_aux ~explicit_lockfile root >>= fun file ->
   if not quiet then
     Logs.app (fun l -> l "Using lockfile %a" Pp.Styled.path file);
-  let opam_monorepo_cwd = Source_opam_file.opam_monorepo_cwd_from_root root in
-  Lockfile.load ~opam_monorepo_cwd ~file
+  Lockfile.load ~opam_monorepo_cwd:root ~file

@@ -313,8 +313,7 @@ module Multi_dir_context :
     | [] ->
         invalid_arg
           "Multi_dir_context should be instanciated with at least one repo"
-    | _ ->
-        List.map ~f:(create ?test ~constraints ~env) paths
+    | _ -> List.map ~f:(create ?test ~constraints ~env) paths
 
   let merge_candidates acc candidates =
     List.fold_left ~init:acc candidates ~f:(fun acc (version, opam_file_res) ->
