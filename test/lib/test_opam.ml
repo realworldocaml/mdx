@@ -45,6 +45,23 @@ module Url = struct
         ~expected:(Git { repo = "git+https://some/repo.git"; ref = Some "ref" })
         ();
     ]
+
+  let test_is_local_filesystem =
+    let make_test ~url ~expected () =
+      let test_name = Printf.sprintf "Url.is_local_filesystem: %s" url in
+      let test_fun () =
+        let url = OpamUrl.of_string url in
+        let actual = Duniverse_lib.Opam.Url.is_local_filesystem url in
+        Alcotest.(check bool) test_name expected actual
+      in
+      (test_name, `Quick, test_fun)
+    in
+    [
+      make_test ~url:"https://a.com" ~expected:false ();
+      make_test ~url:"git+https://a.com" ~expected:false ();
+      make_test ~url:"git+file:///home/a" ~expected:false ();
+      make_test ~url:"file:///home/a" ~expected:true ();
+    ]
 end
 
 let opam_parse_formula s =
@@ -177,6 +194,7 @@ let suite =
     List.concat
       [
         Url.test_from_opam;
+        Url.test_is_local_filesystem;
         test_depends_on_dune;
         test_depends_on_compiler_variants;
         test_local_package_version;

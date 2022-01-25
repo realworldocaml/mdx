@@ -10,6 +10,10 @@ module Url : sig
   val from_opam_field : OpamFile.URL.t -> t
 
   val from_opam : OpamUrl.t -> t
+
+  val is_local_filesystem : OpamUrl.t -> bool
+  (** Returns whether the URL points to a non version controlled local folder or
+      file *)
 end
 
 module Package_summary : sig

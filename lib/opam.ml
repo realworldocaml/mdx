@@ -91,6 +91,11 @@ module Url = struct
   let from_opam_field url =
     let url = OpamFile.URL.url url in
     from_opam url
+
+  let is_local_filesystem url =
+    match url.OpamUrl.backend with
+    | `rsync -> true
+    | `http | `git | `darcs | `hg -> false
 end
 
 module Hash = struct

@@ -203,8 +203,8 @@ let interpret_solver_error ~repositories solver = function
       Opam_solve.diagnostics_message ~verbose solver d
 
 let pull_repository url =
-  match (OpamUrl.local_dir url, url.backend) with
-  | Some path, `rsync ->
+  match OpamUrl.local_dir url with
+  | Some path when Opam.Url.is_local_filesystem url ->
       Ok (OpamFilename.Dir.to_string OpamFilename.Op.(path / "packages"))
   | _ ->
       (* TODO before release *)
