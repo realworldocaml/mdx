@@ -215,18 +215,20 @@ let pull_repository url =
 let pull_repositories repositories =
   Result.List.map ~f:pull_repository repositories
 
+let opam_env_from_global_state global_state =
+  let vars = global_state.OpamStateTypes.global_variables in
+  OpamVariable.Map.fold
+    (fun var (lazy_content, _doc) acc ->
+      let name = OpamVariable.to_string var in
+      match Lazy.force lazy_content with
+      | None -> acc
+      | Some content -> String.Map.add ~key:name ~data:content acc)
+    vars String.Map.empty
+
 let extract_opam_env ~source_config global_state =
   match (source_config : Source_opam_file.config) with
   | { global_vars = Some env; _ } -> env
-  | { global_vars = None; _ } ->
-      let vars = global_state.OpamStateTypes.global_variables in
-      OpamVariable.Map.fold
-        (fun var (lazy_content, _doc) acc ->
-          let name = OpamVariable.to_string var in
-          match Lazy.force lazy_content with
-          | None -> acc
-          | Some content -> String.Map.add ~key:name ~data:content acc)
-        vars String.Map.empty
+  | { global_vars = None; _ } -> opam_env_from_global_state global_state
 
 let calculate_opam ~source_config ~build_only ~allow_jbuilder ~local_opam_files
     ~ocaml_version ~target_packages =
