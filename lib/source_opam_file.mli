@@ -35,3 +35,33 @@ val set_config :
 
 val merge_config : config list -> (config, Rresult.R.msg) result
 (** Merges config from different opam files into a single, shared config. *)
+
+(**/**)
+
+(** Undocumented *)
+
+module Private : sig
+  (** Private API module used to expose functions for testing purposes.
+      DO NOT USE! *)
+  module Opam_repositories : sig
+    val from_opam_value :
+      opam_monorepo_cwd:string ->
+      OpamParserTypes.FullPos.value ->
+      (OpamUrl.Set.t, [ `Msg of string ]) result
+
+    val to_opam_value :
+      opam_monorepo_cwd:string -> OpamUrl.Set.t -> OpamParserTypes.FullPos.value
+  end
+
+  module Opam_global_vars : sig
+    val from_opam_value :
+      OpamParserTypes.FullPos.value ->
+      (OpamVariable.variable_contents String.Map.t, [ `Msg of string ]) result
+
+    val to_opam_value :
+      OpamVariable.variable_contents String.Map.t ->
+      OpamParserTypes.FullPos.value
+  end
+end
+
+(**/**)

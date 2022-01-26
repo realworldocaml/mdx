@@ -1,35 +1,37 @@
 open Import
 
-module Opam_repositories : sig
-  type t = OpamUrl.Set.t
-
-  val merge : t list -> (t, Rresult.R.msg) result
-
-  val get :
-    opam_monorepo_cwd:string ->
-    OpamFile.OPAM.t ->
-    (t option, Rresult.R.msg) result
-
-  val set : opam_monorepo_cwd:string -> t -> OpamFile.OPAM.t -> OpamFile.OPAM.t
-end = struct
+module Opam_repositories = struct
   type t = OpamUrl.Set.t
 
   let opam_monorepo_cwd_var = "$OPAM_MONOREPO_CWD"
 
   let opam_monorepo_cwd_var_regexp =
     let open Re in
-    compile (str opam_monorepo_cwd_var)
+    compile (seq [ str "file://"; str opam_monorepo_cwd_var ])
 
-  let rewrite_url_in ~opam_monorepo_cwd url_str =
-    Re.replace_string opam_monorepo_cwd_var_regexp ~by:opam_monorepo_cwd url_str
+  let rewrite_url_in ~pos ~opam_monorepo_cwd url_str =
+    let rewritten =
+      Re.replace_string opam_monorepo_cwd_var_regexp
+        ~by:("file://" ^ opam_monorepo_cwd)
+        url_str
+    in
+    if Astring.String.is_infix ~affix:opam_monorepo_cwd_var rewritten then
+      Opam.Pos.errorf ~pos
+        "$OPAM_MONOREPO_CWD can only be used to rewrite the root part of \
+         file:// URLs"
+    else Ok rewritten
 
   let rewrite_url_out ~opam_monorepo_cwd_regexp url_str =
-    Re.replace_string opam_monorepo_cwd_regexp ~by:opam_monorepo_cwd_var url_str
+    Re.replace_string opam_monorepo_cwd_regexp
+      ~by:("file://" ^ opam_monorepo_cwd_var)
+      url_str
 
   let url_from_opam_value ~opam_monorepo_cwd value =
     let open Result.O in
-    let+ url_string = Opam.Value.String.from_value value in
-    OpamUrl.of_string (rewrite_url_in ~opam_monorepo_cwd url_string)
+    let* url_string = Opam.Value.String.from_value value in
+    let pos = value.OpamParserTypes.FullPos.pos in
+    let* rewritten = rewrite_url_in ~pos ~opam_monorepo_cwd url_string in
+    Ok (OpamUrl.of_string rewritten)
 
   let url_to_opam_value ~opam_monorepo_cwd_regexp url =
     Opam.Value.String.to_value
@@ -43,7 +45,9 @@ end = struct
     OpamUrl.Set.of_list l
 
   let to_opam_value ~opam_monorepo_cwd =
-    let opam_monorepo_cwd_regexp = Re.(compile (str opam_monorepo_cwd)) in
+    let opam_monorepo_cwd_regexp =
+      Re.(compile (seq [ str "file://"; str opam_monorepo_cwd ]))
+    in
     fun t ->
       let elements = OpamUrl.Set.elements t in
       Opam.Value.List.to_value
@@ -208,3 +212,19 @@ let merge_config = function
   | hd :: tl ->
       Result.List.fold_left tl ~init:hd ~f:(fun config config' ->
           merge_config_pair config config')
+
+module Private = struct
+  (** Re-expose private functions for testing purposes *)
+
+  module Opam_repositories = struct
+    let from_opam_value = Opam_repositories.from_opam_value
+
+    let to_opam_value = Opam_repositories.to_opam_value
+  end
+
+  module Opam_global_vars = struct
+    let from_opam_value = Opam_global_vars.from_opam_value
+
+    let to_opam_value = Opam_global_vars.to_opam_value
+  end
+end
