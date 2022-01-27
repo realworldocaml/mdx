@@ -30,11 +30,12 @@
 
 ;; make sure the non-deterministic is different from the deterministic
 
+(executable
+ (name different)
+ (modules different))
+
 (rule
  (alias runtest)
  (action
-  (with-accepted-exit-codes
-   1
-   (ignore-stdout
-    (run diff %{dep:dune-mdx-nondeterministic.expected}
-      %{dep:dune-mdx-nondeterministic.nondeterministic})))))
+  (run ./different.exe %{dep:dune-mdx-nondeterministic.expected}
+    %{dep:dune-mdx-nondeterministic.nondeterministic})))
