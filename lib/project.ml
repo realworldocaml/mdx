@@ -4,20 +4,47 @@ type t = Fpath.t
 
 let folder_blacklist = [ "_build"; "_opam"; Fpath.to_string Config.vendor_dir ]
 
+let repo_filename = "repo"
+
+let packages_folder = "packages"
+
+let is_repo_file path =
+  let basename = Fpath.to_string (Fpath.base path) in
+  if String.equal basename repo_filename then Bos.OS.File.exists path
+  else Ok false
+
+let is_packages_folder path =
+  let basename = Fpath.to_string (Fpath.base path) in
+  if String.equal basename packages_folder then Bos.OS.Dir.exists path
+  else Ok false
+
+let is_opam_repo dir =
+  let open Result.O in
+  let* is_dir = Bos.OS.Dir.exists dir in
+  if not is_dir then Ok false
+  else
+    let* content = Bos.OS.Dir.contents dir in
+    let* has_repo_file = Result.List.exists content ~f:is_repo_file in
+    let* has_pkg_folder = Result.List.exists content ~f:is_packages_folder in
+    Ok (has_repo_file && has_pkg_folder)
+
+let is_blacklisted path =
+  List.mem ~set:folder_blacklist (Fpath.to_string (Fpath.base path))
+
+let search_for_local_packages path =
+  let open Result.O in
+  if is_blacklisted path then Ok false
+  else
+    let* is_opam_repo = is_opam_repo path in
+    Ok (not is_opam_repo)
+
 let local_packages ~recurse t =
   let open Result.O in
   let* exists = Bos.OS.Dir.exists t in
   if not exists then Ok []
   else
     let traverse =
-      if recurse then
-        `Sat
-          (fun p ->
-            Ok
-              (not
-                 (List.mem
-                    (Fpath.to_string (Fpath.base p))
-                    ~set:folder_blacklist)))
+      if recurse then `Sat search_for_local_packages
       else `Sat (fun p -> Ok (Fpath.equal p t))
     in
     Bos.OS.Path.fold

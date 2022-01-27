@@ -27,4 +27,6 @@ module List : sig
 
   val fold_left :
     'a list -> f:('acc -> 'a -> ('acc, 'c) t) -> init:'acc -> ('acc, 'c) t
+
+  val exists : 'a list -> f:('a -> (bool, 'err) t) -> (bool, 'err) t
 end

@@ -52,4 +52,11 @@ module List = struct
     | x :: xs ->
         let* init = f init x in
         fold_left xs ~f ~init
+
+  let rec exists t ~f =
+    match t with
+    | [] -> Ok false
+    | x :: xs ->
+        let* p = f x in
+        if p then Ok true else exists xs ~f
 end
