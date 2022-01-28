@@ -1,4 +1,4 @@
-### unreleased
+### 2.1.0
 
 #### Added
 
@@ -7,16 +7,6 @@
 - Add support for running non-deterministic tests in `dune` MDX 0.2 stanza by
   setting the `MDX_RUN_NON_DETERMINISTIC` environment variable. (#365,
   #366, @Leonidas-from-XIV)
-
-#### Changed
-
-#### Deprecated
-
-#### Fixed
-
-#### Removed
-
-#### Security
 
 ### 2.0.0
 
