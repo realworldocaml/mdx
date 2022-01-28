@@ -4,6 +4,9 @@
 
 - Add support for adding language tags and metadata labels in `mli` files.
   (#339, #357, @julow, @Leonidas-from-XIV)
+- Add support for running non-deterministic tests in `dune` MDX 0.2 stanza by
+  setting the `MDX_RUN_NON_DETERMINISTIC` environment variable. (#365,
+  #366, @Leonidas-from-XIV)
 
 #### Changed
 
