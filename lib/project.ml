@@ -6,29 +6,21 @@ type t = Fpath.t
 let folder_ignore_list =
   [ "_build"; "_opam"; Fpath.to_string Config.vendor_dir ]
 
-let repo_filename = "repo"
+let has_repo_file opath =
+  let repo_file = OpamRepositoryPath.repo opath in
+  OpamFile.exists repo_file
 
-let packages_folder = "packages"
-
-let is_repo_file path =
-  let basename = Fpath.to_string (Fpath.base path) in
-  if String.equal basename repo_filename then Bos.OS.File.exists path
-  else Ok false
-
-let is_packages_folder path =
-  let basename = Fpath.to_string (Fpath.base path) in
-  if String.equal basename packages_folder then Bos.OS.Dir.exists path
-  else Ok false
+let has_packages_folder opath =
+  let packages = OpamRepositoryPath.packages_dir opath in
+  OpamFilename.exists_dir packages
 
 let is_opam_repo dir =
   let open Result.O in
   let* is_dir = Bos.OS.Dir.exists dir in
   if not is_dir then Ok false
   else
-    let* content = Bos.OS.Dir.contents dir in
-    let* has_repo_file = Result.List.exists content ~f:is_repo_file in
-    let* has_pkg_folder = Result.List.exists content ~f:is_packages_folder in
-    Ok (has_repo_file && has_pkg_folder)
+    let opath = OpamFilename.Dir.of_string (Fpath.to_string dir) in
+    Ok (has_packages_folder opath && has_repo_file opath)
 
 let is_ignore_listed path =
   List.mem ~set:folder_ignore_list (Fpath.to_string (Fpath.base path))
