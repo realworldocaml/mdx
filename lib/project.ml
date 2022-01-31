@@ -2,7 +2,9 @@ open Import
 
 type t = Fpath.t
 
-let folder_blacklist = [ "_build"; "_opam"; Fpath.to_string Config.vendor_dir ]
+(** Do not search for opam files in those folders *)
+let folder_ignore_list =
+  [ "_build"; "_opam"; Fpath.to_string Config.vendor_dir ]
 
 let repo_filename = "repo"
 
@@ -28,12 +30,12 @@ let is_opam_repo dir =
     let* has_pkg_folder = Result.List.exists content ~f:is_packages_folder in
     Ok (has_repo_file && has_pkg_folder)
 
-let is_blacklisted path =
-  List.mem ~set:folder_blacklist (Fpath.to_string (Fpath.base path))
+let is_ignore_listed path =
+  List.mem ~set:folder_ignore_list (Fpath.to_string (Fpath.base path))
 
 let search_for_local_packages path =
   let open Result.O in
-  if is_blacklisted path then Ok false
+  if is_ignore_listed path then Ok false
   else
     let* is_opam_repo = is_opam_repo path in
     Ok (not is_opam_repo)
