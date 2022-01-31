@@ -8,7 +8,13 @@ let folder_ignore_list =
 
 let has_repo_file opath =
   let repo_file = OpamRepositoryPath.repo opath in
-  OpamFile.exists repo_file
+  match OpamFile.Repo.read_opt repo_file with
+  | None -> false
+  | Some _ -> true
+  | (exception OpamPp.Bad_format _)
+  | (exception OpamPp.Bad_format_list _)
+  | (exception OpamPp.Bad_version _) ->
+      false
 
 let has_packages_folder opath =
   let packages = OpamRepositoryPath.packages_dir opath in
