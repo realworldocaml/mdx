@@ -315,18 +315,25 @@ module Multi_dir_context :
           "Multi_dir_context should be instanciated with at least one repo"
     | paths -> List.map ~f:(create ?test ~constraints ~env) paths
 
-  let merge_candidates acc candidates =
+  let merge_candidates ~name acc candidates =
     List.fold_left ~init:acc candidates ~f:(fun acc (version, opam_file_res) ->
-        OpamPackage.Version.Map.update version
-          (fun existing_opam -> existing_opam)
-          opam_file_res acc)
+        try OpamPackage.Version.Map.safe_add version opam_file_res acc
+        with Failure _ ->
+          Logs.info (fun l ->
+              l
+                "Several of the configured repos define %s.%s. Note that for \
+                 now opam-monorepo does not support defining priorities \
+                 between repos and picked one arbitrarily."
+                (OpamPackage.Name.to_string name)
+                (OpamPackage.Version.to_string version));
+          acc)
 
   let candidates t name =
     let map =
       List.fold_left t ~init:OpamPackage.Version.Map.empty
         ~f:(fun acc dir_context ->
           let candidates = candidates dir_context name in
-          merge_candidates acc candidates)
+          merge_candidates ~name acc candidates)
     in
     OpamPackage.Version.Map.bindings map
 
