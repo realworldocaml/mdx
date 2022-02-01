@@ -202,7 +202,9 @@ let interpret_solver_error ~repositories solver = function
       let verbose = display_verbose_diagnostics (Logs.level ()) in
       Opam_solve.diagnostics_message ~verbose solver d
 
-let pull_repository url =
+(** Turns each repository URL into a path to the repository's sources,
+    eventually fetching them from the remote. *)
+let make_repository_locally_available url =
   match OpamUrl.local_dir url with
   | Some path when Opam.Url.is_local_filesystem url ->
       Ok (OpamFilename.Dir.to_string OpamFilename.Op.(path / "packages"))
@@ -212,8 +214,8 @@ let pull_repository url =
         "Only non git, local filesystem URLs (file://) are supported at the \
          moment"
 
-let pull_repositories repositories =
-  Result.List.map ~f:pull_repository repositories
+let make_repositories_locally_available repositories =
+  Result.List.map ~f:make_repository_locally_available repositories
 
 let opam_env_from_global_state global_state =
   let vars = global_state.OpamStateTypes.global_variables in
@@ -242,7 +244,9 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder ~local_opam_files
               l "Solve using explicit repositories:\n%a"
                 Fmt.(list ~sep:(const char '\n') Opam.Pp.url)
                 repositories);
-          let* local_repo_dirs = pull_repositories repositories in
+          let* local_repo_dirs =
+            make_repositories_locally_available repositories
+          in
           let opam_env = extract_opam_env ~source_config global_state in
           let solver = Opam_solve.explicit_repos_solver in
           Opam_solve.calculate ~build_only ~allow_jbuilder ~local_opam_files
