@@ -226,7 +226,7 @@ let opam_env_from_global_state global_state =
     vars String.Map.empty
 
 let extract_opam_env ~source_config global_state =
-  match (source_config : Source_opam_file.config) with
+  match (source_config : Source_opam_config.t) with
   | { global_vars = Some env; _ } -> env
   | { global_vars = None; _ } -> opam_env_from_global_state global_state
 
@@ -235,7 +235,7 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder ~local_opam_files
   let open Result.O in
   OpamGlobalState.with_ `Lock_none (fun global_state ->
       let* pin_depends = get_pin_depends ~global_state local_opam_files in
-      match (source_config : Source_opam_file.config) with
+      match (source_config : Source_opam_config.t) with
       | { repositories = Some repositories; _ } ->
           let repositories = OpamUrl.Set.elements repositories in
           Logs.info (fun l ->
@@ -369,9 +369,9 @@ let extract_source_config ~opam_monorepo_cwd ~opam_files target_packages =
   in
   let* source_config_list =
     Result.List.map target_opam_files
-      ~f:(Source_opam_file.extract_config ~opam_monorepo_cwd)
+      ~f:(Source_opam_config.get ~opam_monorepo_cwd)
   in
-  Source_opam_file.merge_config source_config_list
+  Source_opam_config.merge source_config_list
 
 let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     (`Allow_jbuilder allow_jbuilder) (`Ocaml_version ocaml_version)

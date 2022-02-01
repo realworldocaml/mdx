@@ -257,7 +257,7 @@ type t = {
   pin_depends : Pin_depends.t;
   duniverse_dirs : Duniverse_dirs.t;
   depexts : Depexts.t;
-  source_config : Source_opam_file.config;
+  source_config : Source_opam_config.t;
 }
 
 let depexts t = t.depexts
@@ -321,7 +321,7 @@ let to_opam ~opam_monorepo_cwd (t : t) =
   |> Extra_field.set Version.field t.version
   |> Extra_field.set Root_packages.field t.root_packages
   |> Extra_field.set Duniverse_dirs.field t.duniverse_dirs
-  |> Source_opam_file.set_config ~opam_monorepo_cwd t.source_config
+  |> Source_opam_config.set ~opam_monorepo_cwd t.source_config
 
 let from_opam ~opam_monorepo_cwd ?file opam =
   let open Result.O in
@@ -332,9 +332,7 @@ let from_opam ~opam_monorepo_cwd ?file opam =
   let pin_depends = OpamFile.OPAM.pin_depends opam in
   let* duniverse_dirs = Extra_field.get ?file Duniverse_dirs.field opam in
   let depexts = OpamFile.OPAM.depexts opam in
-  let* source_config =
-    Source_opam_file.extract_config ~opam_monorepo_cwd opam
-  in
+  let* source_config = Source_opam_config.get ~opam_monorepo_cwd opam in
   Ok
     {
       version;

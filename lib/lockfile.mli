@@ -1,7 +1,7 @@
 type t
 
 val create :
-  source_config:Source_opam_file.config ->
+  source_config:Source_opam_config.t ->
   root_packages:OpamPackage.Name.Set.t ->
   package_summaries:Opam.Package_summary.t list ->
   root_depexts:(OpamSysPkg.Set.t * OpamTypes.filter) list list ->

@@ -34,7 +34,7 @@ module Opam_repositories = struct
               OpamUrl.Set.of_list (List.map ~f:OpamUrl.of_string l))
         in
         let actual =
-          let open Duniverse_lib.Source_opam_file in
+          let open Duniverse_lib.Source_opam_config in
           Private.Opam_repositories.from_opam_value ~opam_monorepo_cwd value
         in
         Alcotest.(check (result opam_url_set Testable.r_msg))
@@ -86,7 +86,7 @@ module Opam_repositories = struct
           OpamUrl.Set.of_list (List.map ~f:OpamUrl.of_string url_set)
         in
         let actual =
-          let open Duniverse_lib.Source_opam_file in
+          let open Duniverse_lib.Source_opam_config in
           Private.Opam_repositories.to_opam_value ~opam_monorepo_cwd url_set
           |> OpamPrinter.FullPos.value
         in
@@ -129,7 +129,7 @@ module Opam_global_vars = struct
         let value = OpamParser.FullPos.value_from_string value "test.opam" in
         let expected = Result.map expected ~f:String.Map.of_list_exn in
         let actual =
-          let open Duniverse_lib.Source_opam_file in
+          let open Duniverse_lib.Source_opam_config in
           Private.Opam_global_vars.from_opam_value value
         in
         Alcotest.(check (result variable_content_string_map Testable.r_msg))
@@ -160,7 +160,7 @@ module Opam_global_vars = struct
       let test_fun () =
         let env = String.Map.of_list_exn env in
         let actual =
-          let open Duniverse_lib.Source_opam_file in
+          let open Duniverse_lib.Source_opam_config in
           Private.Opam_global_vars.to_opam_value env
           |> OpamPrinter.FullPos.value
         in
@@ -176,7 +176,7 @@ module Opam_global_vars = struct
 end
 
 let suite =
-  ( "Source_opam_file",
+  ( "Source_opam_config",
     List.concat
       [
         Opam_repositories.test_from_opam_value;

@@ -8,6 +8,6 @@ let () =
       Test_opam.suite;
       Test_parallel.suite;
       Test_pin_depends.suite;
-      Test_source_opam_file.suite;
+      Test_source_opam_config.suite;
       Test_uri_utils.suite;
     ]
