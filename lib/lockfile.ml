@@ -4,8 +4,10 @@ module Extra_field = struct
   include Opam.Extra_field
 
   let get ?file t opam =
-    match get t opam with
-    | Some result -> result
+    let open Result.O in
+    let* value_opt = get t opam in
+    match value_opt with
+    | Some result -> Ok result
     | None ->
         let file_suffix_opt = Option.map ~f:(Printf.sprintf " %s") file in
         let file_suffix = Option.value ~default:"" file_suffix_opt in
@@ -255,17 +257,27 @@ type t = {
   pin_depends : Pin_depends.t;
   duniverse_dirs : Duniverse_dirs.t;
   depexts : Depexts.t;
+  source_config : Source_opam_config.t;
 }
 
 let depexts t = t.depexts
 
-let create ~root_packages ~package_summaries ~root_depexts ~duniverse () =
+let create ~source_config ~root_packages ~package_summaries ~root_depexts
+    ~duniverse () =
   let version = Version.current in
   let depends = Depends.from_package_summaries package_summaries in
   let pin_depends = Pin_depends.from_duniverse duniverse in
   let duniverse_dirs = Duniverse_dirs.from_duniverse duniverse in
   let depexts = Depexts.all ~root_depexts ~package_summaries in
-  { version; root_packages; depends; pin_depends; duniverse_dirs; depexts }
+  {
+    version;
+    root_packages;
+    depends;
+    pin_depends;
+    duniverse_dirs;
+    depexts;
+    source_config;
+  }
 
 let url_to_duniverse_url url =
   let url_res = Duniverse.Repo.Url.from_opam_url url in
@@ -298,7 +310,7 @@ let to_duniverse { duniverse_dirs; pin_depends; _ } =
           let* url = url_to_duniverse_url url in
           Ok { Duniverse.Repo.dir; url; hashes; provided_packages })
 
-let to_opam (t : t) =
+let to_opam ~opam_monorepo_cwd (t : t) =
   let open OpamFile.OPAM in
   empty
   |> with_maintainer [ "opam-monorepo" ]
@@ -309,8 +321,9 @@ let to_opam (t : t) =
   |> Extra_field.set Version.field t.version
   |> Extra_field.set Root_packages.field t.root_packages
   |> Extra_field.set Duniverse_dirs.field t.duniverse_dirs
+  |> Source_opam_config.set ~opam_monorepo_cwd t.source_config
 
-let from_opam ?file opam =
+let from_opam ~opam_monorepo_cwd ?file opam =
   let open Result.O in
   let* version = Extra_field.get ?file Version.field opam in
   let* () = Version.compatible version in
@@ -319,10 +332,20 @@ let from_opam ?file opam =
   let pin_depends = OpamFile.OPAM.pin_depends opam in
   let* duniverse_dirs = Extra_field.get ?file Duniverse_dirs.field opam in
   let depexts = OpamFile.OPAM.depexts opam in
-  Ok { version; root_packages; depends; pin_depends; duniverse_dirs; depexts }
+  let* source_config = Source_opam_config.get ~opam_monorepo_cwd opam in
+  Ok
+    {
+      version;
+      root_packages;
+      depends;
+      pin_depends;
+      duniverse_dirs;
+      depexts;
+      source_config;
+    }
 
-let save ~file t =
-  let opam = to_opam t in
+let save ~opam_monorepo_cwd ~file t =
+  let opam = to_opam ~opam_monorepo_cwd t in
   Bos.OS.File.with_oc file
     (fun oc () ->
       OpamFile.OPAM.write_to_channel oc opam;
@@ -330,7 +353,7 @@ let save ~file t =
     ()
   |> Result.join
 
-let load ~file =
+let load ~opam_monorepo_cwd ~file =
   let open Result.O in
   let filename = Fpath.to_string file in
   let* opam =
@@ -340,4 +363,4 @@ let load ~file =
         OpamFile.OPAM.read_from_channel ~filename ic)
       ()
   in
-  from_opam ~file:filename opam
+  from_opam ~opam_monorepo_cwd ~file:filename opam

@@ -2,7 +2,41 @@ open Import
 
 type t = Fpath.t
 
-let folder_blacklist = [ "_build"; "_opam"; Fpath.to_string Config.vendor_dir ]
+(** Do not search for opam files in those folders *)
+let folder_ignore_list =
+  [ "_build"; "_opam"; Fpath.to_string Config.vendor_dir ]
+
+let has_repo_file opath =
+  let repo_file = OpamRepositoryPath.repo opath in
+  match OpamFile.Repo.read_opt repo_file with
+  | None -> false
+  | Some _ -> true
+  | (exception OpamPp.Bad_format _)
+  | (exception OpamPp.Bad_format_list _)
+  | (exception OpamPp.Bad_version _) ->
+      false
+
+let has_packages_folder opath =
+  let packages = OpamRepositoryPath.packages_dir opath in
+  OpamFilename.exists_dir packages
+
+let is_opam_repo dir =
+  let open Result.O in
+  let* is_dir = Bos.OS.Dir.exists dir in
+  if not is_dir then Ok false
+  else
+    let opath = OpamFilename.Dir.of_string (Fpath.to_string dir) in
+    Ok (has_packages_folder opath && has_repo_file opath)
+
+let is_ignore_listed path =
+  List.mem ~set:folder_ignore_list (Fpath.to_string (Fpath.base path))
+
+let search_for_local_packages path =
+  let open Result.O in
+  if is_ignore_listed path then Ok false
+  else
+    let* is_opam_repo = is_opam_repo path in
+    Ok (not is_opam_repo)
 
 let local_packages ~recurse t =
   let open Result.O in
@@ -10,14 +44,7 @@ let local_packages ~recurse t =
   if not exists then Ok []
   else
     let traverse =
-      if recurse then
-        `Sat
-          (fun p ->
-            Ok
-              (not
-                 (List.mem
-                    (Fpath.to_string (Fpath.base p))
-                    ~set:folder_blacklist)))
+      if recurse then `Sat search_for_local_packages
       else `Sat (fun p -> Ok (Fpath.equal p t))
     in
     Bos.OS.Path.fold

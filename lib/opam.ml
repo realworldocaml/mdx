@@ -91,6 +91,11 @@ module Url = struct
   let from_opam_field url =
     let url = OpamFile.URL.url url in
     from_opam url
+
+  let is_local_filesystem url =
+    match url.OpamUrl.backend with
+    | `rsync -> true
+    | `http | `git | `darcs | `hg -> false
 end
 
 module Hash = struct
@@ -214,7 +219,11 @@ module Extra_field = struct
 
   let set t a opam = OpamFile.OPAM.add_extension opam t.name (t.to_opam_value a)
 
-  let get t opam = OpamFile.OPAM.extended opam t.name t.from_opam_value
+  let get t opam =
+    let open Result.O in
+    match OpamFile.OPAM.extended opam t.name t.from_opam_value with
+    | None -> Ok None
+    | Some r -> r >>| Option.some
 end
 
 module Pos = struct

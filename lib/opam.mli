@@ -10,6 +10,10 @@ module Url : sig
   val from_opam_field : OpamFile.URL.t -> t
 
   val from_opam : OpamUrl.t -> t
+
+  val is_local_filesystem : OpamUrl.t -> bool
+  (** Returns whether the URL points to a non version controlled local folder or
+      file *)
 end
 
 module Package_summary : sig
@@ -75,9 +79,12 @@ module Extra_field : sig
   (** Sets the field in the given opam file, potentially overwriting the
       previous value. *)
 
-  val get : 'a t -> OpamFile.OPAM.t -> ('a, [ `Msg of string ]) result option
+  val get : 'a t -> OpamFile.OPAM.t -> ('a option, [ `Msg of string ]) result
   (** Returns the value of the given extra field in the given opam file if
-      the extra field is set. *)
+      the extra field is set.
+      Returns [Ok None] if the field is missing from the opam file.
+      Returns [Error _] if the field is present but could not be properly
+      parsed *)
 end
 
 module Pos : sig

@@ -80,15 +80,18 @@ let resolve_ref deps =
 let current_repos ~switch_state =
   let repo_state = switch_state.OpamStateTypes.switch_repos in
   let switch_repos = OpamSwitchState.repos_list switch_state in
-  List.map ~f:(OpamRepositoryState.get_repo repo_state) switch_repos
+  List.map switch_repos ~f:(fun switch_repo ->
+      let repo = OpamRepositoryState.get_repo repo_state switch_repo in
+      repo.repo_url)
 
-let is_duniverse_repo (repo : OpamTypes.repository) =
-  let url = OpamUrl.to_string repo.repo_url in
+let is_duniverse_repo repo_url =
+  let url = OpamUrl.to_string repo_url in
   String.equal url Config.duniverse_opam_repo
 
-let check_dune_universe_repo ~switch_state non_dune_packages =
-  let repos = current_repos ~switch_state in
-  let dune_universe_is_configured = List.exists ~f:is_duniverse_repo repos in
+let check_dune_universe_repo ~repositories non_dune_packages =
+  let dune_universe_is_configured =
+    List.exists ~f:is_duniverse_repo repositories
+  in
   if not dune_universe_is_configured then
     Logs.warn (fun l ->
         l
@@ -189,25 +192,78 @@ let display_verbose_diagnostics = function
   | None -> false
   | Some l -> l >= Logs.Info
 
-let interpret_solver_error ~switch_state = function
+let interpret_solver_error ~repositories solver = function
   | `Msg _ as err -> err
   | `Diagnostics d ->
-      (match Opam_solve.not_buildable_with_dune d with
+      (match Opam_solve.not_buildable_with_dune solver d with
       | [] -> ()
       | offending_packages ->
-          check_dune_universe_repo ~switch_state offending_packages);
+          check_dune_universe_repo ~repositories offending_packages);
       let verbose = display_verbose_diagnostics (Logs.level ()) in
-      Opam_solve.diagnostics_message ~verbose d
+      Opam_solve.diagnostics_message ~verbose solver d
 
-let calculate_opam ~build_only ~allow_jbuilder ~local_opam_files ~ocaml_version
-    ~target_packages =
+(** Turns each repository URL into a path to the repository's sources,
+    eventually fetching them from the remote. *)
+let make_repository_locally_available url =
+  match OpamUrl.local_dir url with
+  | Some path when Opam.Url.is_local_filesystem url ->
+      Ok (OpamFilename.Dir.to_string OpamFilename.Op.(path / "packages"))
+  | _ ->
+      (* TODO before release *)
+      Rresult.R.error_msg
+        "Only non git, local filesystem URLs (file://) are supported at the \
+         moment"
+
+let make_repositories_locally_available repositories =
+  Result.List.map ~f:make_repository_locally_available repositories
+
+let opam_env_from_global_state global_state =
+  let vars = global_state.OpamStateTypes.global_variables in
+  OpamVariable.Map.fold
+    (fun var (lazy_content, _doc) acc ->
+      let name = OpamVariable.to_string var in
+      match Lazy.force lazy_content with
+      | None -> acc
+      | Some content -> String.Map.add ~key:name ~data:content acc)
+    vars String.Map.empty
+
+let extract_opam_env ~source_config global_state =
+  match (source_config : Source_opam_config.t) with
+  | { global_vars = Some env; _ } -> env
+  | { global_vars = None; _ } -> opam_env_from_global_state global_state
+
+let calculate_opam ~source_config ~build_only ~allow_jbuilder ~local_opam_files
+    ~ocaml_version ~target_packages =
   let open Result.O in
   OpamGlobalState.with_ `Lock_none (fun global_state ->
-      OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
-          let* pin_depends = get_pin_depends ~global_state local_opam_files in
+      let* pin_depends = get_pin_depends ~global_state local_opam_files in
+      match (source_config : Source_opam_config.t) with
+      | { repositories = Some repositories; _ } ->
+          let repositories = OpamUrl.Set.elements repositories in
+          Logs.info (fun l ->
+              l "Solve using explicit repositories:\n%a"
+                Fmt.(list ~sep:(const char '\n') Opam.Pp.url)
+                repositories);
+          let* local_repo_dirs =
+            make_repositories_locally_available repositories
+          in
+          let opam_env = extract_opam_env ~source_config global_state in
+          let solver = Opam_solve.explicit_repos_solver in
           Opam_solve.calculate ~build_only ~allow_jbuilder ~local_opam_files
-            ~target_packages ~pin_depends ?ocaml_version switch_state
-          |> Result.map_error ~f:(interpret_solver_error ~switch_state)))
+            ~target_packages ~pin_depends ?ocaml_version solver
+            (opam_env, local_repo_dirs)
+          |> Result.map_error ~f:(interpret_solver_error ~repositories solver)
+      | { repositories = None; _ } ->
+          OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
+              Logs.info (fun l ->
+                  l "Solve using current opam switch: %s"
+                    (OpamSwitch.to_string switch_state.switch));
+              let solver = Opam_solve.local_opam_config_solver in
+              Opam_solve.calculate ~build_only ~allow_jbuilder ~local_opam_files
+                ~target_packages ~pin_depends ?ocaml_version solver switch_state
+              |> Result.map_error ~f:(fun err ->
+                     let repositories = current_repos ~switch_state in
+                     interpret_solver_error ~repositories solver err)))
 
 let select_explicitly_specified ~local_packages ~explicitly_specified =
   List.fold_left
@@ -309,6 +365,18 @@ let local_packages ~versions repo =
   let open Result.O in
   Project.all_local_packages repo >>| package_version_map ~versions
 
+let extract_source_config ~opam_monorepo_cwd ~opam_files target_packages =
+  let open Result.O in
+  let target_opam_files =
+    List.map (OpamPackage.Name.Set.elements target_packages) ~f:(fun name ->
+        snd (OpamPackage.Name.Map.find name opam_files))
+  in
+  let* source_config_list =
+    Result.List.map target_opam_files
+      ~f:(Source_opam_config.get ~opam_monorepo_cwd)
+  in
+  Source_opam_config.merge source_config_list
+
 let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     (`Allow_jbuilder allow_jbuilder) (`Ocaml_version ocaml_version)
     (`Target_packages specified_packages) (`Lockfile explicit_lockfile) () =
@@ -321,18 +389,23 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
   let* () = check_target_packages target_packages in
   let* opam_files = local_paths_to_opam_map local_packages in
   let* lockfile_path = lockfile_path ~explicit_lockfile ~target_packages root in
+  let* source_config =
+    extract_source_config ~opam_monorepo_cwd:root ~opam_files target_packages
+  in
   let* package_summaries =
-    calculate_opam ~build_only ~allow_jbuilder ~ocaml_version
+    calculate_opam ~source_config ~build_only ~allow_jbuilder ~ocaml_version
       ~local_opam_files:opam_files ~target_packages
   in
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
   let* duniverse = compute_duniverse ~package_summaries >>= resolve_ref in
   let target_depexts = target_depexts opam_files target_packages in
   let lockfile =
-    Lockfile.create ~root_packages:target_packages ~package_summaries
-      ~root_depexts:target_depexts ~duniverse ()
+    Lockfile.create ~source_config ~root_packages:target_packages
+      ~package_summaries ~root_depexts:target_depexts ~duniverse ()
   in
-  let* () = Lockfile.save ~file:lockfile_path lockfile in
+  let* () =
+    Lockfile.save ~opam_monorepo_cwd:root ~file:lockfile_path lockfile
+  in
   Common.Logs.app (fun l ->
       l
         "Wrote lockfile with %a entries to %a. You can now run %a to fetch \

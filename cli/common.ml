@@ -139,9 +139,9 @@ let find_lockfile_aux ~explicit_lockfile repo =
             Fmt.(styled `Bold string)
             "--lockfile")
 
-let find_lockfile ~explicit_lockfile ?(quiet = false) repo =
+let find_lockfile ~explicit_lockfile ?(quiet = false) root =
   let open Result.O in
-  find_lockfile_aux ~explicit_lockfile repo >>= fun file ->
+  find_lockfile_aux ~explicit_lockfile root >>= fun file ->
   if not quiet then
     Logs.app (fun l -> l "Using lockfile %a" Pp.Styled.path file);
-  Lockfile.load ~file
+  Lockfile.load ~opam_monorepo_cwd:root ~file

@@ -1,0 +1,11 @@
+opam-version: "2.0"
+depends: [
+  "dune"
+]
+dev-repo: "git+https://github.com/c/c"
+url {
+  src: "https://c.com/c.tbz"
+  checksum: [
+    "sha256=0000000000000000000000000000000000000000000000000000000000000001"
+  ]
+}
