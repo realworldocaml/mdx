@@ -321,11 +321,10 @@ module Multi_dir_context :
         with Failure _ ->
           Logs.info (fun l ->
               l
-                "Several of the configured repos define %s.%s. Note that for \
+                "Several of the configured repos define %a.%a. Note that for \
                  now opam-monorepo does not support defining priorities \
                  between repos and picked one arbitrarily."
-                (OpamPackage.Name.to_string name)
-                (OpamPackage.Version.to_string version));
+                Opam.Pp.package_name name Opam.Pp.version version);
           acc)
 
   let candidates t name =
