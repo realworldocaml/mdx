@@ -79,8 +79,7 @@ Tata
   in
   [
     make_test ~lines ~line_des:"block: file=tikitaka.ml"
-      ~expected:(Ok [ File "tikitaka.ml" ])
-      ();
+      ~expected:(Ok [ File "tikitaka.ml" ]) ();
     make_test ~lines:lines2 ~line_des:"skip + file + dir"
       ~expected:(Ok [ File "burn.sh"; Dir "ping/" ])
       ();
