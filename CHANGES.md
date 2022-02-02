@@ -4,7 +4,7 @@
 
 - Add opam extensions `x-opam-monorepo-opam-repositories` and
   `x-opam-monorepo-global-opam-vars` to make `lock` fully reproducible.
-  (#250, @NathanReb)
+  (#250, #253, @NathanReb)
 
 ### Changed
 

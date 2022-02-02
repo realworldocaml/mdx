@@ -53,5 +53,5 @@ opam-monorepo solver should pick a.0.2 here:
   ==> Calculating exact pins for each of them.
   ==> Wrote lockfile with 1 entries to $TESTCASE_ROOT/test.opam.locked. You can now run opam monorepo pull to fetch their sources.
   $ cat test.opam.locked | grep "\"a\""
-    "a" {= "0.1" & vendor}
+    "a" {= "0.2" & vendor}
       "a"
