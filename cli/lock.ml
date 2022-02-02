@@ -361,9 +361,18 @@ let target_packages ~local_packages ~recurse ~explicitly_specified repo =
       local_packages |> filter_root_packages repo |> package_names |> Result.ok
   | _ -> select_explicitly_specified ~local_packages ~explicitly_specified
 
+let log_local_packages pkgs =
+  let pp_one fmt (name, path) =
+    Format.fprintf fmt "%a:%a" Opam.Pp.package_name name Fpath.pp path
+  in
+  Logs.debug (fun l ->
+      l "Detected local packages:@ %a" Fmt.(list ~sep:sp pp_one) pkgs)
+
 let local_packages ~versions repo =
   let open Result.O in
-  Project.all_local_packages repo >>| package_version_map ~versions
+  let+ local_packages_path = Project.all_local_packages repo in
+  log_local_packages local_packages_path;
+  package_version_map ~versions local_packages_path
 
 let extract_source_config ~opam_monorepo_cwd ~opam_files target_packages =
   let open Result.O in
