@@ -4,6 +4,10 @@ To stick to the default behaviour of the switch based context,
 the repository list based context should properly sort the candidates so
 that the solver picks the highest satisfying version.
 
+We setup the default base repository
+
+  $ gen-minimal-repo
+
 Here we define a package test that depends on a package `a`:
 
   $ cat test.opam
@@ -13,6 +17,7 @@ Here we define a package test that depends on a package `a`:
     "a"
   ]
   x-opam-monorepo-opam-repositories: [
+    "file://$OPAM_MONOREPO_CWD/minimal-repo"
     "file://$OPAM_MONOREPO_CWD/repo"
   ]
 

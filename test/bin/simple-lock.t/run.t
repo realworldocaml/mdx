@@ -10,11 +10,13 @@ opam-repository for locking
     "c"
   ]
   x-opam-monorepo-opam-repositories: [
+    "file://$OPAM_MONOREPO_CWD/minimal-repo"
     "file://$OPAM_MONOREPO_CWD/repo"
   ]
 
 We provided a minimal opam-repository but locking should be successful.
 
+  $ gen-minimal-repo
   $ opam-monorepo lock
   ==> Using 1 locally scanned package as the target.
   ==> Found 10 opam dependencies for the target package.
@@ -61,6 +63,8 @@ The lockfile should contain the base packages, dune and our 2 dependencies
       ]
     ]
   ]
-  x-opam-monorepo-opam-repositories: ["file://$OPAM_MONOREPO_CWD/repo"]
+  x-opam-monorepo-opam-repositories: [
+    "file://$OPAM_MONOREPO_CWD/minimal-repo" "file://$OPAM_MONOREPO_CWD/repo"
+  ]
   x-opam-monorepo-root-packages: ["a"]
   x-opam-monorepo-version: "0.2"

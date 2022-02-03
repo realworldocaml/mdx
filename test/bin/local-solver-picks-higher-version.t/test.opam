@@ -4,5 +4,6 @@ depends: [
   "a"
 ]
 x-opam-monorepo-opam-repositories: [
+  "file://$OPAM_MONOREPO_CWD/minimal-repo"
   "file://$OPAM_MONOREPO_CWD/repo"
 ]

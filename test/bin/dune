@@ -1,3 +1,12 @@
 (cram
  (applies_to :whole_subtree)
- (deps %{bin:opam-monorepo}))
+ (deps %{bin:opam-monorepo} %{bin:gen-minimal-repo}))
+
+(executable
+ (name gen_minimal_repo)
+ (libraries opam-state opam-file-format opam-format stdext))
+
+(env
+ (_
+  (binaries
+   (gen_minimal_repo.exe as gen-minimal-repo))))
