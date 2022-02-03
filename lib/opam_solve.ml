@@ -327,6 +327,7 @@ module Multi_dir_context :
                 Opam.Pp.package_name name Opam.Pp.version version);
           acc)
 
+  (** Candidates must be returned in decreasing preference order *)
   let candidates t name =
     let map =
       List.fold_left t ~init:OpamPackage.Version.Map.empty
@@ -334,7 +335,10 @@ module Multi_dir_context :
           let candidates = candidates dir_context name in
           merge_candidates ~name acc candidates)
     in
-    OpamPackage.Version.Map.bindings map
+    (* The bindings of the version map will be sorted by increasing version.
+       We reverse it so it's in decreasing version order for the solver to pick
+       the highest satisfying version. *)
+    List.rev (OpamPackage.Version.Map.bindings map)
 
   let user_restrictions t pkg = user_restrictions (List.hd t) pkg
 
