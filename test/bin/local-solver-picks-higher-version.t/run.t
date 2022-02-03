@@ -52,6 +52,5 @@ opam-monorepo solver should pick a.0.2 here:
   ==> Querying opam database for their metadata and Dune compatibility.
   ==> Calculating exact pins for each of them.
   ==> Wrote lockfile with 1 entries to $TESTCASE_ROOT/test.opam.locked. You can now run opam monorepo pull to fetch their sources.
-  $ cat test.opam.locked | grep "\"a\""
+  $ cat test.opam.locked | grep "\"a\"\s\+{"
     "a" {= "0.2" & vendor}
-      "a"
