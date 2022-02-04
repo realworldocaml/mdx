@@ -265,7 +265,6 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
             let ( let* ) a f = match a with Some a -> f a | None -> acc in
             let* pkg_name = Solver.package_name pkg in
             let notes = Solver.Diagnostics.Component.notes component in
-            (* In the rejected candidates, try to find one where it had failed a version restriction and extract that one *)
             let* _, version_restriction =
               List.find_map
                 ~f:(function
@@ -290,10 +289,8 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
                   | _ -> None)
                 rejects
             in
-            (* make sure the list is not empty *)
-            let* _ = List.nth_opt model_rejected 0 in
-            let all_failures_due_to_version =
-              List.for_all
+            let model_rejections_would_match_version =
+              List.exists
                 ~f:(fun model ->
                   match Solver.version model with
                   | None -> true
@@ -301,16 +298,15 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
                       let rejected_version =
                         OpamPackage.version rejected_package
                       in
-                      let failed_due_to_version =
+                      let would_be_eligible_otherwise =
                         OpamFormula.check_version_formula version_restriction
                           rejected_version
-                        |> not
                       in
-                      failed_due_to_version)
+                      would_be_eligible_otherwise)
                 model_rejected
             in
             let* failed_pkg =
-              match all_failures_due_to_version with
+              match model_rejections_would_match_version with
               | false -> None
               | true -> Some (pkg_name, version_restriction)
             in
