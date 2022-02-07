@@ -26,16 +26,21 @@ opam-monorepo solver should successfully pick a.0.1:
   $ cat existing.opam.locked | grep "\"a\"\s\+{"
     "a" {= "0.1" & vendor}
 
-Yet if we attempt to use the same package, but pick a version that doesn't exist in our repo:
+Yet if we attempt to use the same package, but pick a version that doesn't
+exist in our repo:
 
   $ grep '\"a\"' < toonew.opam
     "a" {>= "1.0"}
 
-opam-monorepo should display an error message that there is no version of `a` that matches the constraint.
+opam-monorepo should fail with some error code and display an error message
+that there is no version of `a` that matches the constraint.
+
+(grep appends a NUL byte at the end, hence the head call, this is not important
+to the test)
 
   $ opam-monorepo lock toonew 2> errors
   ==> Using 1 locally scanned package as the target.
   [1]
-  $ grep -Pzo "(?s)opam-monorepo: \[ERROR\].*(?=opam-monorepo)" < errors
+  $ grep -Pazo "(?s)opam-monorepo: \[ERROR\].*(?=opam-monorepo)" < errors | head --bytes=-1
   opam-monorepo: [ERROR] There is no eligible package that matches a
                          >= 1.0. Make sure a dune port exists.
