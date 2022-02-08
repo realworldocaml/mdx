@@ -212,8 +212,7 @@ let could_not_determine_version offending_packages =
   let pp_offending_packages = Fmt.list ~sep:Fmt.comma pp_offending_package in
   Logs.err (fun l ->
       l
-        "There is no eligible package that matches %a. Make sure a dune port \
-         exists."
+        "There is no eligible package that matches %a."
         pp_offending_packages offending_packages)
 
 let interpret_solver_error ~repositories solver = function

@@ -42,5 +42,4 @@ to the test)
   ==> Using 1 locally scanned package as the target.
   [1]
   $ grep -Pazo "(?s)opam-monorepo: \[ERROR\].*(?=opam-monorepo)" < errors | head --bytes=-1
-  opam-monorepo: [ERROR] There is no eligible package that matches a
-                         >= 1.0. Make sure a dune port exists.
+  opam-monorepo: [ERROR] There is no eligible package that matches a >= 1.0.
