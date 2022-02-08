@@ -12,7 +12,9 @@ be it due to  your dependencies not building with [dune] or some tooling that
 should be just installed via [opam]. Such examples include:
 
 {ul
-{- TODO}
+{- Packages not building with dune}
+{- Packages that should not be vendored for legal reasons}
+{- Packages that just provide helper binaries like [utop], [ocamlformat]}
 }
 
 These users can opt-in into having some of their dependencies provided by
@@ -34,16 +36,23 @@ be marked as such in the opam file. For this the
 [x-opam-monorepo-opam-provided] field is used, which takes a single or a list
 of packages to be installed via [opam] instead of pulled into the duniverse.
 
-To configure [opam-monorepo] to avoid pulling in package [foo] into the
-duniverse use this syntax in your [opam] file:
+To configure [opam-monorepo] to avoid pulling in package [foo] specify it in
+the list of packages that are to be provided by [opam]:
 
 {[
-x-opam-monorepo-opam-provided: [foo]
+x-opam-monorepo-opam-provided: ["foo"]
 ]}
 
 This can either be specified directly in the [opam] file or, if you use [dune]
 to generate [opam] files, in the [.template] file. In such case make sure to
 re-generate the [opam] file.
+
+As a shortcut syntax if there is only one package it is possible to leave the
+list out and just specify the package itself:
+
+{[
+x-opam-monorepo-opam-provided: "foo"
+]}
 
 {2 Usage}
 
