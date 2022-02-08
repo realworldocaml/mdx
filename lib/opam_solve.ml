@@ -254,6 +254,23 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
       rolemap []
     |> List.filter_map ~f:Solver.package_name
 
+  let find_version_restriction component =
+    let open Option.O in
+    let notes = Solver.Diagnostics.Component.notes component in
+    let* restriction =
+      List.find_map
+        ~f:(function
+          | UserRequested restriction -> Some restriction
+          | Restricts (_other_role, _impl, restrictions) -> (
+              match restrictions with
+              | [] -> None
+              | restriction :: _ -> Some restriction)
+          | _ -> None)
+        notes
+    in
+    let _, version_restriction = Solver.formula restriction in
+    Some version_restriction
+
   let no_matching_versions diagnostics =
     let rolemap = Solver.diagnostics_rolemap diagnostics in
     Pkg_map.fold
@@ -264,19 +281,7 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
             (* short-circuit skip of fold *)
             let ( let* ) a f = match a with Some a -> f a | None -> acc in
             let* pkg_name = Solver.package_name pkg in
-            let notes = Solver.Diagnostics.Component.notes component in
-            let* _, version_restriction =
-              List.find_map
-                ~f:(function
-                  | UserRequested restriction -> Some restriction
-                  | Restricts (_other_role, _impl, restrictions) -> (
-                      match restrictions with
-                      | [] -> None
-                      | restriction :: _ -> Some restriction)
-                  | _ -> None)
-                notes
-              |> Option.map ~f:Solver.formula
-            in
+            let* version_restriction = find_version_restriction component in
             let rejects, _reason =
               Solver.Diagnostics.Component.rejects component
             in
