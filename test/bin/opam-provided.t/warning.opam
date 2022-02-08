@@ -1,0 +1,8 @@
+opam-version: "2.0"
+depends: [
+  "dune"
+]
+x-opam-monorepo-opam-repositories: [
+  "file://$OPAM_MONOREPO_CWD/minimal-repo"
+]
+x-opam-monorepo-opam-provided: 42

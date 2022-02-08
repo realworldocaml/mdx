@@ -71,3 +71,21 @@ Since it is, we need to make its dependency, `b` also opam-provided.
   $ opam show --no-lint --raw -fdepends ./reverse-transitive.opam.locked | grep "b\""
   "b" {= "1"}
   "depends-on-b" {= "1"}
+
+Since we add a new custom stanza to the OPAM file, let's make sure we emit
+warnings when things are specified the wrong way, for example if the package to
+be ignored is not a string.
+
+  $ opam show --no-lint --raw -fx-opam-monorepo-opam-provided ./warning.opam
+  42
+
+  $ opam-monorepo lock warning 2>&1 | grep WARNING
+  opam-monorepo: [WARNING] Error parsing x-opam-monorepo-provided: String or List required, ignoring.
+
+Similarly, we accept a list but it needs to be a list of strings which this is
+not
+
+  $ opam show --no-lint --raw -fx-opam-monorepo-opam-provided ./warning-list.opam
+  42 "fourtytwo"
+  $ opam-monorepo lock warning-list 2>&1 | grep WARNING
+  opam-monorepo: [WARNING] Error parsing x-opam-monorepo-provided: String required, ignoring.
