@@ -425,8 +425,6 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
               msg);
         assert false
 
-  (* TODO catch exceptions and turn to error *)
-
   let calculate ~build_only ~allow_jbuilder ~local_opam_files:local_packages
       ~target_packages ~pin_depends ?ocaml_version input =
     let open Result.O in
@@ -438,8 +436,8 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
       match opam_provided_packages local_packages target_packages with
       | Ok opam_provided -> opam_provided
       | Error msg ->
-          Fmt.epr
-            "TODO: Error parsing x-opam-monorepo-provided: %s, ignoring.\n" msg;
+          Logs.warn (fun l ->
+              l "Error parsing x-opam-monorepo-provided: %s, ignoring.\n" msg);
           OpamPackage.Name.Set.empty
     in
 
