@@ -280,30 +280,25 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
             let rejects, _reason =
               Solver.Diagnostics.Component.rejects component
             in
-            (* find only the model rejections that is those that we have rejected as e.g. not building with dune *)
-            let model_rejected =
-              List.filter_map
-                ~f:(fun (model, reason) ->
-                  match reason with
-                  | `Model_rejection _ -> Some model
-                  | _ -> None)
-                rejects
-            in
+            (* only looking at the model rejections that is those that we have rejected as e.g. not building with dune *)
             let model_rejections_would_match_version =
               List.exists
-                ~f:(fun model ->
-                  match Solver.version model with
-                  | None -> true
-                  | Some rejected_package ->
-                      let rejected_version =
-                        OpamPackage.version rejected_package
-                      in
-                      let would_be_eligible_otherwise =
-                        OpamFormula.check_version_formula version_restriction
-                          rejected_version
-                      in
-                      would_be_eligible_otherwise)
-                model_rejected
+                ~f:(fun (model, reason) ->
+                  match reason with
+                  | `Model_rejection _ -> (
+                      match Solver.version model with
+                      | None -> true
+                      | Some rejected_package ->
+                          let rejected_version =
+                            OpamPackage.version rejected_package
+                          in
+                          let would_be_eligible_otherwise =
+                            OpamFormula.check_version_formula
+                              version_restriction rejected_version
+                          in
+                          would_be_eligible_otherwise)
+                  | _ -> false)
+                rejects
             in
             let* failed_pkg =
               match model_rejections_would_match_version with
