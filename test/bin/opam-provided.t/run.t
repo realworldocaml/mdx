@@ -39,3 +39,35 @@ We should be seing that this package is not marked as `vendor` so if we run
   $ opam show --no-lint --raw -fdepends ./opam-provided.opam.locked | grep "\"b\""
   "b" {= "1"}
 
+What happens in the case that a package would be ok to vendor but the
+transitive dependency is opam-provided? In this case we have a package
+`transitive` that depends on a package that depends on a package that will
+depend transitively on an opam provided package.
+
+  $ opam show --no-lint --raw -fdepends ./transitive.opam
+  "dune" "depends-on-b"
+  $ opam show --no-lint --raw -fx-opam-monorepo-opam-provided ./transitive.opam
+  "b"
+
+Locking it should work as usual
+
+  $ opam-monorepo lock transitive > /dev/null
+  $ opam show --no-lint --raw -fdepends ./transitive.opam.locked | grep "b\""
+  "b" {= "1"}
+  "depends-on-b" {= "1" & vendor}
+
+`depends-on-b` is vendored (since it can) but `b` is opam-provided. Neat.
+
+Now for the reverse case, `depends-on-b` is opam-provided.
+
+  $ opam show --no-lint --raw -fdepends ./reverse-transitive.opam
+  "dune" "depends-on-b"
+  $ opam show --no-lint --raw -fx-opam-monorepo-opam-provided ./reverse-transitive.opam
+  "depends-on-b"
+
+Since it is, we need to make its dependency, `b` also opam-provided.
+
+  $ opam-monorepo lock reverse-transitive > /dev/null
+  $ opam show --no-lint --raw -fdepends ./reverse-transitive.opam.locked | grep "b\""
+  "b" {= "1"}
+  "depends-on-b" {= "1"}
