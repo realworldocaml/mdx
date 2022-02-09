@@ -429,6 +429,7 @@ let extract_source_config ~opam_monorepo_cwd ~opam_files target_packages =
 
 let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     (`Allow_jbuilder allow_jbuilder) (`Ocaml_version ocaml_version)
+    (`Prefer_cross_compile _prefer_cross_compile)
     (`Target_packages specified_packages) (`Lockfile explicit_lockfile) () =
   let open Result.O in
   let* local_packages = local_packages ~versions:specified_packages root in
@@ -518,6 +519,16 @@ let ocaml_version =
     (fun x -> `Ocaml_version x)
     Arg.(value & opt (some string) None & info ~doc [ "ocaml-version" ])
 
+let prefer_cross_compile =
+  let doc =
+    "Tell the solver to pick cross-compilation compatible packages when \
+     available. This is determined based on the presence of the \
+     \"cross-compilation\" tag in the opam package metadata."
+  in
+  Common.Arg.named
+    (fun x -> `Prefer_cross_compile x)
+    Arg.(value & flag & info ~doc [ "prefer-cross-compile" ])
+
 let info =
   let exits = Common.exit_codes in
   let doc = Fmt.str "analyse opam files to generate a project-wide lock file" in
@@ -554,7 +565,7 @@ let term =
   Common.Term.result_to_exit
     Cmdliner.Term.(
       const run $ Common.Arg.root $ recurse_opam $ build_only $ allow_jbuilder
-      $ ocaml_version $ packages $ Common.Arg.lockfile
+      $ ocaml_version $ prefer_cross_compile $ packages $ Common.Arg.lockfile
       $ Common.Arg.setup_logs ())
 
 let cmd = Cmd.v info term

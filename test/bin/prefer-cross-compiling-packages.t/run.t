@@ -109,10 +109,6 @@ Here, if we don't add mirage overlays and run the solver with this flag, we
 still get the latest release:
 
   $ opam-monorepo lock --prefer-cross-compile a > /dev/null
-  opam-monorepo: unknown option `--prefer-cross-compile'.
-  Usage: opam-monorepo lock [OPTION]... [LOCAL_PACKAGE]...
-  Try `opam-monorepo lock --help' or `opam-monorepo --help' for more information.
-  [1]
   $ grep "\"b\"\s\+{" a.opam.locked
     "b" {= "0.2" & vendor}
 
@@ -120,10 +116,6 @@ If we run it with mirage overlays though, it will detect that there exists
 versions that cross compile and favor those instead:
 
   $ opam-monorepo lock --prefer-cross-compile a-with-mirage > /dev/null
-  opam-monorepo: unknown option `--prefer-cross-compile'.
-  Usage: opam-monorepo lock [OPTION]... [LOCAL_PACKAGE]...
-  Try `opam-monorepo lock --help' or `opam-monorepo --help' for more information.
-  [1]
   $ grep "\"b\"\s\+{" a-with-mirage.opam.locked
     "b" {= "0.2" & vendor}
 
@@ -132,9 +124,5 @@ tag to be picked instead:
 
   $ echo "tags: [\"cross-compile\"]" >> upstream/packages/b/b.0.2/opam
   $ opam-monorepo lock --prefer-cross-compile a-with-mirage > /dev/null
-  opam-monorepo: unknown option `--prefer-cross-compile'.
-  Usage: opam-monorepo lock [OPTION]... [LOCAL_PACKAGE]...
-  Try `opam-monorepo lock --help' or `opam-monorepo --help' for more information.
-  [1]
   $ grep "\"b\"\s\+{" a-with-mirage.opam.locked
     "b" {= "0.2" & vendor}
