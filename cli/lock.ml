@@ -206,13 +206,12 @@ let could_not_determine_version offending_packages =
   in
   let s = OpamFormula.string_of_formula f in
   let pp_version_formula = Fmt.using s Fmt.string in
-  let pp_offending_package =
-    Fmt.pair ~sep:Fmt.sp Opam.Pp.package_name pp_version_formula
-  in
-  let pp_offending_packages = Fmt.list ~sep:Fmt.comma pp_offending_package in
-  Logs.err (fun l ->
-      l "There is no eligible package that matches %a." pp_offending_packages
-        offending_packages)
+  List.iter
+    ~f:(fun (name, formula) ->
+      Logs.err (fun l ->
+          l "There is no eligible version of %a that matches %a"
+            Opam.Pp.package_name name pp_version_formula formula))
+    offending_packages
 
 let interpret_solver_error ~repositories solver = function
   | `Msg _ as err -> err
