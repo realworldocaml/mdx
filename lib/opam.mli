@@ -167,6 +167,9 @@ val version_is_at_least : OpamPackage.Version.t -> OpamPackage.Version.t -> bool
 (** [version_is_at_least minimum to_check] returns [true] if the version
     [to_check] is greater or equal to [minimum]. *)
 
+val has_cross_compile_tag : OpamFile.OPAM.t -> bool
+(** Returns whether the given opam file is tagged with ["cross-compile"]. *)
+
 val pull_tree :
   url:OpamUrl.t ->
   hashes:OpamHash.t list ->

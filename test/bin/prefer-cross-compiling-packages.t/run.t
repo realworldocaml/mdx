@@ -117,7 +117,7 @@ versions that cross compile and favor those instead:
 
   $ opam-monorepo lock --prefer-cross-compile a-with-mirage > /dev/null
   $ grep "\"b\"\s\+{" a-with-mirage.opam.locked
-    "b" {= "0.2" & vendor}
+    "b" {= "0.1+dune+mirage" & vendor}
 
 Note that if the upstream released version does cross compile, it can add the
 tag to be picked instead:

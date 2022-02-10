@@ -52,6 +52,10 @@ let avoid_version opam =
   let flags = OpamFile.OPAM.flags opam in
   List.mem ~set:flags OpamTypes.Pkgflag_AvoidVersion
 
+let has_cross_compile_tag opam =
+  let tags = OpamFile.OPAM.tags opam in
+  List.mem ~set:tags "cross-compile"
+
 let pull_tree ~url ~hashes ~dir global_state =
   let dir_str = Fpath.to_string dir in
   let cache_dir =
