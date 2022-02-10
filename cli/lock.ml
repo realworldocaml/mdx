@@ -526,7 +526,7 @@ let prefer_cross_compile =
   let doc =
     "Tell the solver to pick cross-compilation compatible packages when \
      available. This is determined based on the presence of the \
-     \"cross-compilation\" tag in the opam package metadata."
+     \"cross-compile\" tag in the opam package metadata."
   in
   Common.Arg.named
     (fun x -> `Prefer_cross_compile x)
