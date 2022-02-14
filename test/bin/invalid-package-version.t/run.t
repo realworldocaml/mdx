@@ -23,7 +23,7 @@ opam-monorepo solver should successfully pick a.0.1:
   ==> Querying opam database for their metadata and Dune compatibility.
   ==> Calculating exact pins for each of them.
   ==> Wrote lockfile with 1 entries to $TESTCASE_ROOT/existing.opam.locked. You can now run opam monorepo pull to fetch their sources.
-  $ cat existing.opam.locked | grep "\"a\"\s\+{"
+  $ grep "\"a\"\s\+{" existing.opam.locked 
     "a" {= "0.1" & vendor}
 
 Yet if we attempt to use the same package, but pick a version that doesn't
