@@ -254,22 +254,34 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
       rolemap []
     |> List.filter_map ~f:Solver.package_name
 
-  let find_version_restriction component =
+  let determine_version_restriction component =
     let open Option.O in
-    let notes = Solver.Diagnostics.Component.notes component in
-    let* restriction =
-      List.find_map
-        ~f:(function
-          | UserRequested restriction -> Some restriction
-          | Restricts (_other_role, _impl, restrictions) -> (
-              match restrictions with
-              | [] -> None
-              | restriction :: _ -> Some restriction)
-          | _ -> None)
-        notes
+    let restrictions =
+      component |> Solver.Diagnostics.Component.notes
+      |> List.map ~f:(function
+           | Solver.Diagnostics.Note.UserRequested restriction ->
+               [ restriction ]
+           | Restricts (_other_role, _impl, restrictions) -> restrictions
+           | _ -> [])
+      |> List.flatten
     in
-    let _, version_restriction = Solver.formula restriction in
-    Some version_restriction
+    let* version_restrictions =
+      match restrictions with
+      | [] -> None
+      | restrictions ->
+          restrictions
+          |> List.map ~f:(fun restriction ->
+                 let _, version_restriction = Solver.formula restriction in
+                 version_restriction)
+          |> Option.some
+    in
+    match version_restrictions with
+    | [] -> None
+    | init :: rest ->
+        List.fold_left
+          ~f:(fun formula restriction -> OpamFormula.And (formula, restriction))
+          ~init rest
+        |> Option.some
 
   (* [true] if the rejected package would've satisified the version constraint if it
      wouldn't have been a [Model_rejection] *)
@@ -299,7 +311,9 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
               match a with Some a -> f a | None -> unavailable
             in
             let* pkg_name = Solver.package_name pkg in
-            let* version_restriction = find_version_restriction component in
+            let* version_restriction =
+              determine_version_restriction component
+            in
             let rejects, _reason =
               Solver.Diagnostics.Component.rejects component
             in
