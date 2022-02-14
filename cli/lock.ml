@@ -216,7 +216,7 @@ let could_not_determine_version offending_packages =
 let interpret_solver_error ~repositories solver = function
   | `Msg _ as err -> err
   | `Diagnostics d ->
-      (match Opam_solve.no_matching_versions solver d with
+      (match Opam_solve.unavailable_versions_due_to_constraints solver d with
       | [] -> ()
       | offending_packages -> could_not_determine_version offending_packages);
       (match Opam_solve.not_buildable_with_dune solver d with

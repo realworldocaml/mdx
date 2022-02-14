@@ -180,7 +180,7 @@ module type OPAM_MONOREPO_SOLVER = sig
 
   val not_buildable_with_dune : diagnostics -> OpamPackage.Name.t list
 
-  val no_matching_versions :
+  val unavailable_versions_due_to_constraints :
     diagnostics -> (OpamPackage.Name.t * OpamFormula.version_formula) list
 end
 
@@ -271,7 +271,7 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
     let _, version_restriction = Solver.formula restriction in
     Some version_restriction
 
-  let no_matching_versions diagnostics =
+  let unavailable_versions_due_to_constraints diagnostics =
     let rolemap = Solver.diagnostics_rolemap diagnostics in
     Pkg_map.fold
       (fun pkg component acc ->
@@ -487,7 +487,7 @@ let not_buildable_with_dune :
   in
   Solver.not_buildable_with_dune diagnostics
 
-let no_matching_versions :
+let unavailable_versions_due_to_constraints :
     type context diagnostics.
     (context, diagnostics) t ->
     diagnostics ->
@@ -498,4 +498,4 @@ let no_matching_versions :
          and type input = context) =
     t
   in
-  Solver.no_matching_versions diagnostics
+  Solver.unavailable_versions_due_to_constraints diagnostics
