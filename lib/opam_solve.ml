@@ -179,6 +179,9 @@ module type OPAM_MONOREPO_SOLVER = sig
   val diagnostics_message : verbose:bool -> diagnostics -> [> `Msg of string ]
 
   val not_buildable_with_dune : diagnostics -> OpamPackage.Name.t list
+
+  val unavailable_versions_due_to_constraints :
+    diagnostics -> (OpamPackage.Name.t * OpamFormula.version_formula) list
 end
 
 module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
@@ -250,6 +253,81 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
         | true -> pkg :: acc)
       rolemap []
     |> List.filter_map ~f:Solver.package_name
+
+  let determine_version_restriction component =
+    let open Option.O in
+    let restrictions =
+      component |> Solver.Diagnostics.Component.notes
+      |> List.map ~f:(function
+           | Solver.Diagnostics.Note.UserRequested restriction ->
+               [ restriction ]
+           | Restricts (_other_role, _impl, restrictions) -> restrictions
+           | _ -> [])
+      |> List.flatten
+    in
+    let* version_restrictions =
+      match restrictions with
+      | [] -> None
+      | restrictions ->
+          restrictions
+          |> List.map ~f:(fun restriction ->
+                 let _, version_restriction = Solver.formula restriction in
+                 version_restriction)
+          |> Option.some
+    in
+    match version_restrictions with
+    | [] -> None
+    | init :: rest ->
+        List.fold_left
+          ~f:(fun formula restriction -> OpamFormula.And (formula, restriction))
+          ~init rest
+        |> Option.some
+
+  (* [true] if the rejected package would've satisified the version constraint if it
+     wouldn't have been a [Model_rejection] *)
+  let model_rejection_of_eligible_version version_restriction (model, reason) =
+    match reason with
+    | `Model_rejection _ -> (
+        match Solver.version model with
+        | None -> true
+        | Some rejected_package ->
+            let rejected_version = OpamPackage.version rejected_package in
+            let would_be_eligible_otherwise =
+              OpamFormula.check_version_formula version_restriction
+                rejected_version
+            in
+            would_be_eligible_otherwise)
+    | _ -> false
+
+  let unavailable_versions_due_to_constraints diagnostics =
+    let rolemap = Solver.diagnostics_rolemap diagnostics in
+    Pkg_map.fold
+      (fun pkg component unavailable ->
+        match Solver.Diagnostics.Component.selected_impl component with
+        | Some _ -> unavailable
+        | None -> (
+            (* short-circuit skip of fold *)
+            let ( let* ) a f =
+              match a with Some a -> f a | None -> unavailable
+            in
+            let* pkg_name = Solver.package_name pkg in
+            let* version_restriction =
+              determine_version_restriction component
+            in
+            let rejects, _reason =
+              Solver.Diagnostics.Component.rejects component
+            in
+            (* check if any packages would have had matching versions if they weren't model-rejected *)
+            let model_rejections_would_match_version =
+              List.exists
+                ~f:(model_rejection_of_eligible_version version_restriction)
+                rejects
+            in
+            (* if it is unavailable, construct info on why *)
+            match model_rejections_would_match_version with
+            | false -> unavailable
+            | true -> (pkg_name, version_restriction) :: unavailable))
+      rolemap []
 
   let get_opam_info ~context pkg =
     match Context.opam_file context pkg with
@@ -424,3 +502,16 @@ let not_buildable_with_dune :
     t
   in
   Solver.not_buildable_with_dune diagnostics
+
+let unavailable_versions_due_to_constraints :
+    type context diagnostics.
+    (context, diagnostics) t ->
+    diagnostics ->
+    (OpamPackage.Name.t * OpamFormula.version_formula) list =
+ fun t diagnostics ->
+  let (module Solver : OPAM_MONOREPO_SOLVER
+        with type diagnostics = diagnostics
+         and type input = context) =
+    t
+  in
+  Solver.unavailable_versions_due_to_constraints diagnostics

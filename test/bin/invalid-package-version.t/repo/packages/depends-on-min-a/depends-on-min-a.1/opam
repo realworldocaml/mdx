@@ -1,0 +1,12 @@
+opam-version: "2.0"
+dev-repo: "git+https://a.com/depends-on-min-a.git"
+depends: [
+  "dune"
+  "a" {>= "1.0"}
+]
+url {
+  src: "https://a.com/depends-on-min-a.0.1.tbz"
+  checksum: [
+    "sha256=0000000000000000000000000000000000000000000000000000000000000000"
+  ]
+}
