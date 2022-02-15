@@ -47,9 +47,9 @@ to the test)
 We should also produce the right error message with all the constraints when we have multiple constaints
 
   $ opam show --no-lint --raw -fdepends ./multiple-constraint.opam
-  "dune" "a" {>= "1.1" & < "2.0"}
+  "dune" "depends-on-min-a" "a" {< "2.0"}
   $ opam-monorepo lock multiple-constraint 2> errors
   ==> Using 1 locally scanned package as the target.
   [1]
   $ grep -Pazo "(?s)opam-monorepo: \[ERROR\].*(?=opam-monorepo)" < errors | head --bytes=-1
-  opam-monorepo: [ERROR] There is no eligible version of a that matches >= 1.1 & < 2.0
+  opam-monorepo: [ERROR] There is no eligible version of a that matches >= 1.0

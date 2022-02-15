@@ -1,7 +1,8 @@
 opam-version: "2.0"
 depends: [
   "dune"
-  "a" {>= "1.1" & < "2.0"}
+  "depends-on-min-a"
+  "a" {< "2.0"}
 ]
 x-opam-monorepo-opam-repositories: [
   "file://$OPAM_MONOREPO_CWD/minimal-repo"
