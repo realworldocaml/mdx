@@ -87,19 +87,11 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
       Opam.depends_on_dune ~allow_jbuilder depends
       || Opam.depends_on_dune ~allow_jbuilder depopts
     in
-    let uses_dune =
-      match require_dune with
-      | false -> true
-      | true -> (
-          (* if it is exempt, we assume it uses dune *)
-          match OpamPackage.Name.Set.mem name exempt_dune_for with
-          | true -> true
-          | false -> uses_dune)
-    in
+    let exempt_from_dune = OpamPackage.Name.Set.mem name exempt_dune_for in
     let summary = Opam.Package_summary.from_opam pkg opam_file in
     Opam.Package_summary.is_base_package summary
     || Opam.Package_summary.is_virtual summary
-    || uses_dune
+    || exempt_from_dune || (not require_dune) || uses_dune
 
   let filter_candidates ~allow_jbuilder ~require_dune ~exempt_dune_for ~name
       versions =
