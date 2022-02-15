@@ -305,7 +305,7 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
       (fun pkg component unavailable ->
         match Solver.Diagnostics.Component.selected_impl component with
         | Some _ -> unavailable
-        | None ->
+        | None -> (
             (* short-circuit skip of fold *)
             let ( let* ) a f =
               match a with Some a -> f a | None -> unavailable
@@ -324,12 +324,9 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
                 rejects
             in
             (* if it is unavailable, construct info on why *)
-            let* unavailable_pkg =
-              match model_rejections_would_match_version with
-              | false -> None
-              | true -> Some (pkg_name, version_restriction)
-            in
-            unavailable_pkg :: unavailable)
+            match model_rejections_would_match_version with
+            | false -> unavailable
+            | true -> (pkg_name, version_restriction) :: unavailable))
       rolemap []
 
   let get_opam_info ~context pkg =
