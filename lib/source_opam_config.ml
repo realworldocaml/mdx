@@ -163,7 +163,7 @@ module Opam_global_vars = struct
 end
 
 module Opam_provided = struct
-  let opam_provided opam_chunk =
+  let from_opam_value opam_chunk =
     let open Result.O in
     let* names =
       match opam_chunk.OpamParserTypes.FullPos.pelem with
@@ -180,14 +180,17 @@ module Opam_provided = struct
     let names = List.map ~f:OpamPackage.Name.of_string names in
     Ok (OpamPackage.Name.Set.of_list names)
 
-  let get opam_file =
-    let open Result.O in
-    let ext = OpamFile.OPAM.extensions opam_file in
-    match OpamStd.String.Map.find_opt "x-opam-monorepo-opam-provided" ext with
-    | None -> Ok None
-    | Some value ->
-        let* v = opam_provided value in
-        Ok (Some v)
+  let to_opam_value names =
+    OpamPackage.Name.Set.elements names
+    |> List.map ~f:OpamPackage.Name.to_string
+    |> Opam.Value.List.to_value Opam.Value.String.to_value
+
+  let field =
+    Opam.Extra_field.make ~name:"opam-provided" ~to_opam_value ~from_opam_value
+
+  let set t opam = Opam.Extra_field.set field t opam
+
+  let get opam = Opam.Extra_field.get field opam
 
   let merge = function
     | [] -> Ok OpamPackage.Name.Set.empty
@@ -216,11 +219,13 @@ let get ~opam_monorepo_cwd opam_file =
 let set_field set var opam_file =
   Option.map_default ~default:opam_file var ~f:(fun v -> set v opam_file)
 
-let set ~opam_monorepo_cwd t opam_file =
+let set ~opam_monorepo_cwd { global_vars; repositories; opam_provided }
+    opam_file =
   let opam_monorepo_cwd = opam_monorepo_cwd_from_root opam_monorepo_cwd in
   opam_file
-  |> set_field Opam_global_vars.set t.global_vars
-  |> set_field (Opam_repositories.set ~opam_monorepo_cwd) t.repositories
+  |> set_field Opam_global_vars.set global_vars
+  |> set_field (Opam_repositories.set ~opam_monorepo_cwd) repositories
+  |> set_field Opam_provided.set opam_provided
 
 let merge_field f a b =
   let open Result.O in
