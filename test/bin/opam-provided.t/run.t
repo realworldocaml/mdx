@@ -23,8 +23,16 @@ It should lock successfully.
 The lockfile should thus contain the package `b` and mark it as `vendor` since
 opam-monorepo will vendor it.
 
-  $ opam show --no-lint --raw -fdepends ./vendored.opam.locked | grep "\"b\""
+  $ opam show --no-lint --raw -fdepends ./vendored.opam.locked
   "b" {= "1" & vendor}
+  "base-bigarray" {= "base"}
+  "base-threads" {= "base"}
+  "base-unix" {= "base"}
+  "dune" {= "2.9.1"}
+  "ocaml" {= "4.13.1"}
+  "ocaml-base-compiler" {= "4.13.1"}
+  "ocaml-config" {= "2"}
+  "ocaml-options-vanilla" {= "1"}
 
 Let's now check with the same opam file but this one adds `opam-provided`.
 Asking for the value will return that `b` will be provided by opam:
@@ -36,8 +44,16 @@ Asking for the value will return that `b` will be provided by opam:
 We should be seing that this package is not marked as `vendor` so if we run
 `opam` on it, it will install the package `b`.
 
-  $ opam show --no-lint --raw -fdepends ./opam-provided.opam.locked | grep "\"b\""
+  $ opam show --no-lint --raw -fdepends ./opam-provided.opam.locked
   "b" {= "1"}
+  "base-bigarray" {= "base"}
+  "base-threads" {= "base"}
+  "base-unix" {= "base"}
+  "dune" {= "2.9.1"}
+  "ocaml" {= "4.13.1"}
+  "ocaml-base-compiler" {= "4.13.1"}
+  "ocaml-config" {= "2"}
+  "ocaml-options-vanilla" {= "1"}
 
 What happens in the case that a package would be ok to vendor but the
 transitive dependency is opam-provided? In this case we have a package
@@ -52,9 +68,17 @@ depend transitively on an opam provided package.
 Locking it should work as usual
 
   $ opam-monorepo lock transitive > /dev/null
-  $ opam show --no-lint --raw -fdepends ./transitive.opam.locked | grep "b\""
+  $ opam show --no-lint --raw -fdepends ./transitive.opam.locked
   "b" {= "1"}
+  "base-bigarray" {= "base"}
+  "base-threads" {= "base"}
+  "base-unix" {= "base"}
   "depends-on-b" {= "1" & vendor}
+  "dune" {= "2.9.1"}
+  "ocaml" {= "4.13.1"}
+  "ocaml-base-compiler" {= "4.13.1"}
+  "ocaml-config" {= "2"}
+  "ocaml-options-vanilla" {= "1"}
 
 `depends-on-b` is vendored (since it can) but `b` is opam-provided. Neat.
 
@@ -65,12 +89,20 @@ Now for the reverse case, `depends-on-b` is opam-provided.
   $ opam show --no-lint --raw -fx-opam-monorepo-opam-provided ./reverse-transitive.opam
   "depends-on-b"
 
-Since it is, we need to make its dependency, `b` also opam-provided.
+Since it is, we need to make its dependency, `b`, also opam-provided.
 
   $ opam-monorepo lock reverse-transitive > /dev/null
-  $ opam show --no-lint --raw -fdepends ./reverse-transitive.opam.locked | grep "b\""
+  $ opam show --no-lint --raw -fdepends ./reverse-transitive.opam.locked
   "b" {= "1"}
+  "base-bigarray" {= "base"}
+  "base-threads" {= "base"}
+  "base-unix" {= "base"}
   "depends-on-b" {= "1"}
+  "dune" {= "2.9.1"}
+  "ocaml" {= "4.13.1"}
+  "ocaml-base-compiler" {= "4.13.1"}
+  "ocaml-config" {= "2"}
+  "ocaml-options-vanilla" {= "1"}
 
 Since we add a new custom stanza to the OPAM file, let's make sure we emit
 warnings when things are specified the wrong way, for example if the package to
@@ -84,7 +116,7 @@ be ignored is not a string.
   [1]
 
 Similarly, we accept a list but it needs to be a list of strings which this is
-not
+not:
 
   $ opam show --no-lint --raw -fx-opam-monorepo-opam-provided ./warning-list.opam
   42 "fourtytwo"
