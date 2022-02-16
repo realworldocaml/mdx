@@ -1,4 +1,4 @@
-(** Utilities for extracting configuraion from target packages opam
+(** Utilities for extracting configuration from target packages opam
     files available in the project sources in opam extensions *)
 
 open Import
@@ -6,6 +6,7 @@ open Import
 type t = {
   global_vars : OpamVariable.variable_contents String.Map.t option;
   repositories : OpamUrl.Set.t option;
+  opam_provided : OpamPackage.Name.Set.t option;
 }
 (** Type for solver configuration bits encoded in opam extensions
     of target packages opam files.

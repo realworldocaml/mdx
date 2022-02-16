@@ -227,23 +227,6 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
     Context.create ~install_test_deps_for ~allow_jbuilder ?require_dune
       ?exempt_dune_for ~constraints ~fixed_packages input
 
-  let opam_provided opam_chunk =
-    let open Result.O in
-    let* names =
-      match opam_chunk.OpamParserTypes.FullPos.pelem with
-      | OpamParserTypes.FullPos.String s -> Ok [ s ]
-      | List items ->
-          items.OpamParserTypes.FullPos.pelem
-          |> List.map ~f:(fun item ->
-                 match item.OpamParserTypes.FullPos.pelem with
-                 | OpamParserTypes.FullPos.String s -> Ok s
-                 | _ -> Error "String required")
-          |> Result.List.all
-      | _ -> Error "String or List required"
-    in
-    let names = List.map ~f:OpamPackage.Name.of_string names in
-    Ok (OpamPackage.Name.Set.of_list names)
-
   let determine_dependencies context request =
     match Solver.solve context request with
     | Error e -> Error (`Diagnostics e)
@@ -264,14 +247,14 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
         let* acc = acc in
         match OpamPackage.Name.Map.find_opt name local_packages with
         | Some (_version, opam) -> (
-            let ext = OpamFile.OPAM.extensions opam in
-            match
-              OpamStd.String.Map.find_opt "x-opam-monorepo-opam-provided" ext
-            with
-            | None -> Ok acc
-            | Some value ->
-                let* v = opam_provided value in
-                Ok (OpamPackage.Name.Set.union v acc))
+            (* TODO: we don't actually need a CWD here *)
+            let opam_monorepo_cwd = Fpath.v "/" in
+            match Source_opam_config.get ~opam_monorepo_cwd opam with
+            | Ok config -> (
+                match config.opam_provided with
+                | None -> Ok acc
+                | Some provided -> Ok (OpamPackage.Name.Set.union provided acc))
+            | Error (`Msg msg) -> Error (`Msg msg))
         | None -> Ok acc)
       target_packages (Ok OpamPackage.Name.Set.empty)
 
@@ -424,13 +407,8 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
       build_context ~build_only ~allow_jbuilder ~ocaml_version ~pin_depends
         ~local_packages ~target_packages ~require_dune:false input
     in
-    let opam_provided =
-      match opam_provided_packages local_packages target_packages with
-      | Ok opam_provided -> opam_provided
-      | Error msg ->
-          Logs.warn (fun l ->
-              l "Error parsing x-opam-monorepo-provided: %s, ignoring.\n" msg);
-          OpamPackage.Name.Set.empty
+    let* opam_provided =
+      opam_provided_packages local_packages target_packages
     in
 
     let allow_compiler_variants = depend_on_compiler_variants local_packages in

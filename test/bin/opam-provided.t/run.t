@@ -79,13 +79,15 @@ be ignored is not a string.
   $ opam show --no-lint --raw -fx-opam-monorepo-opam-provided ./warning.opam
   42
 
-  $ opam-monorepo lock warning 2>&1 | grep WARNING
-  opam-monorepo: [WARNING] Error parsing x-opam-monorepo-provided: String or List required, ignoring.
+  $ opam-monorepo lock warning > /dev/null
+  opam-monorepo: String or List required
+  [1]
 
 Similarly, we accept a list but it needs to be a list of strings which this is
 not
 
   $ opam show --no-lint --raw -fx-opam-monorepo-opam-provided ./warning-list.opam
   42 "fourtytwo"
-  $ opam-monorepo lock warning-list 2>&1 | grep WARNING
-  opam-monorepo: [WARNING] Error parsing x-opam-monorepo-provided: String required, ignoring.
+  $ opam-monorepo lock warning > /dev/null
+  opam-monorepo: String or List required
+  [1]
