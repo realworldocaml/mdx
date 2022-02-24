@@ -8,7 +8,7 @@ otherwise possible.
 {2 Usecases}
 
 Sometimes it is not possible to put all your dependencies into the [duniverse],
-be it due to  your dependencies not building with [dune] or some tooling that
+be it due to your dependencies not building with [dune] or some tooling that
 should be just installed via [opam]. Such examples include:
 
 {ul
@@ -96,7 +96,8 @@ In such cases there are two possibilities:
 {- Install the package in [opam], include a duplicate in the duniverse}
 }
 
-Both these approaches have advantages and disadvantages. For simplicity
-[opam-monorepo] currently choses #1, since the dependent package needs to be
-installed in [opam] in any case and packages built in the duniverse can access
-[opam]-provided packages as well.
+Both these approaches have advantages and disadvantages. [opam-monorepo]
+currently chooses #2 to maximize the amount of packages that are vendored, thus
+increasing the size of the reproducible set. Yet this does not mean that two
+different versions of the package can be installed - the set of packages in
+opam and the duniverse must be co-installable!

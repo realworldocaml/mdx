@@ -93,7 +93,7 @@ Since it is, we need to make its dependency, `b`, also opam-provided.
 
   $ opam-monorepo lock reverse-transitive > /dev/null
   $ opam show --no-lint --raw -fdepends ./reverse-transitive.opam.locked
-  "b" {= "1"}
+  "b" {= "1" & vendor}
   "base-bigarray" {= "base"}
   "base-threads" {= "base"}
   "base-unix" {= "base"}
