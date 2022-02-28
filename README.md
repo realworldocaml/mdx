@@ -1,26 +1,21 @@
 [![Build Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fci.ocamllabs.io%2Fbadge%2Frealworldocaml%2Fmdx%2Fmain&logo=ocaml)](https://ci.ocamllabs.io/github/realworldocaml/mdx)
 
-## mdx -- executable code blocks inside markdown files
+## mdx -- executable code blocks inside documentation
 
-`mdx` allows to execute code blocks inside markdown files.
-There are (currently) two sub-commands, corresponding
-to two modes of operations: pre-processing (`ocaml-mdx pp`)
-and tests (`ocaml-mdx test`).
+`mdx` allows to execute code blocks inside markdown and mli documentation
+to help keeping them up to date.
 
-The pre-processor mode allows to mix documentation and code,
-and to practice "literate programming" using markdown and OCaml.
+Use the
+[dune stanza](https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4)
+to enable it on your documentation.
 
-The test mode allows to ensure that shell scripts and OCaml fragments
-in the documentation always stays up-to-date.
-
-`mdx` is released as a single binary (called `ocaml-mdx`) and
-can be installed using opam:
+`mdx` is released on opam and can be installed by running:
 
 ```sh
 $ opam install mdx
 ```
 
-If you want to contribute or hack on the project, please see the
+If you want to contribute to the project, please see the
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Supported Extensions
