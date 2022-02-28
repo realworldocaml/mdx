@@ -56,11 +56,11 @@ let run (`Setup ()) (`Prelude prelude) (`Directories dirs) =
   Buffer.output_buffer stdout buffer;
   0
 
-let cmd =
-  let open Cmdliner in
-  let doc =
-    "Generate the source for a specialized testing binary. This command is \
-     meant to be used by dune only. There are no stability guarantees."
-  in
-  ( Term.(pure run $ Cli.setup $ Cli.prelude $ Cli.directories),
-    Term.info "dune-gen" ~doc )
+let term = Cmdliner.Term.(const run $ Cli.setup $ Cli.prelude $ Cli.directories)
+
+let doc =
+  "Generate the source for a specialized testing binary. This command is meant \
+   to be used by dune only. There are no stability guarantees."
+
+let info = Cmdliner.Cmd.info "dune-gen" ~doc
+let cmd = Cmdliner.Cmd.v info term

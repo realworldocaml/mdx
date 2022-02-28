@@ -5,7 +5,7 @@ let named wrapper = Term.(app (const wrapper))
 
 let non_deterministic =
   let doc = "Run non-deterministic tests." in
-  let env = Arg.env_var ~doc "MDX_RUN_NON_DETERMINISTIC" in
+  let env = Cmd.Env.info ~doc "MDX_RUN_NON_DETERMINISTIC" in
   named
     (fun x -> `Non_deterministic x)
     Arg.(value & flag & info [ "non-deterministic"; "n" ] ~env ~doc)

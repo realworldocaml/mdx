@@ -73,16 +73,18 @@ let run setup non_deterministic silent_eval record_backtrace syntax silent
 
 open Cmdliner
 
-let cmd =
-  let exits = Term.default_exits in
+let term =
+  Term.(
+    const run $ Cli.setup $ Cli.non_deterministic $ Cli.silent_eval
+    $ Cli.record_backtrace $ Cli.syntax $ Cli.silent $ Cli.verbose_findlib
+    $ Cli.prelude $ Cli.prelude_str $ Cli.file $ Cli.section $ Cli.root
+    $ Cli.force_output $ Cli.output)
+
+let info =
   let man = [] in
   let doc = "Test markdown files." in
-  ( Term.(
-      pure run $ Cli.setup $ Cli.non_deterministic $ Cli.silent_eval
-      $ Cli.record_backtrace $ Cli.syntax $ Cli.silent $ Cli.verbose_findlib
-      $ Cli.prelude $ Cli.prelude_str $ Cli.file $ Cli.section $ Cli.root
-      $ Cli.force_output $ Cli.output),
-    Term.info "ocaml-mdx-test" ~version:"%%VERSION%%" ~doc ~exits ~man )
+  Cmd.info "ocaml-mdx-test" ~version:"%%VERSION%%" ~doc ~man
 
-let main () = Term.(exit_status @@ eval cmd)
+let cmd = Cmd.v info term
+let main () = Stdlib.exit @@ Cmd.eval' cmd
 let () = main ()

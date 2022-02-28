@@ -33,10 +33,11 @@ let run (`Setup ()) (`Syntax syntax) (`File file) =
   Printf.printf "%s" (Mdx.Util.Csexp.to_string (List deps));
   0
 
-let cmd =
-  let open Cmdliner in
-  let doc =
-    "List the dependencies of the input file. This command is meant to be used \
-     by dune only. There are no stability guarantees."
-  in
-  (Term.(pure run $ Cli.setup $ Cli.syntax $ Cli.file), Term.info "deps" ~doc)
+let term = Cmdliner.Term.(const run $ Cli.setup $ Cli.syntax $ Cli.file)
+
+let doc =
+  "List the dependencies of the input file. This command is meant to be used \
+   by dune only. There are no stability guarantees."
+
+let info = Cmdliner.Cmd.info "deps" ~doc
+let cmd = Cmdliner.Cmd.v info term
