@@ -157,5 +157,6 @@ let run generator =
     let man = [] in
     Cmd.info "gen_dune_rules" ~doc ~man
   in
-  let group = Cmd.group info cmds in
+  let default = Term.(ret (const (`Help (`Auto, None)))) in
+  let group = Cmd.group ~default info cmds in
   Stdlib.exit @@ Cmd.eval group
