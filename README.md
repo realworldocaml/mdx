@@ -53,6 +53,17 @@ Let's look at how good OCaml is with integers and strings:
 - : string = "ab"
 ```
 ````
+or in an `mli` file:
+```ocaml
+(** Let's look at how good OCaml is with integers and strings:
+    {@ocaml[
+    # 1 + 2;;
+    - : int = 2
+    # "a" ^ "bc";;
+    - : string = "ab"
+    ]}
+*)
+```
 
 The content of the toplevel blocks looks just like an interactive toplevel
 session. Phrases, i.e., the toplevel "input", start with a `#` and end with `;;`.
