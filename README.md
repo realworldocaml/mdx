@@ -284,6 +284,12 @@ back to the default behaviour.
 In that case, `ocaml-mdx test <file>` will *not* run the command. Use `ocaml-mdx test
 --non-deterministic <file>` to come back to the default behaviour.
 
+Alternatively, instead of passing the option it is also possible to set the
+environment variable `MDX_RUN_NON_DETERMINISTIC` to make MDX execute
+non-deterministic blocks. This is useful when not calling MDX directly but
+through other commands like `dune` or Makefiles etc. Use
+`MDX_RUN_NON_DETERMINISTIC=1 ocaml-mdx test` in this case.
+
 #### Named execution environments (since mdx 1.1.0)
 
 Separate environments can be defined for blocks:
