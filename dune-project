@@ -29,7 +29,7 @@
   astring
   (logs (>= 0.7.0))
   (cmdliner
-   (>= 1.0.0))
+   (>= 1.1.0))
   (re
    (>= 1.7.2))
   result

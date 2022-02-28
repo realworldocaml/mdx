@@ -14,6 +14,4 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Cmdliner
-
-val cmd : int Term.t * Term.info
+val cmd : int Cmdliner.Cmd.t

@@ -8,6 +8,8 @@
 
 #### Fixed
 
+- Fixed compatibility with Cmdliner 1.1.0 (#371, @Leonidas-from-XIV)
+
 #### Removed
 
 #### Security

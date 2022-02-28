@@ -62,8 +62,7 @@ let run (`Setup ()) (`File file) (`Section section) =
 
 open Cmdliner
 
-let cmd =
-  let doc = "Pre-process markdown files to produce OCaml code." in
-  let exits = Term.default_exits in
-  ( Term.(pure run $ Cli.setup $ Cli.file $ Cli.section),
-    Term.info "pp" ~doc ~exits )
+let term = Term.(const run $ Cli.setup $ Cli.file $ Cli.section)
+let doc = "Pre-process markdown files to produce OCaml code."
+let info = Cmd.info "pp" ~doc
+let cmd = Cmd.v info term
