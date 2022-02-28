@@ -18,28 +18,106 @@ $ opam install mdx
 If you want to contribute to the project, please see the
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
+### Basic Usage
+
+You can use MDX with your Markdown or `.mli` documentation, which ensures
+code in multi-line or verbatim code blocks is correct.
+
+To enable MDX, you need to add `(mdx)` stanzas to the right `dune` files. Before
+that you must enable MDX for your project by adding the following to
+your `dune-project`:
+
+```
+(using mdx 0.2)
+```
+
+Then add the following in the relevant `dune` file:
+```
+(mdx)
+```
+That enables MDX on all markdown files in the folder.
+The MDX stanza can be further configured. Please visit the relevant section of
+[dune's manual](https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4)
+for more information.
+
+MDX supports various type of code blocks but the most common are OCaml toplevel
+blocks. We illustrate one in our example below. In a Markdown file, you
+would write something similar to this:
+
+````markdown
+Let's look at how good OCaml is with integers and strings:
+```ocaml
+# 1 + 2;;
+- : int = 2
+# "a" ^ "bc";;
+- : string = "ab"
+```
+````
+
+The content of the toplevel blocks looks just like an interactive toplevel
+session. Phrases, i.e., the toplevel "input", start with a `#` and end with `;;`.
+The toplevel evaluation, or "output" follows each phrase.
+
+Now you probably have noticed that `1 + 2` is not equal to `2` nor is `"a" ^ "bc"`
+to `"ab"`. Somebody must have updated the phrases, but then forgot to update
+the evaluation.
+
+That's exactly why MDX is here!
+
+If you enable MDX for this file and then ran `dune runtest`, this would be the
+result:
+
+````
+$ dune runtest
+File "README.md", line 1, characters 0-0:
+       git (internal) (exit 1)
+(cd _build/default && /usr/bin/git --no-pager diff --no-index --color=always -u README.md .mdx/README.md.corrected)
+diff --git a/README.md b/.mdx/README.md.corrected
+index 181b86f..458ecec 100644
+--- a/README.md
++++ b/.mdx/README.md.corrected
+@@ -1,13 +1,13 @@
+Let's look at how good OCaml is with integers and strings:
+```ocaml
+# 1 + 2;;
+-- : int = 2
++- : int = 3
+# "a" ^ "bc";;
+-- : string = "ab"
++- : string = "abc"
+```
+````
+
+The test run just failed and dune is showing the diff between what we have
+locally and what should be, according to MDX.
+This uses dune's promotion workflow so at this point you can either investigate
+it further if you're surprised by this diff or if you're happy with it, simply
+accept it by running:
+
+```
+dune promote
+```
+
+Now the documentation is up-to-date and running `dune runtest` again should be
+successful!
+
 ### Supported Extensions
 
 #### Labels
 
-The blocks in markdown files can be parameterized by `mdx`-specific labels, that
+The blocks can be parameterized by `mdx`-specific labels, that
 will change the way `mdx` interprets the block.
 
-The syntax is: `<!-- $MDX LABELS -->`, where `LABELS` is a list of valid labels
-separated by a comma. This line has to immediately precede the block it is
-attached to.
+The markdown syntax is: `<!-- $MDX LABELS -->`, where `LABELS` is a list of
+valid labels separated by a comma. This line has to immediately precede the
+block it is attached to.
 
     <!-- $MDX LABELS -->
     ```ocaml
     ```
 
-This syntax is the recommended way to define labels since `mdx` 1.7.0, to use
-the previous syntax please refer to the
-[mdx 1.6.0 README](https://github.com/realworldocaml/mdx/blob/1.6.0/README.md).
-
-It is also possible to use labels in OCaml interface files (`mli`), the syntax
-for this is is slightly different to match the conventions of OCaml
-documentation comments:
+The `.mli` syntax for this is is slightly different to match the conventions of
+OCaml documentation comments:
 
     (** This is an documentation comment with an ocaml block
         {@ocaml LABELS [
