@@ -29,6 +29,9 @@ adding the following stanza to your `dune-project`:
 (using mdx 0.2)
 ```
 
+Note that version `0.2` of the MDX stanza is only available in dune `3.0` or
+higher. You can use the first, `0.1` version with dune `2.4` or higher.
+
 Then add the following in the relevant `dune` file:
 ```
 (mdx)
