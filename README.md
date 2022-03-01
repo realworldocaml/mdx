@@ -1,8 +1,8 @@
 [![Build Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fci.ocamllabs.io%2Fbadge%2Frealworldocaml%2Fmdx%2Fmain&logo=ocaml)](https://ci.ocamllabs.io/github/realworldocaml/mdx)
 
-## mdx -- executable code blocks inside documentation
+## MDX
 
-`mdx` allows to execute code blocks inside markdown and mli documentation
+MDX allows to execute code blocks inside markdown and mli documentation
 to help keeping them up to date.
 
 Use the
@@ -178,7 +178,7 @@ with a padding of 3:
        10
     ```
 
-`ocaml-mdx` will also consider exit codes when the syntax `[<exit code>]`is used:
+MDX will also consider exit codes when the syntax `[<exit code>]`is used:
 
     ```sh
     $ exit 1
@@ -190,7 +190,7 @@ of success).
 
 #### OCaml Code
 
-`ocaml-mdx` interprets OCaml fragments. It understands _normal_ code fragments and
+MDX interprets OCaml fragments. It understands _normal_ code fragments and
 _toplevel_ code fragments (starting with a `#` sign and optionally ending with
 `;;`). Arbitrary whitespace padding is supported, at long as it stays
 consistent within a code block.
@@ -211,7 +211,8 @@ Here is an examples of toplevel OCaml code:
     ```
 
 ### File sync
-`mdx` is also capable of including content from files in fenced code blocks
+
+MDX is also capable of including content from files in fenced code blocks
 using the label `file`. OCaml files can be sliced using named blocks:
 
 ```ocaml
@@ -233,38 +234,6 @@ Non-OCaml files can also be read and included in a block:
     ```
     ```
 However, part splitting is only supported for OCaml files.
-
-### Pre-processing
-
-`ocaml-mdx pp` allows to transform a markdown file into a valid
-OCaml file, which can be passed to OCaml using the `-pp`
-option.
-
-For instance, given the following `file.md` document:
-
-    ```ocaml
-    # print_endline "42"
-    42
-    ```
-
-Can be compiled and executed using:
-
-```sh
-$ ocamlc -pp 'ocaml-mdx pp' -impl file.md -o file.exe
-$ ./file.exe
-42
-```
-
-This can be automated using `dune`:
-
-```
-(rule
- ((targets (file.ml))
-  (deps    (file.md))
-  (action  (with-stdout-to ${@} (run ocaml-mdx pp ${<})))))
-
-(executable ((name file)))
-```
 
 ### Tests
 
@@ -293,51 +262,6 @@ To execute OCaml code and toplevel fragments, uses `ocaml-mdx test <file.md>`.
 
 If the output is not consistent with what is expected
 `<file.md>.corrected` is generated.
-
-#### Integration with Dune
-
-To test that the code blocks of `file.md` stay consistent, one can use
-dune's `mdx` stanza:
-
-```
-(mdx
- (files file.md))
-```
-
-This allows to test the consistency of a markdown file using the normal dev
-workflow:
-
-```
-$ dune runtest
-```
-
-will display a diff of the output if something has changed. For instance:
-
-```
-$ dune runtest
------- file.md
-++++++ file.md.corrected
-File "file.md", line 23, characters 0-1:
- |
- |```sh
--| $ for i in `seq 1 3`; do echo $i; done
-+| $ for i in `seq 1 4`; do echo $i; done
- | 1
- | 2
- | 3
-+| 4
- |```
-```
-
-And the changes can then be accepted using:
-
-```
-$ dune promote
-```
-
-For further details about the mdx stanza you should read the
-[according section](https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4)
-in the dune documentation.
 
 #### Non-deterministic Tests
 
@@ -458,10 +382,3 @@ Those variables are then available in the subsequent blocks
     bar
     - : unit = ()
     ```
-
-### Sections
-
-It is possible to test or execute only a subset of the file using
-sections using the `--section` option (short name is `-s`). For
-instance `ocaml-mdx pp -s foo` will only consider the section matching the
-perl regular expression `foo`.
