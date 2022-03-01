@@ -5,6 +5,12 @@ installed via [opam-monorepo]. This workflow is not meant for regular use but
 only as a way to enable to use [opam-monorepo] in cases where it wouldn't be
 otherwise possible.
 
+We suggest minimizing its usage and prefer to use (and contribute) dune-ports
+from the [opam-overlays] repository. It's usage is safest with
+leaf-dependencies and those that do not have no dependency intersections with
+vendored packages. Due to possibly unexpected interactions this feature is only
+meant for advanced users and the solutions that it produces might be in flux.
+
 {2 Usecases}
 
 Sometimes it is not possible to put all your dependencies into the [duniverse],
