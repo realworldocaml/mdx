@@ -86,9 +86,7 @@ module Repo = struct
       in
       match ps with
       | _ when is_base_package ps -> Ok None
-      | { url_src = None; _ } | { dev_repo = None; _ } | { vendored = false; _ }
-        ->
-          Ok None
+      | { url_src = None; _ } | { dev_repo = None; _ } -> Ok None
       | { url_src = Some url_src; package; dev_repo = Some dev_repo; hashes; _ }
         ->
           let* url = url url_src in
@@ -207,8 +205,14 @@ let dev_repo_map_from_packages packages =
         | Some pkgs -> Some (pkg :: pkgs)
         | None -> Some [ pkg ]))
 
-let from_package_summaries ~get_default_branch summaries =
+let from_dependency_entries ~get_default_branch dependencies =
   let open Result.O in
+  let summaries =
+    List.map
+      ~f:(fun Opam.Dependency_entry.{ package_summary; vendored = _ } ->
+        package_summary)
+      dependencies
+  in
   let results =
     List.map
       ~f:(Repo.Package.from_package_summary ~get_default_branch)

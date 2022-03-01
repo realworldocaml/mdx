@@ -243,7 +243,7 @@ module type OPAM_MONOREPO_SOLVER = sig
     pin_depends:(OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     ?ocaml_version:string ->
     input ->
-    ( Opam.Package_summary.t list,
+    ( Opam.Dependency_entry.t list,
       [> `Diagnostics of diagnostics | `Msg of string ] )
     result
 
@@ -511,7 +511,11 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
 
   let get_opam_info ~context { package; vendored } =
     match Context.opam_file context package with
-    | Ok opam_file -> Opam.Package_summary.from_opam ~vendored package opam_file
+    | Ok opam_file ->
+        let package_summary =
+          Opam.Package_summary.from_opam package opam_file
+        in
+        Opam.Dependency_entry.{ package_summary; vendored }
     | Error (`Msg msg) ->
         (* If we're calling this function on a package, it means it has been
            returned as part of the solver solution and therefore should correspond
@@ -666,7 +670,7 @@ let calculate :
     ?ocaml_version:string ->
     (context, diagnostics) t ->
     context ->
-    ( Opam.Package_summary.t list,
+    ( Opam.Dependency_entry.t list,
       [> `Diagnostics of diagnostics | `Msg of string ] )
     result =
  fun ~build_only ~allow_jbuilder ~local_opam_files ~target_packages ~pin_depends

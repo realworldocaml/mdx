@@ -65,11 +65,11 @@ let opam_to_git_remote remote =
   | Some ("git", remote) -> remote
   | _ -> remote
 
-let compute_duniverse ~package_summaries =
+let compute_duniverse ~dependency_entries =
   let get_default_branch remote =
     Exec.git_default_branch ~remote:(opam_to_git_remote remote) ()
   in
-  Duniverse.from_package_summaries ~get_default_branch package_summaries
+  Duniverse.from_dependency_entries ~get_default_branch dependency_entries
 
 let resolve_ref deps =
   let resolve_ref ~repo ~ref =
@@ -425,16 +425,16 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
   let* source_config =
     extract_source_config ~opam_monorepo_cwd:root ~opam_files target_packages
   in
-  let* package_summaries =
+  let* dependency_entries =
     calculate_opam ~source_config ~build_only ~allow_jbuilder ~ocaml_version
       ~local_opam_files:opam_files ~target_packages
   in
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
-  let* duniverse = compute_duniverse ~package_summaries >>= resolve_ref in
+  let* duniverse = compute_duniverse ~dependency_entries >>= resolve_ref in
   let target_depexts = target_depexts opam_files target_packages in
   let lockfile =
     Lockfile.create ~source_config ~root_packages:target_packages
-      ~package_summaries ~root_depexts:target_depexts ~duniverse ()
+      ~dependency_entries ~root_depexts:target_depexts ~duniverse ()
   in
   let* () =
     Lockfile.save ~opam_monorepo_cwd:root ~file:lockfile_path lockfile

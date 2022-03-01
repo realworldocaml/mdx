@@ -23,21 +23,30 @@ let opam_factory ~name ~version =
   OpamPackage.create name version
 
 let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
-    ?(hashes = []) ?(depexts = []) ?(vendored = true) () =
+    ?(hashes = []) ?(depexts = []) () =
   let package = opam_factory ~name ~version in
-  { Opam.Package_summary.package; dev_repo; url_src; hashes; depexts; vendored }
+  { Opam.Package_summary.package; dev_repo; url_src; hashes; depexts }
+
+let dependency_factory ?(vendored = true) ?name ?version ?dev_repo ?url_src
+    ?hashes ?depexts () =
+  let package_summary =
+    summary_factory ?name ?version ?dev_repo ?url_src ?hashes ?depexts ()
+  in
+  { Opam.Dependency_entry.vendored; package_summary }
 
 module Repo = struct
   module Package = struct
     let test_from_package_summary =
-      let open Duniverse.Repo.Package in
       let make_test ?(get_default_branch = fun _ -> assert false) ~name ~summary
           ~expected () =
         let test_name =
           Printf.sprintf "Repo.Package.from_package_summary: %s" name
         in
         let test_fun () =
-          let actual = from_package_summary ~get_default_branch summary in
+          let actual =
+            Duniverse.Repo.Package.from_package_summary ~get_default_branch
+              summary
+          in
           Alcotest.(
             check (result (option Testable.Repo.Package.t) Testable.r_msg))
             test_name expected actual
@@ -53,11 +62,6 @@ module Repo = struct
           ~expected:(Ok None) ();
         make_test ~name:"No dev_repo"
           ~summary:(summary_factory ?dev_repo:None ())
-          ~expected:(Ok None) ();
-        make_test ~name:"Non-vendored"
-          ~summary:
-            (summary_factory ~dev_repo:"d" ~url_src:(Other "u") ~name:"y"
-               ~version:"v" ~vendored:false ())
           ~expected:(Ok None) ();
         make_test ~name:"Regular"
           ~summary:
@@ -199,14 +203,14 @@ module Repo = struct
     ]
 end
 
-let test_from_package_summaries =
-  let make_test ~name ?(get_default_branch = fun _ -> assert false) ~summaries
-      ~expected () =
-    let test_name = Printf.sprintf "from_package_summaries: %s" name in
+let test_from_dependency_entries =
+  let make_test ~name ?(get_default_branch = fun _ -> assert false)
+      ~dependency_entries ~expected () =
+    let test_name = Printf.sprintf "from_dependency_entries: %s" name in
     let test_fun () =
       let actual =
-        Duniverse_lib.Duniverse.from_package_summaries ~get_default_branch
-          summaries
+        Duniverse_lib.Duniverse.from_dependency_entries ~get_default_branch
+          dependency_entries
       in
       Alcotest.(check (result (list Testable.Repo.unresolved) Testable.r_msg))
         test_name expected actual
@@ -214,18 +218,20 @@ let test_from_package_summaries =
     (test_name, `Quick, test_fun)
   in
   [
-    make_test ~name:"Empty" ~summaries:[] ~expected:(Ok []) ();
+    make_test ~name:"Empty" ~dependency_entries:[] ~expected:(Ok []) ();
     make_test ~name:"Filters virtual"
-      ~summaries:[ summary_factory ?dev_repo:None () ]
+      ~dependency_entries:[ dependency_factory ?dev_repo:None () ]
       ~expected:(Ok []) ();
     make_test ~name:"Filters base packages"
-      ~summaries:
-        [ summary_factory ~dev_repo:"d" ~url_src:(Other "u") ~name:"dune" () ]
+      ~dependency_entries:
+        [
+          dependency_factory ~dev_repo:"d" ~url_src:(Other "u") ~name:"dune" ();
+        ]
       ~expected:(Ok []) ();
     make_test ~name:"Simple"
-      ~summaries:
+      ~dependency_entries:
         [
-          summary_factory ~name:"x" ~version:"v" ~url_src:(Other "u")
+          dependency_factory ~name:"x" ~version:"v" ~url_src:(Other "u")
             ~dev_repo:"d" ~hashes:[] ();
         ]
       ~expected:
@@ -239,12 +245,29 @@ let test_from_package_summaries =
              };
            ])
       ();
-    make_test ~name:"Aggregates repos"
-      ~summaries:
+    make_test ~name:"Non-vendored"
+      ~dependency_entries:
         [
-          summary_factory ~name:"y" ~version:"v" ~url_src:(Other "u")
+          dependency_factory ~vendored:false ~dev_repo:"d" ~url_src:(Other "u")
+            ~name:"y" ~version:"v" ();
+        ]
+      ~expected:
+        (Ok
+           [
+             {
+               dir = "d";
+               url = Other "u";
+               hashes = [];
+               provided_packages = [ opam_factory ~name:"y" ~version:"v" ];
+             };
+           ])
+      ();
+    make_test ~name:"Aggregates repos"
+      ~dependency_entries:
+        [
+          dependency_factory ~name:"y" ~version:"v" ~url_src:(Other "u")
             ~dev_repo:"d" ~hashes:[] ();
-          summary_factory ~name:"y-lwt" ~version:"v" ~url_src:(Other "u")
+          dependency_factory ~name:"y-lwt" ~version:"v" ~url_src:(Other "u")
             ~dev_repo:"d" ~hashes:[] ();
         ]
       ~expected:
@@ -270,5 +293,5 @@ let suite =
       [
         Repo.Package.test_from_package_summary;
         Repo.test_from_packages;
-        test_from_package_summaries;
+        test_from_dependency_entries;
       ] )

@@ -23,19 +23,22 @@ module Package_summary : sig
     hashes : OpamHash.t list;
     dev_repo : string option;
     depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
-    vendored : bool;
   }
 
   val equal : t -> t -> bool
 
   val pp : t Fmt.t
 
-  val from_opam : ?vendored:bool -> OpamPackage.t -> OpamFile.OPAM.t -> t
+  val from_opam : OpamPackage.t -> OpamFile.OPAM.t -> t
 
   val is_virtual : t -> bool
   (** A package is considered virtual if it has no url.src or no dev-repo. *)
 
   val is_base_package : t -> bool
+end
+
+module Dependency_entry : sig
+  type t = { package_summary : Package_summary.t; vendored : bool }
 end
 
 module Hash : sig

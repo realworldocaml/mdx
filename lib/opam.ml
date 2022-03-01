@@ -159,29 +159,27 @@ module Package_summary = struct
     hashes : OpamHash.t list;
     dev_repo : string option;
     depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
-    vendored : bool;
   }
 
-  let equal { package; url_src; hashes; dev_repo; depexts; vendored } t' =
+  let equal { package; url_src; hashes; dev_repo; depexts } t' =
     OpamPackage.equal package t'.package
     && Option.equal Url.equal url_src t'.url_src
     && List.equal Hash.equal hashes t'.hashes
     && Option.equal String.equal dev_repo t'.dev_repo
     && Depexts.equal depexts t'.depexts
-    && Bool.equal vendored t'.vendored
 
-  let pp fmt { package; url_src; hashes; dev_repo; depexts; vendored } =
+  let pp fmt { package; url_src; hashes; dev_repo; depexts } =
     let open Pp_combinators.Ocaml in
     Format.fprintf fmt
       "@[<hov 2>{ name = %a;@ version = %a;@ url_src = %a;@ hashes = %a;@ \
-       dev_repo = %a;@ depexts = %a; @vendored = %a }@]"
+       dev_repo = %a;@ depexts = %a }@]"
       Pp.package_name package.name Pp.version package.version
       (option ~brackets:true Url.pp)
       url_src (list Hash.pp) hashes
       (option ~brackets:true string)
-      dev_repo Depexts.pp depexts Pp_combinators.Ocaml.bool vendored
+      dev_repo Depexts.pp depexts
 
-  let from_opam ?(vendored = true) package opam_file =
+  let from_opam package opam_file =
     let url_field = OpamFile.OPAM.url opam_file in
     let url_src = Option.map ~f:Url.from_opam_field url_field in
     let hashes =
@@ -191,7 +189,7 @@ module Package_summary = struct
       Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file)
     in
     let depexts = OpamFile.OPAM.depexts opam_file in
-    { package; url_src; hashes; dev_repo; depexts; vendored }
+    { package; url_src; hashes; dev_repo; depexts }
 
   let is_virtual = function
     | { url_src = None; _ } -> true
@@ -203,6 +201,10 @@ module Package_summary = struct
       when OpamPackage.Name.Set.mem package.name Config.base_packages ->
         true
     | _ -> false
+end
+
+module Dependency_entry = struct
+  type t = { package_summary : Package_summary.t; vendored : bool }
 end
 
 let local_package_version opam_file ~explicit_version =

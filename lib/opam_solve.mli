@@ -26,7 +26,7 @@ val calculate :
   ?ocaml_version:string ->
   ('context, 'diagnostics) t ->
   'context ->
-  ( Opam.Package_summary.t list,
+  ( Opam.Dependency_entry.t list,
     [> `Diagnostics of 'diagnostics | `Msg of string ] )
   result
 (** Calculates a solution for the provided local packages and their opam files
