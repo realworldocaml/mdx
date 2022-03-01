@@ -23,10 +23,8 @@ If you want to contribute to the project, please see the
 You can use MDX with your Markdown or `.mli` documentation, which ensures
 code in multi-line or verbatim code blocks is correct.
 
-To enable MDX, you need to add `(mdx)` stanzas to the right `dune` files. Before
-that you must enable MDX for your project by adding the following to
-your `dune-project`:
-
+To enable MDX on specific files you must first enable it for your project by
+adding the following stanza to your `dune-project`:
 ```
 (using mdx 0.2)
 ```
