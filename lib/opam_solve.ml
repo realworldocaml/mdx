@@ -240,6 +240,7 @@ module type OPAM_MONOREPO_SOLVER = sig
     local_opam_files:
       (OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     target_packages:OpamPackage.Name.Set.t ->
+    opam_provided:OpamPackage.Name.Set.t ->
     pin_depends:(OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     ?ocaml_version:string ->
     input ->
@@ -283,24 +284,6 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
 
   let pp_raw_calculation fmt { package; vendored = _ } =
     Opam.Pp.package fmt package
-
-  let opam_provided_packages local_packages target_packages =
-    let open Result.O in
-    OpamPackage.Name.Set.fold
-      (fun name acc ->
-        let* acc = acc in
-        match OpamPackage.Name.Map.find_opt name local_packages with
-        | Some (_version, opam) -> (
-            (* TODO: we don't actually need a CWD here *)
-            let opam_monorepo_cwd = Fpath.v "/" in
-            match Source_opam_config.get ~opam_monorepo_cwd opam with
-            | Ok config -> (
-                match config.opam_provided with
-                | None -> Ok acc
-                | Some provided -> Ok (OpamPackage.Name.Set.union provided acc))
-            | Error (`Msg msg) -> Error (`Msg msg))
-        | None -> Ok acc)
-      target_packages (Ok OpamPackage.Name.Set.empty)
 
   let build_formula version =
     match version with
@@ -526,15 +509,12 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
         assert false
 
   let calculate ~build_only ~allow_jbuilder ~local_opam_files:local_packages
-      ~target_packages ~pin_depends ?ocaml_version input =
+      ~target_packages ~opam_provided ~pin_depends ?ocaml_version input =
     let open Result.O in
     let build_opam_context injected_packages =
       build_context ~build_only ~allow_jbuilder ~ocaml_version ~pin_depends
         ~injected_packages ~local_packages ~target_packages ~require_dune:false
         input
-    in
-    let* opam_provided =
-      opam_provided_packages local_packages target_packages
     in
     let* context =
       build_context ~build_only ~allow_jbuilder ~ocaml_version ~pin_depends
@@ -666,6 +646,7 @@ let calculate :
     local_opam_files:
       (OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     target_packages:OpamPackage.Name.Set.t ->
+    opam_provided:OpamPackage.Name.Set.t ->
     pin_depends:(OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     ?ocaml_version:string ->
     (context, diagnostics) t ->
@@ -673,15 +654,15 @@ let calculate :
     ( Opam.Dependency_entry.t list,
       [> `Diagnostics of diagnostics | `Msg of string ] )
     result =
- fun ~build_only ~allow_jbuilder ~local_opam_files ~target_packages ~pin_depends
-     ?ocaml_version t input ->
+ fun ~build_only ~allow_jbuilder ~local_opam_files ~target_packages
+     ~opam_provided ~pin_depends ?ocaml_version t input ->
   let (module Solver : OPAM_MONOREPO_SOLVER
         with type diagnostics = diagnostics
          and type input = context) =
     t
   in
   Solver.calculate ~build_only ~allow_jbuilder ~local_opam_files
-    ~target_packages ~pin_depends ?ocaml_version input
+    ~target_packages ~opam_provided ~pin_depends ?ocaml_version input
 
 let diagnostics_message :
     type context diagnostics.

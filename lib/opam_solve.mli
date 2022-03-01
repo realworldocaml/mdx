@@ -22,6 +22,7 @@ val calculate :
   allow_jbuilder:bool ->
   local_opam_files:(OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
   target_packages:OpamPackage.Name.Set.t ->
+  opam_provided:OpamPackage.Name.Set.t ->
   pin_depends:(OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
   ?ocaml_version:string ->
   ('context, 'diagnostics) t ->
