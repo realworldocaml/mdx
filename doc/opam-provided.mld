@@ -1,15 +1,15 @@
 {1 [opam]-provided dependencies}
 
-This section documents a feature that is useful if not all dependencies can be
-installed via [opam-monorepo]. This workflow is not meant for regular use but
-only as a way to enable to use [opam-monorepo] in cases where it wouldn't be
+This section documents a feature that’s useful when some dependencies cannot be
+installed via [opam-monorepo]. This workflow isn’t meant for regular use but
+only as a way to use [opam-monorepo] in cases where it wouldn't be
 otherwise possible.
 
-We suggest minimizing its usage and prefer to use (and contribute) dune-ports
+We suggest minimizing its usage and prefer to use (and contribute) [dune-ports]
 from the [opam-overlays] repository. It's usage is safest with
-leaf-dependencies and those that do not have no dependency intersections with
-vendored packages. Due to possibly unexpected interactions this feature is only
-meant for advanced users and the solutions that it produces might be in flux.
+leaf-dependencies and those that don’t have dependency intersections with
+vendored packages. Due to possibly of unexpected interactions, this feature is only
+meant for advanced users, and the solutions it produces might be in flux.
 
 {2 Usecases}
 
@@ -18,43 +18,43 @@ be it due to your dependencies not building with [dune] or some tooling that
 should be just installed via [opam]. Such examples include:
 
 {ul
-{- Packages not building with dune}
+{- Packages not building with Dune}
 {- Packages that should not be vendored for legal reasons}
 {- Packages that just provide helper binaries like [utop], [ocamlformat]}
 }
 
-These users can opt-in into having some of their dependencies provided by
-[opam] instead of [opam-monorepo] pulling them into the duniverse.
+These users can opt-in to having some of their dependencies provided by
+[opam] instead of [opam-monorepo] pulling them into the [duniverse].
 
 {2 Initial setup}
 
-With the default configuration [opam-monorepo] runs in full-duniverse mode,
-that is requiring all the dependencies of your [opam] files to be able to be
-built as part of the duniverse.
+With the default configuration, [opam-monorepo] runs in full-[duniverse] mode,
+i.e., requiring all the dependencies of your [opam] files to be able to be
+built as part of the [duniverse].
 
 As such it is only recommended that packages are installed via [opam] for which
-there is no way to install them via [dune], e.g. by using the
+there is no way to install them via [dune], e.g., by using the
 {{:https://github.com/dune-universe/opam-overlays}opam-overlays} repository
-with dune ports.
+with Dune ports.
 
-To let [opam-monorepo] know a package is to be installed via [opam] it needs to
-be marked as such in the opam file. For this the
-[x-opam-monorepo-opam-provided] field is used, which takes a single or a list
-of packages to be installed via [opam] instead of pulled into the duniverse.
+To let [opam-monorepo] know a package is to be installed via [opam], it needs to
+be marked as such in the Opam file. For this, we use the
+[x-opam-monorepo-opam-provided] field, which takes a single or a list
+of packages to be installed via [opam] instead of pulled into the [duniverse].
 
-To configure [opam-monorepo] to avoid pulling in package [foo] specify it in
-the list of packages that are to be provided by [opam]:
+To configure [opam-monorepo] to avoid pulling in package [foo], specify it in
+the list of packages provided by Opam:
 
 {[
 x-opam-monorepo-opam-provided: ["foo"]
 ]}
 
-This can either be specified directly in the [opam] file or, if you use [dune]
-to generate [opam] files, in the [.template] file. In such case make sure to
-re-generate the [opam] file.
+This can either be specified directly in the Opam file or, if you use Dune
+to generate Opam files, in the [.template] file. In such case, make sure to
+regenerate the Opam file.
 
-As a shortcut syntax if there is only one package it is possible to leave the
-list out and just specify the package itself:
+As a shortcut syntax, if there’s only one package, it’s possible to leave out the
+list and just specify the package itself:
 
 {[
 x-opam-monorepo-opam-provided: "foo"
@@ -62,15 +62,14 @@ x-opam-monorepo-opam-provided: "foo"
 
 {2 Usage}
 
-After you configured your [opam] file, you have to {e lock} the environment.
+After you configured your Opam file, you have to {e lock} the environment.
 
 {[
 $ opam monorepo lock
 ]}
 
-After this succeeds, you will have a [.opam.locked] file, which contains all
-the dependencies (including transitive dependencies) of your project. The ones
-that [opam-monorepo] will pull into the duniverse are marked as [vendor].
+After this succeeds, you will have an [.opam.locked] file, which contains all your project’s dependencies (including transitive dependencies). The ones
+that [opam-monorepo] will pull into the [duniverse] are marked as [vendor].
 
 {[
 $ opam install --ignore-pin-depends --deps-only ./ --locked
@@ -80,20 +79,17 @@ $ opam-monorepo pull
 {2 How it works}
 
 In addition to calculating the dependencies of the packages that will be
-included in the duniverse, [opam-monorepo] calculates the dependencies of the
+included in the [duniverse], [opam-monorepo] calculates the dependencies of the
 packages to be installed via [opam]. [opam-monorepo] then writes a lockfile
-that sets a variable on all dependencies it will pull, whereas [opam]-provided
-dependencies don't have variables set. In [opam] unset variables are false,
-thus [opam] will ignore the packages that [opam-monorepo] will pull.
+that sets a variable on all the dependencies it will pull, whereas [opam]-provided
+dependencies don't have variables set. In Opam, unset variables are false; thus Opam will ignore the packages that [opam-monorepo] will pull.
 
-The [opam]-provided subset of dependencies is then {e excluded} from the
-packages from the duniverse.
+The [opam]-provided subset of dependencies is then {e excluded} from the [duniverse] packages.
 
 {3 Resolution of dependency overlaps}
 
-There are cases where a dependency package appears multiple times in the
-dependency tree of a project. It can happen that a package is part of packages
-to be included in the duniverse as well as packages installed by [opam].
+There are cases where a dependency package appears multiple times in the project’s dependency tree. It’s possible that a package is part of the packages
+to be included in the [duniverse], as well as packages installed by [opam].
 
 In such cases there are two possibilities:
 
@@ -104,6 +100,6 @@ In such cases there are two possibilities:
 
 Both these approaches have advantages and disadvantages. [opam-monorepo]
 currently chooses #2 to maximize the amount of packages that are vendored, thus
-increasing the size of the reproducible set. Yet this does not mean that two
-different versions of the package can be installed - the set of packages in
-opam and the duniverse must be co-installable!
+increasing the size of the reproducible set. Yet this doesn’t mean that two
+different versions of the package can be installed. The set of packages in
+Opam and the [duniverse] must be co-installable!
