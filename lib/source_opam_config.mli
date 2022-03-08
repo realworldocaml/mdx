@@ -1,5 +1,5 @@
 (** Utilities for extracting configuration from target packages opam
-    files available in the project sources in opam extensions *)
+    files available in the project sources in Opam extensions *)
 
 open Import
 
