@@ -8,8 +8,6 @@ val map : f:('a -> 'b) -> ('a, 'err) t -> ('b, 'err) t
 
 val of_option : 'ok option -> error:'err -> ('ok, 'err) t
 
-val ok_if_true : bool -> error:'err -> (unit, 'err) t
-
 module O : sig
   val ( >>= ) : ('a, 'err) t -> ('a -> ('b, 'err) t) -> ('b, 'err) t
 

@@ -75,18 +75,15 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
         OpamSwitchState.get_package switch_state Config.compiler_package_name
         |> OpamPackage.version
       in
-      let* () =
-        Result.ok_if_true
-          (OpamPackage.Version.equal locked_ocaml_version switch_ocaml_version)
-          ~error:
-            (let msg =
-               Fmt.str
-                 "OCaml versions do not match: %a in lockfile, but %a in switch"
-                 Opam.Pp.version locked_ocaml_version Opam.Pp.version
-                 switch_ocaml_version
-             in
-             `Msg msg)
-      in
+      (match
+         OpamPackage.Version.equal locked_ocaml_version switch_ocaml_version
+       with
+      | true -> ()
+      | false ->
+          Logs.warn (fun l ->
+              l "OCaml versions do not match: %a in lockfile, but %a in switch"
+                Opam.Pp.version locked_ocaml_version Opam.Pp.version
+                switch_ocaml_version));
       Pull.duniverse ~global_state ~root ~full ~trim_clone:(not keep_git_dir)
         duniverse
 

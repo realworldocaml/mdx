@@ -8,8 +8,6 @@ let map ~f = map f
 
 let of_option v ~error = match v with Some v -> Ok v | None -> Error error
 
-let ok_if_true v ~error = match v with true -> Ok () | false -> Error error
-
 module O = struct
   let ( >>= ) res f = bind ~f res
 
