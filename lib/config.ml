@@ -30,6 +30,8 @@ let base_packages =
   |> List.map ~f:OpamPackage.Name.of_string
   |> OpamPackage.Name.Set.of_list
 
+let compiler_package_name = OpamPackage.Name.of_string "ocaml-base-compiler"
+
 let duniverse_opam_repo =
   "git+https://github.com/dune-universe/opam-overlays.git"
 

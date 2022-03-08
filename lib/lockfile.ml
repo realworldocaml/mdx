@@ -287,6 +287,13 @@ let create ~source_config ~root_packages ~dependency_entries ~root_depexts
     source_config;
   }
 
+let ocaml_version { depends; _ } =
+  List.find_map depends ~f:(fun { Depends.package; vendored = _ } ->
+      let name = OpamPackage.name package in
+      match OpamPackage.Name.equal name Config.compiler_package_name with
+      | true -> Some (OpamPackage.version package)
+      | false -> None)
+
 let url_to_duniverse_url url =
   let url_res = Duniverse.Repo.Url.from_opam_url url in
   Result.map_error url_res ~f:(function `Msg msg ->

@@ -11,6 +11,8 @@ val create :
 
 val to_duniverse : t -> (Duniverse.t, [ `Msg of string ]) result
 
+val ocaml_version : t -> OpamPackage.Version.t option
+
 val save :
   opam_monorepo_cwd:Fpath.t ->
   file:Fpath.t ->

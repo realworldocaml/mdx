@@ -65,9 +65,30 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
         Common.filter_duniverse ~to_consider:duniverse_repos duniverse
       in
       let* () = check_dune_lang_version ~yes ~root in
-      OpamGlobalState.with_ `Lock_none (fun global_state ->
-          Pull.duniverse ~global_state ~root ~full
-            ~trim_clone:(not keep_git_dir) duniverse)
+      OpamGlobalState.with_ `Lock_none @@ fun global_state ->
+      let* locked_ocaml_version =
+        Lockfile.ocaml_version lockfile
+        |> Result.of_option ~error:(`Msg "OCaml compiler not in lockfile")
+      in
+      OpamSwitchState.with_ `Lock_none global_state @@ fun switch_state ->
+      let switch_ocaml_version =
+        OpamSwitchState.get_package switch_state Config.compiler_package_name
+        |> OpamPackage.version
+      in
+      let* () =
+        Result.ok_if_true
+          (OpamPackage.Version.equal locked_ocaml_version switch_ocaml_version)
+          ~error:
+            (let msg =
+               Fmt.str
+                 "OCaml versions do not match: %a in lockfile, but %a in switch"
+                 Opam.Pp.version locked_ocaml_version Opam.Pp.version
+                 switch_ocaml_version
+             in
+             `Msg msg)
+      in
+      Pull.duniverse ~global_state ~root ~full ~trim_clone:(not keep_git_dir)
+        duniverse
 
 let info =
   let open Cmdliner in
