@@ -49,6 +49,11 @@ let check_dune_lang_version ~yes ~root =
     Logs.debug (fun l -> l "No dune-project found");
     Ok ())
 
+let version_is_at_least locked_version =
+  let version_constraint = (`Geq, locked_version) in
+  let version_formula = OpamFormula.Atom version_constraint in
+  OpamFormula.check_version_formula version_formula
+
 let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
     (`Keep_git_dir keep_git_dir) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
@@ -75,9 +80,7 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
         OpamSwitchState.get_package switch_state Config.compiler_package_name
         |> OpamPackage.version
       in
-      (match
-         OpamPackage.Version.equal locked_ocaml_version switch_ocaml_version
-       with
+      (match version_is_at_least locked_ocaml_version switch_ocaml_version with
       | true -> ()
       | false ->
           Logs.warn (fun l ->
