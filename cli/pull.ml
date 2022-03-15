@@ -49,11 +49,6 @@ let check_dune_lang_version ~yes ~root =
     Logs.debug (fun l -> l "No dune-project found");
     Ok ())
 
-let version_is_at_least locked_version =
-  let version_constraint = (`Geq, locked_version) in
-  let version_formula = OpamFormula.Atom version_constraint in
-  OpamFormula.check_version_formula version_formula
-
 let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
     (`Keep_git_dir keep_git_dir) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
@@ -80,15 +75,27 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
         OpamSwitchState.get_package switch_state Config.compiler_package_name
         |> OpamPackage.version
       in
-      (match version_is_at_least locked_ocaml_version switch_ocaml_version with
+      let* pulled =
+        Pull.duniverse ~global_state ~root ~full ~trim_clone:(not keep_git_dir)
+          duniverse
+      in
+      (match
+         Opam.version_is_at_least locked_ocaml_version switch_ocaml_version
+       with
       | true -> ()
       | false ->
           Logs.warn (fun l ->
-              l "OCaml versions do not match: %a in lockfile, but %a in switch"
-                Opam.Pp.version locked_ocaml_version Opam.Pp.version
-                switch_ocaml_version));
-      Pull.duniverse ~global_state ~root ~full ~trim_clone:(not keep_git_dir)
-        duniverse
+              l
+                "Pulling duniverse succeeded but the version of the OCaml \
+                 compiler does not match the lockfile: %a in lockfile, yet %a \
+                 in switch.\n\
+                 You might want to change the compiler version of your switch \
+                 accordingly:\n\
+                 opam install %a.%a --update-invariant" Opam.Pp.version
+                locked_ocaml_version Opam.Pp.version switch_ocaml_version
+                Opam.Pp.package_name Config.compiler_package_name
+                Opam.Pp.version locked_ocaml_version));
+      Ok pulled
 
 let info =
   let open Cmdliner in

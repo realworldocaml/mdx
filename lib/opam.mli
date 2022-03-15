@@ -158,6 +158,10 @@ val depends_on_compiler_variants : OpamTypes.filtered_formula -> bool
     This is detected by looking direct dependencies on ocaml-variants or dependencies on
     any relevant ocaml-option-* packages. *)
 
+val version_is_at_least : OpamPackage.Version.t -> OpamPackage.Version.t -> bool
+(** [version_is_at_least minimum to_check] returns [true] if the version
+    [to_check] is greater or equal to [minimum]. *)
+
 val pull_tree :
   url:OpamUrl.t ->
   hashes:OpamHash.t list ->

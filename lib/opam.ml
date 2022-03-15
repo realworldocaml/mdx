@@ -43,6 +43,11 @@ let depends_on_dune ~allow_jbuilder (formula : OpamTypes.filtered_formula) =
   in
   depends_on_any packages formula
 
+let version_is_at_least locked_version =
+  let version_constraint = (`Geq, locked_version) in
+  let version_formula = OpamFormula.Atom version_constraint in
+  OpamFormula.check_version_formula version_formula
+
 let pull_tree ~url ~hashes ~dir global_state =
   let dir_str = Fpath.to_string dir in
   let cache_dir =
