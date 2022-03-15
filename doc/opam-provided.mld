@@ -20,7 +20,6 @@ should be just installed via [opam]. Such examples include:
 {ul
 {- Packages not building with Dune}
 {- Packages that should not be vendored for legal reasons}
-{- Packages that just provide helper binaries like [utop], [ocamlformat]}
 }
 
 These users can opt-in to having some of their dependencies provided by [opam]
@@ -33,7 +32,7 @@ i.e., requiring all the dependencies of your [opam] files to be able to be
 built as part of the [duniverse].
 
 As such it is only recommended that packages are installed via [opam] for which
-there is no way to install them via [dune], e.g., by using the
+there is no way to build them with [dune], e.g., by using the
 {{:https://github.com/dune-universe/opam-overlays}opam-overlays} repository
 with Dune ports.
 
