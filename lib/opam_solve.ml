@@ -138,15 +138,19 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
       versions
 
   let remove_opam_provided ~opam_provided versions =
-    versions
-    |> List.map ~f:(fun (version, result) ->
-           match result with
-           | Error _ as e -> (version, e)
-           | Ok opam_file ->
-               let opam_file =
-                 remove_opam_provided_from_dependencies opam_provided opam_file
-               in
-               (version, Ok opam_file))
+    match OpamPackage.Name.Set.is_empty opam_provided with
+    | true -> versions
+    | false ->
+        versions
+        |> List.map ~f:(fun (version, result) ->
+               match result with
+               | Error _ as e -> (version, e)
+               | Ok opam_file ->
+                   let opam_file =
+                     remove_opam_provided_from_dependencies opam_provided
+                       opam_file
+                   in
+                   (version, Ok opam_file))
 
   let candidates
       {
