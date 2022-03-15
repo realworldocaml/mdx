@@ -195,14 +195,22 @@ end
 
 exception Pinned_local_package
 
-let constraints ~ocaml_version =
+let constraints ~opam_provided_selections ~ocaml_version =
   let no_constraints = OpamPackage.Name.Map.empty in
-  match ocaml_version with
-  | Some version ->
-      let key = OpamPackage.Name.of_string "ocaml" in
-      let value = (`Eq, OpamPackage.Version.of_string version) in
-      OpamPackage.Name.Map.safe_add key value no_constraints
-  | None -> no_constraints
+  let compiler_constraints =
+    match ocaml_version with
+    | Some version ->
+        let key = OpamPackage.Name.of_string "ocaml" in
+        let value = (`Eq, OpamPackage.Version.of_string version) in
+        OpamPackage.Name.Map.safe_add key value no_constraints
+    | None -> no_constraints
+  in
+  OpamPackage.Set.fold
+    (fun package constraints ->
+      let key = OpamPackage.name package in
+      let value = (`Eq, OpamPackage.version package) in
+      OpamPackage.Name.Map.safe_add key value constraints)
+    opam_provided_selections compiler_constraints
 
 let mk_request ~allow_compiler_variants packages =
   let package_names = OpamPackage.Name.Set.elements packages in
@@ -267,20 +275,14 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
   module Solver = Opam_0install.Solver.Make (Context)
 
   let build_context ~build_only ~allow_jbuilder ?opam_provided ?require_dune
-      ?(injected_packages = OpamPackage.Name.Map.empty) ~ocaml_version
+      ?(opam_provided_selections = OpamPackage.Set.empty) ~ocaml_version
       ~local_packages ~pin_depends ~target_packages input =
     let open Result.O in
     let install_test_deps_for =
       if build_only then OpamPackage.Name.Set.empty else target_packages
     in
-    let constraints = constraints ~ocaml_version in
+    let constraints = constraints ~opam_provided_selections ~ocaml_version in
     let+ fixed_packages = fixed_packages ~local_packages ~pin_depends in
-    let fixed_packages =
-      OpamPackage.Name.Map.merge
-        (fun _key left right ->
-          match right with Some right -> Some right | None -> left)
-        fixed_packages injected_packages
-    in
     Context.create ~install_test_deps_for ~allow_jbuilder ?opam_provided
       ?require_dune ~constraints ~fixed_packages input
 
@@ -288,57 +290,6 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
 
   let pp_raw_calculation fmt { package; vendored = _ } =
     Opam.Pp.package fmt package
-
-  let build_formula version =
-    match version with
-    | None -> OpamFormula.Empty
-    | Some version ->
-        let version = OpamPackage.Version.to_string version in
-        let version = OpamTypes.FString version in
-        let relop = `Eq in
-        let filter_or_constraint = OpamTypes.Constraint (relop, version) in
-        OpamFormula.Atom filter_or_constraint
-
-  let build_atom name version =
-    let formula = build_formula version in
-    OpamFormula.Atom (name, formula)
-
-  let build_depends packages opam_provided =
-    let filtered_formula =
-      match packages with
-      | [] -> OpamFormula.Empty
-      | x :: xs ->
-          let name = OpamPackage.name x in
-          let version = OpamPackage.version x in
-          let init = build_atom name (Some version) in
-          List.fold_left xs ~init ~f:(fun acc e ->
-              let name = OpamPackage.name e in
-              let version = OpamPackage.version e in
-              let atom = build_atom name (Some version) in
-              OpamFormula.And (acc, atom))
-    in
-    let filtered_formula =
-      match OpamPackage.Name.Set.elements opam_provided with
-      | [] -> filtered_formula
-      | name :: names ->
-          let init =
-            match filtered_formula with
-            | OpamFormula.Empty -> build_atom name None
-            | existing ->
-                let atom = build_atom name None in
-                OpamFormula.And (existing, atom)
-          in
-          List.fold_left names ~init ~f:(fun acc name ->
-              let atom = build_atom name None in
-              OpamFormula.And (acc, atom))
-    in
-    filtered_formula
-
-  let build_opam_file name version packages opam_provided =
-    let package = OpamPackage.create name version in
-    let base = OpamFile.OPAM.create package in
-    let filtered_formula = build_depends packages opam_provided in
-    OpamFile.OPAM.with_depends filtered_formula base
 
   let calculate_raw ~local_packages ~target_packages ~opam_provided
       ~build_opam_context context =
@@ -348,28 +299,12 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
     match Solver.solve context request with
     | Error e -> Error (`Diagnostics e)
     | Ok selections -> (
-        let packages = selections |> Solver.packages_of_result in
-        let dependency_dummy_name =
-          OpamPackage.Name.of_string "opam-monorepo-all-dependencies"
+        let opam_provided_packages =
+          selections |> Solver.packages_of_result |> OpamPackage.Set.of_list
         in
-        let dependency_dummy_version = OpamPackage.Version.of_string "1" in
-        let opam_file =
-          build_opam_file dependency_dummy_name dependency_dummy_version
-            packages opam_provided
-        in
-        let dependency_dummy_entry = (dependency_dummy_version, opam_file) in
+        let* opam_context = build_opam_context opam_provided_packages in
 
-        let local_packages =
-          OpamPackage.Name.Map.add dependency_dummy_name dependency_dummy_entry
-            local_packages
-        in
-        let injected_packages =
-          OpamPackage.Name.Map.singleton dependency_dummy_name
-            dependency_dummy_entry
-        in
-        let* opam_context = build_opam_context injected_packages in
-
-        match Solver.solve opam_context [ dependency_dummy_name ] with
+        match Solver.solve opam_context request with
         | Error e -> Error (`Diagnostics e)
         | Ok selections ->
             let deps =
@@ -515,10 +450,10 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
   let calculate ~build_only ~allow_jbuilder ~local_opam_files:local_packages
       ~target_packages ~opam_provided ~pin_depends ?ocaml_version input =
     let open Result.O in
-    let build_opam_context injected_packages =
+    let build_opam_context opam_provided_selections =
       build_context ~build_only ~allow_jbuilder ~ocaml_version ~pin_depends
-        ~injected_packages ~local_packages ~target_packages ~require_dune:false
-        input
+        ~opam_provided_selections ~local_packages ~target_packages
+        ~require_dune:false input
     in
     let* context =
       build_context ~build_only ~allow_jbuilder ~ocaml_version ~pin_depends
@@ -527,16 +462,6 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
     let* deps, context =
       calculate_raw ~local_packages ~target_packages ~opam_provided
         ~build_opam_context context
-    in
-    (* filter out special package *)
-    let deps =
-      List.filter
-        ~f:(fun { package; vendored = _ } ->
-          let name =
-            OpamPackage.Name.of_string "opam-monorepo-all-dependencies"
-          in
-          OpamPackage.name package |> OpamPackage.Name.equal name |> not)
-        deps
     in
     Logs.app (fun l ->
         l "%aFound %a opam dependencies for the target package%a."
