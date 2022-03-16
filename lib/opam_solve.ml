@@ -313,6 +313,18 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
                    Some { package; vendored })
         |> Result.ok
 
+  let calculate_raw_without_opam_provided ~local_packages packages =
+    packages |> OpamPackage.Set.elements
+    |> List.filter_map ~f:(fun package ->
+           let name = OpamPackage.name package in
+           let in_local_packages =
+             OpamPackage.Name.Map.mem name local_packages
+           in
+           match in_local_packages with
+           | true -> None
+           | false -> Some { package; vendored = true })
+    |> Result.ok
+
   let calculate_raw ~local_packages ~target_packages context =
     let allow_compiler_variants = depend_on_compiler_variants local_packages in
     let request = mk_request ~allow_compiler_variants target_packages in
@@ -456,14 +468,20 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
     let vendored_packages =
       selections |> Solver.packages_of_result |> OpamPackage.Set.of_list
     in
-    let* opam_provided_context =
-      build_context ~build_only ~allow_jbuilder ~ocaml_version ~pin_depends
-        ~vendored_packages ~local_packages ~target_packages ~require_dune:false
-        input
-    in
     let* deps =
-      calculate_raw_with_opam_provided ~local_packages ~opam_provided ~request
-        opam_provided_context
+      match OpamPackage.Name.Set.is_empty opam_provided with
+      | true ->
+          (* shortcut if we know everything will be vendored, no need to build
+             a second context and run the solver again *)
+          calculate_raw_without_opam_provided ~local_packages vendored_packages
+      | false ->
+          let* opam_provided_context =
+            build_context ~build_only ~allow_jbuilder ~ocaml_version
+              ~pin_depends ~vendored_packages ~local_packages ~target_packages
+              ~require_dune:false input
+          in
+          calculate_raw_with_opam_provided ~local_packages ~opam_provided
+            ~request opam_provided_context
     in
     Logs.app (fun l ->
         l "%aFound %a opam dependencies for the target package%a."
