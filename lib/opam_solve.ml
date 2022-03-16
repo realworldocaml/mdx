@@ -294,21 +294,32 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
     Opam.Pp.package fmt package
 
   let calculate_raw_with_opam_provided ~local_packages ~opam_provided ~request
-      context =
+      context vendored_packages =
     match Solver.solve context request with
     | Error e -> Error (`Diagnostics e)
     | Ok selections ->
+        let vendored_package_names =
+          vendored_packages |> OpamPackage.Set.elements
+          |> List.map ~f:OpamPackage.name
+          |> OpamPackage.Name.Set.of_list
+        in
         selections |> Solver.packages_of_result
         |> List.filter_map ~f:(fun package ->
                let name = OpamPackage.name package in
                let in_local_packages =
                  OpamPackage.Name.Map.mem name local_packages
                in
+               let in_vendored_packages =
+                 OpamPackage.Name.Set.mem name vendored_package_names
+               in
+               let in_opam_provided =
+                 OpamPackage.Name.Set.mem name opam_provided
+               in
                match in_local_packages with
                | true -> None
                | false ->
                    let vendored =
-                     not @@ OpamPackage.Name.Set.mem name opam_provided
+                     (not in_opam_provided) || in_vendored_packages
                    in
                    Some { package; vendored })
         |> Result.ok
@@ -481,7 +492,7 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
               ~require_dune:false input
           in
           calculate_raw_with_opam_provided ~local_packages ~opam_provided
-            ~request opam_provided_context
+            ~request opam_provided_context vendored_packages
     in
     Logs.app (fun l ->
         l "%aFound %a opam dependencies for the target package%a."

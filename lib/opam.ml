@@ -127,7 +127,12 @@ module Depexts = struct
 end
 
 module Pp = struct
-  let package = Fmt.using OpamPackage.to_string Fmt.string
+  module Package : Pp_combinators.Opam.Printable with type t = OpamPackage.t =
+  struct
+    type t = OpamPackage.t
+
+    let pp = Fmt.using OpamPackage.to_string Fmt.string
+  end
 
   module Package_name :
     Pp_combinators.Opam.Printable with type t = OpamPackage.Name.t = struct
@@ -138,6 +143,9 @@ module Pp = struct
 
   module Package_name_set =
     Pp_combinators.Opam.Make_Set (OpamPackage.Name.Set) (Package_name)
+  module Package_set = Pp_combinators.Opam.Make_Set (OpamPackage.Set) (Package)
+
+  let package = Package.pp
 
   let package_name = Package_name.pp
 

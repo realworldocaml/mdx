@@ -60,6 +60,10 @@ module Pp : sig
     val pp : ?sep:unit Fmt.t -> OpamPackage.Name.Set.t Fmt.t
   end
 
+  module Package_set : sig
+    val pp : ?sep:unit Fmt.t -> OpamPackage.Set.t Fmt.t
+  end
+
   val package_name : OpamPackage.Name.t Fmt.t
 
   val version : OpamPackage.Version.t Fmt.t
