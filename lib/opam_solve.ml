@@ -296,7 +296,10 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
   let calculate_raw_with_opam_provided ~local_packages ~opam_provided ~request
       context vendored_packages =
     match Solver.solve context request with
-    | Error e -> Error (`Diagnostics e)
+    | Error e ->
+        Logs.err (fun l ->
+            l "Solving opam-provided dependencies could not find a solution");
+        Error (`Diagnostics e)
     | Ok selections ->
         let vendored_package_names =
           vendored_packages |> OpamPackage.Set.elements
