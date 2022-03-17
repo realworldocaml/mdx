@@ -25,7 +25,7 @@ avoid-version flag:
   compiler avoid-version
 
 Our package does not define an upper bound on ocaml but the beta should not be
-selected by default if there exist another solution, therefore here the solver
+selected by default if there exists another solution, therefore here the solver
 should pick 4.13.1:
 
   $ opam-monorepo lock test > /dev/null
