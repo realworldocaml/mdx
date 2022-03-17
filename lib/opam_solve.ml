@@ -315,11 +315,15 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
                let in_opam_provided =
                  OpamPackage.Name.Set.mem name opam_provided
                in
+               Logs.debug (fun l ->
+                   l "Package %a: local %b, vendored %b, opam-provided %b"
+                     Opam.Pp.package_name name in_local_packages
+                     in_vendored_packages in_opam_provided);
                match in_local_packages with
                | true -> None
                | false ->
                    let vendored =
-                     (not in_opam_provided) || in_vendored_packages
+                     (not in_opam_provided) && in_vendored_packages
                    in
                    Some { package; vendored })
         |> Result.ok
@@ -479,20 +483,31 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
     let vendored_packages =
       selections |> Solver.packages_of_result |> OpamPackage.Set.of_list
     in
-    let* deps =
+    Logs.info (fun l ->
+        l "Selected packages from dune-only run of solver: %a"
+          (Opam.Pp.Package_set.pp ~sep:Fmt.comma)
+          vendored_packages);
+    let* deps, context =
       match OpamPackage.Name.Set.is_empty opam_provided with
       | true ->
           (* shortcut if we know everything will be vendored, no need to build
              a second context and run the solver again *)
-          calculate_raw_without_opam_provided ~local_packages vendored_packages
+          let* deps =
+            calculate_raw_without_opam_provided ~local_packages
+              vendored_packages
+          in
+          Ok (deps, context)
       | false ->
           let* opam_provided_context =
             build_context ~build_only ~allow_jbuilder ~ocaml_version
               ~pin_depends ~vendored_packages ~local_packages ~target_packages
               ~require_dune:false input
           in
-          calculate_raw_with_opam_provided ~local_packages ~opam_provided
-            ~request opam_provided_context vendored_packages
+          let* deps =
+            calculate_raw_with_opam_provided ~local_packages ~opam_provided
+              ~request opam_provided_context vendored_packages
+          in
+          Ok (deps, opam_provided_context)
     in
     Logs.app (fun l ->
         l "%aFound %a opam dependencies for the target package%a."

@@ -89,12 +89,11 @@ Now for the reverse case, `depends-on-b` is `opam`-provided.
   $ opam show --no-lint --raw -fx-opam-monorepo-opam-provided ./reverse-transitive.opam
   "depends-on-b"
 
-We try to maximize the amount of packages to vendor, thus "b" is vendored
-here (as well as installed via `opam` as a dependency of "depends-on-b"):
+Since it is, we need to make its dependency, "b", also `opam`-provided.
 
   $ opam-monorepo lock reverse-transitive > /dev/null
   $ opam show --no-lint --raw -fdepends ./reverse-transitive.opam.locked
-  "b" {= "1" & vendor}
+  "b" {= "1"}
   "base-bigarray" {= "base"}
   "base-threads" {= "base"}
   "base-unix" {= "base"}
