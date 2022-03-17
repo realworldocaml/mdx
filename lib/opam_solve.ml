@@ -152,6 +152,15 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
                    in
                    (version, Ok opam_file))
 
+  let sort_candidates versions =
+    let avoid_versions, regular_versions =
+      List.partition versions ~f:(fun (_version, opam_res) ->
+          match opam_res with
+          | Ok opam -> Opam.avoid_version opam
+          | Error _ -> false)
+    in
+    regular_versions @ avoid_versions
+
   let candidates
       {
         base_context;
@@ -170,6 +179,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
         Base_context.candidates base_context name
         |> filter_candidates ~allow_jbuilder ~require_dune ~name
         |> remove_opam_provided ~opam_provided
+        |> sort_candidates
 
   let user_restrictions { base_context; _ } name =
     Base_context.user_restrictions base_context name

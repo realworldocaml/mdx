@@ -103,8 +103,8 @@ should pick 4.13.1:
 
   $ opam-monorepo lock test > /dev/null
   $ opam show --no-lint -fdepends ./test.opam.locked | grep ocaml
-  "ocaml" {= "4.14.0"}
-  "ocaml-base-compiler" {= "4.14.0~beta1"}
+  "ocaml" {= "4.13.1"}
+  "ocaml-base-compiler" {= "4.13.1"}
   "ocaml-config" {= "2"}
   "ocaml-options-vanilla" {= "1"}
 
