@@ -1,15 +1,7 @@
 We have a simple project that only depends on OCaml
 
-  $ cat test.opam
-  opam-version: "2.0"
-  depends: [
-    "ocaml"
-    "dune"
-  ]
-  x-opam-monorepo-opam-repositories: [
-    "file://$OPAM_MONOREPO_CWD/minimal-repo"
-    "file://$OPAM_MONOREPO_CWD/repo-with-beta-ocaml"
-  ]
+  $ opam show --no-lint -fdepends ./test.opam
+  "ocaml" "dune"
 
 We use the minimal repository which includes OCaml 4.13.1
 
@@ -37,16 +29,8 @@ should pick 4.13.1:
 
 Now if we require ocaml >= 4.14, as the following package does:
 
-  $ cat test-requires-beta.opam
-  opam-version: "2.0"
-  depends: [
-    "ocaml" {>= "4.14"}
-    "dune"
-  ]
-  x-opam-monorepo-opam-repositories: [
-    "file://$OPAM_MONOREPO_CWD/minimal-repo"
-    "file://$OPAM_MONOREPO_CWD/repo-with-beta-ocaml"
-  ]
+  $ opam show --no-lint -fdepends ./test-requires-beta.opam
+  "ocaml" {>= "4.14"} "dune"
 
 The solver should be able to select the beta compiler since it is the only
 satisfying version available:
