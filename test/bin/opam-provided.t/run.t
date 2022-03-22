@@ -112,7 +112,7 @@ be ignored is not a string.
   42
 
   $ opam-monorepo lock warning > /dev/null
-  opam-monorepo: String or List required
+  opam-monorepo: Error in opam file $TESTCASE_ROOT/warning.opam, [8:31]-[8:33]: Expected a string or a list of strings, got: 42
   [1]
 
 Similarly, we accept a list but it needs to be a list of strings which this is
@@ -121,5 +121,5 @@ not:
   $ opam show --no-lint --raw -fx-opam-monorepo-opam-provided ./warning-list.opam
   42 "fourtytwo"
   $ opam-monorepo lock warning > /dev/null
-  opam-monorepo: String or List required
+  opam-monorepo: Error in opam file $TESTCASE_ROOT/warning.opam, [8:31]-[8:33]: Expected a string or a list of strings, got: 42
   [1]

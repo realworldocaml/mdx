@@ -166,16 +166,20 @@ module Opam_provided = struct
   let from_opam_value opam_chunk =
     let open Result.O in
     let* names =
-      match opam_chunk.OpamParserTypes.FullPos.pelem with
-      | OpamParserTypes.FullPos.String s -> Ok [ s ]
-      | List items ->
-          items.OpamParserTypes.FullPos.pelem
+      match (opam_chunk : OpamParserTypes.FullPos.value) with
+      | { pelem = String s; _ } -> Ok [ s ]
+      | { pelem = List items; _ } ->
+          items.pelem
           |> List.map ~f:(fun item ->
-                 match item.OpamParserTypes.FullPos.pelem with
-                 | OpamParserTypes.FullPos.String s -> Ok s
-                 | _ -> Error (`Msg "String required"))
+                 match (item : OpamParserTypes.FullPos.value) with
+                 | { pelem = String s; _ } -> Ok s
+                 | otherwise ->
+                     Opam.Pos.unexpected_value_error ~expected:"a string"
+                       otherwise)
           |> Result.List.all
-      | _ -> Error (`Msg "String or List required")
+      | otherwise ->
+          Opam.Pos.unexpected_value_error
+            ~expected:"a string or a list of strings" otherwise
     in
     let names = List.map ~f:OpamPackage.Name.of_string names in
     Ok (OpamPackage.Name.Set.of_list names)
