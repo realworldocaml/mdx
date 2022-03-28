@@ -5,7 +5,7 @@
   (action
    (run %{bin:cppo} -V OCAML:%{ocaml_version} %{input-file})))
  (libraries astring csexp fmt logs ocaml-version odoc-parser re result str
-   compiler-libs.common))
+   compiler-libs.common unix))
 
 (ocamllex lexer_mdx)
 
