@@ -195,22 +195,44 @@ end
 
 exception Pinned_local_package
 
+let relop_equal relop1 relop2 =
+  match (relop1, relop2) with
+  | `Eq, `Eq | `Neq, `Neq | `Geq, `Geq | `Gt, `Gt | `Leq, `Leq | `Lt, `Lt ->
+      true
+  | _, _ -> false
+
+let version_constraint_equal (relop1, v1) (relop2, v2) =
+  relop_equal relop1 relop2 && OpamPackage.Version.equal v1 v2
+
+(* variant of [safe_add] that succeeds when the key/value pair to be added
+   already exists, otherwise same semantics as [safe_add] *)
+let name_map_duplicate_safe_add key value map =
+  match OpamPackage.Name.Map.find_opt key map with
+  | None -> OpamPackage.Name.Map.add key value map
+  | Some existing -> (
+      match version_constraint_equal existing value with
+      | true -> map
+      | false ->
+          failwith
+            (Printf.sprintf "duplicate differing entry %s"
+               (OpamPackage.Name.to_string key)))
+
 let constraints ~required_packages ~ocaml_version =
   let no_constraints = OpamPackage.Name.Map.empty in
-  let compiler_constraint =
-    match ocaml_version with
-    | Some version ->
-        let key = OpamPackage.Name.of_string "ocaml" in
-        let value = (`Eq, OpamPackage.Version.of_string version) in
-        OpamPackage.Name.Map.safe_add key value no_constraints
-    | None -> no_constraints
+  let constraints =
+    OpamPackage.Set.fold
+      (fun package constraints ->
+        let key = OpamPackage.name package in
+        let value = (`Eq, OpamPackage.version package) in
+        OpamPackage.Name.Map.safe_add key value constraints)
+      required_packages no_constraints
   in
-  OpamPackage.Set.fold
-    (fun package constraints ->
-      let key = OpamPackage.name package in
-      let value = (`Eq, OpamPackage.version package) in
-      OpamPackage.Name.Map.safe_add key value constraints)
-    required_packages compiler_constraint
+  match ocaml_version with
+  | None -> constraints
+  | Some version ->
+      let key = OpamPackage.Name.of_string "ocaml" in
+      let value = (`Eq, OpamPackage.Version.of_string version) in
+      name_map_duplicate_safe_add key value constraints
 
 let mk_request ~allow_compiler_variants packages =
   let package_names = OpamPackage.Name.Set.elements packages in
