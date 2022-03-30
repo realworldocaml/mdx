@@ -12,6 +12,8 @@
   `opam-monorepo`. To control this a new optional Opam file field,
   `x-opam-monorepo-opam-provided` is introduced. Its value is a list of package
   names that are to be excluded from being pulled (#234, @Leonidas-from-XIV)
+- Show an error message when the OCaml version of the lock file does not match
+  the OCaml version of the switch (#267, #268, @Leonidas-from-XIV)
 
 ### Changed
 

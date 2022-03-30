@@ -65,9 +65,37 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
         Common.filter_duniverse ~to_consider:duniverse_repos duniverse
       in
       let* () = check_dune_lang_version ~yes ~root in
-      OpamGlobalState.with_ `Lock_none (fun global_state ->
-          Pull.duniverse ~global_state ~root ~full
-            ~trim_clone:(not keep_git_dir) duniverse)
+      OpamGlobalState.with_ `Lock_none @@ fun global_state ->
+      let* locked_ocaml_version =
+        Lockfile.ocaml_version lockfile
+        |> Result.of_option ~error:(`Msg "OCaml compiler not in lockfile")
+      in
+      OpamSwitchState.with_ `Lock_none global_state @@ fun switch_state ->
+      let switch_ocaml_version =
+        OpamSwitchState.get_package switch_state Config.compiler_package_name
+        |> OpamPackage.version
+      in
+      let* pulled =
+        Pull.duniverse ~global_state ~root ~full ~trim_clone:(not keep_git_dir)
+          duniverse
+      in
+      (match
+         Opam.version_is_at_least locked_ocaml_version switch_ocaml_version
+       with
+      | true -> ()
+      | false ->
+          Logs.warn (fun l ->
+              l
+                "Pulling duniverse succeeded but the version of the OCaml \
+                 compiler does not match the lockfile: %a in lockfile, yet %a \
+                 in switch.\n\
+                 You might want to change the compiler version of your switch \
+                 accordingly:\n\
+                 opam install %a.%a --update-invariant" Opam.Pp.version
+                locked_ocaml_version Opam.Pp.version switch_ocaml_version
+                Opam.Pp.package_name Config.compiler_package_name
+                Opam.Pp.version locked_ocaml_version));
+      Ok pulled
 
 let info =
   let open Cmdliner in
