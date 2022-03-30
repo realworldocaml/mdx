@@ -14,6 +14,8 @@
   names that are to be excluded from being pulled (#234, @Leonidas-from-XIV)
 - Show an error message when the OCaml version of the lock file does not match
   the OCaml version of the switch (#267, #268, @Leonidas-from-XIV)
+- Generate a `duniverse/README.md` file to explain the basics of
+  `opam-monorepo` in the vendored directory (#272, #274, @Leonidas-from-XIV)
 
 ### Changed
 

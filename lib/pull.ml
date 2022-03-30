@@ -50,6 +50,47 @@ let pre_pull_clean_up ~full ~duniverse_dir duniverse =
         Bos.OS.Dir.delete ~must_exist:false ~recurse:true
           Fpath.(duniverse_dir / dir))
 
+let duniverse_documentation =
+  {|\
+# duniverse
+
+This folder contains vendored source code of the dependencies of the project,
+created by the [opam-monorepo](https://github.com/ocamllabs/opam-monorepo)
+tool. You can find the packages and versions that are included in this folder
+in the `.opam.locked` files.
+
+To update the packages do not modify the files and directories by hand, instead
+use `opam-monorepo` to keep the lockfiles and directory contents accurate and
+in sync:
+
+```sh
+opam monorepo lock 
+opam monorepo pull
+```
+
+If you happen to include the `duniverse/` folder in your Git repository make
+sure to commit all files:
+
+```sh
+git add -A duniverse/
+```
+
+For more information check out the homepage and manual of `opam-monorepo`.
+|}
+
+let write_duniverse_dir_documentation ~duniverse_dir =
+  let open Result.O in
+  let file_name = Fpath.v "README.md" in
+  let readme_file = Fpath.(duniverse_dir // file_name) in
+  let* written =
+    Bos.OS.File.with_output readme_file
+      (fun output () ->
+        let content = Bytes.of_string duniverse_documentation in
+        output (Some (content, 0, Bytes.length content)) |> Result.ok)
+      ()
+  in
+  written
+
 let duniverse ~full ~root ~global_state ~trim_clone duniverse =
   if List.is_empty duniverse then Ok ()
   else
@@ -58,4 +99,5 @@ let duniverse ~full ~root ~global_state ~trim_clone duniverse =
     let* () = pre_pull_clean_up ~full ~duniverse_dir duniverse in
     let* _created = Bos.OS.Dir.create duniverse_dir in
     let* () = mark_duniverse_content_as_vendored ~duniverse_dir in
+    let* () = write_duniverse_dir_documentation ~duniverse_dir in
     pull_source_dependencies ~global_state ~trim_clone ~duniverse_dir duniverse
