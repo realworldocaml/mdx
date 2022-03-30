@@ -16,14 +16,10 @@ let sort_uniq pin_depends =
     | Some t' when equal t t' -> Ok acc
     | Some (pkg', url') ->
         Rresult.R.error_msgf
-          "Package %s is pinned to different versions/url:\n\
-          \  - %s: %s\n\
-          \  - %s: %s"
-          (OpamPackage.Name.to_string name)
-          (OpamPackage.to_string pkg)
-          (OpamUrl.to_string url)
-          (OpamPackage.to_string pkg')
-          (OpamUrl.to_string url')
+          "Package %a is pinned to different versions/url:\n\
+          \  - %a: %a\n\
+          \  - %a: %a" Opam.Pp.package_name name Opam.Pp.package pkg Opam.Pp.url
+          url Opam.Pp.package pkg' Opam.Pp.url url'
   in
   let+ map =
     Result.List.fold_left ~init:OpamPackage.Name.Map.empty ~f:add pin_depends

@@ -162,9 +162,49 @@ module Opam_global_vars = struct
             (Opam.Extra_field.name field))
 end
 
+module Opam_provided = struct
+  let from_opam_value opam_chunk =
+    let open Result.O in
+    let* names =
+      match (opam_chunk : OpamParserTypes.FullPos.value) with
+      | { pelem = String s; _ } -> Ok [ s ]
+      | { pelem = List items; _ } ->
+          items.pelem
+          |> List.map ~f:(fun item ->
+                 match (item : OpamParserTypes.FullPos.value) with
+                 | { pelem = String s; _ } -> Ok s
+                 | otherwise ->
+                     Opam.Pos.unexpected_value_error ~expected:"a string"
+                       otherwise)
+          |> Result.List.all
+      | otherwise ->
+          Opam.Pos.unexpected_value_error
+            ~expected:"a string or a list of strings" otherwise
+    in
+    let names = List.map ~f:OpamPackage.Name.of_string names in
+    Ok (OpamPackage.Name.Set.of_list names)
+
+  let to_opam_value names =
+    OpamPackage.Name.Set.elements names
+    |> List.map ~f:OpamPackage.Name.to_string
+    |> Opam.Value.List.to_value Opam.Value.String.to_value
+
+  let field =
+    Opam.Extra_field.make ~name:"opam-provided" ~to_opam_value ~from_opam_value
+
+  let set t opam = Opam.Extra_field.set field t opam
+
+  let get opam = Opam.Extra_field.get field opam
+
+  let merge = function
+    | [] -> Ok OpamPackage.Name.Set.empty
+    | init :: xs -> Ok (List.fold_left xs ~init ~f:OpamPackage.Name.Set.union)
+end
+
 type t = {
   global_vars : Opam_global_vars.t option;
   repositories : Opam_repositories.t option;
+  opam_provided : OpamPackage.Name.Set.t option;
 }
 
 let opam_monorepo_cwd_from_root path =
@@ -177,16 +217,19 @@ let get ~opam_monorepo_cwd opam_file =
   let opam_monorepo_cwd = opam_monorepo_cwd_from_root opam_monorepo_cwd in
   let* global_vars = Opam_global_vars.get opam_file in
   let* repositories = Opam_repositories.get ~opam_monorepo_cwd opam_file in
-  Ok { global_vars; repositories }
+  let* opam_provided = Opam_provided.get opam_file in
+  Ok { global_vars; repositories; opam_provided }
 
 let set_field set var opam_file =
   Option.map_default ~default:opam_file var ~f:(fun v -> set v opam_file)
 
-let set ~opam_monorepo_cwd t opam_file =
+let set ~opam_monorepo_cwd { global_vars; repositories; opam_provided }
+    opam_file =
   let opam_monorepo_cwd = opam_monorepo_cwd_from_root opam_monorepo_cwd in
   opam_file
-  |> set_field Opam_global_vars.set t.global_vars
-  |> set_field (Opam_repositories.set ~opam_monorepo_cwd) t.repositories
+  |> set_field Opam_global_vars.set global_vars
+  |> set_field (Opam_repositories.set ~opam_monorepo_cwd) repositories
+  |> set_field Opam_provided.set opam_provided
 
 let merge_field f a b =
   let open Result.O in
@@ -205,10 +248,13 @@ let merge_pair t t' =
   let* repositories =
     merge_field Opam_repositories.merge t.repositories t'.repositories
   in
-  Ok { global_vars; repositories }
+  let* opam_provided =
+    merge_field Opam_provided.merge t.opam_provided t'.opam_provided
+  in
+  Ok { global_vars; repositories; opam_provided }
 
 let merge = function
-  | [] -> Ok { global_vars = None; repositories = None }
+  | [] -> Ok { global_vars = None; repositories = None; opam_provided = None }
   | hd :: tl ->
       Result.List.fold_left tl ~init:hd ~f:(fun t t' -> merge_pair t t')
 

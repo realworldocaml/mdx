@@ -22,14 +22,15 @@ val calculate :
   allow_jbuilder:bool ->
   local_opam_files:(OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
   target_packages:OpamPackage.Name.Set.t ->
+  opam_provided:OpamPackage.Name.Set.t ->
   pin_depends:(OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
   ?ocaml_version:string ->
   ('context, 'diagnostics) t ->
   'context ->
-  ( Opam.Package_summary.t list,
+  ( Opam.Dependency_entry.t list,
     [> `Diagnostics of 'diagnostics | `Msg of string ] )
   result
-(** Calculates a solution for the provided local packages and their opam files
+(** Calculates a solution for the provided local packages and their Opam files
     containing their regular and test dependencies using the provided opam switch
     state. Uses [Opam_0install].
     If [build_only] then no test dependencies are taken into account. If [ocaml_version]

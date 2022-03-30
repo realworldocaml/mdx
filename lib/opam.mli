@@ -29,12 +29,16 @@ module Package_summary : sig
 
   val pp : t Fmt.t
 
-  val from_opam : pkg:OpamPackage.t -> OpamFile.OPAM.t -> t
+  val from_opam : OpamPackage.t -> OpamFile.OPAM.t -> t
 
   val is_virtual : t -> bool
   (** A package is considered virtual if it has no url.src or no dev-repo. *)
 
   val is_base_package : t -> bool
+end
+
+module Dependency_entry : sig
+  type t = { package_summary : Package_summary.t; vendored : bool }
 end
 
 module Hash : sig
@@ -45,6 +49,20 @@ module Pp : sig
   val package : OpamPackage.t Fmt.t
 
   val raw_package : OpamPackage.t Fmt.t
+
+  module Package_name : sig
+    type t = OpamPackage.Name.t
+
+    val pp : t Fmt.t
+  end
+
+  module Package_name_set : sig
+    val pp : ?sep:unit Fmt.t -> OpamPackage.Name.Set.t Fmt.t
+  end
+
+  module Package_set : sig
+    val pp : ?sep:unit Fmt.t -> OpamPackage.Set.t Fmt.t
+  end
 
   val package_name : OpamPackage.Name.t Fmt.t
 

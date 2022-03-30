@@ -65,11 +65,11 @@ let opam_to_git_remote remote =
   | Some ("git", remote) -> remote
   | _ -> remote
 
-let compute_duniverse ~package_summaries =
+let compute_duniverse ~dependency_entries =
   let get_default_branch remote =
     Exec.git_default_branch ~remote:(opam_to_git_remote remote) ()
   in
-  Duniverse.from_package_summaries ~get_default_branch package_summaries
+  Duniverse.from_dependency_entries ~get_default_branch dependency_entries
 
 let resolve_ref deps =
   let resolve_ref ~repo ~ref =
@@ -256,8 +256,24 @@ let extract_opam_env ~source_config global_state =
   | { global_vars = Some env; _ } -> env
   | { global_vars = None; _ } -> opam_env_from_global_state global_state
 
+let opam_provided_packages ~opam_monorepo_cwd local_packages target_packages =
+  let open Result.O in
+  OpamPackage.Name.Set.fold
+    (fun name acc ->
+      let* acc = acc in
+      match OpamPackage.Name.Map.find_opt name local_packages with
+      | Some (_version, opam) -> (
+          match Source_opam_config.get ~opam_monorepo_cwd opam with
+          | Ok config -> (
+              match config.opam_provided with
+              | None -> Ok acc
+              | Some provided -> Ok (OpamPackage.Name.Set.union provided acc))
+          | Error (`Msg msg) -> Error (`Msg msg))
+      | None -> Ok acc)
+    target_packages (Ok OpamPackage.Name.Set.empty)
+
 let calculate_opam ~source_config ~build_only ~allow_jbuilder ~local_opam_files
-    ~ocaml_version ~target_packages =
+    ~ocaml_version ~target_packages ~opam_provided =
   let open Result.O in
   OpamGlobalState.with_ `Lock_none (fun global_state ->
       let* pin_depends = get_pin_depends ~global_state local_opam_files in
@@ -274,7 +290,7 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder ~local_opam_files
           let opam_env = extract_opam_env ~source_config global_state in
           let solver = Opam_solve.explicit_repos_solver in
           Opam_solve.calculate ~build_only ~allow_jbuilder ~local_opam_files
-            ~target_packages ~pin_depends ?ocaml_version solver
+            ~target_packages ~opam_provided ~pin_depends ?ocaml_version solver
             (opam_env, local_repo_dirs)
           |> Result.map_error ~f:(interpret_solver_error ~repositories solver)
       | { repositories = None; _ } ->
@@ -284,7 +300,8 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder ~local_opam_files
                     (OpamSwitch.to_string switch_state.switch));
               let solver = Opam_solve.local_opam_config_solver in
               Opam_solve.calculate ~build_only ~allow_jbuilder ~local_opam_files
-                ~target_packages ~pin_depends ?ocaml_version solver switch_state
+                ~target_packages ~opam_provided ~pin_depends ?ocaml_version
+                solver switch_state
               |> Result.map_error ~f:(fun err ->
                      let repositories = current_repos ~switch_state in
                      interpret_solver_error ~repositories solver err)))
@@ -425,16 +442,19 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
   let* source_config =
     extract_source_config ~opam_monorepo_cwd:root ~opam_files target_packages
   in
-  let* package_summaries =
+  let* opam_provided =
+    opam_provided_packages ~opam_monorepo_cwd:root opam_files target_packages
+  in
+  let* dependency_entries =
     calculate_opam ~source_config ~build_only ~allow_jbuilder ~ocaml_version
-      ~local_opam_files:opam_files ~target_packages
+      ~local_opam_files:opam_files ~target_packages ~opam_provided
   in
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
-  let* duniverse = compute_duniverse ~package_summaries >>= resolve_ref in
+  let* duniverse = compute_duniverse ~dependency_entries >>= resolve_ref in
   let target_depexts = target_depexts opam_files target_packages in
   let lockfile =
     Lockfile.create ~source_config ~root_packages:target_packages
-      ~package_summaries ~root_depexts:target_depexts ~duniverse ()
+      ~dependency_entries ~root_depexts:target_depexts ~duniverse ()
   in
   let* () =
     Lockfile.save ~opam_monorepo_cwd:root ~file:lockfile_path lockfile

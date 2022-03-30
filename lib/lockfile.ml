@@ -90,13 +90,15 @@ module Depends = struct
 
   type t = dependency list
 
-  let from_package_summaries l =
-    List.map l ~f:(fun summary ->
+  let from_dependency_entries dependency_entries =
+    List.map dependency_entries
+      ~f:(fun Opam.Dependency_entry.{ vendored; package_summary } ->
         let vendored =
-          (not @@ Opam.Package_summary.is_base_package summary)
-          && (not @@ Opam.Package_summary.is_virtual summary)
+          (not @@ Opam.Package_summary.is_base_package package_summary)
+          && (not @@ Opam.Package_summary.is_virtual package_summary)
+          && vendored
         in
-        { vendored; package = summary.package })
+        { vendored; package = package_summary.package })
 
   let variable_equal a b =
     String.equal (OpamVariable.to_string a) (OpamVariable.to_string b)
@@ -240,7 +242,13 @@ module Depexts = struct
     let c = OpamSysPkg.Set.compare pkg_set pkg_set' in
     if c = 0 then compare filter filter' else c
 
-  let all ~root_depexts ~package_summaries =
+  let all ~root_depexts ~dependency_entries =
+    let package_summaries =
+      List.map
+        ~f:(fun Opam.Dependency_entry.{ package_summary; vendored = _ } ->
+          package_summary)
+        dependency_entries
+    in
     let transitive_depexts =
       List.map
         ~f:(fun { Opam.Package_summary.depexts; _ } -> depexts)
@@ -262,13 +270,13 @@ type t = {
 
 let depexts t = t.depexts
 
-let create ~source_config ~root_packages ~package_summaries ~root_depexts
+let create ~source_config ~root_packages ~dependency_entries ~root_depexts
     ~duniverse () =
   let version = Version.current in
-  let depends = Depends.from_package_summaries package_summaries in
+  let depends = Depends.from_dependency_entries dependency_entries in
   let pin_depends = Pin_depends.from_duniverse duniverse in
   let duniverse_dirs = Duniverse_dirs.from_duniverse duniverse in
-  let depexts = Depexts.all ~root_depexts ~package_summaries in
+  let depexts = Depexts.all ~root_depexts ~dependency_entries in
   {
     version;
     root_packages;

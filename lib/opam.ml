@@ -127,9 +127,27 @@ module Depexts = struct
 end
 
 module Pp = struct
-  let package = Fmt.using OpamPackage.to_string Fmt.string
+  module Package : Pp_combinators.Opam.Printable with type t = OpamPackage.t =
+  struct
+    type t = OpamPackage.t
 
-  let package_name = Fmt.using OpamPackage.Name.to_string Fmt.string
+    let pp = Fmt.using OpamPackage.to_string Fmt.string
+  end
+
+  module Package_name :
+    Pp_combinators.Opam.Printable with type t = OpamPackage.Name.t = struct
+    type t = OpamPackage.Name.t
+
+    let pp = Fmt.using OpamPackage.Name.to_string Fmt.string
+  end
+
+  module Package_name_set =
+    Pp_combinators.Opam.Make_Set (OpamPackage.Name.Set) (Package_name)
+  module Package_set = Pp_combinators.Opam.Make_Set (OpamPackage.Set) (Package)
+
+  let package = Package.pp
+
+  let package_name = Package_name.pp
 
   let version = Fmt.using OpamPackage.Version.to_string Fmt.string
 
@@ -169,7 +187,7 @@ module Package_summary = struct
       (option ~brackets:true string)
       dev_repo Depexts.pp depexts
 
-  let from_opam ~pkg:package opam_file =
+  let from_opam package opam_file =
     let url_field = OpamFile.OPAM.url opam_file in
     let url_src = Option.map ~f:Url.from_opam_field url_field in
     let hashes =
@@ -191,6 +209,10 @@ module Package_summary = struct
       when OpamPackage.Name.Set.mem package.name Config.base_packages ->
         true
     | _ -> false
+end
+
+module Dependency_entry = struct
+  type t = { package_summary : Package_summary.t; vendored : bool }
 end
 
 let local_package_version opam_file ~explicit_version =

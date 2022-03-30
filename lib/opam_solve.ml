@@ -23,6 +23,8 @@ module type OPAM_MONOREPO_CONTEXT = sig
 
   val create :
     ?install_test_deps_for:OpamPackage.Name.Set.t ->
+    ?opam_provided:OpamPackage.Name.Set.t ->
+    ?require_dune:bool ->
     allow_jbuilder:bool ->
     fixed_packages:
       (OpamPackage.Version.t * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
@@ -49,6 +51,8 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     fixed_packages :
       (OpamPackage.Version.t * OpamFile.OPAM.t) OpamPackage.Name.Map.t;
     allow_jbuilder : bool;
+    require_dune : bool;
+    opam_provided : OpamPackage.Name.Set.t;
   }
 
   type r = Non_dune | Base_rejection of Base_context.rejection
@@ -59,14 +63,23 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     | Non_dune -> Fmt.pf fmt "Doesn't build with dune"
     | Base_rejection r -> Base_context.pp_rejection fmt r
 
-  let create ?install_test_deps_for ~allow_jbuilder ~fixed_packages ~constraints
-      input =
+  let create ?install_test_deps_for
+      ?(opam_provided = OpamPackage.Name.Set.empty) ?(require_dune = true)
+      ~allow_jbuilder ~fixed_packages ~constraints input =
     let base_context =
       Base_context.create ?test:install_test_deps_for ~constraints input
     in
-    { base_context; fixed_packages; allow_jbuilder }
+    {
+      base_context;
+      fixed_packages;
+      allow_jbuilder;
+      require_dune;
+      opam_provided;
+    }
 
-  let is_valid_candidate ~allow_jbuilder ~name ~version opam_file =
+  let is_valid_candidate ~allow_jbuilder ~require_dune ~name ~version opam_file
+      =
+    (* this function gets called way too often.. memoize? *)
     let pkg = OpamPackage.create name version in
     let depends = OpamFile.OPAM.depends opam_file in
     let depopts = OpamFile.OPAM.depopts opam_file in
@@ -74,28 +87,89 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
       Opam.depends_on_dune ~allow_jbuilder depends
       || Opam.depends_on_dune ~allow_jbuilder depopts
     in
-    let summary = Opam.Package_summary.from_opam ~pkg opam_file in
+    let summary = Opam.Package_summary.from_opam pkg opam_file in
     Opam.Package_summary.is_base_package summary
     || Opam.Package_summary.is_virtual summary
-    || uses_dune
+    || (not require_dune) || uses_dune
 
-  let filter_candidates ~allow_jbuilder ~name versions =
+  let rec remove_opam_provided_from_formula opam_provided filtered_formula :
+      OpamTypes.filtered_formula =
+    match filtered_formula with
+    | OpamFormula.Atom (name, _) as atom -> (
+        match OpamPackage.Name.Set.mem name opam_provided with
+        | true ->
+            Logs.debug (fun l ->
+                l "Removed %a from formula as it is opam-provided"
+                  Opam.Pp.package_name name);
+            OpamFormula.Empty
+        | false -> atom)
+    | OpamFormula.And (left, right) -> (
+        let left = remove_opam_provided_from_formula opam_provided left in
+        let right = remove_opam_provided_from_formula opam_provided right in
+        match (left, right) with
+        | Empty, right -> right
+        | left, Empty -> left
+        | left, right -> OpamFormula.And (left, right))
+    | OpamFormula.Or (left, right) -> (
+        let left = remove_opam_provided_from_formula opam_provided left in
+        let right = remove_opam_provided_from_formula opam_provided right in
+        match (left, right) with
+        | Empty, right -> right
+        | left, Empty -> left
+        | left, right -> OpamFormula.Or (left, right))
+    | otherwise -> otherwise
+
+  let remove_opam_provided_from_dependencies opam_provided opam_file =
+    let depends = OpamFile.OPAM.depends opam_file in
+    let depends = remove_opam_provided_from_formula opam_provided depends in
+    OpamFile.OPAM.with_depends depends opam_file
+
+  let filter_candidates ~allow_jbuilder ~require_dune ~name versions =
     List.map
       ~f:(fun (version, result) ->
         match result with
         | Error r -> (version, Error (Base_rejection r))
         | Ok opam_file ->
-            if is_valid_candidate ~allow_jbuilder ~name ~version opam_file then
-              (version, Ok opam_file)
+            if
+              is_valid_candidate ~allow_jbuilder ~require_dune ~name ~version
+                opam_file
+            then (version, Ok opam_file)
             else (version, Error Non_dune))
       versions
 
-  let candidates { base_context; fixed_packages; allow_jbuilder } name =
+  let remove_opam_provided ~opam_provided versions =
+    match OpamPackage.Name.Set.is_empty opam_provided with
+    | true -> versions
+    | false ->
+        versions
+        |> List.map ~f:(fun (version, result) ->
+               match result with
+               | Error _ as e -> (version, e)
+               | Ok opam_file ->
+                   let opam_file =
+                     remove_opam_provided_from_dependencies opam_provided
+                       opam_file
+                   in
+                   (version, Ok opam_file))
+
+  let candidates
+      {
+        base_context;
+        fixed_packages;
+        allow_jbuilder;
+        require_dune;
+        opam_provided;
+      } name =
     match OpamPackage.Name.Map.find_opt name fixed_packages with
-    | Some (version, opam_file) -> [ (version, Ok opam_file) ]
+    | Some (version, opam_file) ->
+        let opam_file =
+          remove_opam_provided_from_dependencies opam_provided opam_file
+        in
+        [ (version, Ok opam_file) ]
     | None ->
         Base_context.candidates base_context name
-        |> filter_candidates ~allow_jbuilder ~name
+        |> filter_candidates ~allow_jbuilder ~require_dune ~name
+        |> remove_opam_provided ~opam_provided
 
   let user_restrictions { base_context; _ } name =
     Base_context.user_restrictions base_context name
@@ -121,24 +195,55 @@ end
 
 exception Pinned_local_package
 
-let constraints ~ocaml_version =
+let relop_equal relop1 relop2 =
+  match (relop1, relop2) with
+  | `Eq, `Eq | `Neq, `Neq | `Geq, `Geq | `Gt, `Gt | `Leq, `Leq | `Lt, `Lt ->
+      true
+  | _, _ -> false
+
+let version_constraint_equal (relop1, v1) (relop2, v2) =
+  relop_equal relop1 relop2 && OpamPackage.Version.equal v1 v2
+
+(* variant of [safe_add] that succeeds when the key/value pair to be added
+   already exists, otherwise same semantics as [safe_add] *)
+let name_map_duplicate_safe_add key value map =
+  match OpamPackage.Name.Map.find_opt key map with
+  | None -> OpamPackage.Name.Map.add key value map
+  | Some existing -> (
+      match version_constraint_equal existing value with
+      | true -> map
+      | false ->
+          failwith
+            (Printf.sprintf "duplicate differing entry %s"
+               (OpamPackage.Name.to_string key)))
+
+let constraints ~required_packages ~ocaml_version =
   let no_constraints = OpamPackage.Name.Map.empty in
+  let constraints =
+    OpamPackage.Set.fold
+      (fun package constraints ->
+        let key = OpamPackage.name package in
+        let value = (`Eq, OpamPackage.version package) in
+        OpamPackage.Name.Map.safe_add key value constraints)
+      required_packages no_constraints
+  in
   match ocaml_version with
+  | None -> constraints
   | Some version ->
       let key = OpamPackage.Name.of_string "ocaml" in
       let value = (`Eq, OpamPackage.Version.of_string version) in
-      OpamPackage.Name.Map.safe_add key value no_constraints
-  | None -> no_constraints
+      name_map_duplicate_safe_add key value constraints
 
-let request ~allow_compiler_variants local_packages_names =
-  if allow_compiler_variants then local_packages_names
+let mk_request ~allow_compiler_variants packages =
+  let package_names = OpamPackage.Name.Set.elements packages in
+  if allow_compiler_variants then package_names
   else
     (* We add ocaml-base-compiler to the solver request to prevent it
        from selecting a version of OCaml that hasn't been officially
        released yet but that exists in opam with variants such as
        ocaml-variants.x+trunk *)
     let base_compiler = OpamPackage.Name.of_string "ocaml-base-compiler" in
-    base_compiler :: local_packages_names
+    base_compiler :: package_names
 
 let depend_on_compiler_variants local_packages =
   OpamPackage.Name.Map.exists
@@ -169,10 +274,11 @@ module type OPAM_MONOREPO_SOLVER = sig
     local_opam_files:
       (OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     target_packages:OpamPackage.Name.Set.t ->
+    opam_provided:OpamPackage.Name.Set.t ->
     pin_depends:(OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     ?ocaml_version:string ->
     input ->
-    ( Opam.Package_summary.t list,
+    ( Opam.Dependency_entry.t list,
       [> `Diagnostics of diagnostics | `Msg of string ] )
     result
 
@@ -190,37 +296,81 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
 
   module Solver = Opam_0install.Solver.Make (Context)
 
-  let build_context ~build_only ~allow_jbuilder ~ocaml_version ~local_packages
-      ~pin_depends ~target_packages input =
+  let build_context ~build_only ~allow_jbuilder ?opam_provided ?require_dune
+      ?(vendored_packages = OpamPackage.Set.empty) ~ocaml_version
+      ~local_packages ~pin_depends ~target_packages input =
     let open Result.O in
     let install_test_deps_for =
       if build_only then OpamPackage.Name.Set.empty else target_packages
     in
-    let constraints = constraints ~ocaml_version in
+    let constraints =
+      constraints ~required_packages:vendored_packages ~ocaml_version
+    in
     let+ fixed_packages = fixed_packages ~local_packages ~pin_depends in
-    Context.create ~install_test_deps_for ~allow_jbuilder ~constraints
-      ~fixed_packages input
+    Context.create ~install_test_deps_for ~allow_jbuilder ?opam_provided
+      ?require_dune ~constraints ~fixed_packages input
+
+  type raw_calculation = { package : OpamPackage.t; vendored : bool }
+
+  let pp_raw_calculation fmt { package; vendored = _ } =
+    Opam.Pp.package fmt package
+
+  let calculate_raw_with_opam_provided ~local_packages ~opam_provided ~request
+      context vendored_packages =
+    match Solver.solve context request with
+    | Error e ->
+        Logs.err (fun l ->
+            l "Solving opam-provided dependencies could not find a solution");
+        Error (`Diagnostics e)
+    | Ok selections ->
+        let vendored_package_names =
+          vendored_packages |> OpamPackage.Set.elements
+          |> List.map ~f:OpamPackage.name
+          |> OpamPackage.Name.Set.of_list
+        in
+        selections |> Solver.packages_of_result
+        |> List.filter_map ~f:(fun package ->
+               let name = OpamPackage.name package in
+               let in_local_packages =
+                 OpamPackage.Name.Map.mem name local_packages
+               in
+               let in_vendored_packages =
+                 OpamPackage.Name.Set.mem name vendored_package_names
+               in
+               let in_opam_provided =
+                 OpamPackage.Name.Set.mem name opam_provided
+               in
+               Logs.debug (fun l ->
+                   l "Package %a: local %b, vendored %b, opam-provided %b"
+                     Opam.Pp.package_name name in_local_packages
+                     in_vendored_packages in_opam_provided);
+               match in_local_packages with
+               | true -> None
+               | false ->
+                   let vendored =
+                     (not in_opam_provided) && in_vendored_packages
+                   in
+                   Some { package; vendored })
+        |> Result.ok
+
+  let calculate_raw_without_opam_provided ~local_packages packages =
+    packages |> OpamPackage.Set.elements
+    |> List.filter_map ~f:(fun package ->
+           let name = OpamPackage.name package in
+           let in_local_packages =
+             OpamPackage.Name.Map.mem name local_packages
+           in
+           match in_local_packages with
+           | true -> None
+           | false -> Some { package; vendored = true })
+    |> Result.ok
 
   let calculate_raw ~local_packages ~target_packages context =
-    let target_packages_names = OpamPackage.Name.Set.elements target_packages in
     let allow_compiler_variants = depend_on_compiler_variants local_packages in
-    let request = request ~allow_compiler_variants target_packages_names in
-    let result = Solver.solve context request in
-    match result with
+    let request = mk_request ~allow_compiler_variants target_packages in
+    match Solver.solve context request with
     | Error e -> Error (`Diagnostics e)
-    | Ok selections ->
-        let packages = Solver.packages_of_result selections in
-        let deps =
-          List.filter
-            ~f:(fun pkg ->
-              let name = OpamPackage.name pkg in
-              let in_local_packages =
-                OpamPackage.Name.Map.mem name local_packages
-              in
-              not in_local_packages)
-            packages
-        in
-        Ok deps
+    | Ok selections -> Ok (request, selections)
 
   type diagnostics = Solver.diagnostics
 
@@ -329,27 +479,61 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
             | true -> (pkg_name, version_restriction) :: unavailable))
       rolemap []
 
-  let get_opam_info ~context pkg =
-    match Context.opam_file context pkg with
-    | Ok opam_file -> Opam.Package_summary.from_opam ~pkg opam_file
+  let get_opam_info ~context { package; vendored } =
+    match Context.opam_file context package with
+    | Ok opam_file ->
+        let package_summary =
+          Opam.Package_summary.from_opam package opam_file
+        in
+        Opam.Dependency_entry.{ package_summary; vendored }
     | Error (`Msg msg) ->
         (* If we're calling this function on a package, it means it has been
            returned as part of the solver solution and therefore should correspond
            to a valid candidate. *)
         Logs.debug (fun l ->
-            l "Could not retrieve opam file for %a: %s" Opam.Pp.package pkg msg);
+            l "Could not retrieve opam file for %a: %s" Opam.Pp.package package
+              msg);
         assert false
 
-  (* TODO catch exceptions and turn to error *)
-
   let calculate ~build_only ~allow_jbuilder ~local_opam_files:local_packages
-      ~target_packages ~pin_depends ?ocaml_version input =
+      ~target_packages ~opam_provided ~pin_depends ?ocaml_version input =
     let open Result.O in
     let* context =
       build_context ~build_only ~allow_jbuilder ~ocaml_version ~pin_depends
-        ~local_packages ~target_packages input
+        ~local_packages ~target_packages ~opam_provided input
     in
-    let* deps = calculate_raw ~local_packages ~target_packages context in
+    let* request, selections =
+      calculate_raw ~local_packages ~target_packages context
+    in
+    let vendored_packages =
+      selections |> Solver.packages_of_result |> OpamPackage.Set.of_list
+    in
+    Logs.info (fun l ->
+        l "Selected packages from dune-only run of solver: %a"
+          (Opam.Pp.Package_set.pp ~sep:Fmt.comma)
+          vendored_packages);
+    let* deps, context =
+      match OpamPackage.Name.Set.is_empty opam_provided with
+      | true ->
+          (* shortcut if we know everything will be vendored, no need to build
+             a second context and run the solver again *)
+          let* deps =
+            calculate_raw_without_opam_provided ~local_packages
+              vendored_packages
+          in
+          Ok (deps, context)
+      | false ->
+          let* opam_provided_context =
+            build_context ~build_only ~allow_jbuilder ~ocaml_version
+              ~pin_depends ~vendored_packages ~local_packages ~target_packages
+              ~require_dune:false input
+          in
+          let* deps =
+            calculate_raw_with_opam_provided ~local_packages ~opam_provided
+              ~request opam_provided_context vendored_packages
+          in
+          Ok (deps, opam_provided_context)
+    in
     Logs.app (fun l ->
         l "%aFound %a opam dependencies for the target package%a."
           Pp.Styled.header ()
@@ -358,11 +542,12 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
           (OpamPackage.Name.Set.cardinal target_packages));
     Logs.info (fun l ->
         l "The dependencies are: %a"
-          Fmt.(list ~sep:(any ",@ ") Opam.Pp.package)
+          Fmt.(list ~sep:(any ",@ ") pp_raw_calculation)
           deps);
     Logs.app (fun l ->
         l "%aQuerying opam database for their metadata and Dune compatibility."
           Pp.Styled.header ());
+
     Ok (List.map ~f:(get_opam_info ~context) deps)
 end
 
@@ -461,22 +646,23 @@ let calculate :
     local_opam_files:
       (OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     target_packages:OpamPackage.Name.Set.t ->
+    opam_provided:OpamPackage.Name.Set.t ->
     pin_depends:(OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     ?ocaml_version:string ->
     (context, diagnostics) t ->
     context ->
-    ( Opam.Package_summary.t list,
+    ( Opam.Dependency_entry.t list,
       [> `Diagnostics of diagnostics | `Msg of string ] )
     result =
- fun ~build_only ~allow_jbuilder ~local_opam_files ~target_packages ~pin_depends
-     ?ocaml_version t input ->
+ fun ~build_only ~allow_jbuilder ~local_opam_files ~target_packages
+     ~opam_provided ~pin_depends ?ocaml_version t input ->
   let (module Solver : OPAM_MONOREPO_SOLVER
         with type diagnostics = diagnostics
          and type input = context) =
     t
   in
   Solver.calculate ~build_only ~allow_jbuilder ~local_opam_files
-    ~target_packages ~pin_depends ?ocaml_version input
+    ~target_packages ~opam_provided ~pin_depends ?ocaml_version input
 
 let diagnostics_message :
     type context diagnostics.

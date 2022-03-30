@@ -63,9 +63,9 @@ type t = resolved Repo.t list
 
 val equal : t -> t -> bool
 
-val from_package_summaries :
+val from_dependency_entries :
   get_default_branch:(string -> (string, Rresult.R.msg) result) ->
-  Opam.Package_summary.t list ->
+  Opam.Dependency_entry.t list ->
   (unresolved Repo.t list, [ `Msg of string ]) result
 (** Build opamverse and duniverse from a list of [Types.Opam.entry] values.
     It filters out virtual packages and packages with unknown dev-repo.  *)
