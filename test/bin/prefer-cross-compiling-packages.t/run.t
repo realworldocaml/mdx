@@ -112,7 +112,7 @@ still get the latest release:
   $ grep "\"b\"\s\+{" a.opam.locked
     "b" {= "0.2" & vendor}
 
-If we run it with mirage overlays though, it will detect that there exists
+If we run it with mirage overlays though, it will detect that there exist
 versions that cross compile and favor those instead:
 
   $ opam-monorepo lock --prefer-cross-compile a-with-mirage > /dev/null
