@@ -19,7 +19,7 @@ depends: [
   "dune-build-info"
   "base"
   "bos"
-  "cmdliner" {< "1.1.0"}
+  "cmdliner"
   "fmt"
   "logs"
   "opam-file-format" {>= "2.1.0"}
