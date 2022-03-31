@@ -21,7 +21,7 @@ code required to build a project using the dune build tool.")
   dune-build-info
   base
   bos
-  cmdliner
+  (cmdliner (< 1.1.0))
   fmt
   logs
   (opam-file-format (>= 2.1.0))
