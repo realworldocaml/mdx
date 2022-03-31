@@ -1,11 +1,11 @@
-Here we have three local repositories: upstream (which roughly represents
-opam-repository), dune-universe (which corresponds to opam-overlays) and mirage
-(mirage-opam-overlays).
+Here we have three local repositories: one that roughly represents
+opam-repository, one which corresponds to opam-overlays and one
+to mirage-opam-overlays.
 
 In this scenario we depend on a package b that does not build with dune in its
-original 0.1 release. There is a 0.1+dune port of it in dune-universe:
+original 0.1 release. There is a 0.1+dune port of it in opam-overlays:
 
-  $ cat dune-universe/packages/b/b.0.1+dune/opam 
+  $ cat opam-overlays/packages/b/b.0.1+dune/opam 
   opam-version: "2.0"
   dev-repo: "git+https://b.com/b.git"
   depends: [
@@ -17,9 +17,9 @@ original 0.1 release. There is a 0.1+dune port of it in dune-universe:
   }
 
 This dune port cannot be cross compiled in its current form so the mirage
-maintainers created a 0.1+dune+mirage port in mirage:
+maintainers created a 0.1+dune+mirage port in mirage-opam-overlays:
 
-  $ cat mirage/packages/b/b.0.1+dune+mirage/opam 
+  $ cat mirage-opam-overlays/packages/b/b.0.1+dune+mirage/opam 
   opam-version: "2.0"
   dev-repo: "git+https://b.com/b.git"
   depends: [
@@ -45,8 +45,8 @@ mirage overlays in addition with upstream and dune-universe:
     "b"
   ]
   x-opam-monorepo-opam-repositories: [
-    "file://$OPAM_MONOREPO_CWD/upstream"
-    "file://$OPAM_MONOREPO_CWD/dune-universe"
+    "file://$OPAM_MONOREPO_CWD/opam-repository"
+    "file://$OPAM_MONOREPO_CWD/opam-overlays"
   ]
   $ cat a-with-mirage.opam
   opam-version: "2.0"
@@ -55,30 +55,30 @@ mirage overlays in addition with upstream and dune-universe:
     "b"
   ]
   x-opam-monorepo-opam-repositories: [
-    "file://$OPAM_MONOREPO_CWD/upstream"
-    "file://$OPAM_MONOREPO_CWD/dune-universe"
-    "file://$OPAM_MONOREPO_CWD/mirage"
+    "file://$OPAM_MONOREPO_CWD/opam-repository"
+    "file://$OPAM_MONOREPO_CWD/opam-overlays"
+    "file://$OPAM_MONOREPO_CWD/mirage-opam-overlays"
   ]
 
 Until there is a new release, everything goes fine. If we don't add the mirage
 overlays the solver picks the dune port as expected:
 
   $ opam-monorepo lock a > /dev/null
-  $ grep "\"b\"\s\+{" a.opam.locked
-    "b" {= "0.1+dune" & vendor}
+  $ opam show --no-lint -fdepends ./a.opam.locked | grep "\"b\""
+  "b" {= "0.1+dune" & vendor}
 
 If we add the mirage overlays, the mirage port gets picked instead as its
 version is higher (+mirage):
 
   $ opam-monorepo lock a-with-mirage > /dev/null
-  $ grep "\"b\"\s\+{" a-with-mirage.opam.locked
-    "b" {= "0.1+dune+mirage" & vendor}
+  $ opam show --no-lint -fdepends ./a-with-mirage.opam.locked | grep "\"b\""
+  "b" {= "0.1+dune+mirage" & vendor}
 
 So far so good. Problems arise when a new release of b hits upstream. We managed
 to upstream the dune port before `0.2` so the `0.2` release builds with dune.
 
-  $ mkdir upstream/packages/b/b.0.2
-  $ cat >upstream/packages/b/b.0.2/opam <<EOF
+  $ mkdir opam-repository/packages/b/b.0.2
+  $ cat >opam-repository/packages/b/b.0.2/opam <<EOF
   > opam-version: "2.0"
   > dev-repo: "git+https://b.com/b.git"
   > depends: [
@@ -92,8 +92,8 @@ to upstream the dune port before `0.2` so the `0.2` release builds with dune.
 Regular users of opam-monorepo will get the 0.2 version and be happy with it:
 
   $ opam-monorepo lock a > /dev/null
-  $ grep "\"b\"\s\+{" a.opam.locked
-    "b" {= "0.2" & vendor}
+  $ opam show --no-lint -fdepends ./a.opam.locked | grep "\"b\""
+  "b" {= "0.2" & vendor}
 
 Mirage users on the other hand will get it as well, meaning they can't cross
 compile their unikernel anymore. The solver is happy but this will cause errors
@@ -109,20 +109,20 @@ Here, if we don't add mirage overlays and run the solver with this flag, we
 still get the latest release:
 
   $ opam-monorepo lock --prefer-cross-compile a > /dev/null
-  $ grep "\"b\"\s\+{" a.opam.locked
-    "b" {= "0.2" & vendor}
+  $ opam show --no-lint -fdepends ./a.opam.locked | grep "\"b\""
+  "b" {= "0.2" & vendor}
 
 If we run it with mirage overlays though, it will detect that there exist
 versions that cross compile and favor those instead:
 
   $ opam-monorepo lock --prefer-cross-compile a-with-mirage > /dev/null
-  $ grep "\"b\"\s\+{" a-with-mirage.opam.locked
-    "b" {= "0.1+dune+mirage" & vendor}
+  $ opam show --no-lint -fdepends ./a-with-mirage.opam.locked | grep "\"b\""
+  "b" {= "0.1+dune+mirage" & vendor}
 
 Note that if the upstream released version does cross compile, it can add the
 tag to be picked instead:
 
-  $ echo "tags: [\"cross-compile\"]" >> upstream/packages/b/b.0.2/opam
+  $ echo "tags: [\"cross-compile\"]" >> opam-repository/packages/b/b.0.2/opam
   $ opam-monorepo lock --prefer-cross-compile a-with-mirage > /dev/null
-  $ grep "\"b\"\s\+{" a-with-mirage.opam.locked
-    "b" {= "0.2" & vendor}
+  $ opam show --no-lint -fdepends ./a-with-mirage.opam.locked | grep "\"b\""
+  "b" {= "0.2" & vendor}

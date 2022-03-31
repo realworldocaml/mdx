@@ -4,6 +4,6 @@ depends: [
   "b"
 ]
 x-opam-monorepo-opam-repositories: [
-  "file://$OPAM_MONOREPO_CWD/upstream"
-  "file://$OPAM_MONOREPO_CWD/dune-universe"
+  "file://$OPAM_MONOREPO_CWD/opam-repository"
+  "file://$OPAM_MONOREPO_CWD/opam-overlays"
 ]
