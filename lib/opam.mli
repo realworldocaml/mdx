@@ -149,6 +149,11 @@ module Value : sig
   end
 end
 
+val avoid_version : OpamFile.OPAM.t -> bool
+(** Returns whether this version should be avoided by telling whether it has
+    the avoid-version flag.
+    This flag is set for the compiler beta releases for instance. *)
+
 val depends_on_dune : allow_jbuilder:bool -> OpamTypes.filtered_formula -> bool
 (** Returns whether the given depends field formula contains a dependency to dune or jbuilder *)
 

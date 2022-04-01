@@ -1,0 +1,9 @@
+opam-version: "2.0"
+depends: [
+  "ocaml" {>= "4.14"}
+  "dune"
+]
+x-opam-monorepo-opam-repositories: [
+  "file://$OPAM_MONOREPO_CWD/minimal-repo"
+  "file://$OPAM_MONOREPO_CWD/repo-with-beta-ocaml"
+]

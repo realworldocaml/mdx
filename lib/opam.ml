@@ -48,6 +48,10 @@ let version_is_at_least locked_version =
   let version_formula = OpamFormula.Atom version_constraint in
   OpamFormula.check_version_formula version_formula
 
+let avoid_version opam =
+  let flags = OpamFile.OPAM.flags opam in
+  List.mem ~set:flags OpamTypes.Pkgflag_AvoidVersion
+
 let pull_tree ~url ~hashes ~dir global_state =
   let dir_str = Fpath.to_string dir in
   let cache_dir =
