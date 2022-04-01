@@ -18,10 +18,11 @@ opam package manager with having a local copy of all the source
 code required to build a project using the dune build tool.")
  (depends
   (ocaml (>= 4.08.0))
+  (dune (< 3.0))
   dune-build-info
   base
   bos
-  cmdliner
+  (cmdliner (< 1.1.0))
   fmt
   logs
   (opam-file-format (>= 2.1.0))
