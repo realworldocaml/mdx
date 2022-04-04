@@ -273,7 +273,7 @@ let opam_provided_packages ~opam_monorepo_cwd local_packages target_packages =
     target_packages (Ok OpamPackage.Name.Set.empty)
 
 let calculate_opam ~source_config ~build_only ~allow_jbuilder
-    ~prefer_cross_compile ~local_opam_files ~ocaml_version ~target_packages
+    ~require_cross_compile ~local_opam_files ~ocaml_version ~target_packages
     ~opam_provided =
   let open Result.O in
   OpamGlobalState.with_ `Lock_none (fun global_state ->
@@ -290,9 +290,9 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
           in
           let opam_env = extract_opam_env ~source_config global_state in
           let solver = Opam_solve.explicit_repos_solver in
-          Opam_solve.calculate ~build_only ~allow_jbuilder ~prefer_cross_compile
-            ~local_opam_files ~target_packages ~opam_provided ~pin_depends
-            ?ocaml_version solver
+          Opam_solve.calculate ~build_only ~allow_jbuilder
+            ~require_cross_compile ~local_opam_files ~target_packages
+            ~opam_provided ~pin_depends ?ocaml_version solver
             (opam_env, local_repo_dirs)
           |> Result.map_error ~f:(interpret_solver_error ~repositories solver)
       | { repositories = None; _ } ->
@@ -302,7 +302,7 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
                     (OpamSwitch.to_string switch_state.switch));
               let solver = Opam_solve.local_opam_config_solver in
               Opam_solve.calculate ~build_only ~allow_jbuilder
-                ~prefer_cross_compile ~local_opam_files ~target_packages
+                ~require_cross_compile ~local_opam_files ~target_packages
                 ~opam_provided ~pin_depends ?ocaml_version solver switch_state
               |> Result.map_error ~f:(fun err ->
                      let repositories = current_repos ~switch_state in
@@ -431,7 +431,7 @@ let extract_source_config ~opam_monorepo_cwd ~opam_files target_packages =
 
 let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     (`Allow_jbuilder allow_jbuilder) (`Ocaml_version ocaml_version)
-    (`Prefer_cross_compile prefer_cross_compile)
+    (`Require_cross_compile require_cross_compile)
     (`Target_packages specified_packages) (`Lockfile explicit_lockfile) () =
   let open Result.O in
   let* local_packages = local_packages ~versions:specified_packages root in
@@ -450,7 +450,7 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
   in
   let* dependency_entries =
     calculate_opam ~source_config ~build_only ~allow_jbuilder
-      ~prefer_cross_compile ~ocaml_version ~local_opam_files:opam_files
+      ~require_cross_compile ~ocaml_version ~local_opam_files:opam_files
       ~target_packages ~opam_provided
   in
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
@@ -522,15 +522,19 @@ let ocaml_version =
     (fun x -> `Ocaml_version x)
     Arg.(value & opt (some string) None & info ~doc [ "ocaml-version" ])
 
-let prefer_cross_compile =
+let require_cross_compile =
   let doc =
     "Tell the solver to pick cross-compilation compatible packages when \
      available. This is determined based on the presence of the \
-     \"cross-compile\" tag in the opam package metadata."
+     \"cross-compile\" tag in the opam package metadata. \n\
+    \     Packages that have never been tagged with \"cross-compile\" are \
+     considered compatible with cross-compilation by default.\n\
+    \     Packages that have at least one version tagged are considered\n\
+    \     compatible for the tagged versions only."
   in
   Common.Arg.named
-    (fun x -> `Prefer_cross_compile x)
-    Arg.(value & flag & info ~doc [ "prefer-cross-compile" ])
+    (fun x -> `Require_cross_compile x)
+    Arg.(value & flag & info ~doc [ "require-cross-compile" ])
 
 let info =
   let exits = Common.exit_codes in
@@ -568,7 +572,7 @@ let term =
   Common.Term.result_to_exit
     Cmdliner.Term.(
       const run $ Common.Arg.root $ recurse_opam $ build_only $ allow_jbuilder
-      $ ocaml_version $ prefer_cross_compile $ packages $ Common.Arg.lockfile
+      $ ocaml_version $ require_cross_compile $ packages $ Common.Arg.lockfile
       $ Common.Arg.setup_logs ())
 
 let cmd = Cmd.v info term

@@ -20,7 +20,7 @@ val explicit_repos_solver :
 val calculate :
   build_only:bool ->
   allow_jbuilder:bool ->
-  prefer_cross_compile:bool ->
+  require_cross_compile:bool ->
   local_opam_files:(OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
   target_packages:OpamPackage.Name.Set.t ->
   opam_provided:OpamPackage.Name.Set.t ->

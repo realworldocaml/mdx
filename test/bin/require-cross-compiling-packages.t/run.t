@@ -103,19 +103,19 @@ at build time for them:
   $ grep "\"b\"\s\+{" a-with-mirage.opam.locked
     "b" {= "0.2" & vendor}
 
-We added the --prefer-cross-compile flag to select packages that cross compile
+We added the --require-cross-compile flag to select packages that cross compile
 when available.
 Here, if we don't add mirage overlays and run the solver with this flag, we
 still get the latest release:
 
-  $ opam-monorepo lock --prefer-cross-compile a > /dev/null
+  $ opam-monorepo lock --require-cross-compile a > /dev/null
   $ opam show --no-lint -fdepends ./a.opam.locked | grep "\"b\""
   "b" {= "0.2" & vendor}
 
 If we run it with mirage overlays though, it will detect that there exist
 versions that cross compile and favor those instead:
 
-  $ opam-monorepo lock --prefer-cross-compile a-with-mirage > /dev/null
+  $ opam-monorepo lock --require-cross-compile a-with-mirage > /dev/null
   $ opam show --no-lint -fdepends ./a-with-mirage.opam.locked | grep "\"b\""
   "b" {= "0.1+dune+mirage" & vendor}
 
@@ -123,6 +123,6 @@ Note that if the upstream released version does cross compile, it can add the
 tag to be picked instead:
 
   $ echo "tags: [\"cross-compile\"]" >> opam-repository/packages/b/b.0.2/opam
-  $ opam-monorepo lock --prefer-cross-compile a-with-mirage > /dev/null
+  $ opam-monorepo lock --require-cross-compile a-with-mirage > /dev/null
   $ opam show --no-lint -fdepends ./a-with-mirage.opam.locked | grep "\"b\""
   "b" {= "0.2" & vendor}
