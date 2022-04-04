@@ -1,1 +1,1 @@
-val cmd : unit Cmdliner.Cmd.t
+val cmd : int Cmdliner.Cmd.t

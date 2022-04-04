@@ -67,7 +67,7 @@ let dry_run =
 
 let term =
   let open Term in
-  term_result
+  Common.Term.result_to_exit
     (const run $ Common.Arg.root $ Common.Arg.lockfile $ dry_run
    $ Common.Arg.yes $ Common.Arg.setup_logs ())
 

@@ -40,7 +40,7 @@ to the test)
 
   $ opam-monorepo lock toonew 2> errors
   ==> Using 1 locally scanned package as the target.
-  [124]
+  [1]
   $ grep -Pazo "(?s)opam-monorepo: \[ERROR\].*(?=opam-monorepo)" < errors | head --bytes=-1
   opam-monorepo: [ERROR] There is no eligible version of a that matches >= 1.0
 
@@ -50,6 +50,6 @@ We should also produce the right error message with all the constraints when we 
   "dune" "depends-on-min-a" "a" {< "2.0"}
   $ opam-monorepo lock multiple-constraint 2> errors
   ==> Using 1 locally scanned package as the target.
-  [124]
+  [1]
   $ grep -Pazo "(?s)opam-monorepo: \[ERROR\].*(?=opam-monorepo)" < errors | head --bytes=-1
   opam-monorepo: [ERROR] There is no eligible version of a that matches >= 1.0

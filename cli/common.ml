@@ -88,6 +88,18 @@ module Arg = struct
     | Some v -> Build_info.V1.Version.to_string v
 end
 
+module Term = struct
+  let result_to_exit term =
+    let to_exit result =
+      match result with
+      | Ok () -> 0
+      | Error (`Msg msg) ->
+          Logs.err (fun l -> l "%s" msg);
+          1
+    in
+    Cmdliner.Term.(const to_exit $ term)
+end
+
 module Logs = struct
   let app ?src f =
     Logs.app ?src (fun l ->

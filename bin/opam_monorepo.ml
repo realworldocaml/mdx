@@ -66,4 +66,4 @@ let main = Cmdliner.Cmd.group ~default info cmds
 
 let () =
   init_opam ();
-  Stdlib.exit @@ Cmdliner.Cmd.eval main
+  Stdlib.exit @@ Cmdliner.Cmd.eval' main

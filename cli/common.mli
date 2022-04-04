@@ -41,6 +41,13 @@ module Arg : sig
   (** CLI version string *)
 end
 
+module Term : sig
+  val result_to_exit :
+    (unit, [< `Msg of string ]) result Cmdliner.Term.t -> int Cmdliner.Term.t
+  (** Converts a [_ result Term.t] to an [int Term.t] embedding the right exit
+      status. *)
+end
+
 val filter_duniverse :
   to_consider:string list option ->
   Duniverse.t ->

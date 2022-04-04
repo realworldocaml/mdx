@@ -129,7 +129,7 @@ let info =
 
 let term =
   let open Term in
-  term_result
+  Common.Term.result_to_exit
     (const run $ Common.Arg.root $ Common.Arg.lockfile $ short
    $ Common.Arg.setup_logs ())
 
