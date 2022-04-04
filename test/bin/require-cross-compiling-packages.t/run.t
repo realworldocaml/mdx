@@ -35,30 +35,21 @@ You'll note the "cross-compile" tag that we use to mark packages that can be
 cross compiled in a dune-workspace.
 
 For testing purposes we define two opam files: a.opam and a-with-mirage.opam
-that are essencially the same except the latter configures the solver to use the
-mirage overlays in addition with upstream and dune-universe:
+that are essencially the same: they both depends on b but the latter configures
+the solver to use the mirage overlays in addition with upstream and
+dune-universe:
 
-  $ cat a.opam
-  opam-version: "2.0"
-  depends: [
-    "dune"
-    "b"
-  ]
-  x-opam-monorepo-opam-repositories: [
-    "file://$OPAM_MONOREPO_CWD/opam-repository"
-    "file://$OPAM_MONOREPO_CWD/opam-overlays"
-  ]
-  $ cat a-with-mirage.opam
-  opam-version: "2.0"
-  depends: [
-    "dune"
-    "b"
-  ]
-  x-opam-monorepo-opam-repositories: [
-    "file://$OPAM_MONOREPO_CWD/opam-repository"
-    "file://$OPAM_MONOREPO_CWD/opam-overlays"
-    "file://$OPAM_MONOREPO_CWD/mirage-opam-overlays"
-  ]
+  $ opam show --no-lint -fdepends ./a.opam
+  "dune" "b"
+  $ opam show --no-lint -fx-opam-monorepo-opam-repositories --raw ./a.opam
+  "file://$OPAM_MONOREPO_CWD/opam-repository"
+  "file://$OPAM_MONOREPO_CWD/opam-overlays"
+  $ opam show --no-lint -fdepends ./a-with-mirage.opam
+  "dune" "b"
+  $ opam show --no-lint -fx-opam-monorepo-opam-repositories --raw ./a-with-mirage.opam
+  "file://$OPAM_MONOREPO_CWD/opam-repository"
+  "file://$OPAM_MONOREPO_CWD/opam-overlays"
+  "file://$OPAM_MONOREPO_CWD/mirage-opam-overlays"
 
 Until there is a new release, everything goes fine. If we don't add the mirage
 overlays the solver picks the dune port as expected:
