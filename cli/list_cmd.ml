@@ -110,7 +110,7 @@ let short =
   Arg.(value & flag doc)
 
 let info =
-  let exits = Cmd.Exit.defaults in
+  let exits = Common.exit_codes in
   let doc = Fmt.str "Display the list of monorepo packages" in
   let man =
     [

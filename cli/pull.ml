@@ -100,7 +100,7 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
 let info =
   let open Cmdliner in
   let doc = "fetch the dependencies sources as specified by the lockfile" in
-  let exits = Cmd.Exit.defaults in
+  let exits = Common.exit_codes in
   let man =
     [
       `S Manpage.s_description;

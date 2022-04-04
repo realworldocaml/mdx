@@ -88,6 +88,11 @@ module Arg = struct
     | Some v -> Build_info.V1.Version.to_string v
 end
 
+let regular_error_exit =
+  Cmdliner.Cmd.Exit.info ~doc:"on regular opam-monorepo errors" 1
+
+let exit_codes = regular_error_exit :: Cmdliner.Cmd.Exit.defaults
+
 module Term = struct
   let result_to_exit term =
     let to_exit result =
@@ -95,7 +100,7 @@ module Term = struct
       | Ok () -> 0
       | Error (`Msg msg) ->
           Logs.err (fun l -> l "%s" msg);
-          1
+          Cmdliner.Cmd.Exit.info_code regular_error_exit
     in
     Cmdliner.Term.(const to_exit $ term)
 end

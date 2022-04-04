@@ -48,6 +48,8 @@ module Term : sig
       status. *)
 end
 
+val exit_codes : Cmdliner.Cmd.Exit.info list
+
 val filter_duniverse :
   to_consider:string list option ->
   Duniverse.t ->

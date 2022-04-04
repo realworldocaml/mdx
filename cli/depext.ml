@@ -46,7 +46,7 @@ let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
 open Cmdliner
 
 let info =
-  let exits = Cmd.Exit.defaults in
+  let exits = Common.exit_codes in
   let doc = Fmt.str "install external dependencies" in
   let man =
     [

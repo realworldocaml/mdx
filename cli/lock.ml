@@ -519,7 +519,7 @@ let ocaml_version =
     Arg.(value & opt (some string) None & info ~doc [ "ocaml-version" ])
 
 let info =
-  let exits = Cmd.Exit.defaults in
+  let exits = Common.exit_codes in
   let doc = Fmt.str "analyse opam files to generate a project-wide lock file" in
   let man =
     [
