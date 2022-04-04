@@ -178,7 +178,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     in
     regular_versions @ avoid_versions
 
-  let candidate_cross_compile (_version, opam_res) =
+  let candidate_cross_compile (_version, opam_res) : bool =
     match opam_res with
     | Error _ -> false
     | Ok opam_file -> Opam.has_cross_compile_tag opam_file
