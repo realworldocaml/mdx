@@ -110,7 +110,7 @@ let short =
   Arg.(value & flag doc)
 
 let info =
-  let exits = Term.default_exits in
+  let exits = Cmd.Exit.defaults in
   let doc = Fmt.str "Display the list of monorepo packages" in
   let man =
     [
@@ -125,7 +125,7 @@ let info =
          packages and packages defined in overlays have a blue version.";
     ]
   in
-  Term.info "list" ~doc ~exits ~man
+  Cmd.info "list" ~doc ~exits ~man
 
 let term =
   let open Term in
@@ -133,4 +133,4 @@ let term =
     (const run $ Common.Arg.root $ Common.Arg.lockfile $ short
    $ Common.Arg.setup_logs ())
 
-let cmd = (term, info)
+let cmd = Cmd.v info term

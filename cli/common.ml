@@ -34,7 +34,7 @@ module Arg = struct
       Cmdliner.Arg.(value & flag & info [ "y"; "yes" ] ~doc)
 
   let non_empty_list_opt =
-    Cmdliner.Term.pure (function [] -> None | l -> Some l)
+    Cmdliner.Term.const (function [] -> None | l -> Some l)
 
   let keep_git_dir =
     let doc =

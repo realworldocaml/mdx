@@ -1,1 +1,1 @@
-val cmd : unit Cmdliner.Term.t * Cmdliner.Term.info
+val term : unit Cmdliner.Term.t

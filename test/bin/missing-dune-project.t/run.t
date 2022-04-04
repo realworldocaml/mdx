@@ -16,4 +16,4 @@ either explicitly specify it on the command line or add a valid dune-project fil
   ==> Using 2 locally scanned packages as the targets.
   opam-monorepo: Could not infer the target lockfile name: Missing dune-project file at the root: $TESTCASE_ROOT/dune-project
                  Try setting it explicitly using --lockfile or add a project name in a root dune-project file.
-  [1]
+  [124]

@@ -14,7 +14,7 @@ depends: [
   "bigarray-compat" {= "1.1.0"}
   "bigstringaf" {= "0.8.0"}
   "bos" {= "0.2.1+dune"}
-  "cmdliner" {= "1.0.4+dune"}
+  "cmdliner" {= "1.1.0+dune"}
   "conf-pkg-config" {= "2"}
   "cppo" {= "1.6.8"}
   "csexp" {= "1.5.1"}
@@ -109,8 +109,8 @@ pin-depends: [
     "https://github.com/dune-universe/bos/releases/download/v0.2.1%2Bdune/bos-0.2.1.dune.tbz"
   ]
   [
-    "cmdliner.1.0.4+dune"
-    "https://github.com/dune-universe/cmdliner/archive/v1.0.4+dune.tar.gz"
+    "cmdliner.1.1.0+dune"
+    "https://erratique.ch/software/cmdliner/releases/cmdliner-1.1.0.tbz"
   ]
   [
     "cppo.1.6.8"
@@ -239,6 +239,13 @@ pin-depends: [
 ]
 x-opam-monorepo-duniverse-dirs: [
   [
+    "https://erratique.ch/software/cmdliner/releases/cmdliner-1.1.0.tbz"
+    "cmdliner"
+    [
+      "sha512=e2fad706829e7b8b50d1a510b59b87e44294252d8e8bdd9d6cb07f435d7c1c123f82353eedf29e9a4b7768da485516b89b62bf956234e90d7eae1bbaae2c9263"
+    ]
+  ]
+  [
     "https://github.com/0install/0install/releases/download/v2.17/0install-v2.17.tbz"
     "0install"
     [
@@ -283,13 +290,6 @@ x-opam-monorepo-duniverse-dirs: [
     [
       "sha256=c6a34311946ff906824cedc2d12825ee9ad73b73bfa1581fb8100d6fc3dd5c35"
       "sha512=5a1422809050dfbebab9691f29109e8219e27ecc4bc50c2eb714dc59036811936e9c5860b13583ab0ba7c15a00ee5b515af25642cdc312a4814076d8e76e3fd7"
-    ]
-  ]
-  [
-    "https://github.com/dune-universe/cmdliner/archive/v1.0.4+dune.tar.gz"
-    "cmdliner"
-    [
-      "sha256=ffc09f07a9e394d6be4dbecea7add601ff00519a91dff4c95b9cd0a4aa60eceb"
     ]
   ]
   [

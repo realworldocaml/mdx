@@ -113,7 +113,7 @@ be ignored is not a string.
 
   $ opam-monorepo lock warning > /dev/null
   opam-monorepo: Error in opam file $TESTCASE_ROOT/warning.opam, [8:31]-[8:33]: Expected a string or a list of strings, got: 42
-  [1]
+  [124]
 
 Similarly, we accept a list but it needs to be a list of strings which this is
 not:
@@ -122,7 +122,7 @@ not:
   42 "fourtytwo"
   $ opam-monorepo lock warning > /dev/null
   opam-monorepo: Error in opam file $TESTCASE_ROOT/warning.opam, [8:31]-[8:33]: Expected a string or a list of strings, got: 42
-  [1]
+  [124]
 
 It should also work to pass the version of the compiler and be respected for
 both `opam`-provided packages as well as those to be vendored:
