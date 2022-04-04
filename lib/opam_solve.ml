@@ -565,9 +565,10 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
           Ok (deps, context)
       | false ->
           let* opam_provided_context =
-            build_context ~build_only ~allow_jbuilder ~require_cross_compile
-              ~ocaml_version ~pin_depends ~vendored_packages ~local_packages
-              ~target_packages ~require_dune:false input
+            build_context ~build_only ~allow_jbuilder
+              ~require_cross_compile:false ~ocaml_version ~pin_depends
+              ~vendored_packages ~local_packages ~target_packages
+              ~require_dune:false input
           in
           let* deps =
             calculate_raw_with_opam_provided ~local_packages ~opam_provided
