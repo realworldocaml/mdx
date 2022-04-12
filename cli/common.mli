@@ -12,7 +12,7 @@ module Arg : sig
       confusion when they are later passed to your main function.
       Example: [named (fun x -> `My_arg x] Arg.(value ...)] *)
 
-  val fpath : Fpath.t Cmdliner.Arg.converter
+  val fpath : Fpath.t Cmdliner.Arg.conv
 
   val root : [ `Root of Fpath.t ] Cmdliner.Term.t
   (** CLI option to specify the root directory of the project. Used to find root packages,
@@ -40,6 +40,15 @@ module Arg : sig
   val version : string
   (** CLI version string *)
 end
+
+module Term : sig
+  val result_to_exit :
+    (unit, [< `Msg of string ]) result Cmdliner.Term.t -> int Cmdliner.Term.t
+  (** Converts a [_ result Term.t] to an [int Term.t] embedding the right exit
+      status. *)
+end
+
+val exit_codes : Cmdliner.Cmd.Exit.info list
 
 val filter_duniverse :
   to_consider:string list option ->

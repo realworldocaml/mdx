@@ -100,7 +100,7 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
 let info =
   let open Cmdliner in
   let doc = "fetch the dependencies sources as specified by the lockfile" in
-  let exits = Term.default_exits in
+  let exits = Common.exit_codes in
   let man =
     [
       `S Manpage.s_description;
@@ -115,13 +115,13 @@ let info =
          explicitly passed on the command line.";
     ]
   in
-  Term.info "pull" ~doc ~exits ~man
+  Cmd.info "pull" ~doc ~exits ~man
 
 let term =
-  Cmdliner.Term.(
-    term_result
-      (const run $ Common.Arg.yes $ Common.Arg.root $ Common.Arg.lockfile
-     $ Common.Arg.keep_git_dir $ Common.Arg.duniverse_repos
-     $ Common.Arg.setup_logs ()))
+  Common.Term.result_to_exit
+    Cmdliner.Term.(
+      const run $ Common.Arg.yes $ Common.Arg.root $ Common.Arg.lockfile
+      $ Common.Arg.keep_git_dir $ Common.Arg.duniverse_repos
+      $ Common.Arg.setup_logs ())
 
-let cmd = (term, info)
+let cmd = Cmdliner.Cmd.v info term

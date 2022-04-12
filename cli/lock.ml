@@ -7,7 +7,7 @@ module Package_argument : sig
 
   val version : t -> OpamPackage.Version.t option
 
-  val converter : t Cmdliner.Arg.converter
+  val conv : t Cmdliner.Arg.conv
 
   val pp_styled : t Fmt.t
 end = struct
@@ -34,7 +34,7 @@ end = struct
   let pp ppf { name; version } =
     Fmt.pf ppf "%s%a" (OpamPackage.Name.to_string name) pp_version_opt version
 
-  let converter =
+  let conv =
     let parse s = Ok (from_string s) in
     Cmdliner.Arg.conv ~docv:"PACKAGE" (parse, pp)
 
@@ -510,7 +510,7 @@ let packages =
   let docv = "LOCAL_PACKAGE" in
   Common.Arg.named
     (fun x -> `Target_packages x)
-    Arg.(value & pos_all Package_argument.converter [] & info ~doc ~docv [])
+    Arg.(value & pos_all Package_argument.conv [] & info ~doc ~docv [])
 
 let ocaml_version =
   let doc = "Determined version to lock ocaml with in the lockfile." in
@@ -519,7 +519,7 @@ let ocaml_version =
     Arg.(value & opt (some string) None & info ~doc [ "ocaml-version" ])
 
 let info =
-  let exits = Term.default_exits in
+  let exits = Common.exit_codes in
   let doc = Fmt.str "analyse opam files to generate a project-wide lock file" in
   let man =
     [
@@ -548,12 +548,13 @@ let info =
          instructions there to add dune ports for the packages you need.";
     ]
   in
-  Term.info "lock" ~doc ~exits ~man
+  Cmd.info "lock" ~doc ~exits ~man
 
 let term =
-  let open Term in
-  term_result
-    (const run $ Common.Arg.root $ recurse_opam $ build_only $ allow_jbuilder
-   $ ocaml_version $ packages $ Common.Arg.lockfile $ Common.Arg.setup_logs ())
+  Common.Term.result_to_exit
+    Cmdliner.Term.(
+      const run $ Common.Arg.root $ recurse_opam $ build_only $ allow_jbuilder
+      $ ocaml_version $ packages $ Common.Arg.lockfile
+      $ Common.Arg.setup_logs ())
 
-let cmd = (term, info)
+let cmd = Cmd.v info term

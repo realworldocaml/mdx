@@ -46,7 +46,7 @@ let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
 open Cmdliner
 
 let info =
-  let exits = Term.default_exits in
+  let exits = Common.exit_codes in
   let doc = Fmt.str "install external dependencies" in
   let man =
     [
@@ -56,7 +56,7 @@ let info =
          lockfile.";
     ]
   in
-  Term.info "depext" ~doc ~exits ~man
+  Cmd.info "depext" ~doc ~exits ~man
 
 let dry_run =
   let doc =
@@ -67,8 +67,8 @@ let dry_run =
 
 let term =
   let open Term in
-  term_result
+  Common.Term.result_to_exit
     (const run $ Common.Arg.root $ Common.Arg.lockfile $ dry_run
    $ Common.Arg.yes $ Common.Arg.setup_logs ())
 
-let cmd = (term, info)
+let cmd = Cmd.v info term

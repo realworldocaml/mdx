@@ -34,7 +34,7 @@ module Arg = struct
       Cmdliner.Arg.(value & flag & info [ "y"; "yes" ] ~doc)
 
   let non_empty_list_opt =
-    Cmdliner.Term.pure (function [] -> None | l -> Some l)
+    Cmdliner.Term.const (function [] -> None | l -> Some l)
 
   let keep_git_dir =
     let doc =
@@ -86,6 +86,23 @@ module Arg = struct
     match Build_info.V1.version () with
     | None -> "n/a"
     | Some v -> Build_info.V1.Version.to_string v
+end
+
+let regular_error_exit =
+  Cmdliner.Cmd.Exit.info ~doc:"on regular opam-monorepo errors" 1
+
+let exit_codes = regular_error_exit :: Cmdliner.Cmd.Exit.defaults
+
+module Term = struct
+  let result_to_exit term =
+    let to_exit result =
+      match result with
+      | Ok () -> 0
+      | Error (`Msg msg) ->
+          Logs.err (fun l -> l "%s" msg);
+          Cmdliner.Cmd.Exit.info_code regular_error_exit
+    in
+    Cmdliner.Term.(const to_exit $ term)
 end
 
 module Logs = struct
