@@ -551,9 +551,10 @@ let info =
   Cmd.info "lock" ~doc ~exits ~man
 
 let term =
-  let open Term in
   Common.Term.result_to_exit
-    (const run $ Common.Arg.root $ recurse_opam $ build_only $ allow_jbuilder
-   $ ocaml_version $ packages $ Common.Arg.lockfile $ Common.Arg.setup_logs ())
+    Cmdliner.Term.(
+      const run $ Common.Arg.root $ recurse_opam $ build_only $ allow_jbuilder
+      $ ocaml_version $ packages $ Common.Arg.lockfile
+      $ Common.Arg.setup_logs ())
 
 let cmd = Cmd.v info term
