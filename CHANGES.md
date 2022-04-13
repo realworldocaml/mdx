@@ -16,6 +16,9 @@
   the OCaml version of the switch (#267, #268, @Leonidas-from-XIV)
 - Generate a `duniverse/README.md` file to explain the basics of
   `opam-monorepo` in the vendored directory (#272, #274, @Leonidas-from-XIV)
+- Add a `--prefer-cross-compile` flag for the solver to select cross-compiling
+  versions of packages when available. This is determined through the presence
+  of the `"cross-compile"` tag in the opam metadata.
 
 ### Changed
 

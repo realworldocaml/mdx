@@ -1,0 +1,10 @@
+opam-version: "2.0"
+dev-repo: "git+https://b.com/b.git"
+depends: [
+  "dune"
+]
+tags: ["cross-compile"]
+url {
+  src: "https://mirage.com/b.0.1-dune-mirage.tbz"
+  checksum: "sha256=0000000000000000000000000000000000000000000000000000000000000002"
+}

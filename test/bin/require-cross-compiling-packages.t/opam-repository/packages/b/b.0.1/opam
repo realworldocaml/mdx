@@ -1,0 +1,6 @@
+opam-version: "2.0"
+dev-repo: "git+https://b.com/b.git"
+url {
+  src: "https://b.com/b.0.1.tbz"
+  checksum: "sha256=0000000000000000000000000000000000000000000000000000000000000000"
+}

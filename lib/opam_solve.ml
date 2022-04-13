@@ -17,7 +17,7 @@ module type OPAM_MONOREPO_CONTEXT = sig
 
   type base_rejection
 
-  type r = Non_dune | Base_rejection of base_rejection
+  type r = Non_dune | No_cross_compile | Base_rejection of base_rejection
 
   include Opam_0install.S.CONTEXT with type rejection = r
 
@@ -26,6 +26,7 @@ module type OPAM_MONOREPO_CONTEXT = sig
     ?opam_provided:OpamPackage.Name.Set.t ->
     ?require_dune:bool ->
     allow_jbuilder:bool ->
+    require_cross_compile:bool ->
     fixed_packages:
       (OpamPackage.Version.t * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     constraints:OpamFormula.version_constraint OpamTypes.name_map ->
@@ -53,19 +54,25 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     allow_jbuilder : bool;
     require_dune : bool;
     opam_provided : OpamPackage.Name.Set.t;
+    require_cross_compile : bool;
   }
 
-  type r = Non_dune | Base_rejection of Base_context.rejection
+  type r =
+    | Non_dune
+    | No_cross_compile
+    | Base_rejection of Base_context.rejection
 
   type rejection = r
 
   let pp_rejection fmt = function
     | Non_dune -> Fmt.pf fmt "Doesn't build with dune"
+    | No_cross_compile -> Fmt.pf fmt "Does not cross compile"
     | Base_rejection r -> Base_context.pp_rejection fmt r
 
   let create ?install_test_deps_for
       ?(opam_provided = OpamPackage.Name.Set.empty) ?(require_dune = true)
-      ~allow_jbuilder ~fixed_packages ~constraints input =
+      ~allow_jbuilder ~require_cross_compile ~fixed_packages ~constraints input
+      =
     let base_context =
       Base_context.create ?test:install_test_deps_for ~constraints input
     in
@@ -75,10 +82,11 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
       allow_jbuilder;
       require_dune;
       opam_provided;
+      require_cross_compile;
     }
 
-  let is_valid_candidate ~allow_jbuilder ~require_dune ~name ~version opam_file
-      =
+  let validate_candidate ~allow_jbuilder ~must_cross_compile ~require_dune ~name
+      ~version opam_file =
     (* this function gets called way too often.. memoize? *)
     let pkg = OpamPackage.create name version in
     let depends = OpamFile.OPAM.depends opam_file in
@@ -88,9 +96,17 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
       || Opam.depends_on_dune ~allow_jbuilder depopts
     in
     let summary = Opam.Package_summary.from_opam pkg opam_file in
-    Opam.Package_summary.is_base_package summary
-    || Opam.Package_summary.is_virtual summary
-    || (not require_dune) || uses_dune
+    let is_valid_dune_wise =
+      Opam.Package_summary.is_base_package summary
+      || Opam.Package_summary.is_virtual summary
+      || (not require_dune) || uses_dune
+    in
+    match is_valid_dune_wise with
+    | false -> Error Non_dune
+    | true when (not must_cross_compile) || Opam.has_cross_compile_tag opam_file
+      ->
+        Ok opam_file
+    | true -> Error No_cross_compile
 
   let rec remove_opam_provided_from_formula opam_provided filtered_formula :
       OpamTypes.filtered_formula =
@@ -124,17 +140,18 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     let depends = remove_opam_provided_from_formula opam_provided depends in
     OpamFile.OPAM.with_depends depends opam_file
 
-  let filter_candidates ~allow_jbuilder ~require_dune ~name versions =
+  let filter_candidates ~allow_jbuilder ~must_cross_compile ~require_dune ~name
+      versions =
     List.map
       ~f:(fun (version, result) ->
         match result with
         | Error r -> (version, Error (Base_rejection r))
         | Ok opam_file ->
-            if
-              is_valid_candidate ~allow_jbuilder ~require_dune ~name ~version
-                opam_file
-            then (version, Ok opam_file)
-            else (version, Error Non_dune))
+            let res =
+              validate_candidate ~allow_jbuilder ~must_cross_compile
+                ~require_dune ~name ~version opam_file
+            in
+            (version, res))
       versions
 
   let remove_opam_provided ~opam_provided versions =
@@ -161,6 +178,11 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     in
     regular_versions @ avoid_versions
 
+  let candidate_cross_compile (_version, opam_res) : bool =
+    match opam_res with
+    | Error _ -> false
+    | Ok opam_file -> Opam.has_cross_compile_tag opam_file
+
   let candidates
       {
         base_context;
@@ -168,6 +190,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
         allow_jbuilder;
         require_dune;
         opam_provided;
+        require_cross_compile;
       } name =
     match OpamPackage.Name.Map.find_opt name fixed_packages with
     | Some (version, opam_file) ->
@@ -176,8 +199,13 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
         in
         [ (version, Ok opam_file) ]
     | None ->
-        Base_context.candidates base_context name
-        |> filter_candidates ~allow_jbuilder ~require_dune ~name
+        let candidates = Base_context.candidates base_context name in
+        let must_cross_compile =
+          require_cross_compile
+          && List.exists ~f:candidate_cross_compile candidates
+        in
+        filter_candidates ~allow_jbuilder ~must_cross_compile ~require_dune
+          ~name candidates
         |> remove_opam_provided ~opam_provided
         |> demote_candidates_to_avoid
 
@@ -281,6 +309,7 @@ module type OPAM_MONOREPO_SOLVER = sig
   val calculate :
     build_only:bool ->
     allow_jbuilder:bool ->
+    require_cross_compile:bool ->
     local_opam_files:
       (OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     target_packages:OpamPackage.Name.Set.t ->
@@ -306,9 +335,9 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
 
   module Solver = Opam_0install.Solver.Make (Context)
 
-  let build_context ~build_only ~allow_jbuilder ?opam_provided ?require_dune
-      ?(vendored_packages = OpamPackage.Set.empty) ~ocaml_version
-      ~local_packages ~pin_depends ~target_packages input =
+  let build_context ~build_only ~allow_jbuilder ~require_cross_compile
+      ?opam_provided ?require_dune ?(vendored_packages = OpamPackage.Set.empty)
+      ~ocaml_version ~local_packages ~pin_depends ~target_packages input =
     let open Result.O in
     let install_test_deps_for =
       if build_only then OpamPackage.Name.Set.empty else target_packages
@@ -317,8 +346,8 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
       constraints ~required_packages:vendored_packages ~ocaml_version
     in
     let+ fixed_packages = fixed_packages ~local_packages ~pin_depends in
-    Context.create ~install_test_deps_for ~allow_jbuilder ?opam_provided
-      ?require_dune ~constraints ~fixed_packages input
+    Context.create ~install_test_deps_for ~allow_jbuilder ~require_cross_compile
+      ?opam_provided ?require_dune ~constraints ~fixed_packages input
 
   type raw_calculation = { package : OpamPackage.t; vendored : bool }
 
@@ -505,12 +534,14 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
               msg);
         assert false
 
-  let calculate ~build_only ~allow_jbuilder ~local_opam_files:local_packages
-      ~target_packages ~opam_provided ~pin_depends ?ocaml_version input =
+  let calculate ~build_only ~allow_jbuilder ~require_cross_compile
+      ~local_opam_files:local_packages ~target_packages ~opam_provided
+      ~pin_depends ?ocaml_version input =
     let open Result.O in
     let* context =
-      build_context ~build_only ~allow_jbuilder ~ocaml_version ~pin_depends
-        ~local_packages ~target_packages ~opam_provided input
+      build_context ~build_only ~allow_jbuilder ~require_cross_compile
+        ~ocaml_version ~pin_depends ~local_packages ~target_packages
+        ~opam_provided input
     in
     let* request, selections =
       calculate_raw ~local_packages ~target_packages context
@@ -534,8 +565,9 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
           Ok (deps, context)
       | false ->
           let* opam_provided_context =
-            build_context ~build_only ~allow_jbuilder ~ocaml_version
-              ~pin_depends ~vendored_packages ~local_packages ~target_packages
+            build_context ~build_only ~allow_jbuilder
+              ~require_cross_compile:false ~ocaml_version ~pin_depends
+              ~vendored_packages ~local_packages ~target_packages
               ~require_dune:false input
           in
           let* deps =
@@ -653,6 +685,7 @@ let calculate :
     type context diagnostics.
     build_only:bool ->
     allow_jbuilder:bool ->
+    require_cross_compile:bool ->
     local_opam_files:
       (OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     target_packages:OpamPackage.Name.Set.t ->
@@ -664,15 +697,16 @@ let calculate :
     ( Opam.Dependency_entry.t list,
       [> `Diagnostics of diagnostics | `Msg of string ] )
     result =
- fun ~build_only ~allow_jbuilder ~local_opam_files ~target_packages
-     ~opam_provided ~pin_depends ?ocaml_version t input ->
+ fun ~build_only ~allow_jbuilder ~require_cross_compile ~local_opam_files
+     ~target_packages ~opam_provided ~pin_depends ?ocaml_version t input ->
   let (module Solver : OPAM_MONOREPO_SOLVER
         with type diagnostics = diagnostics
          and type input = context) =
     t
   in
-  Solver.calculate ~build_only ~allow_jbuilder ~local_opam_files
-    ~target_packages ~opam_provided ~pin_depends ?ocaml_version input
+  Solver.calculate ~build_only ~allow_jbuilder ~require_cross_compile
+    ~local_opam_files ~target_packages ~opam_provided ~pin_depends
+    ?ocaml_version input
 
 let diagnostics_message :
     type context diagnostics.
