@@ -51,8 +51,7 @@ let pre_pull_clean_up ~full ~duniverse_dir duniverse =
           Fpath.(duniverse_dir / dir))
 
 let duniverse_documentation =
-  {|\
-# duniverse
+  {|# duniverse
 
 This folder contains vendored source code of the dependencies of the project,
 created by the [opam-monorepo](https://github.com/ocamllabs/opam-monorepo)
