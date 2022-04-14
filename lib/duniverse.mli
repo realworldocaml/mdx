@@ -1,5 +1,4 @@
 type unresolved = Git.Ref.t
-
 type resolved = Git.Ref.resolved
 
 module Repo : sig
@@ -7,11 +6,8 @@ module Repo : sig
     type 'ref t = Git of { repo : string; ref : 'ref } | Other of string
 
     val equal : ('ref -> 'ref -> bool) -> 'ref t -> 'ref t -> bool
-
     val pp : 'ref Fmt.t -> 'ref t Fmt.t
-
     val to_string : resolved t -> string
-
     val to_opam_url : resolved t -> OpamUrl.t
 
     val from_opam_url : OpamUrl.t -> (resolved t, [ `Msg of string ]) result
@@ -44,7 +40,6 @@ module Repo : sig
     }
 
     val equal : t -> t -> bool
-
     val pp : t Fmt.t
 
     val from_package_summary :

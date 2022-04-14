@@ -47,7 +47,6 @@ let drop_suffix s ~suffix =
   else None
 
 let index = index_opt
-
 let rindex = rindex_opt
 
 let lsplit2 s ~on =

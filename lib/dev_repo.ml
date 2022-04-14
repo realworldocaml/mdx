@@ -3,9 +3,7 @@ open Import
 type t = string
 
 let compare = String.compare
-
 let from_string s = s
-
 let to_string t = t
 
 let repo_name t =

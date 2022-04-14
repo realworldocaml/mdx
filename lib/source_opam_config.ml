@@ -139,7 +139,6 @@ module Opam_global_vars = struct
       ~from_opam_value
 
   let get opam = Opam.Extra_field.get field opam
-
   let set t opam = Opam.Extra_field.set field t opam
 
   let merge = function
@@ -193,7 +192,6 @@ module Opam_provided = struct
     Opam.Extra_field.make ~name:"opam-provided" ~to_opam_value ~from_opam_value
 
   let set t opam = Opam.Extra_field.set field t opam
-
   let get opam = Opam.Extra_field.get field opam
 
   let merge = function
@@ -263,13 +261,11 @@ module Private = struct
 
   module Opam_repositories = struct
     let from_opam_value = Opam_repositories.from_opam_value
-
     let to_opam_value = Opam_repositories.to_opam_value
   end
 
   module Opam_global_vars = struct
     let from_opam_value = Opam_global_vars.from_opam_value
-
     let to_opam_value = Opam_global_vars.to_opam_value
   end
 end

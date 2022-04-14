@@ -9,7 +9,6 @@ module Testable = struct
     open OpamPackage.Version
 
     let pp ppf v = Format.fprintf ppf "%s" (to_string v)
-
     let t = Alcotest.testable pp equal
   end
 end

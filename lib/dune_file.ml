@@ -4,7 +4,6 @@ module Lang = struct
   type version = int * int
 
   let pp_version fmt (major, minor) = Format.fprintf fmt "%d.%d" major minor
-
   let version_to_string version = Format.asprintf "%a" pp_version version
 
   let stanza_regexp =
@@ -83,7 +82,6 @@ module Raw = struct
                Fpath.pp path))
 
   let comment s = Printf.sprintf "; %s" s
-
   let vendored_dirs glob = Printf.sprintf "(vendored_dirs %s)" glob
 
   let duniverse_dune_content =

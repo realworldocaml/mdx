@@ -28,7 +28,6 @@ let init_opam () =
   OpamStateConfig.init ~root_dir:root ()
 
 let default_run () = `Help (`Pager, None)
-
 let default = Cmdliner.Term.(ret (const default_run $ const ()))
 
 let info =

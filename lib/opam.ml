@@ -156,12 +156,11 @@ module Pp = struct
 
   module Package_name_set =
     Pp_combinators.Opam.Make_Set (OpamPackage.Name.Set) (Package_name)
+
   module Package_set = Pp_combinators.Opam.Make_Set (OpamPackage.Set) (Package)
 
   let package = Package.pp
-
   let package_name = Package_name.pp
-
   let version = Fmt.using OpamPackage.Version.to_string Fmt.string
 
   let raw_package fmt pkg =
@@ -169,7 +168,6 @@ module Pp = struct
       pkg.OpamPackage.name version pkg.version
 
   let hash = Hash.pp
-
   let url = Fmt.using OpamUrl.to_string Fmt.string
 end
 
@@ -251,7 +249,6 @@ module Extra_field = struct
     }
 
   let name t = t.name
-
   let set t a opam = OpamFile.OPAM.add_extension opam t.name (t.to_opam_value a)
 
   let get t opam =
@@ -265,9 +262,7 @@ module Pos = struct
   module Full_pos = OpamParserTypes.FullPos
 
   let default = { Full_pos.filename = "None"; start = (0, 0); stop = (0, 0) }
-
   let from_value { Full_pos.pos; _ } = pos
-
   let with_default pelem = { Full_pos.pos = default; pelem }
 
   let errorf ~pos fmt =

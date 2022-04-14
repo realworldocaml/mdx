@@ -15,9 +15,7 @@
  *)
 
 val map : ('a -> ('b, 'c) result) -> 'a list -> ('b list, 'c) result
-
 val iter : ('a -> (unit, 'b) result) -> 'a list -> (unit, 'b) result
-
 val opam_version : unit -> (string, [> Rresult.R.msg ]) result
 
 val ocaml_version :

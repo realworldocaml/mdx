@@ -36,21 +36,13 @@ let duniverse_opam_repo =
   "git+https://github.com/dune-universe/opam-overlays.git"
 
 let dune_get = Fpath.v "dune-get"
-
 let vendor_dir = Fpath.v "duniverse"
-
 let pins_dir = Fpath.(vendor_dir / ".pins")
-
 let duniverse_log = Fpath.v ".duniverse-log"
-
 let bootstrap_dir = Fpath.v "_ocaml"
-
 let bootstrap_src_dir = Fpath.(bootstrap_dir / "src")
-
 let ocaml_src_dir = Fpath.(bootstrap_src_dir / "ocaml")
-
 let dune_src_dir = Fpath.(bootstrap_src_dir / "dune")
-
 let dune_latest_tag = "2.6.0" (* TODO get from opam metadata *)
 
 let lockfile_ext = ".opam.locked"

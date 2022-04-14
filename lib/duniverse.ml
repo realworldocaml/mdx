@@ -1,7 +1,6 @@
 open Import
 
 type unresolved = Git.Ref.t
-
 type resolved = Git.Ref.resolved
 
 module Repo = struct

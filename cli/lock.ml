@@ -4,11 +4,8 @@ module Package_argument : sig
   type t
 
   val name : t -> OpamPackage.Name.t
-
   val version : t -> OpamPackage.Version.t option
-
   val conv : t Cmdliner.Arg.conv
-
   val pp_styled : t Fmt.t
 end = struct
   type t = { name : OpamPackage.Name.t; version : OpamPackage.Version.t option }
@@ -18,7 +15,6 @@ end = struct
     { name; version }
 
   let name { name; _ } = name
-
   let version { version; _ } = version
 
   let from_string name =
@@ -260,7 +256,7 @@ let opam_provided_packages ~opam_monorepo_cwd local_packages target_packages =
   let open Result.O in
   OpamPackage.Name.Set.fold
     (fun name acc ->
-      let* acc = acc in
+      let* acc in
       match OpamPackage.Name.Map.find_opt name local_packages with
       | Some (_version, opam) -> (
           match Source_opam_config.get ~opam_monorepo_cwd opam with
