@@ -14,8 +14,8 @@ homepage: "https://github.com/ocamllabs/opam-monorepo"
 doc: "https://ocamllabs.github.io/opam-monorepo"
 bug-reports: "https://github.com/ocamllabs/opam-monorepo/issues"
 depends: [
+  "dune" {>= "2.7"}
   "ocaml" {>= "4.08.0"}
-  "dune" {>= "2.7" & < "3.0"}
   "dune-build-info"
   "base"
   "bos"
