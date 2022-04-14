@@ -4,11 +4,8 @@ module Url : sig
   (* This includes archives, other VCS and rsync opam src URLs *)
 
   val equal : t -> t -> bool
-
   val pp : t Fmt.t
-
   val from_opam_field : OpamFile.URL.t -> t
-
   val from_opam : OpamUrl.t -> t
 
   val is_local_filesystem : OpamUrl.t -> bool
@@ -26,9 +23,7 @@ module Package_summary : sig
   }
 
   val equal : t -> t -> bool
-
   val pp : t Fmt.t
-
   val from_opam : OpamPackage.t -> OpamFile.OPAM.t -> t
 
   val is_virtual : t -> bool
@@ -47,7 +42,6 @@ end
 
 module Pp : sig
   val package : OpamPackage.t Fmt.t
-
   val raw_package : OpamPackage.t Fmt.t
 
   module Package_name : sig
@@ -65,11 +59,8 @@ module Pp : sig
   end
 
   val package_name : OpamPackage.Name.t Fmt.t
-
   val version : OpamPackage.Version.t Fmt.t
-
   val hash : OpamHash.t Fmt.t
-
   val url : OpamUrl.t Fmt.t
 end
 
@@ -107,7 +98,6 @@ end
 
 module Pos : sig
   val default : OpamParserTypes.FullPos.pos
-
   val with_default : 'a -> 'a OpamParserTypes.FullPos.with_pos
 
   val errorf :

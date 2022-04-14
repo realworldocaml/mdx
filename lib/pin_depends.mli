@@ -3,7 +3,6 @@ open! Import
 type t = OpamPackage.t * OpamUrl.t
 
 val equal : t -> t -> bool
-
 val pp : Format.formatter -> t -> unit
 
 val sort_uniq : t list -> (t list, [> `Msg of string ]) result

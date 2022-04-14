@@ -2,21 +2,13 @@ module type S = sig
   include MoreLabels.Map.S
 
   val mem : 'a t -> key -> bool
-
   val set : 'a t -> key -> 'a -> 'a t
-
   val find : 'a t -> key -> 'a option
-
   val update : 'a t -> key -> f:('a option -> 'a option) -> 'a t
-
   val values : 'a t -> 'a list
-
   val keys : 'a t -> key list
-
   val of_list : (key * 'a) list -> ('a t, key * 'a * 'a) Result.t
-
   val of_list_exn : (key * 'a) list -> 'a t
-
   val of_list_map_exn : 'a list -> f:('a -> key * 'b) -> 'b t
 end
 
@@ -28,17 +20,11 @@ module Make (Key : Key) : S with type key = Key.t = struct
   include MoreLabels.Map.Make (Key)
 
   let mem t k = mem k t
-
   let find key t = find_opt t key
-
   let update t k ~f = update ~key:k ~f t
-
   let set t k v = add ~key:k ~data:v t
-
   let foldi t ~init ~f = fold t ~init ~f:(fun ~key ~data acc -> f key data acc)
-
   let values t = foldi t ~init:[] ~f:(fun _ v l -> v :: l) |> List.rev
-
   let keys t = foldi t ~init:[] ~f:(fun k _ l -> k :: l) |> List.rev
 
   let of_list =

@@ -15,7 +15,6 @@ module Lang : sig
   type version = int * int
 
   val compare_version : version -> version -> int
-
   val pp_version : version Fmt.t
 
   val duniverse_minimum_version : version

@@ -14,9 +14,7 @@ end
 
 module type OPAM_MONOREPO_CONTEXT = sig
   type input
-
   type base_rejection
-
   type r = Non_dune | No_cross_compile | Base_rejection of base_rejection
 
   include Opam_0install.S.CONTEXT with type rejection = r
@@ -44,7 +42,6 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     with type base_rejection = Base_context.rejection
      and type input = Base_context.input = struct
   type base_rejection = Base_context.rejection
-
   type input = Base_context.input
 
   type t = {
@@ -303,7 +300,6 @@ let fixed_packages ~local_packages ~pin_depends =
 
 module type OPAM_MONOREPO_SOLVER = sig
   type input
-
   type diagnostics
 
   val calculate :
@@ -322,7 +318,6 @@ module type OPAM_MONOREPO_SOLVER = sig
     result
 
   val diagnostics_message : verbose:bool -> diagnostics -> [> `Msg of string ]
-
   val not_buildable_with_dune : diagnostics -> OpamPackage.Name.t list
 
   val unavailable_versions_due_to_constraints :
@@ -594,9 +589,7 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
 end
 
 type explicit_repos = string list
-
 type opam_env = OpamVariable.variable_contents String.Map.t
-
 type switch = OpamStateTypes.unlocked OpamStateTypes.switch_state
 
 module Multi_dir_context :
@@ -646,7 +639,6 @@ module Multi_dir_context :
     List.rev (OpamPackage.Version.Map.bindings map)
 
   let user_restrictions t pkg = user_restrictions (List.hd t) pkg
-
   let filter_deps t pkg f = filter_deps (List.hd t) pkg f
 end
 
@@ -671,7 +663,6 @@ module Local_opam_config_solver = Make_solver (Local_opam_config_context)
 module Explicit_repos_solver = Make_solver (Explicit_repos_context)
 
 type switch_diagnostics = Local_opam_config_solver.diagnostics
-
 type explicit_repos_diagnostics = Explicit_repos_solver.diagnostics
 
 let local_opam_config_solver : (switch, switch_diagnostics) t =

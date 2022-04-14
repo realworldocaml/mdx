@@ -2,7 +2,6 @@ open Import
 
 module Arg = struct
   let named f = Cmdliner.Term.(app (const f))
-
   let fpath = Cmdliner.Arg.conv ~docv:"PATH" (Fpath.of_string, Fpath.pp)
 
   let root =

@@ -21,9 +21,7 @@ module Version = struct
   type t = int * int
 
   let current = (0, 2)
-
   let pp fmt (major, minor) = Format.fprintf fmt "%d.%d" major minor
-
   let to_string (major, minor) = Printf.sprintf "%d.%d" major minor
 
   let from_string s =
@@ -87,7 +85,6 @@ end
 
 module Depends = struct
   type dependency = { package : OpamPackage.t; vendored : bool }
-
   type t = dependency list
 
   let from_dependency_entries dependency_entries =

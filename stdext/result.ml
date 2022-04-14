@@ -1,7 +1,6 @@
 include Stdlib.Result
 
 let bind ~f r = bind r f
-
 let map ~f = map f
 
 (* some useful functions inspired by Jane Street Base *)
@@ -10,11 +9,8 @@ let of_option v ~error = match v with Some v -> Ok v | None -> Error error
 
 module O = struct
   let ( >>= ) res f = bind ~f res
-
   let ( >>| ) res f = map ~f res
-
   let ( let* ) = ( >>= )
-
   let ( let+ ) = ( >>| )
 end
 

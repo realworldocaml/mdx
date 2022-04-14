@@ -2,7 +2,6 @@ open Import
 
 module Ls_remote = struct
   let non_packed_suffix = "^{}"
-
   let ref_arg ref = Bos.Cmd.(v ref % (ref ^ non_packed_suffix))
 
   let parse_output_line s =
@@ -94,9 +93,7 @@ module Ref = struct
   type t = string
 
   let equal = String.equal
-
   let compare = String.compare
-
   let pp = Format.pp_print_string
 
   type resolved = { t : t; commit : string }

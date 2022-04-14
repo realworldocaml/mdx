@@ -22,9 +22,7 @@ let guess_pin ~version ~loc =
   || String.is_suffix ~suffix:"+mirage" version
 
 let pp_name = Fmt.(styled `Bold string)
-
 let pp_version = Fmt.(styled `Magenta string)
-
 let pp_pin_version = Fmt.(styled `Blue string)
 
 let pp_pin_loc ppf s =

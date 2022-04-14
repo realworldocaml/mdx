@@ -58,7 +58,6 @@ let local_packages ~recurse t =
       [] [ t ]
 
 let all_local_packages t = local_packages ~recurse:true t
-
 let dune_project t = Fpath.(t / "dune-project")
 
 let name t =

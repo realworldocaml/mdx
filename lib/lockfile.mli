@@ -10,7 +10,6 @@ val create :
   t
 
 val to_duniverse : t -> (Duniverse.t, [ `Msg of string ]) result
-
 val ocaml_version : t -> OpamPackage.Version.t option
 
 val save :
