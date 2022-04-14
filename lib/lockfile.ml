@@ -115,11 +115,11 @@ module Depends = struct
           ( name,
             And
               ( Atom (Constraint (`Eq, FString version)),
-                Atom (Filter (FIdent ([], var, None))) ) )
+                Atom (Filter (FDefined (FIdent ([], var, None)))) ) )
       | Atom
           ( name,
             And
-              ( Atom (Filter (FIdent ([], var, None))),
+              ( Atom (Filter (FDefined (FIdent ([], var, None)))),
                 Atom (Constraint (`Eq, FString version)) ) )
         when variable_equal var Config.vendor_variable ->
           let version = OpamPackage.Version.of_string version in
@@ -136,7 +136,7 @@ module Depends = struct
     let version = package.version in
     let variable =
       OpamFormula.Atom
-        (OpamTypes.Filter (OpamTypes.FIdent ([], Config.vendor_variable, None)))
+        (OpamTypes.Filter (FDefined (FIdent ([], Config.vendor_variable, None))))
     in
     let version_constraint =
       OpamFormula.Atom

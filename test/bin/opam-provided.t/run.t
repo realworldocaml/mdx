@@ -24,7 +24,7 @@ The lockfile should thus contain the package "b" and mark it as `vendor` since
 `opam-monorepo` will vendor it.
 
   $ opam show --no-lint --raw -fdepends ./vendored.opam.locked
-  "b" {= "1" & vendor}
+  "b" {= "1" & ?vendor}
   "base-bigarray" {= "base"}
   "base-threads" {= "base"}
   "base-unix" {= "base"}
@@ -73,7 +73,7 @@ Locking it should work as usual
   "base-bigarray" {= "base"}
   "base-threads" {= "base"}
   "base-unix" {= "base"}
-  "depends-on-b" {= "1" & vendor}
+  "depends-on-b" {= "1" & ?vendor}
   "dune" {= "2.9.1"}
   "ocaml" {= "4.13.1"}
   "ocaml-base-compiler" {= "4.13.1"}

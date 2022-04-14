@@ -32,11 +32,11 @@ The lockfile should contain the base packages, dune and our 2 dependencies
   synopsis: "opam-monorepo generated lockfile"
   maintainer: "opam-monorepo"
   depends: [
-    "b" {= "1" & vendor}
+    "b" {= "1" & ?vendor}
     "base-bigarray" {= "base"}
     "base-threads" {= "base"}
     "base-unix" {= "base"}
-    "c" {= "1" & vendor}
+    "c" {= "1" & ?vendor}
     "dune" {= "2.9.1"}
     "ocaml" {= "4.13.1"}
     "ocaml-base-compiler" {= "4.13.1"}
