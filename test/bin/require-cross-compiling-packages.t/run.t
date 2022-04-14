@@ -56,14 +56,14 @@ overlays the solver picks the dune port as expected:
 
   $ opam-monorepo lock a > /dev/null
   $ opam show --no-lint -fdepends ./a.opam.locked | grep "\"b\""
-  "b" {= "0.1+dune" & vendor}
+  "b" {= "0.1+dune" & ?vendor}
 
 If we add the mirage overlays, the mirage port gets picked instead as its
 version is higher (+mirage):
 
   $ opam-monorepo lock a-with-mirage > /dev/null
   $ opam show --no-lint -fdepends ./a-with-mirage.opam.locked | grep "\"b\""
-  "b" {= "0.1+dune+mirage" & vendor}
+  "b" {= "0.1+dune+mirage" & ?vendor}
 
 So far so good. Problems arise when a new release of b hits upstream. We managed
 to upstream the dune port before `0.2` so the `0.2` release builds with dune.
@@ -84,7 +84,7 @@ Regular users of opam-monorepo will get the 0.2 version and be happy with it:
 
   $ opam-monorepo lock a > /dev/null
   $ opam show --no-lint -fdepends ./a.opam.locked | grep "\"b\""
-  "b" {= "0.2" & vendor}
+  "b" {= "0.2" & ?vendor}
 
 Mirage users on the other hand will get it as well, meaning they can't cross
 compile their unikernel anymore. The solver is happy but this will cause errors
@@ -92,7 +92,7 @@ at build time for them:
 
   $ opam-monorepo lock a-with-mirage > /dev/null
   $ grep "\"b\"\s\+{" a-with-mirage.opam.locked
-    "b" {= "0.2" & vendor}
+    "b" {= "0.2" & ?vendor}
 
 We added the --require-cross-compile flag to select packages that cross compile
 when available.
@@ -101,14 +101,14 @@ still get the latest release:
 
   $ opam-monorepo lock --require-cross-compile a > /dev/null
   $ opam show --no-lint -fdepends ./a.opam.locked | grep "\"b\""
-  "b" {= "0.2" & vendor}
+  "b" {= "0.2" & ?vendor}
 
 If we run it with mirage overlays though, it will detect that there exist
 versions that cross compile and favor those instead:
 
   $ opam-monorepo lock --require-cross-compile a-with-mirage > /dev/null
   $ opam show --no-lint -fdepends ./a-with-mirage.opam.locked | grep "\"b\""
-  "b" {= "0.1+dune+mirage" & vendor}
+  "b" {= "0.1+dune+mirage" & ?vendor}
 
 Note that if the upstream released version does cross compile, it can add the
 tag to be picked instead:
@@ -116,4 +116,4 @@ tag to be picked instead:
   $ echo "tags: [\"cross-compile\"]" >> opam-repository/packages/b/b.0.2/opam
   $ opam-monorepo lock --require-cross-compile a-with-mirage > /dev/null
   $ opam show --no-lint -fdepends ./a-with-mirage.opam.locked | grep "\"b\""
-  "b" {= "0.2" & vendor}
+  "b" {= "0.2" & ?vendor}
