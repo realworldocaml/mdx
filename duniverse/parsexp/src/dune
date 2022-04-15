@@ -1,5 +1,0 @@
-(library (name parsexp) (public_name parsexp) (libraries sexplib0 base.caml)
- (preprocess no_preprocessing)
- (lint
-  (pps ppx_js_style -check-doc-comments ppx_sexp_conv
-   -deriving-keep-w32=impl)))

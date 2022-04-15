@@ -1,3 +1,0 @@
-(library
- (name hello)
- (public_name .iaminvalid))

@@ -1,4 +1,0 @@
-PKG b0.kit
-S src
-S test
-B _build/**

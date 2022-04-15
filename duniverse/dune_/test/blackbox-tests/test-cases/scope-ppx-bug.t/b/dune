@@ -1,5 +1,0 @@
-(library
- (name b)
- (public_name b)
- (preprocess
-  (pps a)))
