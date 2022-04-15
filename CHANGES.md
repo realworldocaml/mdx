@@ -39,7 +39,7 @@
 
 ### Removed
 
-- Drop support for lockfile versions 0.2 and lower (#<PR_NUMBER>, @NathanReb)
+- Drop support for lockfile versions 0.2 and lower (#285, @NathanReb)
 
 ### Security
 
