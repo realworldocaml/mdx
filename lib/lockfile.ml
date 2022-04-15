@@ -20,7 +20,12 @@ end
 module Version = struct
   type t = int * int
 
-  let current = (0, 2)
+  let compare (major, minor) (major', minor') =
+    match Ordering.of_int (Int.compare major major') with
+    | Eq -> Ordering.of_int (Int.compare minor minor')
+    | ordering -> ordering
+
+  let current = (0, 3)
   let pp fmt (major, minor) = Format.fprintf fmt "%d.%d" major minor
   let to_string (major, minor) = Printf.sprintf "%d.%d" major minor
 
@@ -35,19 +40,20 @@ module Version = struct
         | Some major, Some minor -> Ok (major, minor)
         | _ -> err ())
 
-  let backward_compatible (major, minor) (major', minor') =
-    major = major' && minor >= minor'
-
   let compatible t =
-    (* We still support 0.1 lockfiles but we'll need to update that if we stop doing so *)
-    if backward_compatible current t then Ok ()
-    else
-      Error
-        (`Msg
-          (Format.asprintf
-             "Incompatible opam-monorepo lockfile version %a. Please upgrade \
-              your opam-monorepo plugin."
-             pp t))
+    match compare current t with
+    | Eq -> Ok ()
+    | Lt ->
+        Rresult.R.error_msgf
+          "Incompatible opam-monorepo lockfile version %a. Please upgrade your \
+           opam-monorepo plugin."
+          pp t
+    | Gt ->
+        Rresult.R.error_msgf
+          "opam-monorepo lockfile version %a is too old. Please regenerate the \
+           lockfile using your current opam-monorepo plugin or install an \
+           older version of the plugin."
+          pp t
 
   let to_opam_value t = Opam.Value.String.to_value (to_string t)
 

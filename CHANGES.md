@@ -22,6 +22,7 @@
 
 ### Changed
 
+- Bump lockfile version to 0.3 (#<PR_NUMBER>, @NathanReb)
 - Mark packages to be pulled by opam-monorepo with the `vendor` variable so
   using OPAM with `opam install --deps-only --locked .` will not install
   packages that will be installed with `opam-monorepo pull` (#237,
@@ -37,6 +38,8 @@
   forced to by version constraints or `--ocaml-version`. (#269, @NathanReb)
 
 ### Removed
+
+- Drop support for lockfile versions 0.2 and lower (#<PR_NUMBER>, @NathanReb)
 
 ### Security
 
