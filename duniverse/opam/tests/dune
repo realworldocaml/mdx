@@ -1,0 +1,4 @@
+(test
+  (name      patcher)
+  (modules   patcher)
+  (libraries opam-core))
