@@ -22,7 +22,7 @@
 
 ### Changed
 
-- Bump lockfile version to 0.3 (#<PR_NUMBER>, @NathanReb)
+- Bump lockfile version to 0.3 (#285, @NathanReb)
 - Mark packages to be pulled by opam-monorepo with the `vendor` variable so
   using OPAM with `opam install --deps-only --locked .` will not install
   packages that will be installed with `opam-monorepo pull` (#237,
