@@ -1,0 +1,9 @@
+(executable
+ (name test)
+ (preprocess (pps ppx_let))
+ (libraries lwt lwt.unix))
+
+(alias
+ (name runtest)
+ (package lwt_ppx_let)
+ (action (run %{exe:test.exe})))

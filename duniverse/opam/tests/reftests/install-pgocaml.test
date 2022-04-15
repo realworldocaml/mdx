@@ -1,0 +1,23 @@
+f372039d
+### opam switch create --fake 4.06.1
+
+<><> Installing new switch packages <><><><><><><><><><><><><><><><><><><><><><>
+Switch invariant: ["ocaml-base-compiler" {= "4.06.1"} | "ocaml-system" {= "4.06.1"}]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+Faking installation of base-bigarray.base
+Faking installation of base-threads.base
+Faking installation of base-unix.base
+Faking installation of ocaml-base-compiler.4.06.1
+Faking installation of ocaml-config.1
+Faking installation of ocaml.4.06.1
+Done.
+### opam install 'pgocaml<2.0' 'pgocaml>=1.7.1' --show
+[ERROR] Package conflict!
+  * No agreement on the version of ocaml:
+    - (invariant) -> ocaml-base-compiler = 4.06.1 -> ocaml = 4.06.1
+    - pgocaml < 2.0 -> ocaml < 4.06.0
+    You can temporarily relax the switch invariant with `--update-invariant'
+
+No solution found, exiting
+# Return code 20 #

@@ -1,0 +1,18 @@
+(executable
+ (name test_diagnostics)
+ (libraries opam-0install))
+
+(rule
+ (deps
+  packages/main/main.1/opam
+  packages/foo/foo.1/opam
+  packages/foo/foo.2/opam)
+ (action
+  (with-stdout-to
+   test_diagnostics.output
+   (run ./test_diagnostics.exe packages))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff test_diagnostics.expected test_diagnostics.output)))
