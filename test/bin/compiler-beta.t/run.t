@@ -1,6 +1,6 @@
 We have a simple project that only depends on OCaml
 
-  $ opam show --just-file -fdepends ./test.opam
+  $ opam show --just-file -fdepends ./dont-want-beta.opam
   ocaml, dune
 
 We use the minimal repository which includes OCaml 4.13.1
@@ -20,8 +20,8 @@ Our package does not define an upper bound on ocaml but the beta should not be
 selected by default if there exists another solution, therefore here the solver
 should pick 4.13.1:
 
-  $ opam-monorepo lock test > /dev/null
-  $ opam show --just-file -fdepends ./test.opam.locked | grep ocaml
+  $ opam-monorepo lock dont-want-beta > /dev/null
+  $ opam show --just-file -fdepends ./dont-want-beta.opam.locked | grep ocaml
   "ocaml" {= "4.13.1"}
   "ocaml-base-compiler" {= "4.13.1"}
   "ocaml-config" {= "2"}
@@ -29,14 +29,14 @@ should pick 4.13.1:
 
 Now if we require ocaml >= 4.14, as the following package does:
 
-  $ opam show --just-file -fdepends ./test-requires-beta.opam
+  $ opam show --just-file -fdepends ./requires-beta.opam
   "ocaml" {>= "4.14"} "dune"
 
 The solver should be able to select the beta compiler since it is the only
 satisfying version available:
 
-  $ opam-monorepo lock test-requires-beta > /dev/null
-  $ opam show --just-file -fdepends ./test-requires-beta.opam.locked | grep ocaml
+  $ opam-monorepo lock requires-beta > /dev/null
+  $ opam show --just-file -fdepends ./requires-beta.opam.locked | grep ocaml
   "ocaml" {= "4.14.0"}
   "ocaml-base-compiler" {= "4.14.0~beta1"}
   "ocaml-config" {= "2"}

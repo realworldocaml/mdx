@@ -8,9 +8,9 @@ We setup the default base repository
 
   $ gen-minimal-repo
 
-Here we define a package test that depends on a package `a`:
+Here we define a package higher-version that depends on a package `a`:
 
-  $ cat test.opam
+  $ cat higher-version.opam
   opam-version: "2.0"
   depends: [
     "dune"
@@ -56,6 +56,6 @@ opam-monorepo solver should pick a.0.2 here:
   ==> Found 9 opam dependencies for the target package.
   ==> Querying opam database for their metadata and Dune compatibility.
   ==> Calculating exact pins for each of them.
-  ==> Wrote lockfile with 1 entries to $TESTCASE_ROOT/test.opam.locked. You can now run opam monorepo pull to fetch their sources.
-  $ cat test.opam.locked | grep "\"a\"\s\+{"
+  ==> Wrote lockfile with 1 entries to $TESTCASE_ROOT/higher-version.opam.locked. You can now run opam monorepo pull to fetch their sources.
+  $ cat higher-version.opam.locked | grep "\"a\"\s\+{"
     "a" {= "0.2" & ?vendor}

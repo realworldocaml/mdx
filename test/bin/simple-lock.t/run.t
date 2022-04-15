@@ -2,7 +2,7 @@ We have a simple project with a single package defined at the root.
 It has a `x-opam-monorepo-opam-repositories` field set to use a local
 opam-repository for locking
 
-  $ cat a.opam
+  $ cat simple-lock.opam
   opam-version: "2.0"
   depends: [
     "dune"
@@ -22,12 +22,12 @@ We provided a minimal opam-repository but locking should be successful.
   ==> Found 10 opam dependencies for the target package.
   ==> Querying opam database for their metadata and Dune compatibility.
   ==> Calculating exact pins for each of them.
-  ==> Wrote lockfile with 2 entries to $TESTCASE_ROOT/a.opam.locked. You can now run opam monorepo pull to fetch their sources.
+  ==> Wrote lockfile with 2 entries to $TESTCASE_ROOT/simple-lock.opam.locked. You can now run opam monorepo pull to fetch their sources.
 
 The lockfile should contain the base packages, dune and our 2 dependencies
 `b` and `c` which should be pulled in the duniverse
 
-  $ cat a.opam.locked
+  $ cat simple-lock.opam.locked
   opam-version: "2.0"
   synopsis: "opam-monorepo generated lockfile"
   maintainer: "opam-monorepo"
@@ -66,5 +66,5 @@ The lockfile should contain the base packages, dune and our 2 dependencies
   x-opam-monorepo-opam-repositories: [
     "file://$OPAM_MONOREPO_CWD/minimal-repo" "file://$OPAM_MONOREPO_CWD/repo"
   ]
-  x-opam-monorepo-root-packages: ["a"]
+  x-opam-monorepo-root-packages: ["simple-lock"]
   x-opam-monorepo-version: "0.3"
