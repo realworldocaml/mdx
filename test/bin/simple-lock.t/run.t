@@ -67,4 +67,4 @@ The lockfile should contain the base packages, dune and our 2 dependencies
     "file://$OPAM_MONOREPO_CWD/minimal-repo" "file://$OPAM_MONOREPO_CWD/repo"
   ]
   x-opam-monorepo-root-packages: ["a"]
-  x-opam-monorepo-version: "0.2"
+  x-opam-monorepo-version: "0.3"
