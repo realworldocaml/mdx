@@ -1,4 +1,0 @@
-(lang dune 2.4)
-(name pkg)
-
-(using mdx 0.1)

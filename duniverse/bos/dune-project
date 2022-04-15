@@ -1,3 +1,0 @@
-(lang dune 1.0)
-(name bos)
-(version v0.2.1+dune)

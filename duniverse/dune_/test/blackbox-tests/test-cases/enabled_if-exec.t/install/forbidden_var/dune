@@ -1,7 +1,0 @@
-(executable
- (name foo))
-
-(install
- (section bin)
- (enabled_if (= %{project_root} ""))
- (files (foo.exe as foo.x)))
