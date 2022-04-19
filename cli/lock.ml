@@ -256,7 +256,7 @@ let opam_provided_packages ~opam_monorepo_cwd local_packages target_packages =
   let open Result.O in
   OpamPackage.Name.Set.fold
     (fun name acc ->
-      let* acc in
+      let* acc = acc in
       match OpamPackage.Name.Map.find_opt name local_packages with
       | Some (_version, opam) -> (
           match Source_opam_config.get ~opam_monorepo_cwd opam with
