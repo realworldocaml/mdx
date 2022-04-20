@@ -6,19 +6,19 @@ We setup the default base repository
 
 Here we define a package test that depends on a package `b`:
 
-  $ opam show --just-file --no-lint --raw -fdepends ./a.opam
+  $ opam show --just-file --raw -fdepends ./a.opam
   dune, b
 
 Package `b` has a `depext` on a fantasy OS package. We deliberately pick a
 fantasy name here to make sure the behaviour is the same on all platforms.
 
-  $ opam show --just-file --no-lint --raw -fdepexts ./repo/packages/b/b.1/opam
+  $ opam show --just-file --raw -fdepexts ./repo/packages/b/b.1/opam
   libfantasydependency
 
 We lock and expect the OS package to be part of the locked Opam file.
 
   $ opam-monorepo lock a > /dev/null
-  $ opam show --just-file --no-lint --raw -fdepexts ./a.opam.locked
+  $ opam show --just-file --raw -fdepexts ./a.opam.locked
   libfantasydependency
 
 Then we want to make sure `depext` works. Given the fantasy package does not
