@@ -1,17 +1,3 @@
-## unreleased
-
-### Added
-
-### Changed
-
-### Deprecated
-
-### Fixed
-
-### Removed
-
-### Security
-
 ## 0.3.0
 
 ### Added
@@ -42,8 +28,6 @@
   packages that will be installed with `opam-monorepo pull` (#237,
   @Leonidas-from-XIV)
 
-### Deprecated
-
 ### Fixed
 
 - Fix a bug where a package which had a single version that built with dune and got selected by the solver
@@ -54,8 +38,6 @@
 ### Removed
 
 - Drop support for lockfile versions 0.2 and lower (#285, @NathanReb)
-
-### Security
 
 ## 0.2.7
 
