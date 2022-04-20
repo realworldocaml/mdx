@@ -7,8 +7,8 @@ We setup the default base repository
 
 Here we define a package test that depends on a package `a`:
 
-  $ opam show --no-lint --raw -fdepends ./existing.opam
-  "dune" "a"
+  $ opam show --just-file --raw -fdepends ./existing.opam
+  dune, a
 
 We have a local repo that defines a package `a` that satisfies the predicate,
 with a version that is valid and can be picked.
@@ -29,7 +29,7 @@ opam-monorepo solver should successfully pick a.0.1:
 Yet if we attempt to use the same package, but pick a version that doesn't
 exist in our repo:
 
-  $ opam show --no-lint --raw -fdepends ./toonew.opam
+  $ opam show --just-file --raw -fdepends ./toonew.opam
   "dune" "a" {>= "1.0"}
 
 opam-monorepo should fail with some error code and display an error message
@@ -46,7 +46,7 @@ to the test)
 
 We should also produce the right error message with all the constraints when we have multiple constaints
 
-  $ opam show --no-lint --raw -fdepends ./multiple-constraint.opam
+  $ opam show --just-file --raw -fdepends ./multiple-constraint.opam
   "dune" "depends-on-min-a" "a" {< "2.0"}
   $ opam-monorepo lock multiple-constraint 2> errors
   ==> Using 1 locally scanned package as the target.

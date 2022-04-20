@@ -3,8 +3,8 @@ a lockfile for our current version.
 
   $ gen-minimal-repo
   $ opam-monorepo lock > /dev/null
-  $ opam show --no-lint --raw -fx-opam-monorepo-version ./lockfile-version.opam.locked
-  "0.3"
+  $ opam show --just-file --raw -fx-opam-monorepo-version ./lockfile-version.opam.locked
+  0.3
 
 This is our current version.
 At the moment we are not backward compatible so if we downgrade this version number,
