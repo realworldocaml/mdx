@@ -39,30 +39,27 @@ that are essencially the same: they both depends on b but the latter configures
 the solver to use the mirage overlays in addition with upstream and
 dune-universe:
 
-  $ opam show --no-lint -fdepends ./a.opam
-  "dune" "b"
-  $ opam show --no-lint -fx-opam-monorepo-opam-repositories --raw ./a.opam
-  "file://$OPAM_MONOREPO_CWD/opam-repository"
-  "file://$OPAM_MONOREPO_CWD/opam-overlays"
-  $ opam show --no-lint -fdepends ./a-with-mirage.opam
-  "dune" "b"
-  $ opam show --no-lint -fx-opam-monorepo-opam-repositories --raw ./a-with-mirage.opam
-  "file://$OPAM_MONOREPO_CWD/opam-repository"
-  "file://$OPAM_MONOREPO_CWD/opam-overlays"
-  "file://$OPAM_MONOREPO_CWD/mirage-opam-overlays"
+  $ opam show --just-file --no-lint -fdepends ./a.opam
+  dune, b
+  $ opam show --just-file --no-lint -fx-opam-monorepo-opam-repositories --raw ./a.opam
+  file://$OPAM_MONOREPO_CWD/opam-repository, file://$OPAM_MONOREPO_CWD/opam-overlays
+  $ opam show --just-file --no-lint -fdepends ./a-with-mirage.opam
+  dune, b
+  $ opam show --just-file --no-lint -fx-opam-monorepo-opam-repositories --raw ./a-with-mirage.opam
+  file://$OPAM_MONOREPO_CWD/opam-repository, file://$OPAM_MONOREPO_CWD/opam-overlays, file://$OPAM_MONOREPO_CWD/mirage-opam-overlays
 
 Until there is a new release, everything goes fine. If we don't add the mirage
 overlays the solver picks the dune port as expected:
 
   $ opam-monorepo lock a > /dev/null
-  $ opam show --no-lint -fdepends ./a.opam.locked | grep "\"b\""
+  $ opam show --just-file --no-lint -fdepends ./a.opam.locked | grep "\"b\""
   "b" {= "0.1+dune" & ?vendor}
 
 If we add the mirage overlays, the mirage port gets picked instead as its
 version is higher (+mirage):
 
   $ opam-monorepo lock a-with-mirage > /dev/null
-  $ opam show --no-lint -fdepends ./a-with-mirage.opam.locked | grep "\"b\""
+  $ opam show --just-file --no-lint -fdepends ./a-with-mirage.opam.locked | grep "\"b\""
   "b" {= "0.1+dune+mirage" & ?vendor}
 
 So far so good. Problems arise when a new release of b hits upstream. We managed
@@ -83,7 +80,7 @@ to upstream the dune port before `0.2` so the `0.2` release builds with dune.
 Regular users of opam-monorepo will get the 0.2 version and be happy with it:
 
   $ opam-monorepo lock a > /dev/null
-  $ opam show --no-lint -fdepends ./a.opam.locked | grep "\"b\""
+  $ opam show --just-file --no-lint -fdepends ./a.opam.locked | grep "\"b\""
   "b" {= "0.2" & ?vendor}
 
 Mirage users on the other hand will get it as well, meaning they can't cross
@@ -100,14 +97,14 @@ Here, if we don't add mirage overlays and run the solver with this flag, we
 still get the latest release:
 
   $ opam-monorepo lock --require-cross-compile a > /dev/null
-  $ opam show --no-lint -fdepends ./a.opam.locked | grep "\"b\""
+  $ opam show --just-file --no-lint -fdepends ./a.opam.locked | grep "\"b\""
   "b" {= "0.2" & ?vendor}
 
 If we run it with mirage overlays though, it will detect that there exist
 versions that cross compile and favor those instead:
 
   $ opam-monorepo lock --require-cross-compile a-with-mirage > /dev/null
-  $ opam show --no-lint -fdepends ./a-with-mirage.opam.locked | grep "\"b\""
+  $ opam show --just-file --no-lint -fdepends ./a-with-mirage.opam.locked | grep "\"b\""
   "b" {= "0.1+dune+mirage" & ?vendor}
 
 Note that if the upstream released version does cross compile, it can add the
@@ -115,5 +112,5 @@ tag to be picked instead:
 
   $ echo "tags: [\"cross-compile\"]" >> opam-repository/packages/b/b.0.2/opam
   $ opam-monorepo lock --require-cross-compile a-with-mirage > /dev/null
-  $ opam show --no-lint -fdepends ./a-with-mirage.opam.locked | grep "\"b\""
+  $ opam show --just-file --no-lint -fdepends ./a-with-mirage.opam.locked | grep "\"b\""
   "b" {= "0.2" & ?vendor}
