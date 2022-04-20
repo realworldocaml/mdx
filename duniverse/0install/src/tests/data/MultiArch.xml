@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+<interface xmlns="http://zero-install.sourceforge.net/2004/injector/interface" uri='http://foo/MultiArch.xml'>
+  <name>MultiArch</name>
+  <summary>MultiArch</summary>
+  <group main='dummy'>
+    <requires interface='http://foo/MultiArchLib.xml'/>
+    <implementation id='sha1new=123' version='0.1' arch='Linux-i486'>
+      <archive href='foo' size='10'/>
+    </implementation>
+    <implementation id='sha1new=234' version='0.1' arch='Linux-x86_64'>
+      <archive href='foo' size='10'/>
+    </implementation>
+  </group>
+</interface>

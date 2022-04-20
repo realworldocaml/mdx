@@ -1,0 +1,14 @@
+(library
+ (name        zeroinstall)
+ (modules_without_implementation feed_provider progress sigs ui)
+ (libraries dynlink lwt lwt.unix react lwt_react support yojson xmlm 0install-solver
+            (select http.ml from
+             (curl curl.lwt -> http.curl.ml)
+             (cohttp cohttp-lwt cohttp-lwt-unix lwt_ssl -> http.cohttp.ml)
+            )
+            (select dbus.ml from
+             (obus.network_manager
+              obus.notification    -> dbus.with.ml)
+             (obus.network-manager
+              obus.notification    -> dbus.with.ml)
+             (                     -> dbus.without.ml))))

@@ -1,0 +1,22 @@
+platform:
+  - x86
+
+environment:
+  FORK_USER: ocaml
+  FORK_BRANCH: master
+  OPAM_SWITCH: 4.08.1+mingw64c
+  CYG_ROOT: C:\cygwin64
+  PINS: 0install.dev:. 0install-gtk.dev:. 0install-solver.dev:.
+  PACKAGE: 0install
+
+install:
+  - ps: iex ((new-object net.webclient).DownloadString("https://raw.githubusercontent.com/$env:FORK_USER/ocaml-ci-scripts/$env:FORK_BRANCH/appveyor-install.ps1"))
+
+build_script:
+  - call %CYG_ROOT%\bin\bash.exe -l %APPVEYOR_BUILD_FOLDER%\appveyor-opam.sh
+  - call %CYG_ROOT%\bin\bash.exe -l -c 'opam install 0install'
+  - mv %CYG_ROOT%\home\appveyor\.opam %APPVEYOR_BUILD_FOLDER%\opam
+
+artifacts:
+  - name: Binaries
+    path: 'opam\*\bin\0*'
