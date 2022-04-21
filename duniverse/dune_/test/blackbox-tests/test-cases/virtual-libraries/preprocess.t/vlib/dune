@@ -1,4 +1,0 @@
-(library
- (name bar)
- (virtual_modules foo)
- (preprocess (action (run %{project_root}/pp/mypp.exe %{input-file}))))
