@@ -1,13 +1,13 @@
 We have a simple project with two local packages, defined at the root
 
-  $ cat a.opam
+  $ cat missing-dune-project.opam
   opam-version: "2.0"
 
-  $ cat b.opam
+  $ cat missing-dune-project-as-well.opam
   opam-version: "2.0"
 
 The project has no dune-project file. That means that if we run `opam-monorepo lock`,
-it will have more than onw target: `a` and `b`. It therefore has to determine the name of the
+it will have more than one target: `a` and `b`. It therefore has to determine the name of the
 lockfile based on the project's name in the dune-project file. It's expected to fail but it should
 to that nicely, letting the user know that it couldn't infer the lockfile and that they should
 either explicitly specify it on the command line or add a valid dune-project file at the root.
