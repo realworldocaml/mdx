@@ -7,7 +7,7 @@ An [opam-monorepo] project uses 3 components in the source tree:
   dependencies (for example, [lwt = 4.2.1]) and how to get them (URLs, hashes,
   etc.). It also contains information about transitive dependencies, not just
   the ones mentioned in opam files.
-- a [duniverse] folder, which contains the sources for all the packages
+- a [duniverse] folder containing the sources for all the packages
   mentioned in the lock file
 
 The two important commands are:
