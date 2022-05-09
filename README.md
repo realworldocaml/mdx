@@ -53,7 +53,7 @@ so that Dune will only build the artifacts you need from that folder.
 From that point you should be able to run `dune build` and `dune runtest` as you normally would and
 build your entire project from scratch!
 
-### `opam-monorepo lock`
+### The `lock` Command
 
 It's important to note that `opam monorepo lock` will only succeed if all of your non-virtual and
 non "base" dependencies (e.g., `ocaml` or `dune`) build with Dune (i.e., directly depend on the `dune`
