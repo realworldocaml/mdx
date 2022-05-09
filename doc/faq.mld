@@ -13,7 +13,7 @@ For example:
 - You are checking the impact of some changes in a library and all packages that
   depend on it.
 
-{2 About Opam}
+{2 About opam}
 
 Opam is a package manager that
 - determines which versions of a library to use for a project
@@ -30,7 +30,7 @@ every step:
   it as binary.
 - "Source" package managers download the code as source and install it as
   binary. Opam is in this category.
-- opam-monorepo downloads code as source and installs it as source.
+- [opam-monorepo] downloads code as source and installs it as source.
 
 {2 New Workflows [opam-monorepo] Enable}
 
@@ -42,11 +42,11 @@ With the sources available, certain tasks are easier:
 - Cross-compilation - the details of how to build some native code can come late
   in the pipeline, which isn't a problem if the sources are available
 
-{2 Why is [opam monorepo] an Opam Plugin?}
+{2 Why is [opam monorepo] an opam Plugin?}
 
-Even though [opam-monorepo] doesn't require installing packages through Opam, it
-is  distributed as an Opam plugin. There are two reasons for this:
-- It uses Opam libraries internally to interact with the package repository and
-  respect the local Opam configuration (repositories, pins, etc.)
+Even though [opam-monorepo] doesn't require installing packages through opam, it
+is distributed as an opam plugin. There are two reasons for this:
+- It uses opam libraries internally to interact with the package repository and
+  respect the local opam configuration (repositories, pins, etc.)
 - Opam plugins have a special behaviour; they can be installed globally, so one
-  does not have to install [opam-monorepo] through Opam in various projects.
+  does not have to install [opam-monorepo] through opam in various projects.
