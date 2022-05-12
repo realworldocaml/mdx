@@ -76,6 +76,7 @@ to upstream the dune port before `0.2` so the `0.2` release builds with dune.
   >   src: "https://b.com/b.0.2.tbz"
   >   checksum: "sha256=0000000000000000000000000000000000000000000000000000000000000003"
   > }
+  > EOF
 
 Regular users of opam-monorepo will get the 0.2 version and be happy with it:
 
