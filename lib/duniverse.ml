@@ -207,9 +207,9 @@ let dev_repo_map_from_packages packages =
 let from_dependency_entries ~get_default_branch dependencies =
   let open Result.O in
   let summaries =
-    List.map
-      ~f:(fun Opam.Dependency_entry.{ package_summary; vendored = _ } ->
-        package_summary)
+    List.filter_map
+      ~f:(fun Opam.Dependency_entry.{ package_summary; vendored } ->
+        match vendored with true -> Some package_summary | false -> None)
       dependencies
   in
   let results =

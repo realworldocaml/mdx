@@ -251,17 +251,7 @@ let test_from_dependency_entries =
           dependency_factory ~vendored:false ~dev_repo:"d" ~url_src:(Other "u")
             ~name:"y" ~version:"v" ();
         ]
-      ~expected:
-        (Ok
-           [
-             {
-               dir = "d";
-               url = Other "u";
-               hashes = [];
-               provided_packages = [ opam_factory ~name:"y" ~version:"v" ];
-             };
-           ])
-      ();
+      ~expected:(Ok []) ();
     make_test ~name:"Aggregates repos"
       ~dependency_entries:
         [
