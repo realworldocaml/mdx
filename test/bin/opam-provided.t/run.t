@@ -21,7 +21,7 @@ It should lock successfully.
   $ opam-monorepo lock vendored > /dev/null
 
 The lockfile should thus contain the package "b" and mark it as `vendor` since
-`opam-monorepo` will vendor it.
+`opam-monorepo` will vendor it. It should also add it to the duniverse-dirs.
 
   $ opam show --just-file --raw -fdepends ./vendored.opam.locked
   "b" {= "1" & ?vendor}
@@ -33,6 +33,12 @@ The lockfile should thus contain the package "b" and mark it as `vendor` since
   "ocaml-base-compiler" {= "4.13.1"}
   "ocaml-config" {= "2"}
   "ocaml-options-vanilla" {= "1"}
+  $ opam show --just-file --raw -fx-opam-monorepo-duniverse-dirs ./vendored.opam.locked
+  [
+    "https://b.com/b.tbz"
+    "b"
+    ["sha256=0000000000000000000000000000000000000000000000000000000000000000"]
+  ]
 
 Let's now check with the same Opam file but this one adds `opam`-provided.
 Asking for the value will return that "b" will be provided by Opam:
@@ -54,6 +60,11 @@ We should see that this package is not marked as `vendor` so if we run
   "ocaml-base-compiler" {= "4.13.1"}
   "ocaml-config" {= "2"}
   "ocaml-options-vanilla" {= "1"}
+
+It also should not be in `duniverse-dirs` in the locked Opam file:
+
+  $ opam show --just-file --raw -fx-opam-monorepo-duniverse-dirs ./opam-provided.opam.locked
+  
 
 What happens in the case that a package would be ok to vendor but the
 transitive dependency is `opam`-provided? In this case we have a package
