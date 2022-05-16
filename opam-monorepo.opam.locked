@@ -18,16 +18,16 @@ depends: [
   "conf-pkg-config" {= "2"}
   "cppo" {= "1.6.8" & ?vendor}
   "csexp" {= "1.5.1" & ?vendor}
-  "dune" {= "3.0.3"}
-  "dune-build-info" {= "3.0.3" & ?vendor}
-  "dune-configurator" {= "3.0.3" & ?vendor}
+  "dune" {= "3.1.1"}
+  "dune-build-info" {= "3.1.1" & ?vendor}
+  "dune-configurator" {= "3.1.1" & ?vendor}
   "findlib" {= "1.8.1+dune" & ?vendor}
   "fmt" {= "0.9.0+dune" & ?vendor}
   "fpath" {= "0.7.3+dune" & ?vendor}
   "logs" {= "0.7.0+dune2" & ?vendor}
   "lwt" {= "5.5.0" & ?vendor}
   "mmap" {= "1.2.0" & ?vendor}
-  "num" {= "1.3+dune" & ?vendor}
+  "num" {= "1.4+dune" & ?vendor}
   "ocaml" {= "4.14.0"}
   "ocaml-base-compiler" {= "4.14.0"}
   "ocaml-config" {= "2"}
@@ -37,14 +37,14 @@ depends: [
   "ocamlfind" {= "1.8.1+dune" & ?vendor}
   "ocamlgraph" {= "2.0.0" & ?vendor}
   "ocplib-endian" {= "1.2" & ?vendor}
-  "opam-0install" {= "dev" & ?vendor}
+  "opam-0install" {= "0.4.3" & ?vendor}
   "opam-core" {= "2.1.2" & ?vendor}
   "opam-file-format" {= "2.1.4" & ?vendor}
   "opam-format" {= "2.1.2" & ?vendor}
   "opam-repository" {= "2.1.2" & ?vendor}
   "opam-state" {= "2.1.2" & ?vendor}
   "parsexp" {= "v0.15.0" & ?vendor}
-  "re" {= "1.10.3" & ?vendor}
+  "re" {= "1.10.4" & ?vendor}
   "result" {= "1.5" & ?vendor}
   "rresult" {= "0.7.0+dune" & ?vendor}
   "seq" {= "base+dune" & ?vendor}
@@ -120,12 +120,12 @@ pin-depends: [
     "https://github.com/ocaml-dune/csexp/releases/download/1.5.1/csexp-1.5.1.tbz"
   ]
   [
-    "dune-build-info.3.0.3"
-    "https://github.com/ocaml/dune/releases/download/3.0.3/fiber-3.0.3.tbz"
+    "dune-build-info.3.1.1"
+    "https://github.com/ocaml/dune/releases/download/3.1.1/fiber-3.1.1.tbz"
   ]
   [
-    "dune-configurator.3.0.3"
-    "https://github.com/ocaml/dune/releases/download/3.0.3/fiber-3.0.3.tbz"
+    "dune-configurator.3.1.1"
+    "https://github.com/ocaml/dune/releases/download/3.1.1/fiber-3.1.1.tbz"
   ]
   [
     "findlib.1.8.1+dune"
@@ -151,10 +151,7 @@ pin-depends: [
     "mmap.1.2.0"
     "https://github.com/mirage/mmap/releases/download/v1.2.0/mmap-1.2.0.tbz"
   ]
-  [
-    "num.1.3+dune"
-    "https://github.com/dune-universe/num/archive/v1.3+dune-2.tar.gz"
-  ]
+  ["num.1.4+dune" "https://github.com/ocaml/num/archive/v1.4.tar.gz"]
   [
     "ocaml-syntax-shims.1.0.0"
     "https://github.com/ocaml-ppx/ocaml-syntax-shims/releases/download/1.0.0/ocaml-syntax-shims-1.0.0.tbz"
@@ -176,8 +173,8 @@ pin-depends: [
     "https://github.com/OCamlPro/ocplib-endian/archive/refs/tags/1.2.tar.gz"
   ]
   [
-    "opam-0install.dev"
-    "git+https://github.com/ocaml-opam/opam-0install-solver#e386bd5509cb1f8c3793dd2e1950240980e17857"
+    "opam-0install.0.4.3"
+    "https://github.com/ocaml-opam/opam-0install-solver/releases/download/v0.4.3/opam-0install-cudf-0.4.3.tbz"
   ]
   ["opam-core.2.1.2" "https://github.com/ocaml/opam/archive/2.1.2.tar.gz"]
   [
@@ -195,8 +192,8 @@ pin-depends: [
     "https://ocaml.janestreet.com/ocaml-core/v0.15/files/parsexp-v0.15.0.tar.gz"
   ]
   [
-    "re.1.10.3"
-    "https://github.com/ocaml/ocaml-re/releases/download/1.10.3/re-1.10.3.tbz"
+    "re.1.10.4"
+    "https://github.com/ocaml/ocaml-re/releases/download/1.10.4/re-1.10.4.tbz"
   ]
   [
     "result.1.5"
@@ -318,13 +315,6 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/dune-universe/num/archive/v1.3+dune-2.tar.gz"
-    "num"
-    [
-      "sha256=32156376be05260eb72f651ae33df41fe0af03ad322bee29a10495efadfb2d1d"
-    ]
-  ]
-  [
     "https://github.com/dune-universe/rresult/releases/download/v0.7.0%2Bdune/rresult-0.7.0.dune.tbz"
     "rresult"
     [
@@ -404,8 +394,12 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "git+https://github.com/ocaml-opam/opam-0install-solver#e386bd5509cb1f8c3793dd2e1950240980e17857"
+    "https://github.com/ocaml-opam/opam-0install-solver/releases/download/v0.4.3/opam-0install-cudf-0.4.3.tbz"
     "opam-0install-solver"
+    [
+      "sha256=d59e0ebddda58f798ff50ebe213c83893b5a7c340c38c20950574d67e6145b8a"
+      "sha512=f29cd54e31229050b5404e66a915ec4087d0a06de573c6449a459f8a5f831256f5f8584ba4b8c81a21de4b897afad726c795b6483eb7927c754dfd7ed62ab564"
+    ]
   ]
   [
     "https://github.com/ocaml-ppx/ocaml-syntax-shims/releases/download/1.0.0/ocaml-syntax-shims-1.0.0.tbz"
@@ -416,19 +410,27 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/ocaml/dune/releases/download/3.0.3/fiber-3.0.3.tbz"
+    "https://github.com/ocaml/dune/releases/download/3.1.1/fiber-3.1.1.tbz"
     "dune_"
     [
-      "sha256=d504499a1658f0d99caefbffd7386f2e31d46ceca73167157fe4686c41e5732f"
-      "sha512=aa1bdf87a00994d18ddc9d9d6ef914813c10dbc8c68c34c00467669092dde9adc95718937f8a60a2e1307b25f281196b20e913b2f82e2ee6aadd24d54dca88aa"
+      "sha256=02484454ab1b998840c7873509ec6b2301eb92662c132ef8f5f4f569b35a6b60"
+      "sha512=c92199924af75f801d264d3b3e98497757c9932d8e03fa100fca2df16315b87d595a3e0cbbc3ce9b8d86adb2a8b6d3a7cef0f88c7654f15f6b6a4d10d523fad1"
     ]
   ]
   [
-    "https://github.com/ocaml/ocaml-re/releases/download/1.10.3/re-1.10.3.tbz"
+    "https://github.com/ocaml/num/archive/v1.4.tar.gz"
+    "num"
+    [
+      "md5=cda2b727e116a0b6a9c03902cc4b2415"
+      "sha512=0cc9be8ad95704bb683b4bf6698bada1ee9a40dc05924b72adc7b969685c33eeb68ccf174cc09f6a228c48c18fe94af06f28bebc086a24973a066da620db8e6f"
+    ]
+  ]
+  [
+    "https://github.com/ocaml/ocaml-re/releases/download/1.10.4/re-1.10.4.tbz"
     "ocaml-re"
     [
-      "sha256=846546967f3fe31765935dd40a6460a9424337ecce7b12727fcba49480790ebb"
-      "sha512=d02103b7b8b8d8bc797341dcc933554745427f3c1b51b54b4ac9ff81badfd68c94726c57548b08e00ca99f3e09741b54b6500e97c19fc0e8fcefd6dfbe71da7f"
+      "sha256=83eb3e4300aa9b1dc7820749010f4362ea83524742130524d78c20ce99ca747c"
+      "sha512=92b05cf92c389fa8c753f2acca837b15dd05a4a2e8e2bec7a269d2e14c35b1a786d394258376648f80b4b99250ba1900cfe68230b8385aeac153149d9ce56099"
     ]
   ]
   [
