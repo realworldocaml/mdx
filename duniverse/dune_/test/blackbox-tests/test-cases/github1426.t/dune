@@ -1,3 +1,0 @@
-(rule
- (targets a_target)
- (action (with-stdout-to a_target (run ./script.sh))))

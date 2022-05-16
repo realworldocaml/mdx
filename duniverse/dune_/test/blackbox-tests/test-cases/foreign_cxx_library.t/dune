@@ -1,4 +1,0 @@
-(executable
- (name main)
- (modes byte)
- (libraries hello_world))

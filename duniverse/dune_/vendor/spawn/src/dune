@@ -1,6 +1,0 @@
-(library
- (name spawn)
- (foreign_stubs
-  (language c)
-  (names spawn_stubs))
- (libraries unix threads.posix))

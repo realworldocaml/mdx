@@ -1,4 +1,0 @@
-opam-version: "2.0"
-synopsis: "Main"
-maintainer: "Nobody"
-depends: "foo" { >= "2" }

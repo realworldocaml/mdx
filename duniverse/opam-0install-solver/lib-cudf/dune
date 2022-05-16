@@ -1,4 +1,0 @@
-(library
- (name opam_0install_cudf)
- (public_name opam-0install-cudf)
- (libraries cudf 0install-solver))

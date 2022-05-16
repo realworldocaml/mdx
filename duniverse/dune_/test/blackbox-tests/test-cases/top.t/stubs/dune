@@ -1,5 +1,0 @@
-(library
- (name z)
- (foreign_stubs
-  (language c)
-  (names z_stubs)))

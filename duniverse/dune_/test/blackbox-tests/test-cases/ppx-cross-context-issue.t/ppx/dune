@@ -1,5 +1,0 @@
-(library
- (name fooppx)
- (enabled_if (= %{context_name} "default"))
- (kind ppx_rewriter)
- (libraries ppxlib))

@@ -1,7 +1,0 @@
-version = "v1.1.1"
-description = "Declarative definition of command line interfaces"
-requires = ""
-archive(byte) = "cmdliner.cma"
-archive(native) = "cmdliner.cmxa"
-plugin(byte) = "cmdliner.cma"
-plugin(native) = "cmdliner.cmxs"

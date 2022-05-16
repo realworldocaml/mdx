@@ -1,4 +1,0 @@
-(test
- (name test)
- (modules test)
- (libraries fmt))

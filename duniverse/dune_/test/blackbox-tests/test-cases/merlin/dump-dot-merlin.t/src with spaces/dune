@@ -1,3 +1,0 @@
-(executables (names foo bar)
- (preprocess (per_module
-  ((action (run "p p/pp.exe"%{input-file})) bar))))

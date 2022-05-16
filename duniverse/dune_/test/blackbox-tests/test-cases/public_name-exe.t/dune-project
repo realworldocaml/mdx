@@ -1,8 +1,0 @@
-(lang dune 2.8)
-(generate_opam_files true)
-(package
- (name mypackage)
- (synopsis "My first Dune package!")
- (description "\| This is my first attempt at creating
-              "\| a project with Dune.
-))
