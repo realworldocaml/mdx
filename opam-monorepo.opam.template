@@ -1,8 +1,2 @@
 build: [ "dune" "build" "-p" name "-j" jobs "@install" "@runtest" {with-test} ]
 flags: [ plugin ]
-pin-depends: [
-  [
-    "opam-0install.dev"
-    "git+https://github.com/ocaml-opam/opam-0install-solver"
-  ]
-]
