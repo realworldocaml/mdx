@@ -427,7 +427,7 @@ let extract_source_config ~opam_monorepo_cwd ~opam_files target_packages =
 
 let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     (`Allow_jbuilder allow_jbuilder) (`Ocaml_version ocaml_version)
-    (`Require_cross_compile require_cross_compile)
+    (`Require_cross_compile require_cross_compile) (`Minimal_update _)
     (`Target_packages specified_packages) (`Lockfile explicit_lockfile) () =
   let open Result.O in
   let* local_packages = local_packages ~versions:specified_packages root in
@@ -532,6 +532,12 @@ let require_cross_compile =
     (fun x -> `Require_cross_compile x)
     Arg.(value & flag & info ~doc [ "require-cross-compile" ])
 
+let minimal_update =
+  let doc = "" in
+  Common.Arg.named
+    (fun x -> `Minimal_update x)
+    Arg.(value & flag & info ~doc [ "minimal-update" ])
+
 let info =
   let exits = Common.exit_codes in
   let doc = Fmt.str "analyse opam files to generate a project-wide lock file" in
@@ -568,7 +574,7 @@ let term =
   Common.Term.result_to_exit
     Cmdliner.Term.(
       const run $ Common.Arg.root $ recurse_opam $ build_only $ allow_jbuilder
-      $ ocaml_version $ require_cross_compile $ packages $ Common.Arg.lockfile
-      $ Common.Arg.setup_logs ())
+      $ ocaml_version $ require_cross_compile $ minimal_update $ packages
+      $ Common.Arg.lockfile $ Common.Arg.setup_logs ())
 
 let cmd = Cmd.v info term
