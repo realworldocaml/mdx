@@ -1,0 +1,12 @@
+(library
+ (name rresult)
+ (public_name rresult)
+ (modules rresult)
+ (wrapped false))
+
+(library
+ (name rresult_top)
+ (public_name rresult.top)
+ (libraries compiler-libs.toplevel rresult)
+ (modules rresult_top)
+ (wrapped false))

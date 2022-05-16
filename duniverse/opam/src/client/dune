@@ -1,0 +1,70 @@
+(library
+  (name        opam_client)
+  (public_name opam-client)
+  (synopsis    "OCaml Package Manager client and CLI library")
+  (modules     (:standard \ opamMain get_git_version))
+  (libraries   opam-state opam-solver opam-repository re extlib cmdliner)
+  (flags       (:standard
+               (:include ../ocaml-flags-standard.sexp)
+               (:include ../ocaml-flags-configure.sexp)
+               (:include ../ocaml-context-flags.sexp)))
+  (wrapped     false))
+
+(executable
+  (name        opamMain)
+  ; This name needs to be updated in doc/man/dune if changed
+  (public_name opam)
+  (package     opam)
+  (modules     opamMain)
+  (flags       (:standard
+               (:include ../ocaml-flags-standard.sexp)
+               (:include ../ocaml-flags-configure.sexp)
+               (:include ../ocaml-context-flags.sexp)
+               (:include linking.sexp)))
+  (libraries   opam-client
+               (select link-opam-manifest from
+                       (opam-client.manifest -> pull-manifest)
+                       (                     -> dummy)
+               )))
+
+(rule
+  (with-stdout-to dummy (echo "")))
+
+(rule
+  (targets pull-manifest)
+  (deps    (:obj ../manifest/opam-manifest.o))
+  (action  (progn (system "cp %{obj} opam-manifest.o 2> %{null} || copy %{obj} opam-manifest.o")
+                  (with-stdout-to %{targets} (echo "")))))
+
+(rule
+  (targets git-sha)
+  (deps    (universe))
+  (action  (ignore-stderr (with-stdout-to %{targets} (system "git rev-parse --quiet --verify HEAD || echo .")))))
+
+(rule
+  (targets git-describe)
+  (deps    (universe))
+  (action  (ignore-stderr (with-stdout-to %{targets} (system "git describe --exact HEAD || echo [dev]")))))
+
+(rule
+  (targets no-git-version)
+  (mode fallback)
+  (action (copy git-sha %{targets})))
+
+(rule
+  (with-stdout-to get_git_version.ml
+    (echo "print_string @@ \
+             let v = \"%{read-lines:no-git-version}\" in \
+             let w = \"%{read-lines:git-describe}\" in \
+             if v = \"\" || v = \".\" || w <> \"[dev]\" then \
+               \"let version = None\" \
+             else \
+               \"let version = Some \\\"\" ^ v ^ \"\\\"\"")))
+
+(rule
+  (with-stdout-to opamGitVersion.ml (run ocaml %{dep:get_git_version.ml})))
+
+(rule
+  (targets linking.sexp)
+  (mode    fallback)
+  (action  (with-stdout-to %{targets} (echo "()"))))

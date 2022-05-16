@@ -1,0 +1,32 @@
+digraph {
+	conv -> parsexp_intf;
+	conv -> parsexp;
+	conv_error -> conv_intf;
+	positions -> of_sexp_error;
+	positions -> parse_error_intf;
+	positions -> cst;
+	automaton_state -> parser_intf;
+	automaton_state -> automaton_intf;
+	automaton_state -> automaton_action;
+	parse_error -> automaton_action;
+	parse_error -> conv_error;
+	parse_error -> parser_intf;
+	automaton -> parser;
+	import -> old_parser_cont_state;
+	import -> positions;
+	cst -> automaton_stack_intf;
+	of_sexp_error -> conv_error;
+	parser -> conv_intf;
+	old_parser_cont_state -> automaton_tables;
+	old_parser_cont_state -> parser_intf;
+	old_parser_cont_state -> automaton_intf;
+	parser_intf -> parser;
+	automaton_stack -> automaton_state_intf;
+	automaton_stack_intf -> automaton_stack;
+	automaton_action -> automaton_tables;
+	automaton_tables -> automaton;
+	conv_intf -> conv;
+	parse_error_intf -> parse_error;
+	automaton_state_intf -> automaton_state;
+}
+

@@ -1,0 +1,3 @@
+(library
+ (name dune_util)
+ (libraries stdune xdg dune_lang memo))
