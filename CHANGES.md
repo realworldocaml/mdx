@@ -1,20 +1,10 @@
-## unreleased
-
-### Added
-
-### Changed
-
-### Deprecated
+## 0.3.1
 
 ### Fixed
 
 - Do not add `opam-provided` packages into pin-depends and duniverse
   directories anymore, thus stop pulling packages that should be installed via
   Opam (#302, @Leonidas-from-XIV)
-
-### Removed
-
-### Security
 
 ## 0.3.0
 
