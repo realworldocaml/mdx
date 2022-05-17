@@ -178,21 +178,19 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     in
     regular_versions @ avoid_versions
 
-  let prefer_version ~version versions =
-    let rec aux acc l =
-      match l with
-      | [] -> versions
-      | (v, opam) :: tl when OpamPackage.Version.equal v version ->
-          (v, opam) :: List.rev_append acc tl
-      | hd :: tl -> aux (hd :: acc) tl
-    in
-    aux [] versions
-
-  let sort_candidates_by_preference ~preferred_version versions =
-    let versions = demote_candidates_to_avoid versions in
-    match preferred_version with
-    | None -> versions
-    | Some version -> prefer_version ~version versions
+  let promote_version version candidates =
+    match version with
+    | None -> candidates
+    | Some preferred_version ->
+        let rec move_version_first acc l =
+          match l with
+          | [] -> candidates
+          | ((version, _opam) as candidate) :: tl ->
+              if OpamPackage.Version.equal version preferred_version then
+                candidate :: List.rev_append acc tl
+              else move_version_first (candidate :: acc) tl
+        in
+        move_version_first [] candidates
 
   let candidate_cross_compile (_version, opam_res) : bool =
     match opam_res with
@@ -229,7 +227,8 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
         filter_candidates ~allow_jbuilder ~must_cross_compile ~require_dune
           ~name candidates
         |> remove_opam_provided ~opam_provided
-        |> sort_candidates_by_preference ~preferred_version
+        |> demote_candidates_to_avoid
+        |> promote_version preferred_version
 
   let user_restrictions { base_context; _ } name =
     Base_context.user_restrictions base_context name
