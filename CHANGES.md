@@ -3,7 +3,7 @@
 ### Added
 
 - Add a `--minimal-update` flag to `lock` to generate a lockfile
-  with minimum dependency changes from a previous lockfile. (#<PR_NUMBER>,
+  with minimum dependency changes from a previous lockfile. (#305,
   @NathanReb)
 
 ### Changed
