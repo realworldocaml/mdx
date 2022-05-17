@@ -287,7 +287,7 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
           let opam_env = extract_opam_env ~source_config global_state in
           let solver = Opam_solve.explicit_repos_solver in
           Opam_solve.calculate ~build_only ~allow_jbuilder
-            ~require_cross_compile ?preferred_versions ~local_opam_files
+            ~require_cross_compile ~preferred_versions ~local_opam_files
             ~target_packages ~opam_provided ~pin_depends ?ocaml_version solver
             (opam_env, local_repo_dirs)
           |> Result.map_error ~f:(interpret_solver_error ~repositories solver)
@@ -298,7 +298,7 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
                     (OpamSwitch.to_string switch_state.switch));
               let solver = Opam_solve.local_opam_config_solver in
               Opam_solve.calculate ~build_only ~allow_jbuilder
-                ~require_cross_compile ?preferred_versions ~local_opam_files
+                ~require_cross_compile ~preferred_versions ~local_opam_files
                 ~target_packages ~opam_provided ~pin_depends ?ocaml_version
                 solver switch_state
               |> Result.map_error ~f:(fun err ->
@@ -416,14 +416,14 @@ let local_packages ~versions repo =
 
 let preferred_versions ~minimal_update ~root target_lockfile =
   let open Result.O in
-  if not minimal_update then Ok None
+  if not minimal_update then Ok OpamPackage.Name.Map.empty
   else
     let* lockfile_exists = Bos.OS.File.exists target_lockfile in
     if not lockfile_exists then
       Rresult.R.error_msgf "No lock file to upgrade, could not find %a" Fpath.pp
         target_lockfile
     else
-      let* lockfile =
+      let+ lockfile =
         Lockfile.load ~opam_monorepo_cwd:root ~file:target_lockfile
       in
       let depends = Lockfile.depends lockfile in
@@ -432,7 +432,7 @@ let preferred_versions ~minimal_update ~root target_lockfile =
           ~f:(fun acc { Lockfile.Depends.package; _ } ->
             OpamPackage.Name.Map.add package.name package.version acc)
       in
-      Ok (Some name_to_version_map)
+      name_to_version_map
 
 let extract_source_config ~opam_monorepo_cwd ~opam_files target_packages =
   let open Result.O in

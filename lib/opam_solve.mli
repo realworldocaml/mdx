@@ -16,7 +16,7 @@ val calculate :
   build_only:bool ->
   allow_jbuilder:bool ->
   require_cross_compile:bool ->
-  ?preferred_versions:OpamTypes.version OpamPackage.Name.Map.t ->
+  preferred_versions:OpamTypes.version OpamPackage.Name.Map.t ->
   local_opam_files:(OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
   target_packages:OpamPackage.Name.Set.t ->
   opam_provided:OpamPackage.Name.Set.t ->

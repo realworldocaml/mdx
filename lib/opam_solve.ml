@@ -25,7 +25,7 @@ module type OPAM_MONOREPO_CONTEXT = sig
     ?require_dune:bool ->
     allow_jbuilder:bool ->
     require_cross_compile:bool ->
-    ?preferred_versions:OpamTypes.version OpamPackage.Name.Map.t ->
+    preferred_versions:OpamTypes.version OpamPackage.Name.Map.t ->
     fixed_packages:
       (OpamPackage.Version.t * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     constraints:OpamFormula.version_constraint OpamTypes.name_map ->
@@ -53,7 +53,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     require_dune : bool;
     opam_provided : OpamPackage.Name.Set.t;
     require_cross_compile : bool;
-    preferred_versions : OpamTypes.version OpamPackage.Name.Map.t option;
+    preferred_versions : OpamTypes.version OpamPackage.Name.Map.t;
   }
 
   type r =
@@ -70,7 +70,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
 
   let create ?install_test_deps_for
       ?(opam_provided = OpamPackage.Name.Set.empty) ?(require_dune = true)
-      ~allow_jbuilder ~require_cross_compile ?preferred_versions ~fixed_packages
+      ~allow_jbuilder ~require_cross_compile ~preferred_versions ~fixed_packages
       ~constraints input =
     let base_context =
       Base_context.create ?test:install_test_deps_for ~constraints input
@@ -220,8 +220,6 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
           && List.exists ~f:candidate_cross_compile candidates
         in
         let preferred_version =
-          let open Option.O in
-          let* preferred_versions = preferred_versions in
           OpamPackage.Name.Map.find_opt name preferred_versions
         in
         filter_candidates ~allow_jbuilder ~must_cross_compile ~require_dune
@@ -330,7 +328,7 @@ module type OPAM_MONOREPO_SOLVER = sig
     build_only:bool ->
     allow_jbuilder:bool ->
     require_cross_compile:bool ->
-    ?preferred_versions:OpamTypes.version OpamPackage.Name.Map.t ->
+    preferred_versions:OpamTypes.version OpamPackage.Name.Map.t ->
     local_opam_files:
       (OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     target_packages:OpamPackage.Name.Set.t ->
@@ -356,7 +354,7 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
   module Solver = Opam_0install.Solver.Make (Context)
 
   let build_context ~build_only ~allow_jbuilder ~require_cross_compile
-      ?preferred_versions ?opam_provided ?require_dune
+      ~preferred_versions ?opam_provided ?require_dune
       ?(vendored_packages = OpamPackage.Set.empty) ~ocaml_version
       ~local_packages ~pin_depends ~target_packages input =
     let open Result.O in
@@ -368,7 +366,7 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
     in
     let+ fixed_packages = fixed_packages ~local_packages ~pin_depends in
     Context.create ~install_test_deps_for ~allow_jbuilder ~require_cross_compile
-      ?preferred_versions ?opam_provided ?require_dune ~constraints
+      ~preferred_versions ?opam_provided ?require_dune ~constraints
       ~fixed_packages input
 
   type raw_calculation = { package : OpamPackage.t; vendored : bool }
@@ -557,12 +555,12 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
         assert false
 
   let calculate ~build_only ~allow_jbuilder ~require_cross_compile
-      ?preferred_versions ~local_opam_files:local_packages ~target_packages
+      ~preferred_versions ~local_opam_files:local_packages ~target_packages
       ~opam_provided ~pin_depends ?ocaml_version input =
     let open Result.O in
     let* context =
       build_context ~build_only ~allow_jbuilder ~require_cross_compile
-        ?preferred_versions ~ocaml_version ~pin_depends ~local_packages
+        ~preferred_versions ~ocaml_version ~pin_depends ~local_packages
         ~target_packages ~opam_provided input
     in
     let* request, selections =
@@ -588,8 +586,8 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
       | false ->
           let* opam_provided_context =
             build_context ~build_only ~allow_jbuilder
-              ~require_cross_compile:false ~ocaml_version ~pin_depends
-              ~vendored_packages ~local_packages ~target_packages
+              ~require_cross_compile:false ~preferred_versions ~ocaml_version
+              ~pin_depends ~vendored_packages ~local_packages ~target_packages
               ~require_dune:false input
           in
           let* deps =
@@ -704,7 +702,7 @@ let calculate :
     build_only:bool ->
     allow_jbuilder:bool ->
     require_cross_compile:bool ->
-    ?preferred_versions:OpamTypes.version OpamPackage.Name.Map.t ->
+    preferred_versions:OpamTypes.version OpamPackage.Name.Map.t ->
     local_opam_files:
       (OpamTypes.version * OpamFile.OPAM.t) OpamPackage.Name.Map.t ->
     target_packages:OpamPackage.Name.Set.t ->
@@ -716,7 +714,7 @@ let calculate :
     ( Opam.Dependency_entry.t list,
       [> `Diagnostics of diagnostics | `Msg of string ] )
     result =
- fun ~build_only ~allow_jbuilder ~require_cross_compile ?preferred_versions
+ fun ~build_only ~allow_jbuilder ~require_cross_compile ~preferred_versions
      ~local_opam_files ~target_packages ~opam_provided ~pin_depends
      ?ocaml_version t input ->
   let (module Solver : OPAM_MONOREPO_SOLVER
@@ -725,7 +723,7 @@ let calculate :
     t
   in
   Solver.calculate ~build_only ~allow_jbuilder ~require_cross_compile
-    ?preferred_versions ~local_opam_files ~target_packages ~opam_provided
+    ~preferred_versions ~local_opam_files ~target_packages ~opam_provided
     ~pin_depends ?ocaml_version input
 
 let diagnostics_message :
