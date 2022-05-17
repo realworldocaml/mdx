@@ -52,3 +52,17 @@ Locking with --minimal-update should update b but not a:
   "a" {= "0.1" & ?vendor}
   "b" {= "0.2" & ?vendor}
   "c" {= "0.1" & ?vendor}
+
+Alternatively, if we remove a dependency:
+
+  $ sed -i '/"c"/d' ./minimal-update.opam
+  $ opam show --just-file -fdepends ./minimal-update.opam
+  "dune" "a" "b" {>= "0.2"}
+
+Locking with `--minimal-update` should still allow removing the unnecessary
+package from the lock file:
+
+  $ opam-monorepo lock --minimal-update > /dev/null
+  $ opam show --just-file -fdepends ./minimal-update.opam.locked | grep -e "\"b\"" -e "\"a\"" -e "\"c\""
+  "a" {= "0.1" & ?vendor}
+  "b" {= "0.2" & ?vendor}
