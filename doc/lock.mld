@@ -19,6 +19,8 @@ add a new dependency or update a single package to be able to use this brand new
 function they just released.
 You can run [opam monorepo lock --minimal-update] for this. Assuming there is
 a pre-existing lock file, it will generate a new version of it with minimum
-changes in the selected versions of your dependencies. It will remove or add
-packages based on the changes in your local opam files but it will only upgrade
-or downgrade packages if it is strictly necessary.
+changes in the selected versions of your dependencies. It will prefer keeping
+versions from the previous lock file if possible.
+This mode is of course only useful if you run it after changing your
+dependency specification in one of your opam files as it will otherwise simply
+produce the same lock file.

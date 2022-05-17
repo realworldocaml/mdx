@@ -559,11 +559,8 @@ let require_cross_compile =
 
 let minimal_update =
   let doc =
-    "Generate a lock file with minimum dependency changes compared to the \
-     previous lock file. It can remove or add packages based on the dependency \
-     specification in the local opam files but will not upgrade or downgrade \
-     previously locked packages unless strictly necessary.\n\
-     Require a lock file to exist in the target lock file path."
+    "Prefer to keep versions as in the existing lock file, unless strictly \
+     necessary."
   in
   Common.Arg.named
     (fun x -> `Minimal_update x)
