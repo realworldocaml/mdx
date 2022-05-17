@@ -1,0 +1,24 @@
+{1 Locking dependencies}
+
+One of the features of opam-monorepo is to generate lock files, containing
+a solution for the entire, transitive dependency tree of the project. This
+allows to ensure all devs working on it will use the exact same versions for
+each opam package dependency.
+
+The [opam monorepo lock] command generates or updates lock files.
+
+{2 Updating an existing lock file}
+
+By default, [opam monorepo lock] will generate a fresh lock file without
+taking into account any previous lock file you may have.
+In practice that means that it will likely update a lot of your dependencies,
+depending on upstream releases of course.
+
+There are some scenarios where you might not want to update all of it but simply
+add a new dependency or update a single package to be able to use this brand new
+function they just released.
+You can run [opam monorepo lock --minimal-update] for this. Assuming there is
+a pre-existing lock file, it will generate a new version of it with minimum
+changes in the selected versions of your dependencies. It will remove or add
+packages based on the changes in your local opam files but it will only upgrade
+or downgrade packages if it is strictly necessary.

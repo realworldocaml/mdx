@@ -269,8 +269,8 @@ let opam_provided_packages ~opam_monorepo_cwd local_packages target_packages =
     target_packages (Ok OpamPackage.Name.Set.empty)
 
 let calculate_opam ~source_config ~build_only ~allow_jbuilder
-    ~require_cross_compile ~local_opam_files ~ocaml_version ~target_packages
-    ~opam_provided =
+    ~require_cross_compile ~preferred_versions ~local_opam_files ~ocaml_version
+    ~target_packages ~opam_provided =
   let open Result.O in
   OpamGlobalState.with_ `Lock_none (fun global_state ->
       let* pin_depends = get_pin_depends ~global_state local_opam_files in
@@ -287,8 +287,8 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
           let opam_env = extract_opam_env ~source_config global_state in
           let solver = Opam_solve.explicit_repos_solver in
           Opam_solve.calculate ~build_only ~allow_jbuilder
-            ~require_cross_compile ~local_opam_files ~target_packages
-            ~opam_provided ~pin_depends ?ocaml_version solver
+            ~require_cross_compile ?preferred_versions ~local_opam_files
+            ~target_packages ~opam_provided ~pin_depends ?ocaml_version solver
             (opam_env, local_repo_dirs)
           |> Result.map_error ~f:(interpret_solver_error ~repositories solver)
       | { repositories = None; _ } ->
@@ -298,8 +298,9 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
                     (OpamSwitch.to_string switch_state.switch));
               let solver = Opam_solve.local_opam_config_solver in
               Opam_solve.calculate ~build_only ~allow_jbuilder
-                ~require_cross_compile ~local_opam_files ~target_packages
-                ~opam_provided ~pin_depends ?ocaml_version solver switch_state
+                ~require_cross_compile ?preferred_versions ~local_opam_files
+                ~target_packages ~opam_provided ~pin_depends ?ocaml_version
+                solver switch_state
               |> Result.map_error ~f:(fun err ->
                      let repositories = current_repos ~switch_state in
                      interpret_solver_error ~repositories solver err)))
@@ -413,6 +414,26 @@ let local_packages ~versions repo =
   log_local_packages local_packages_path;
   package_version_map ~versions local_packages_path
 
+let preferred_versions ~minimal_update ~root target_lockfile =
+  let open Result.O in
+  if not minimal_update then Ok None
+  else
+    let* lockfile_exists = Bos.OS.File.exists target_lockfile in
+    if not lockfile_exists then
+      Rresult.R.error_msgf "No lock file to upgrade, could not find %a" Fpath.pp
+        target_lockfile
+    else
+      let* lockfile =
+        Lockfile.load ~opam_monorepo_cwd:root ~file:target_lockfile
+      in
+      let depends = Lockfile.depends lockfile in
+      let name_to_version_map =
+        List.fold_left depends ~init:OpamPackage.Name.Map.empty
+          ~f:(fun acc { Lockfile.Depends.package; _ } ->
+            OpamPackage.Name.Map.add package.name package.version acc)
+      in
+      Ok (Some name_to_version_map)
+
 let extract_source_config ~opam_monorepo_cwd ~opam_files target_packages =
   let open Result.O in
   let target_opam_files =
@@ -427,8 +448,9 @@ let extract_source_config ~opam_monorepo_cwd ~opam_files target_packages =
 
 let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     (`Allow_jbuilder allow_jbuilder) (`Ocaml_version ocaml_version)
-    (`Require_cross_compile require_cross_compile) (`Minimal_update _)
-    (`Target_packages specified_packages) (`Lockfile explicit_lockfile) () =
+    (`Require_cross_compile require_cross_compile)
+    (`Minimal_update minimal_update) (`Target_packages specified_packages)
+    (`Lockfile explicit_lockfile) () =
   let open Result.O in
   let* local_packages = local_packages ~versions:specified_packages root in
   let* target_packages =
@@ -444,10 +466,13 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
   let* opam_provided =
     opam_provided_packages ~opam_monorepo_cwd:root opam_files target_packages
   in
+  let* preferred_versions =
+    preferred_versions ~minimal_update ~root lockfile_path
+  in
   let* dependency_entries =
     calculate_opam ~source_config ~build_only ~allow_jbuilder
-      ~require_cross_compile ~ocaml_version ~local_opam_files:opam_files
-      ~target_packages ~opam_provided
+      ~require_cross_compile ~preferred_versions ~ocaml_version
+      ~local_opam_files:opam_files ~target_packages ~opam_provided
   in
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
   let* duniverse = compute_duniverse ~dependency_entries >>= resolve_ref in
@@ -533,7 +558,13 @@ let require_cross_compile =
     Arg.(value & flag & info ~doc [ "require-cross-compile" ])
 
 let minimal_update =
-  let doc = "" in
+  let doc =
+    "Generate a lock file with minimum dependency changes compared to the \
+     previous lock file. It can remove or add packages based on the dependency \
+     specification in the local opam files but will not upgrade or downgrade \
+     previously locked packages unless strictly necessary.\n\
+     Require a lock file to exist in the target lock file path."
+  in
   Common.Arg.named
     (fun x -> `Minimal_update x)
     Arg.(value & flag & info ~doc [ "minimal-update" ])

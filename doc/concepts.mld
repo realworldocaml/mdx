@@ -11,8 +11,8 @@ An [opam-monorepo] project uses 3 components in the source tree:
   mentioned in the lock file
 
 The two important commands are:
-- [opam monorepo lock], which will read the opam file and compute a solution
-  using the opam repository and the opam solver. It will create or update the
-  lock file with this solution.
+- {{!page-lock}[opam monorepo lock]}, which will read the opam file and compute
+  a solution using the opam repository and the opam solver. It will create or
+  update the lock file with this solution.
 - [opam monorepo pull] will read the lock file, download the dependencies, and
   unpack them into the [duniverse/] folder.

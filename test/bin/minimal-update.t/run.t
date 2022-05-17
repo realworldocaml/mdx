@@ -34,8 +34,8 @@ flag. This should add c to the lock file while keeping a and b to their previous
 
   $ opam-monorepo lock --minimal-update > /dev/null
   $ opam show --just-file -fdepends ./minimal-update.opam.locked | grep -e "\"b\"" -e "\"a\"" -e "\"c\""
-  "a" {= "0.2" & ?vendor}
-  "b" {= "0.2" & ?vendor}
+  "a" {= "0.1" & ?vendor}
+  "b" {= "0.1" & ?vendor}
   "c" {= "0.1" & ?vendor}
 
 Now say we want to also update b because we need a feature that is only
@@ -49,6 +49,6 @@ Locking with --minimal-update should update b but not a:
 
   $ opam-monorepo lock --minimal-update > /dev/null
   $ opam show --just-file -fdepends ./minimal-update.opam.locked | grep -e "\"b\"" -e "\"a\"" -e "\"c\""
-  "a" {= "0.2" & ?vendor}
+  "a" {= "0.1" & ?vendor}
   "b" {= "0.2" & ?vendor}
   "c" {= "0.1" & ?vendor}

@@ -297,6 +297,8 @@ let ocaml_version { depends; _ } =
       | true -> Some (OpamPackage.version package)
       | false -> None)
 
+let depends t = t.depends
+
 let url_to_duniverse_url url =
   let url_res = Duniverse.Repo.Url.from_opam_url url in
   Result.map_error url_res ~f:(function `Msg msg ->

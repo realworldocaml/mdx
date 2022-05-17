@@ -1,5 +1,10 @@
 type t
 
+module Depends : sig
+  type dependency = { package : OpamPackage.t; vendored : bool }
+  type t = dependency list
+end
+
 val create :
   source_config:Source_opam_config.t ->
   root_packages:OpamPackage.Name.Set.t ->
@@ -9,6 +14,7 @@ val create :
   unit ->
   t
 
+val depends : t -> Depends.t
 val to_duniverse : t -> (Duniverse.t, [ `Msg of string ]) result
 val ocaml_version : t -> OpamPackage.Version.t option
 
