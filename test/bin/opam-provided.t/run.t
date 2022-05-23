@@ -115,26 +115,6 @@ Since it is, we need to make its dependency, "b", also `opam`-provided.
   "ocaml-config" {= "2"}
   "ocaml-options-vanilla" {= "1"}
 
-Since we add a new custom stanza to the Opam file, let's make sure we emit
-warnings when things are specified the wrong way, e.g., if the package to
-be ignored is not a string.
-
-  $ opam show --just-file --raw -fx-opam-monorepo-opam-provided ./warning.opam
-  42
-
-  $ opam-monorepo lock warning > /dev/null
-  opam-monorepo: [ERROR] Error in opam file $TESTCASE_ROOT/warning.opam, [8:31]-[8:33]: Expected a string or a list of strings, got: 42
-  [1]
-
-Similarly, we accept a list but it needs to be a list of strings which this is
-not:
-
-  $ opam show --just-file --raw -fx-opam-monorepo-opam-provided ./warning-list.opam
-  42 "fourtytwo"
-  $ opam-monorepo lock warning > /dev/null
-  opam-monorepo: [ERROR] Error in opam file $TESTCASE_ROOT/warning.opam, [8:31]-[8:33]: Expected a string or a list of strings, got: 42
-  [1]
-
 It should also work to pass the version of the compiler and be respected for
 both `opam`-provided packages as well as those to be vendored:
 

@@ -45,22 +45,35 @@ module Private : sig
       DO NOT USE! *)
   module Opam_repositories : sig
     val from_opam_value :
-      opam_monorepo_cwd:string ->
       OpamParserTypes.FullPos.value ->
       (OpamUrl.Set.t, [ `Msg of string ]) result
 
-    val to_opam_value :
-      opam_monorepo_cwd:string -> OpamUrl.Set.t -> OpamParserTypes.FullPos.value
+    val to_opam_value : OpamUrl.Set.t -> OpamParserTypes.FullPos.value
   end
 
   module Opam_global_vars : sig
     val from_opam_value :
       OpamParserTypes.FullPos.value ->
-      (OpamVariable.variable_contents String.Map.t, [ `Msg of string ]) result
+      (OpamVariable.variable_contents String.Map.t, Rresult.R.msg) result
 
     val to_opam_value :
       OpamVariable.variable_contents String.Map.t ->
       OpamParserTypes.FullPos.value
+  end
+
+  module Opam_provided : sig
+    val from_opam_value :
+      OpamParserTypes.FullPos.value ->
+      (OpamPackage.Name.Set.t, Rresult.R.msg) result
+
+    val to_opam_value : OpamPackage.Name.Set.t -> OpamParserTypes.FullPos.value
+  end
+
+  module Opam_repositories_url_rewriter : sig
+    val rewrite_one_in :
+      opam_monorepo_cwd:string -> OpamUrl.t -> (OpamUrl.t, Rresult.R.msg) result
+
+    val rewrite_one_out : opam_monorepo_cwd:string -> OpamUrl.t -> OpamUrl.t
   end
 end
 
