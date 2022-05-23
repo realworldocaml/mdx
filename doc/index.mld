@@ -9,5 +9,7 @@ Table of contents:
 - {{!page-faq}A FAQ} to answer common questions about [opam monorepo]
 - {{!page-concepts}A description of the concepts} behind [opam monorepo].
 - Some {{!page-workflows}common workflows} used in [opam monorepo] projects.
+- In depths documentation on {{!page-lock}locking dependencies}, the [lock]
+  command and how to get the best of it.
 - A {{!page-"opam-provided"} way to use [opam-monorepo] with non-[dune] dependencies}
   for when it is not possible to use [dune]
