@@ -32,6 +32,7 @@ val string : string t
 val list : 'a t -> 'a list t
 val pair : 'a t -> 'b t -> ('a * 'b) t
 val conv : ('repr, 'true_type) Conv.t -> 'repr t -> 'true_type t
+val choice2 : 'a t -> 'b t -> [ `C1 of 'a | `C2 of 'b ] t
 
 val choice3 : 'a t -> 'b t -> 'c t -> [ `C1 of 'a | `C2 of 'b | `C3 of 'c ] t
 (** [choice3 s s' s''] allows for any of [s], [s'] or [s''].

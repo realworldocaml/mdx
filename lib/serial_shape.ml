@@ -16,6 +16,7 @@ type _ t =
   | Sstring : string t
   | Slist : 'a t -> 'a list t
   | Spair : 'a t * 'b t -> ('a * 'b) t
+  | Choice2 : 'a t * 'b t -> [ `C1 of 'a | `C2 of 'b ] t
   | Choice3 : 'a t * 'b t * 'c t -> [ `C1 of 'a | `C2 of 'b | `C3 of 'c ] t
   | Conv : ('repr, 'true_type) Conv.t * 'repr t -> 'true_type t
 
@@ -23,6 +24,7 @@ let bool = Sbool
 let string = Sstring
 let list s = Slist s
 let pair s s' = Spair (s, s')
+let choice2 s s' = Choice2 (s, s')
 let choice3 s s' s'' = Choice3 (s, s', s'')
 let conv conv s = Conv (conv, s)
 
@@ -31,6 +33,10 @@ let rec shallow_description : type a. a t -> string = function
   | Spair _ -> "a pair"
   | Sstring -> "a string"
   | Sbool -> "a boolean"
+  | Choice2 (s, s') ->
+      let d = shallow_description s in
+      let d' = shallow_description s' in
+      Printf.sprintf "%s or %s" d d'
   | Choice3 (s, s', s'') ->
       let d = shallow_description s in
       let d' = shallow_description s' in
@@ -59,6 +65,13 @@ let rec from_opam_val :
   | Conv (conv, s), value ->
       let* repr = from_opam_val s value in
       conv.from_repr repr
+  | Choice2 (s, s'), value -> (
+      match from_opam_val s value with
+      | Ok c1 -> Ok (`C1 c1)
+      | Error _ -> (
+          match from_opam_val s' value with
+          | Ok c2 -> Ok (`C2 c2)
+          | Error _ -> parse_error ()))
   | Choice3 (s, s', s''), value -> (
       match from_opam_val s value with
       | Ok c1 -> Ok (`C1 c1)
@@ -84,6 +97,8 @@ let rec to_opam_val : type a. a t -> a -> OpamParserTypes.FullPos.value =
   | Conv (conv, s), value ->
       let repr = conv.to_repr value in
       to_opam_val s repr
+  | Choice2 (s, _), `C1 v -> to_opam_val s v
+  | Choice2 (_, s), `C2 v -> to_opam_val s v
   | Choice3 (s, _, _), `C1 v -> to_opam_val s v
   | Choice3 (_, s, _), `C2 v -> to_opam_val s v
   | Choice3 (_, _, s), `C3 v -> to_opam_val s v
@@ -155,6 +170,13 @@ let rec cmdliner_parse : type a. a t -> string -> (a, Rresult.R.msg) result =
   | Conv (conv, s), value ->
       let* repr = cmdliner_parse s value in
       conv.from_repr repr
+  | Choice2 (s, s'), value -> (
+      match cmdliner_parse s value with
+      | Ok c1 -> Ok (`C1 c1)
+      | Error _ -> (
+          match cmdliner_parse s' value with
+          | Ok c2 -> Ok (`C2 c2)
+          | Error _ -> parse_error ()))
   | Choice3 (s, s', s''), value -> (
       match cmdliner_parse s value with
       | Ok c1 -> Ok (`C1 c1)
@@ -181,6 +203,8 @@ let rec cmdliner_print : type a. a t -> Format.formatter -> a -> unit =
   | Conv (conv, s), value ->
       let repr = conv.to_repr value in
       cmdliner_print s fmt repr
+  | Choice2 (s, _), `C1 v -> cmdliner_print s fmt v
+  | Choice2 (_, s), `C2 v -> cmdliner_print s fmt v
   | Choice3 (s, _, _), `C1 v -> cmdliner_print s fmt v
   | Choice3 (_, s, _), `C2 v -> cmdliner_print s fmt v
   | Choice3 (_, _, s), `C3 v -> cmdliner_print s fmt v
@@ -198,6 +222,9 @@ let rec equal : type a. a t -> a -> a -> bool =
   | Spair (sfst, ssnd), (fst, snd), (fst', snd') ->
       equal sfst fst fst' && equal ssnd snd snd'
   | Slist s, l, l' -> List.equal (equal s) l l'
+  | Choice2 (s, _), `C1 v, `C1 v' -> equal s v v'
+  | Choice2 (_, s), `C2 v, `C2 v' -> equal s v v'
+  | Choice2 _, _, _ -> false
   | Choice3 (s, _, _), `C1 v, `C1 v' -> equal s v v'
   | Choice3 (_, s, _), `C2 v, `C2 v' -> equal s v v'
   | Choice3 (_, _, s), `C3 v, `C3 v' -> equal s v v'
@@ -216,6 +243,8 @@ let rec pp : type a. a t -> a Fmt.t =
   | Spair (s, s'), (v, v') -> Fmt.pf fmt "(%a, %a)" (pp s) v (pp s') v'
   | Slist s, l ->
       Fmt.pf fmt "[%a]" (Fmt.list ~sep:Fmt.(const char ';') (pp s)) l
+  | Choice2 (s, _), `C1 v -> pp s fmt v
+  | Choice2 (_, s), `C2 v -> pp s fmt v
   | Choice3 (s, _, _), `C1 v -> pp s fmt v
   | Choice3 (_, s, _), `C2 v -> pp s fmt v
   | Choice3 (_, _, s), `C3 v -> pp s fmt v
