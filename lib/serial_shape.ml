@@ -62,9 +62,12 @@ let rec from_opam_val :
   | Slist s, { pelem = List _; _ } ->
       let* l = Opam.Value.List.from_value (from_opam_val s) value in
       Ok l
-  | Conv (conv, s), value ->
+  | Conv (conv, s), value -> (
       let* repr = from_opam_val s value in
-      conv.from_repr repr
+      let res = conv.from_repr repr in
+      match res with
+      | Ok _ as res -> res
+      | Error (`Msg msg) -> Opam.Pos.value_errorf ~value "%s" msg)
   | Choice2 (s, s'), value -> (
       match from_opam_val s value with
       | Ok c1 -> Ok (`C1 c1)
