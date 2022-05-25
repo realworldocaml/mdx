@@ -129,15 +129,16 @@ let test_cmdliner_parse =
     make_test ~name:"pair"
       ~shape:Serial_shape.(pair bool string)
       ~expected:(Ok (true, "abc"))
-      ~value:"true,abc";
+      ~value:"[true,abc]";
     make_test ~name:"list"
       ~shape:Serial_shape.(list bool)
       ~expected:(Ok [ true; false; true ])
-      ~value:"true,false,true";
-    make_test ~name:"list with delim"
-      ~shape:Serial_shape.(list bool)
-      ~expected:(Ok [ true; false; true ])
       ~value:"[true,false,true]";
+    make_test ~name:"list without delim"
+      ~shape:Serial_shape.(list bool)
+      ~expected:
+        (Rresult.R.error_msg "list or pairs must be delimited by '[' and ']'")
+      ~value:"true,false,true";
     make_test ~name:"choice c1"
       ~shape:Serial_shape.(choice3 bool (list bool) string)
       ~expected:(Ok (`C1 true))
@@ -145,7 +146,7 @@ let test_cmdliner_parse =
     make_test ~name:"choice c2"
       ~shape:Serial_shape.(choice3 bool (list bool) string)
       ~expected:(Ok (`C2 [ true; false ]))
-      ~value:"true,false";
+      ~value:"[true,false]";
     make_test ~name:"choice c3"
       ~shape:Serial_shape.(choice3 bool (list bool) string)
       ~expected:(Ok (`C3 "abc"))
@@ -153,15 +154,15 @@ let test_cmdliner_parse =
     make_test ~name:"ambiguous choice"
       ~shape:Serial_shape.(choice3 bool (pair bool bool) (list bool))
       ~expected:(Ok (`C2 (true, false)))
-      ~value:"true,false";
+      ~value:"[true,false]";
     make_test ~name:"ambiguous choice 2"
       ~shape:Serial_shape.(choice3 bool (list bool) (pair bool bool))
       ~expected:(Ok (`C2 [ true; false ]))
-      ~value:"true,false";
+      ~value:"[true,false]";
     make_test ~name:"list within list"
       ~shape:Serial_shape.(list (list bool))
       ~expected:(Ok [ [ true ]; [ true; false ]; [ false ] ])
-      ~value:"true,[true,false],false";
+      ~value:"[[true],[true,false],[false]]";
     make_test ~name:"empty list"
       ~shape:Serial_shape.(list bool)
       ~expected:(Ok []) ~value:"";
@@ -172,11 +173,11 @@ let test_cmdliner_parse =
     make_test ~name:"unterminated inner list"
       ~shape:Serial_shape.(list (list string))
       ~expected:(Error (`Msg "unmatched list delimiter '['"))
-      ~value:"[abc,def],[uvw,xyz";
+      ~value:"[[abc,def],[uvw,xyz,[rst]]";
     make_test ~name:"floating ]"
       ~shape:Serial_shape.(list string)
       ~expected:(Error (`Msg "unmatched list delimiter ']'"))
-      ~value:"abc,def]";
+      ~value:"[abc,def]]";
     make_test ~name:"conv"
       ~shape:Serial_shape.(conv int_as_string_conv string)
       ~expected:(Ok 123) ~value:"123";

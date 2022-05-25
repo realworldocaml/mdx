@@ -176,9 +176,9 @@ module Opam_repositories = struct
       (test_name, `Quick, test_fun)
     in
     [
-      make_test ~name:"Simple" ~value:"https://a.com"
+      make_test ~name:"Simple" ~value:"[https://a.com]"
         ~expected:(Ok [ "https://a.com" ]);
-      make_test ~name:"Simple" ~value:"https://a.com,https://b.com"
+      make_test ~name:"Simple" ~value:"[https://a.com,https://b.com]"
         ~expected:(Ok [ "https://a.com"; "https://b.com" ]);
     ]
 end
@@ -259,8 +259,7 @@ module Opam_global_vars = struct
         ~expected:(Ok [ ("var1", B true) ]);
       make_test ~name:"Multiple" ~value:"[[var1,true],[var2,a],[var3,[a,b]]]"
         ~expected:
-          (Ok
-             [ ("var1", B true); ("var2", L [ "a" ]); ("var3", L [ "a"; "b" ]) ]);
+          (Ok [ ("var1", B true); ("var2", S "a"); ("var3", L [ "a"; "b" ]) ]);
     ]
 end
 

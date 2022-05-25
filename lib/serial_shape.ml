@@ -146,7 +146,7 @@ let parse_list s =
     match (s.[0], s.[len - 1]) with
     | '[', ']' -> split_list ~start:1 ~len:(len - 2) s
     | ('[' as delim), _ -> unmatched_list_delimiter ~delim
-    | _ -> split_list ~start:0 ~len s
+    | _ -> Rresult.R.error_msg "list or pairs must be delimited by '[' and ']'"
 
 let rec cmdliner_parse : type a. a t -> string -> (a, Rresult.R.msg) result =
  fun shape value ->
