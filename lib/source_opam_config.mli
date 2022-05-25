@@ -36,6 +36,25 @@ val set : opam_monorepo_cwd:Fpath.t -> t -> OpamFile.OPAM.t -> OpamFile.OPAM.t
 val merge : t list -> (t, Rresult.R.msg) result
 (** Merges config from different opam files into a single, shared config. *)
 
+val cli_add_config : t Cmdliner.Term.t
+(** Set of CLI options used to build a complementatry config to be merged
+    with into the config extracted from opam files. *)
+
+val cli_overwrite_config : t Cmdliner.Term.t
+(** Set of CLI options used to build a config to use in place of the one
+    extracted from opam files. *)
+
+val make :
+  overwrite_config:t ->
+  add_config:t ->
+  local_opam_files_config:t ->
+  (t, Rresult.R.msg) result
+(** Assembles the final config by properly combining all sources.
+    If a field is defined (i.e. is not [None]) in [overwrite_config],
+    its value will be used, ignoring the field value from both other sources.
+    If it is not, the combined value of [add_config] and
+    [local_opam_files_config] will be used. *)
+
 (**/**)
 
 (** Undocumented *)
@@ -49,6 +68,7 @@ module Private : sig
       (OpamUrl.Set.t, [ `Msg of string ]) result
 
     val to_opam_value : OpamUrl.Set.t -> OpamParserTypes.FullPos.value
+    val cmdliner_conv : OpamUrl.Set.t Cmdliner.Arg.conv
   end
 
   module Opam_global_vars : sig
@@ -59,6 +79,9 @@ module Private : sig
     val to_opam_value :
       OpamVariable.variable_contents String.Map.t ->
       OpamParserTypes.FullPos.value
+
+    val cmdliner_conv :
+      OpamVariable.variable_contents String.Map.t Cmdliner.Arg.conv
   end
 
   module Opam_provided : sig
@@ -67,6 +90,7 @@ module Private : sig
       (OpamPackage.Name.Set.t, Rresult.R.msg) result
 
     val to_opam_value : OpamPackage.Name.Set.t -> OpamParserTypes.FullPos.value
+    val cmdliner_conv : OpamPackage.Name.Set.t Cmdliner.Arg.conv
   end
 
   module Opam_repositories_url_rewriter : sig

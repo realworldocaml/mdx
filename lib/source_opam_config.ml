@@ -14,6 +14,8 @@ module type FIELD = sig
   val set : t -> OpamFile.OPAM.t -> OpamFile.OPAM.t
   val get : OpamFile.OPAM.t -> (t option, Rresult.R.msg) result
   val merge : t list -> (t, Rresult.R.msg) result
+  val add_arg : t option Cmdliner.Arg.t
+  val overwrite_arg : t option Cmdliner.Arg.t
 
   (**/**)
 
@@ -23,6 +25,7 @@ module type FIELD = sig
     OpamParserTypes.FullPos.value -> (t, Rresult.R.msg) result
 
   val to_opam_value : t -> OpamParserTypes.FullPos.value
+  val cmdliner_conv : t Cmdliner.Arg.conv
 
   (**/**)
 end
@@ -41,6 +44,29 @@ module Make_field (X : FIELD_SHAPE) : FIELD with type t = X.t = struct
   let set t opam = Opam.Extra_field.set field t opam
   let get opam = Opam.Extra_field.get field opam
   let merge = X.merge
+  let cmdliner_conv = Serial_shape.cmdliner_conv X.shape
+
+  let add_arg =
+    let docv = String.uppercase_ascii X.name in
+    let long_name = Printf.sprintf "--add-%s" X.name in
+    let doc =
+      Printf.sprintf
+        "CLI equivalent of the %s extension. Use this to complement the \
+         corresponding extensions in your local opam files."
+        (Opam.Extra_field.name field)
+    in
+    Cmdliner.Arg.(opt (some cmdliner_conv) None (info ~doc ~docv [ long_name ]))
+
+  let overwrite_arg =
+    let docv = String.uppercase_ascii X.name in
+    let long_name = Printf.sprintf "--%s" X.name in
+    let doc =
+      Printf.sprintf
+        "CLI equivalent of the %s extension. Use this to replace the \
+         corresponding extensions in your local opam files."
+        (Opam.Extra_field.name field)
+    in
+    Cmdliner.Arg.(opt (some cmdliner_conv) None (info ~doc ~docv [ long_name ]))
 end
 
 module Opam_repositories_shape = struct
@@ -279,22 +305,66 @@ let merge = function
   | hd :: tl ->
       Result.List.fold_left tl ~init:hd ~f:(fun t t' -> merge_pair t t')
 
+let cli_add_config =
+  let open Cmdliner.Term in
+  const (fun global_vars repositories opam_provided ->
+      { global_vars; repositories; opam_provided })
+  $ Cmdliner.Arg.value Opam_global_vars.add_arg
+  $ Cmdliner.Arg.value Opam_repositories.add_arg
+  $ Cmdliner.Arg.value Opam_provided.add_arg
+
+let cli_overwrite_config =
+  let open Cmdliner.Term in
+  const (fun global_vars repositories opam_provided ->
+      { global_vars; repositories; opam_provided })
+  $ Cmdliner.Arg.value Opam_global_vars.overwrite_arg
+  $ Cmdliner.Arg.value Opam_repositories.overwrite_arg
+  $ Cmdliner.Arg.value Opam_provided.overwrite_arg
+
+let make ~overwrite_config ~add_config ~local_opam_files_config =
+  let open Result.O in
+  let* global_vars =
+    match overwrite_config.global_vars with
+    | Some _ as g -> Ok g
+    | None ->
+        merge_field Opam_global_vars.merge add_config.global_vars
+          local_opam_files_config.global_vars
+  in
+  let* repositories =
+    match overwrite_config.repositories with
+    | Some _ as r -> Ok r
+    | None ->
+        merge_field Opam_repositories.merge add_config.repositories
+          local_opam_files_config.repositories
+  in
+  let* opam_provided =
+    match overwrite_config.opam_provided with
+    | Some _ as o -> Ok o
+    | None ->
+        merge_field Opam_provided.merge add_config.opam_provided
+          local_opam_files_config.opam_provided
+  in
+  Ok { global_vars; repositories; opam_provided }
+
 module Private = struct
   (** Re-expose private functions for testing purposes *)
 
   module Opam_repositories = struct
     let from_opam_value = Opam_repositories.from_opam_value
     let to_opam_value = Opam_repositories.to_opam_value
+    let cmdliner_conv = Opam_repositories.cmdliner_conv
   end
 
   module Opam_global_vars = struct
     let from_opam_value = Opam_global_vars.from_opam_value
     let to_opam_value = Opam_global_vars.to_opam_value
+    let cmdliner_conv = Opam_global_vars.cmdliner_conv
   end
 
   module Opam_provided = struct
     let from_opam_value = Opam_provided.from_opam_value
     let to_opam_value = Opam_provided.to_opam_value
+    let cmdliner_conv = Opam_provided.cmdliner_conv
   end
 
   module Opam_repositories_url_rewriter = struct

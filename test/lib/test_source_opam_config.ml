@@ -109,6 +109,8 @@ module Opam_repositories_url_rewriter = struct
 end
 
 module Opam_repositories = struct
+  let t_from_input l = OpamUrl.Set.of_list (List.map ~f:OpamUrl.of_string l)
+
   let test_from_opam_value =
     let make_test ~name ~value ~expected () =
       let test_name =
@@ -116,10 +118,7 @@ module Opam_repositories = struct
       in
       let test_fun () =
         let value = OpamParser.FullPos.value_from_string value "test.opam" in
-        let expected =
-          Result.map expected ~f:(fun l ->
-              OpamUrl.Set.of_list (List.map ~f:OpamUrl.of_string l))
-        in
+        let expected = Result.map ~f:t_from_input expected in
         let actual =
           Source_opam_config.Private.Opam_repositories.from_opam_value value
         in
@@ -143,9 +142,7 @@ module Opam_repositories = struct
         Printf.sprintf "Opam_repositories.to_opam_value: %s" name
       in
       let test_fun () =
-        let url_set =
-          OpamUrl.Set.of_list (List.map ~f:OpamUrl.of_string url_set)
-        in
+        let url_set = t_from_input url_set in
         let actual =
           Source_opam_config.Private.Opam_repositories.to_opam_value url_set
           |> OpamPrinter.FullPos.value
@@ -160,6 +157,29 @@ module Opam_repositories = struct
       make_test ~name:"Multiple"
         ~url_set:[ "https://a.com"; "https://b.com" ]
         ~expected:{|["https://a.com" "https://b.com"]|} ();
+    ]
+
+  let test_cmdliner_parse =
+    let make_test ~name ~value ~expected =
+      let test_name =
+        Printf.sprintf "Opam_repositories.cmdliner_parse: %s" name
+      in
+      let test_fun () =
+        let open Source_opam_config.Private in
+        let expected = Result.map ~f:t_from_input expected in
+        let actual =
+          Cmdliner.Arg.conv_parser Opam_repositories.cmdliner_conv value
+        in
+        Alcotest.(check (result opam_url_set Testable.r_msg))
+          test_name expected actual
+      in
+      (test_name, `Quick, test_fun)
+    in
+    [
+      make_test ~name:"Simple" ~value:"https://a.com"
+        ~expected:(Ok [ "https://a.com" ]);
+      make_test ~name:"Simple" ~value:"https://a.com,https://b.com"
+        ~expected:(Ok [ "https://a.com"; "https://b.com" ]);
     ]
 end
 
@@ -217,6 +237,31 @@ module Opam_global_vars = struct
         ~env:[ ("var1", B true); ("var2", S "a"); ("var3", L [ "a"; "b" ]) ]
         ~expected:{|[["var1" true] ["var2" "a"] ["var3" ["a" "b"]]]|} ();
     ]
+
+  let test_cmdliner_parse =
+    let make_test ~name ~value ~expected =
+      let test_name =
+        Printf.sprintf "Opam_global_vars.cmdliner_parse: %s" name
+      in
+      let test_fun () =
+        let open Source_opam_config.Private in
+        let expected = Result.map expected ~f:String.Map.of_list_exn in
+        let actual =
+          Cmdliner.Arg.conv_parser Opam_global_vars.cmdliner_conv value
+        in
+        Alcotest.(check (result variable_content_string_map Testable.r_msg))
+          test_name expected actual
+      in
+      (test_name, `Quick, test_fun)
+    in
+    [
+      make_test ~name:"Simple" ~value:"[[var1,true]]"
+        ~expected:(Ok [ ("var1", B true) ]);
+      make_test ~name:"Multiple" ~value:"[[var1,true],[var2,a],[var3,[a,b]]]"
+        ~expected:
+          (Ok
+             [ ("var1", B true); ("var2", L [ "a" ]); ("var3", L [ "a"; "b" ]) ]);
+    ]
 end
 
 module Opam_provided = struct
@@ -270,8 +315,10 @@ let suite =
         Opam_repositories_url_rewriter.test_rewrite_one_out;
         Opam_repositories.test_from_opam_value;
         Opam_repositories.test_to_opam_value;
+        Opam_repositories.test_cmdliner_parse;
         Opam_global_vars.test_from_opam_value;
         Opam_global_vars.test_to_opam_value;
+        Opam_global_vars.test_cmdliner_parse;
         Opam_provided.test_from_opam_value;
         Opam_provided.test_to_opam_value;
       ] )
