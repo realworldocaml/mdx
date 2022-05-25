@@ -446,7 +446,8 @@ let extract_source_config ~add_config ~overwrite_config ~opam_monorepo_cwd
       ~f:(Source_opam_config.get ~opam_monorepo_cwd)
   in
   let* local_opam_files_config = Source_opam_config.merge source_config_list in
-  Source_opam_config.make ~add_config ~overwrite_config ~local_opam_files_config
+  Source_opam_config.make ~opam_monorepo_cwd ~add_config ~overwrite_config
+    ~local_opam_files_config
 
 let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     (`Allow_jbuilder allow_jbuilder) (`Ocaml_version ocaml_version)

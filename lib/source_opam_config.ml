@@ -48,7 +48,7 @@ module Make_field (X : FIELD_SHAPE) : FIELD with type t = X.t = struct
 
   let add_arg =
     let docv = String.uppercase_ascii X.name in
-    let long_name = Printf.sprintf "--add-%s" X.name in
+    let long_name = Printf.sprintf "add-%s" X.name in
     let doc =
       Printf.sprintf
         "CLI equivalent of the %s extension. Use this to complement the \
@@ -59,7 +59,7 @@ module Make_field (X : FIELD_SHAPE) : FIELD with type t = X.t = struct
 
   let overwrite_arg =
     let docv = String.uppercase_ascii X.name in
-    let long_name = Printf.sprintf "--%s" X.name in
+    let long_name = X.name in
     let doc =
       Printf.sprintf
         "CLI equivalent of the %s extension. Use this to replace the \
@@ -321,8 +321,19 @@ let cli_overwrite_config =
   $ Cmdliner.Arg.value Opam_repositories.overwrite_arg
   $ Cmdliner.Arg.value Opam_provided.overwrite_arg
 
-let make ~overwrite_config ~add_config ~local_opam_files_config =
+let rewrite_in ~opam_monorepo_cwd t =
   let open Result.O in
+  let* repositories =
+    Opam_repositories_url_rewriter.rewrite_in ~opam_monorepo_cwd t.repositories
+  in
+  Ok { t with repositories }
+
+let make ~opam_monorepo_cwd ~overwrite_config ~add_config
+    ~local_opam_files_config =
+  let open Result.O in
+  let opam_monorepo_cwd = opam_monorepo_cwd_from_root opam_monorepo_cwd in
+  let* add_config = rewrite_in ~opam_monorepo_cwd add_config in
+  let* overwrite_config = rewrite_in ~opam_monorepo_cwd overwrite_config in
   let* global_vars =
     match overwrite_config.global_vars with
     | Some _ as g -> Ok g

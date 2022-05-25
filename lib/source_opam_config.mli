@@ -45,6 +45,7 @@ val cli_overwrite_config : t Cmdliner.Term.t
     extracted from opam files. *)
 
 val make :
+  opam_monorepo_cwd:Fpath.t ->
   overwrite_config:t ->
   add_config:t ->
   local_opam_files_config:t ->
