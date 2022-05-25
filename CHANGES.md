@@ -5,6 +5,8 @@
 - Add a `--minimal-update` flag to `lock` to generate a lockfile
   with minimum dependency changes from a previous lockfile. (#305,
   @NathanReb)
+- Add CLI options to complement or overwrite the solver configuration
+  set through opam extensions. (#<PR_NUMBER>, @NathanReb)
 
 ### Changed
 
