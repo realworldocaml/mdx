@@ -6,7 +6,7 @@
   with minimum dependency changes from a previous lockfile. (#305,
   @NathanReb)
 - Add CLI options to complement or overwrite the solver configuration
-  set through opam extensions. (#<PR_NUMBER>, @NathanReb)
+  set through opam extensions. (#307, @NathanReb)
 
 ### Changed
 
