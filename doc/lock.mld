@@ -24,3 +24,175 @@ versions from the previous lock file if possible.
 This mode is of course only useful if you run it after changing your
 dependency specification in one of your opam files as it will otherwise simply
 produce the same lock file.
+
+{2 Configuring [lock]'s solver}
+
+To generate a lock file, [opam-monorepo] first needs to find a solution
+that satisfies the project's dependencies and runs an opam solver based
+on [0install] for that.
+
+There are certain aspects that can be configured either via the command line
+or in your opam files directly.
+
+{3 Opam Repositories}
+
+You can configure which repositories the solver will use to get the list
+of existing packages and their associated metadata.
+
+By default it will use the repositories set in your current switch.
+
+You can explicitly set the repositories to use, making [opam-monorepo] ignore
+the ones configured in the switch, along with in pins.
+You can do so by setting the [x-opam-monorepo-opam-repositories] extension
+in any of your local opam files. For instance:
+
+{[
+x-opam-monorepo-opam-repositories: [
+  "git+https://github.com/ocaml/opam-repositories"
+  "git+https://github.com/dune-universe/opam-overlays"
+]
+]}
+
+Alternatively you can set it via the command line by running:
+
+{[
+opam monorepo lock --opam-repositories \
+  '[git+https://github.com/ocaml/opam-repositories,git+https://github.com/dune-universe/opam-overlays]'
+]}
+
+The [--opam-repositories] option will overwrite any locally defined
+[x-opam-monorepo-opam-repositories] field. If you simply want to add extra
+repositories you can use [--add-opam-repositories] instead:
+
+{[
+opam monorepo lock --opam-repositories '[git+https://me.com/my-repo]'
+]}
+
+When the field is set in multiple opam files and eventually through the
+[--add-opam-repositories] option, they are combined into a set, removing any
+duplicates. That set of URLs is what the solver will then use to get the
+available packages metadata in place of the ones set in the switch.
+
+You can use any URL supported by opam, that includes local or remote git and
+tarball URLs as well as local folders.
+
+{b IMPORTANT NOTE}: this feature is still in development and only local
+folders URLs are supported at the moment. Support for remote URLs will be
+available shortly! In the meantime you can set any repository in your
+switch, local or remote. As long as you don't set any repository explicitly
+via [opam-monorepo]'s options or opam extension, it will be able to use
+anything setup in the switch. 
+
+File system URLs cannot use relative path. If you wish to use local folders for
+your repos, you can use the [$OPAM_MONOREPO_CWD] variable that will be replaced
+at runtime by [opam-monorepo]'s current working directory or the folder passed
+to [--root]. This will allow you to refer to repos defined within your workspace
+without writing path specific to your machine.
+
+For instance if you have a repository defined in a [data/repo] sub folder of
+your project, you can get the solver to use it by setting:
+
+{[
+x-opam-monorepo-opam-repositories: [
+  "file://$OPAM_MONOREPO_CWD/data/repo"
+]
+]}
+
+{3 Opam Global Variables}
+
+You can set the value of opam global variables such as [arch] or
+[os-distribution]. These can have an impact on the solution picked by the
+solver as some package availability or dependencies vary based on their value.
+
+By default [opam-monorepo] will use the variables set in your current switch.
+
+You can explicitly set the variables defined along with their value, making
+[opam-monorepo] ignore any variable defined in the switch.
+You can do so by setting the [x-opam-monorepo-opam-global-vars] opam extension.
+For instance:
+
+{[
+x-opam-monorepo-opam-global-vars: [
+  [ "arch" "x86_64" ]
+  [ "os-distribution" "debian" ]
+  [ "os-family" "debian" ]
+  [ "os-version" "testing" ]
+]
+]}
+
+Alternatively you can set it via the command line by running:
+
+{[
+opam monorepo lock \
+  --opam-global-vars [[arch,x86_64],[os-distribution,debian],[os-family,debian],[os-version,testing]]
+]}
+
+The [--opam-global-vars] option will overwrite any locally defined
+[x-opam-monorepo-opam-global-vars] field. If you simply want to define extra
+variables you can use [--add-opam-global-vars] instead:
+
+{[
+opam monorepo lock --add-global-vars [[some_var,some_value]]
+]}
+
+When the field is set in multiple opam files and eventually through the
+[--add-opam-global-vars] option, they are combined. A variable can appear
+multiple times as long as it is assigned the same value, it will error out
+otherwise.
+
+The variables can be assigned boolean, string or list of strings values.
+The syntax for the opam field is the following:
+
+{[
+x-opam-monorepo-global-vars: [
+  ["boolean_var" true]
+  ["string_var" "abc"]
+  ["string_list_var" ["abc" "def"]]
+]
+]}
+
+The syntax for command line argument is the following:
+
+{[
+--opam-global-vars [[boolean_var,true],[string_var,abc],[string_list_var,[abc,def]]]
+]}
+
+{3 Opam provided packages}
+
+This feature has its own {{!page-"opam-provided"}documentation page}.
+
+You can define a set of packages that should be installed via opam rather
+than incorporated into the duniverse. This will influence how the solver
+treats those packages (they do not have to build with dune for instance).
+
+By default all dependencies outside of [dune], [ocaml] and a few other base
+packages are treated as if they were to be incorporated in the duniverse.
+
+You can define which packages should be installed via opam by setting the
+[x-opam-monorepo-opam-provided] field in any of your local opam files. For
+instance:
+
+{[
+x-opam-monorepo-opam-provided: [
+  "tezos-rust-libs"
+  "ocamlfind"
+]
+]}
+
+Alternatively you can set it via the command line by running:
+
+{[
+opam monorepo lock --opam-provided [tezos-rust-libs,ocamlfind]
+]}
+
+The [--opam-provided] option will overwrite any locally defined
+[x-opam-monorepo-opam-provided] field. If you simply want to define extra
+opam provided packages you can use [--add-opam-provided] instead:
+
+{[
+opam monorepo lock --opam-provided [some-other-package]
+]}
+
+When the field is set in multiple opam files and eventually through the
+[--add-opam-provided] option, they are combinded into a set, removing
+duplicates.
