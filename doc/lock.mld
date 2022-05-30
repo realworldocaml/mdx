@@ -83,7 +83,7 @@ switch, local or remote. As long as you don't set any repository explicitly
 via [opam-monorepo]'s options or opam extension, it will be able to use
 anything setup in the switch. 
 
-File system URLs cannot use relative path. If you wish to use local folders for
+File system URLs cannot use relative paths. If you wish to use local folders for
 your repos, you can use the [$OPAM_MONOREPO_CWD] variable that will be replaced
 at runtime by [opam-monorepo]'s current working directory or the folder passed
 to [--root]. This will allow you to refer to repos defined within your workspace
