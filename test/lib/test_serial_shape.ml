@@ -62,7 +62,7 @@ let test_from_opam_val =
       ~shape:Serial_shape.(choice3 (pair string string) (list string) bool)
       ~expected:(Ok (`C1 ("abc", "def")))
       ~value:{|["abc" "def"]|};
-    make_test ~name:"ambiguous choice 2"
+    make_test ~name:"ambiguous choice with swapped priorities"
       ~shape:Serial_shape.(choice3 (list string) (pair string string) bool)
       ~expected:(Ok (`C1 [ "abc"; "def" ]))
       ~value:{|["abc" "def"]|};
