@@ -5,8 +5,8 @@
 - Add a `--minimal-update` flag to `lock` to generate a lockfile
   with minimum dependency changes from a previous lockfile. (#305,
   @NathanReb)
-- Add CLI options to complement or overwrite the solver configuration
-  set through opam extensions. (#307, @NathanReb)
+- Add command line options to complement or overwrite `x-opam-monorepo-*`
+  fields. (#307, @NathanReb)
 
 ### Changed
 
