@@ -65,7 +65,7 @@ The [--opam-repositories] option will overwrite any locally defined
 repositories you can use [--add-opam-repositories] instead:
 
 {[
-opam monorepo lock --opam-repositories '[git+https://me.com/my-repo]'
+opam monorepo lock --add-opam-repositories '[git+https://me.com/my-repo]'
 ]}
 
 When the field is set in multiple opam files and eventually through the
@@ -190,7 +190,7 @@ The [--opam-provided] option will overwrite any locally defined
 opam provided packages you can use [--add-opam-provided] instead:
 
 {[
-opam monorepo lock --opam-provided [some-other-package]
+opam monorepo lock --add-opam-provided [some-other-package]
 ]}
 
 When the field is set in multiple opam files and eventually through the
