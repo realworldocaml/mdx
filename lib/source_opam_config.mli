@@ -36,18 +36,17 @@ val set : opam_monorepo_cwd:Fpath.t -> t -> OpamFile.OPAM.t -> OpamFile.OPAM.t
 val merge : t list -> (t, Rresult.R.msg) result
 (** Merges config from different opam files into a single, shared config. *)
 
-val cli_add_config : t Cmdliner.Term.t
-(** Set of CLI options used to build a complementatry config to be merged
-    with into the config extracted from opam files. *)
+type adjustment
+(** Type of configuration adjustment.
+    Defines values to overwrite fields of a configuration and values
+    to merge into existing fields. *)
 
-val cli_overwrite_config : t Cmdliner.Term.t
-(** Set of CLI options used to build a config to use in place of the one
-    extracted from opam files. *)
+val cli_adjustment : adjustment Cmdliner.Term.t
+(** Set of CLI options used to overwrite or complement fields of a config. *)
 
 val make :
   opam_monorepo_cwd:Fpath.t ->
-  overwrite_config:t ->
-  add_config:t ->
+  adjustment:adjustment ->
   local_opam_files_config:t ->
   (t, Rresult.R.msg) result
 (** Assembles the final config by properly combining all sources.

@@ -305,7 +305,9 @@ let merge = function
   | hd :: tl ->
       Result.List.fold_left tl ~init:hd ~f:(fun t t' -> merge_pair t t')
 
-let cli_add_config =
+type adjustment = { overwrite : t; add : t }
+
+let cli_add =
   let open Cmdliner.Term in
   const (fun global_vars repositories opam_provided ->
       { global_vars; repositories; opam_provided })
@@ -313,13 +315,17 @@ let cli_add_config =
   $ Cmdliner.Arg.value Opam_repositories.add_arg
   $ Cmdliner.Arg.value Opam_provided.add_arg
 
-let cli_overwrite_config =
+let cli_overwrite =
   let open Cmdliner.Term in
   const (fun global_vars repositories opam_provided ->
       { global_vars; repositories; opam_provided })
   $ Cmdliner.Arg.value Opam_global_vars.overwrite_arg
   $ Cmdliner.Arg.value Opam_repositories.overwrite_arg
   $ Cmdliner.Arg.value Opam_provided.overwrite_arg
+
+let cli_adjustment =
+  let open Cmdliner.Term in
+  const (fun overwrite add -> { overwrite; add }) $ cli_overwrite $ cli_add
 
 let rewrite_in ~opam_monorepo_cwd t =
   let open Result.O in
@@ -328,12 +334,11 @@ let rewrite_in ~opam_monorepo_cwd t =
   in
   Ok { t with repositories }
 
-let make ~opam_monorepo_cwd ~overwrite_config ~add_config
-    ~local_opam_files_config =
+let make ~opam_monorepo_cwd ~adjustment ~local_opam_files_config =
   let open Result.O in
   let opam_monorepo_cwd = opam_monorepo_cwd_from_root opam_monorepo_cwd in
-  let* add_config = rewrite_in ~opam_monorepo_cwd add_config in
-  let* overwrite_config = rewrite_in ~opam_monorepo_cwd overwrite_config in
+  let* add_config = rewrite_in ~opam_monorepo_cwd adjustment.add in
+  let* overwrite_config = rewrite_in ~opam_monorepo_cwd adjustment.overwrite in
   let* global_vars =
     match overwrite_config.global_vars with
     | Some _ as g -> Ok g
