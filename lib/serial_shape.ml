@@ -60,8 +60,7 @@ let rec from_opam_val :
       let* snd = from_opam_val s' v' in
       Ok (fst, snd)
   | Slist s, { pelem = List _; _ } ->
-      let* l = Opam.Value.List.from_value (from_opam_val s) value in
-      Ok l
+      Opam.Value.List.from_value (from_opam_val s) value
   | Conv (conv, s), value -> (
       let* repr = from_opam_val s value in
       let res = conv.from_repr repr in
