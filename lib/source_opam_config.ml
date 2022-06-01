@@ -51,8 +51,8 @@ module Make_field (X : FIELD_SHAPE) : FIELD with type t = X.t = struct
     let long_name = Printf.sprintf "add-%s" X.name in
     let doc =
       Printf.sprintf
-        "CLI equivalent of the %s extension. Use this to complement the \
-         corresponding extensions in your local opam files."
+        "CLI equivalent of the %s opam field. Use this to complement the \
+         corresponding fields in your local opam files."
         (Opam.Extra_field.name field)
     in
     Cmdliner.Arg.(opt (some cmdliner_conv) None (info ~doc ~docv [ long_name ]))
@@ -62,8 +62,8 @@ module Make_field (X : FIELD_SHAPE) : FIELD with type t = X.t = struct
     let long_name = X.name in
     let doc =
       Printf.sprintf
-        "CLI equivalent of the %s extension. Use this to replace the \
-         corresponding extensions in your local opam files."
+        "CLI equivalent of the %s opam field. Use this to replace the \
+         corresponding fields in your local opam files."
         (Opam.Extra_field.name field)
     in
     Cmdliner.Arg.(opt (some cmdliner_conv) None (info ~doc ~docv [ long_name ]))
