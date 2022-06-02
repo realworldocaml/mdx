@@ -10,17 +10,6 @@ let opam_url_set =
   in
   Alcotest.testable pp OpamUrl.Set.equal
 
-let pkg_name_set =
-  let pp_one fmt pkg_name =
-    Fmt.pf fmt "%S" (OpamPackage.Name.to_string pkg_name)
-  in
-  let pp fmt set =
-    Fmt.pf fmt "[%a]"
-      Fmt.(list ~sep:(const char ';') pp_one)
-      (OpamPackage.Name.Set.elements set)
-  in
-  Alcotest.testable pp OpamPackage.Name.Set.equal
-
 let variable_content_string_map =
   let equal = String.Map.equal ~cmp:( = ) in
   let pp fmt map =
@@ -275,7 +264,7 @@ module Opam_provided = struct
         let value = OpamParser.FullPos.value_from_string value "test.opam" in
         let expected = Result.map expected ~f:t_from_input in
         let actual = Private.Opam_provided.from_opam_value value in
-        Alcotest.(check (result pkg_name_set Testable.r_msg))
+        Alcotest.(check (result Testable.opam_package_name_set Testable.r_msg))
           test_name expected actual
       in
       (test_name, `Quick, test_fun)
