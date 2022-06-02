@@ -115,7 +115,7 @@ let test_cmdliner_parse =
     in
     let test_fun () =
       let conv = Serial_shape.cmdliner_conv shape in
-      let actual = (Cmdliner.Arg.conv_parser conv) value in
+      let actual = Cmdliner.Arg.conv_parser conv value in
       Alcotest.(check (result (shape_testable shape) Testable.r_msg))
         test_name expected actual
     in
