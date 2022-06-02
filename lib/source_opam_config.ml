@@ -185,6 +185,12 @@ module Opam_repositories_url_rewriter = struct
   let opam_monorepo_cwd_var = "$OPAM_MONOREPO_CWD"
   let opam_monorepo_cwd_var_len = String.length opam_monorepo_cwd_var
 
+  (* Does not check that [opam_monorepo_cwd_var] actually is a prefix *)
+  let drop_opam_monorepo_cwd_var_prefix s =
+    String.sub ~pos:opam_monorepo_cwd_var_len
+      ~len:(String.length s - opam_monorepo_cwd_var_len)
+      s
+
   let rewrite_one_in ~opam_monorepo_cwd url =
     let error () =
       Rresult.R.error_msgf
@@ -198,14 +204,14 @@ module Opam_repositories_url_rewriter = struct
     in
     match ((url : OpamUrl.t), idx) with
     | { transport = "file"; path; _ }, Some 0 ->
-        let path_remainder =
-          String.sub ~pos:opam_monorepo_cwd_var_len
-            ~len:(String.length path - opam_monorepo_cwd_var_len)
-            path
-        in
+        (* The path starts with [opam_monorepo_cwd_var]. *)
+        let path_remainder = drop_opam_monorepo_cwd_var_prefix path in
         let rewritten_path = opam_monorepo_cwd ^ path_remainder in
         Ok { url with OpamUrl.path = rewritten_path }
-    | { transport = _; _ }, Some _ -> error ()
+    | { transport = _; _ }, Some _ ->
+        (* The path contains [opam_monorepo_cwd_var] but does not start
+           with it. *)
+        error ()
     | _, None -> Ok url
 
   let rewrite_one_out ~opam_monorepo_cwd url =
