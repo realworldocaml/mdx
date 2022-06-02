@@ -242,10 +242,7 @@ module Opam_repositories_url_rewriter = struct
   let rewrite_out ~opam_monorepo_cwd repositories_opt =
     match repositories_opt with
     | None -> None
-    | Some rs ->
-        let seq = OpamUrl.Set.to_seq rs in
-        let rewritten = Seq.map (rewrite_one_out ~opam_monorepo_cwd) seq in
-        Some (OpamUrl.Set.of_seq rewritten)
+    | Some rs -> Some (OpamUrl.Set.map (rewrite_one_out ~opam_monorepo_cwd) rs)
 end
 
 type t = {
