@@ -1,120 +1,120 @@
 open Import
 
-module Opam_repositories = struct
+module type FIELD_SHAPE = sig
+  type t
+
+  val name : string
+  val shape : t Serial_shape.t
+  val merge : t list -> (t, Rresult.R.msg) result
+end
+
+module type FIELD = sig
+  type t
+
+  val set : t -> OpamFile.OPAM.t -> OpamFile.OPAM.t
+  val get : OpamFile.OPAM.t -> (t option, Rresult.R.msg) result
+  val merge : t list -> (t, Rresult.R.msg) result
+  val add_arg : t option Cmdliner.Arg.t
+  val overwrite_arg : t option Cmdliner.Arg.t
+
+  (**/**)
+
+  (** Exposed for testing purposes only *)
+
+  val from_opam_value :
+    OpamParserTypes.FullPos.value -> (t, Rresult.R.msg) result
+
+  val to_opam_value : t -> OpamParserTypes.FullPos.value
+  val cmdliner_conv : t Cmdliner.Arg.conv
+
+  (**/**)
+end
+
+module Make_field (X : FIELD_SHAPE) : FIELD with type t = X.t = struct
+  type t = X.t
+
+  let to_opam_value t = Serial_shape.to_opam_val X.shape t
+  let from_opam_value value = Serial_shape.from_opam_val X.shape value
+
+  let field =
+    Opam.Extra_field.make ~name:X.name
+      ~to_opam_value:(Serial_shape.to_opam_val X.shape)
+      ~from_opam_value:(Serial_shape.from_opam_val X.shape)
+
+  let set t opam = Opam.Extra_field.set field t opam
+  let get opam = Opam.Extra_field.get field opam
+  let merge = X.merge
+  let cmdliner_conv = Serial_shape.cmdliner_conv X.shape
+
+  let add_arg =
+    let docv = String.uppercase_ascii X.name in
+    let long_name = Printf.sprintf "add-%s" X.name in
+    let doc =
+      Printf.sprintf
+        "CLI equivalent of the %s opam field. Use this to complement the \
+         corresponding fields in your local opam files."
+        (Opam.Extra_field.name field)
+    in
+    Cmdliner.Arg.(opt (some cmdliner_conv) None (info ~doc ~docv [ long_name ]))
+
+  let overwrite_arg =
+    let docv = String.uppercase_ascii X.name in
+    let long_name = X.name in
+    let doc =
+      Printf.sprintf
+        "CLI equivalent of the %s opam field. Use this to replace the \
+         corresponding fields in your local opam files."
+        (Opam.Extra_field.name field)
+    in
+    Cmdliner.Arg.(opt (some cmdliner_conv) None (info ~doc ~docv [ long_name ]))
+end
+
+module Opam_repositories_shape = struct
   type t = OpamUrl.Set.t
 
-  let opam_monorepo_cwd_var = "$OPAM_MONOREPO_CWD"
+  let name = "opam-repositories"
 
-  let opam_monorepo_cwd_var_regexp =
-    let open Re in
-    compile (seq [ str "file://"; str opam_monorepo_cwd_var ])
+  let from_repr l =
+    let urls = List.map ~f:OpamUrl.of_string l in
+    Ok (OpamUrl.Set.of_list urls)
 
-  let rewrite_url_in ~pos ~opam_monorepo_cwd url_str =
-    let rewritten =
-      Re.replace_string opam_monorepo_cwd_var_regexp
-        ~by:("file://" ^ opam_monorepo_cwd)
-        url_str
-    in
-    if Astring.String.is_infix ~affix:opam_monorepo_cwd_var rewritten then
-      Opam.Pos.errorf ~pos
-        "$OPAM_MONOREPO_CWD can only be used to rewrite the root part of \
-         file:// URLs"
-    else Ok rewritten
+  let to_repr url_set =
+    OpamUrl.Set.elements url_set |> List.map ~f:OpamUrl.to_string
 
-  let rewrite_url_out ~opam_monorepo_cwd_regexp url_str =
-    Re.replace_string opam_monorepo_cwd_regexp
-      ~by:("file://" ^ opam_monorepo_cwd_var)
-      url_str
-
-  let url_from_opam_value ~opam_monorepo_cwd value =
-    let open Result.O in
-    let* url_string = Opam.Value.String.from_value value in
-    let pos = value.OpamParserTypes.FullPos.pos in
-    let* rewritten = rewrite_url_in ~pos ~opam_monorepo_cwd url_string in
-    Ok (OpamUrl.of_string rewritten)
-
-  let url_to_opam_value ~opam_monorepo_cwd_regexp url =
-    Opam.Value.String.to_value
-      (rewrite_url_out ~opam_monorepo_cwd_regexp (OpamUrl.to_string url))
-
-  let from_opam_value ~opam_monorepo_cwd value =
-    let open Result.O in
-    let+ l =
-      Opam.Value.List.from_value (url_from_opam_value ~opam_monorepo_cwd) value
-    in
-    OpamUrl.Set.of_list l
-
-  let to_opam_value ~opam_monorepo_cwd =
-    let opam_monorepo_cwd_regexp =
-      Re.(compile (seq [ str "file://"; str opam_monorepo_cwd ]))
-    in
-    fun t ->
-      let elements = OpamUrl.Set.elements t in
-      Opam.Value.List.to_value
-        (url_to_opam_value ~opam_monorepo_cwd_regexp)
-        elements
-
-  let field ~opam_monorepo_cwd =
-    Opam.Extra_field.make ~name:"opam-repositories"
-      ~from_opam_value:(from_opam_value ~opam_monorepo_cwd)
-      ~to_opam_value:(to_opam_value ~opam_monorepo_cwd)
-
-  let get ~opam_monorepo_cwd opam =
-    let field = field ~opam_monorepo_cwd in
-    Opam.Extra_field.get field opam
-
-  let set ~opam_monorepo_cwd t opam =
-    let field = field ~opam_monorepo_cwd in
-    Opam.Extra_field.set field t opam
+  let conv = Serial_shape.Conv.make ~from_repr ~to_repr ()
+  let shape = Serial_shape.conv conv Serial_shape.(list string)
 
   let merge = function
     | [] -> Ok OpamUrl.Set.empty
     | hd :: tl -> Ok (List.fold_left tl ~init:hd ~f:OpamUrl.Set.union)
 end
 
-module Opam_global_vars = struct
+module Opam_repositories = Make_field (Opam_repositories_shape)
+
+module Opam_global_vars_shape = struct
   type t = OpamVariable.variable_contents String.Map.t
+
+  let name = "global-opam-vars"
+
+  let var_content_from_repr choice =
+    match choice with
+    | `C1 b -> Ok (OpamVariable.B b)
+    | `C2 l -> Ok (OpamVariable.L l)
+    | `C3 s -> Ok (OpamVariable.S s)
+
+  let var_content_to_repr var =
+    match (var : OpamVariable.variable_contents) with
+    | B b -> `C1 b
+    | L l -> `C2 l
+    | S s -> `C3 s
+
+  let var_content_conv =
+    Serial_shape.Conv.make ~from_repr:var_content_from_repr
+      ~to_repr:var_content_to_repr ()
 
   exception Env_var_defined_twice of string
 
-  let variable_content_from_opam_value value =
-    let open Result.O in
-    match (value : OpamParserTypes.FullPos.value) with
-    | { pelem = Bool b; _ } -> Ok (OpamVariable.B b)
-    | { pelem = String s; _ } -> Ok (OpamVariable.S s)
-    | { pelem = List _; _ } ->
-        let+ l =
-          Opam.Value.List.from_value Opam.Value.String.from_value value
-        in
-        OpamVariable.L l
-    | _ ->
-        Opam.Pos.unexpected_value_error
-          ~expected:"a boolean, a string or list of strings" value
-
-  let variable_content_to_opam_value variable_content =
-    match (variable_content : OpamVariable.variable_contents) with
-    | B b -> Opam.Pos.with_default (OpamParserTypes.FullPos.Bool b)
-    | S s -> Opam.Value.String.to_value s
-    | L l -> Opam.Value.List.to_value Opam.Value.String.to_value l
-
-  let from_opam_value_one value =
-    let open Result.O in
-    let* l = Opam.Value.List.from_value Result.ok value in
-    match l with
-    | [ name; content ] ->
-        let* name = Opam.Value.String.from_value name in
-        let+ content = variable_content_from_opam_value content in
-        (name, content)
-    | _ ->
-        Opam.Pos.unexpected_value_error
-          ~expected:"a list with a var name followed by the var content" value
-
-  let to_opam_value_one (name, content) =
-    let name = Opam.Value.String.to_value name in
-    let content = variable_content_to_opam_value content in
-    Opam.Value.List.to_value Fun.id [ name; content ]
-
-  let from_bindings ~pos l =
+  let from_repr l =
     try
       List.fold_left l ~init:String.Map.empty ~f:(fun acc (name, content) ->
           String.Map.update acc name ~f:(function
@@ -122,24 +122,18 @@ module Opam_global_vars = struct
             | Some _ -> raise (Env_var_defined_twice name)))
       |> Result.ok
     with Env_var_defined_twice name ->
-      Opam.Pos.errorf ~pos "Env variable %s is defined more than once" name
+      Rresult.R.error_msgf "Opam global variable %s is defined more than once"
+        name
 
-  let from_opam_value value =
-    let open Result.O in
-    let pos = value.OpamParserTypes.FullPos.pos in
-    let* bindings = Opam.Value.List.from_value from_opam_value_one value in
-    from_bindings ~pos bindings
+  let to_repr map = String.Map.bindings map
+  let conv = Serial_shape.Conv.make ~from_repr ~to_repr ()
 
-  let to_opam_value t =
-    let bindings = String.Map.bindings t in
-    Opam.Value.List.to_value to_opam_value_one bindings
-
-  let field =
-    Opam.Extra_field.make ~name:"global-opam-vars" ~to_opam_value
-      ~from_opam_value
-
-  let get opam = Opam.Extra_field.get field opam
-  let set t opam = Opam.Extra_field.set field t opam
+  let shape =
+    let var_shape =
+      Serial_shape.conv var_content_conv
+        Serial_shape.(choice3 bool (list string) string)
+    in
+    Serial_shape.conv conv Serial_shape.(list (pair string var_shape))
 
   let merge = function
     | [] -> Ok String.Map.empty
@@ -153,50 +147,102 @@ module Opam_global_vars = struct
                   | Some c, Some c' when c = c' -> Some c
                   | Some _, Some _ -> raise (Env_var_defined_twice name)))
           |> Result.ok
-        with Env_var_defined_twice name ->
+        with Env_var_defined_twice var_name ->
           Rresult.R.error_msgf
             "Environment variable %s is set to different values in different \
              opam files %s field"
-            name
-            (Opam.Extra_field.name field))
+            var_name name)
 end
 
-module Opam_provided = struct
-  let from_opam_value opam_chunk =
-    let open Result.O in
-    let* names =
-      match (opam_chunk : OpamParserTypes.FullPos.value) with
-      | { pelem = String s; _ } -> Ok [ s ]
-      | { pelem = List items; _ } ->
-          items.pelem
-          |> List.map ~f:(fun item ->
-                 match (item : OpamParserTypes.FullPos.value) with
-                 | { pelem = String s; _ } -> Ok s
-                 | otherwise ->
-                     Opam.Pos.unexpected_value_error ~expected:"a string"
-                       otherwise)
-          |> Result.List.all
-      | otherwise ->
-          Opam.Pos.unexpected_value_error
-            ~expected:"a string or a list of strings" otherwise
-    in
-    let names = List.map ~f:OpamPackage.Name.of_string names in
-    Ok (OpamPackage.Name.Set.of_list names)
+module Opam_global_vars = Make_field (Opam_global_vars_shape)
 
-  let to_opam_value names =
-    OpamPackage.Name.Set.elements names
-    |> List.map ~f:OpamPackage.Name.to_string
-    |> Opam.Value.List.to_value Opam.Value.String.to_value
+module Opam_provided_shape = struct
+  type t = OpamPackage.Name.Set.t
 
-  let field =
-    Opam.Extra_field.make ~name:"opam-provided" ~to_opam_value ~from_opam_value
+  let name = "opam-provided"
 
-  let set t opam = Opam.Extra_field.set field t opam
-  let get opam = Opam.Extra_field.get field opam
+  let from_repr repr =
+    let l = match repr with `C1 l -> l | `C2 s -> [ s ] in
+    l
+    |> List.map ~f:OpamPackage.Name.of_string
+    |> OpamPackage.Name.Set.of_list |> Result.ok
+
+  let to_repr t =
+    t |> OpamPackage.Name.Set.elements |> List.map ~f:OpamPackage.Name.to_string
+    |> fun l -> `C1 l
+
+  let conv = Serial_shape.Conv.make ~from_repr ~to_repr ()
+  let shape = Serial_shape.conv conv Serial_shape.(choice2 (list string) string)
 
   let merge = function
     | [] -> Ok OpamPackage.Name.Set.empty
     | init :: xs -> Ok (List.fold_left xs ~init ~f:OpamPackage.Name.Set.union)
+end
+
+module Opam_provided = Make_field (Opam_provided_shape)
+
+module Opam_repositories_url_rewriter = struct
+  let opam_monorepo_cwd_var = "$OPAM_MONOREPO_CWD"
+  let opam_monorepo_cwd_var_len = String.length opam_monorepo_cwd_var
+
+  (* Does not check that [opam_monorepo_cwd_var] actually is a prefix *)
+  let drop_opam_monorepo_cwd_var_prefix s =
+    String.sub ~pos:opam_monorepo_cwd_var_len
+      ~len:(String.length s - opam_monorepo_cwd_var_len)
+      s
+
+  let rewrite_one_in ~opam_monorepo_cwd url =
+    let error () =
+      Rresult.R.error_msgf
+        "$OPAM_MONOREPO_CWD can only be used to rewrite the root part of \
+         file:// URLs. %S is an invalid use of the variable."
+        (OpamUrl.to_string url)
+    in
+    let idx =
+      Astring.String.find_sub ~start:0 ~sub:opam_monorepo_cwd_var
+        url.OpamUrl.path
+    in
+    match ((url : OpamUrl.t), idx) with
+    | { transport = "file"; path; _ }, Some 0 ->
+        (* The path starts with [opam_monorepo_cwd_var]. *)
+        let path_remainder = drop_opam_monorepo_cwd_var_prefix path in
+        let rewritten_path = opam_monorepo_cwd ^ path_remainder in
+        Ok { url with OpamUrl.path = rewritten_path }
+    | { transport = _; _ }, Some _ ->
+        (* The path contains [opam_monorepo_cwd_var] but does not start
+           with it. *)
+        error ()
+    | _, None -> Ok url
+
+  let rewrite_one_out ~opam_monorepo_cwd url =
+    match url.OpamUrl.transport with
+    | "file" -> (
+        let path_remainder =
+          String.drop_prefix ~prefix:opam_monorepo_cwd url.OpamUrl.path
+        in
+        match path_remainder with
+        | Some r ->
+            let rewritten_path = opam_monorepo_cwd_var ^ r in
+            { url with OpamUrl.path = rewritten_path }
+        | None -> url)
+    | _ -> url
+
+  let rewrite_in ~opam_monorepo_cwd repositories_opt =
+    let open Result.O in
+    match repositories_opt with
+    | None -> Ok None
+    | Some rs ->
+        let l = OpamUrl.Set.elements rs in
+        let* rewritten =
+          Result.List.map ~f:(rewrite_one_in ~opam_monorepo_cwd) l
+        in
+        let set = OpamUrl.Set.of_list rewritten in
+        Ok (Some set)
+
+  let rewrite_out ~opam_monorepo_cwd repositories_opt =
+    match repositories_opt with
+    | None -> None
+    | Some rs -> Some (OpamUrl.Set.map (rewrite_one_out ~opam_monorepo_cwd) rs)
 end
 
 type t = {
@@ -214,8 +260,11 @@ let get ~opam_monorepo_cwd opam_file =
   let open Result.O in
   let opam_monorepo_cwd = opam_monorepo_cwd_from_root opam_monorepo_cwd in
   let* global_vars = Opam_global_vars.get opam_file in
-  let* repositories = Opam_repositories.get ~opam_monorepo_cwd opam_file in
+  let* repositories = Opam_repositories.get opam_file in
   let* opam_provided = Opam_provided.get opam_file in
+  let* repositories =
+    Opam_repositories_url_rewriter.rewrite_in ~opam_monorepo_cwd repositories
+  in
   Ok { global_vars; repositories; opam_provided }
 
 let set_field set var opam_file =
@@ -224,9 +273,12 @@ let set_field set var opam_file =
 let set ~opam_monorepo_cwd { global_vars; repositories; opam_provided }
     opam_file =
   let opam_monorepo_cwd = opam_monorepo_cwd_from_root opam_monorepo_cwd in
+  let repositories =
+    Opam_repositories_url_rewriter.rewrite_out ~opam_monorepo_cwd repositories
+  in
   opam_file
   |> set_field Opam_global_vars.set global_vars
-  |> set_field (Opam_repositories.set ~opam_monorepo_cwd) repositories
+  |> set_field Opam_repositories.set repositories
   |> set_field Opam_provided.set opam_provided
 
 let merge_field f a b =
@@ -256,16 +308,86 @@ let merge = function
   | hd :: tl ->
       Result.List.fold_left tl ~init:hd ~f:(fun t t' -> merge_pair t t')
 
+type adjustment = { overwrite : t; add : t }
+
+let cli_add =
+  let open Cmdliner.Term in
+  const (fun global_vars repositories opam_provided ->
+      { global_vars; repositories; opam_provided })
+  $ Cmdliner.Arg.value Opam_global_vars.add_arg
+  $ Cmdliner.Arg.value Opam_repositories.add_arg
+  $ Cmdliner.Arg.value Opam_provided.add_arg
+
+let cli_overwrite =
+  let open Cmdliner.Term in
+  const (fun global_vars repositories opam_provided ->
+      { global_vars; repositories; opam_provided })
+  $ Cmdliner.Arg.value Opam_global_vars.overwrite_arg
+  $ Cmdliner.Arg.value Opam_repositories.overwrite_arg
+  $ Cmdliner.Arg.value Opam_provided.overwrite_arg
+
+let cli_adjustment =
+  let open Cmdliner.Term in
+  const (fun overwrite add -> { overwrite; add }) $ cli_overwrite $ cli_add
+
+let rewrite_in ~opam_monorepo_cwd t =
+  let open Result.O in
+  let* repositories =
+    Opam_repositories_url_rewriter.rewrite_in ~opam_monorepo_cwd t.repositories
+  in
+  Ok { t with repositories }
+
+let make ~opam_monorepo_cwd ~adjustment ~local_opam_files_config =
+  let open Result.O in
+  let opam_monorepo_cwd = opam_monorepo_cwd_from_root opam_monorepo_cwd in
+  let* add_config = rewrite_in ~opam_monorepo_cwd adjustment.add in
+  let* overwrite_config = rewrite_in ~opam_monorepo_cwd adjustment.overwrite in
+  let* global_vars =
+    match overwrite_config.global_vars with
+    | Some _ as g -> Ok g
+    | None ->
+        merge_field Opam_global_vars.merge add_config.global_vars
+          local_opam_files_config.global_vars
+  in
+  let* repositories =
+    match overwrite_config.repositories with
+    | Some _ as r -> Ok r
+    | None ->
+        merge_field Opam_repositories.merge add_config.repositories
+          local_opam_files_config.repositories
+  in
+  let* opam_provided =
+    match overwrite_config.opam_provided with
+    | Some _ as o -> Ok o
+    | None ->
+        merge_field Opam_provided.merge add_config.opam_provided
+          local_opam_files_config.opam_provided
+  in
+  Ok { global_vars; repositories; opam_provided }
+
 module Private = struct
   (** Re-expose private functions for testing purposes *)
 
   module Opam_repositories = struct
     let from_opam_value = Opam_repositories.from_opam_value
     let to_opam_value = Opam_repositories.to_opam_value
+    let cmdliner_conv = Opam_repositories.cmdliner_conv
   end
 
   module Opam_global_vars = struct
     let from_opam_value = Opam_global_vars.from_opam_value
     let to_opam_value = Opam_global_vars.to_opam_value
+    let cmdliner_conv = Opam_global_vars.cmdliner_conv
+  end
+
+  module Opam_provided = struct
+    let from_opam_value = Opam_provided.from_opam_value
+    let to_opam_value = Opam_provided.to_opam_value
+    let cmdliner_conv = Opam_provided.cmdliner_conv
+  end
+
+  module Opam_repositories_url_rewriter = struct
+    let rewrite_one_in = Opam_repositories_url_rewriter.rewrite_one_in
+    let rewrite_one_out = Opam_repositories_url_rewriter.rewrite_one_out
   end
 end

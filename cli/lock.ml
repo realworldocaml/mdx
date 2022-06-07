@@ -434,7 +434,8 @@ let preferred_versions ~minimal_update ~root target_lockfile =
       in
       name_to_version_map
 
-let extract_source_config ~opam_monorepo_cwd ~opam_files target_packages =
+let extract_source_config ~adjustment ~opam_monorepo_cwd ~opam_files
+    target_packages =
   let open Result.O in
   let target_opam_files =
     List.map (OpamPackage.Name.Set.elements target_packages) ~f:(fun name ->
@@ -444,13 +445,15 @@ let extract_source_config ~opam_monorepo_cwd ~opam_files target_packages =
     Result.List.map target_opam_files
       ~f:(Source_opam_config.get ~opam_monorepo_cwd)
   in
-  Source_opam_config.merge source_config_list
+  let* local_opam_files_config = Source_opam_config.merge source_config_list in
+  Source_opam_config.make ~opam_monorepo_cwd ~adjustment
+    ~local_opam_files_config
 
 let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     (`Allow_jbuilder allow_jbuilder) (`Ocaml_version ocaml_version)
     (`Require_cross_compile require_cross_compile)
-    (`Minimal_update minimal_update) (`Target_packages specified_packages)
-    (`Lockfile explicit_lockfile) () =
+    (`Minimal_update minimal_update) (`Config_adjustment adjustment)
+    (`Target_packages specified_packages) (`Lockfile explicit_lockfile) () =
   let open Result.O in
   let* local_packages = local_packages ~versions:specified_packages root in
   let* target_packages =
@@ -461,7 +464,8 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
   let* opam_files = local_paths_to_opam_map local_packages in
   let* lockfile_path = lockfile_path ~explicit_lockfile ~target_packages root in
   let* source_config =
-    extract_source_config ~opam_monorepo_cwd:root ~opam_files target_packages
+    extract_source_config ~adjustment ~opam_monorepo_cwd:root ~opam_files
+      target_packages
   in
   let* opam_provided =
     opam_provided_packages ~opam_monorepo_cwd:root opam_files target_packages
@@ -496,6 +500,11 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
   Ok ()
 
 open Cmdliner
+
+let config_adjustment =
+  Common.Arg.named
+    (fun x -> `Config_adjustment x)
+    Source_opam_config.cli_adjustment
 
 let recurse_opam =
   let doc =
@@ -602,7 +611,8 @@ let term =
   Common.Term.result_to_exit
     Cmdliner.Term.(
       const run $ Common.Arg.root $ recurse_opam $ build_only $ allow_jbuilder
-      $ ocaml_version $ require_cross_compile $ minimal_update $ packages
-      $ Common.Arg.lockfile $ Common.Arg.setup_logs ())
+      $ ocaml_version $ require_cross_compile $ minimal_update
+      $ config_adjustment $ packages $ Common.Arg.lockfile
+      $ Common.Arg.setup_logs ())
 
 let cmd = Cmd.v info term
