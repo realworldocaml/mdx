@@ -111,32 +111,57 @@ let unmatched_list_delimiter ~delim =
 let str_get_opt s i =
   match s.[i] with c -> Some c | exception Invalid_argument _ -> None
 
+(* Splits a string on each occurence of the [','] separator.
+   Supports nested lists by ignoring occurences of [',']
+   enclosed within ['['] and [']'] delimiters. *)
 let split_list ~start ~len s =
   let last = start + len - 1 in
-  let rec search_sep ~count_open ~acc ~current_elm_start i =
+  let rec search_sep ~openned_nested_lists ~acc ~current_elm_start i =
     match str_get_opt s i with
-    | _ when i > last && count_open > 0 -> unmatched_list_delimiter ~delim:'['
+    | _ when i > last && openned_nested_lists > 0 ->
+        (* We reached the end of the string and there are unmatched
+           list openning delimiters. *)
+        unmatched_list_delimiter ~delim:'['
     | _ when i > last ->
+        (* We reached the end of the string, extract the last element
+           substring, from [current_elm_start] to [last] (included). *)
         let last =
           String.sub s ~pos:current_elm_start ~len:(last + 1 - current_elm_start)
         in
         Ok (List.rev (last :: acc))
     | Some '[' ->
-        search_sep ~count_open:(count_open + 1) ~acc ~current_elm_start (i + 1)
-    | Some (']' as delim) when count_open = 0 -> unmatched_list_delimiter ~delim
+        (* We found a list openning delimiter, we increase the count
+           of nested lists openned and move to the next char. *)
+        search_sep ~openned_nested_lists:(openned_nested_lists + 1) ~acc
+          ~current_elm_start (i + 1)
+    | Some (']' as delim) when openned_nested_lists = 0 ->
+        (* We found a closing delimiter but no list is currently openned,
+           meaning it has no matching open delimiter. *)
+        unmatched_list_delimiter ~delim
     | Some ']' ->
-        search_sep ~count_open:(count_open - 1) ~acc ~current_elm_start (i + 1)
-    | Some ',' when count_open = 0 ->
+        (* We found a closing delimiter, we reduce the count of
+           openned nested lists and move on to the next char. *)
+        search_sep ~openned_nested_lists:(openned_nested_lists - 1) ~acc
+          ~current_elm_start (i + 1)
+    | Some ',' when openned_nested_lists = 0 ->
+        (* We found a separator and no nested list is currently openned,
+           it belongs to the main list. We extract the substring up to this
+           point and move on to the next char. *)
         let elm =
           String.sub s ~pos:current_elm_start ~len:(i - current_elm_start)
         in
-        search_sep ~count_open ~acc:(elm :: acc) ~current_elm_start:(i + 1)
-          (i + 1)
-    | Some _ -> search_sep ~count_open ~acc ~current_elm_start (i + 1)
-    | None -> assert false
+        search_sep ~openned_nested_lists ~acc:(elm :: acc)
+          ~current_elm_start:(i + 1) (i + 1)
+    | Some _ ->
+        (* No notable character, we move on to the next *)
+        search_sep ~openned_nested_lists ~acc ~current_elm_start (i + 1)
+    | None ->
+        (* This is handled through the first two cases where [i] exceeds
+           the range *)
+        assert false
   in
   if len = 0 then Ok []
-  else search_sep ~count_open:0 ~acc:[] ~current_elm_start:start start
+  else search_sep ~openned_nested_lists:0 ~acc:[] ~current_elm_start:start start
 
 let parse_list s =
   let len = String.length s in
