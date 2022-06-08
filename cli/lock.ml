@@ -449,6 +449,11 @@ let extract_source_config ~adjustment ~opam_monorepo_cwd ~opam_files
   Source_opam_config.make ~opam_monorepo_cwd ~adjustment
     ~local_opam_files_config
 
+let raw_cli_args () =
+  match Array.to_list Sys.argv with
+  | _bin :: "lock" :: args -> args
+  | _ -> assert false
+
 let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     (`Allow_jbuilder allow_jbuilder) (`Ocaml_version ocaml_version)
     (`Require_cross_compile require_cross_compile)
@@ -485,8 +490,9 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     Lockfile.create ~source_config ~root_packages:target_packages
       ~dependency_entries ~root_depexts:target_depexts ~duniverse ()
   in
+  let cli_args = raw_cli_args () in
   let* () =
-    Lockfile.save ~opam_monorepo_cwd:root ~file:lockfile_path lockfile
+    Lockfile.save ~opam_monorepo_cwd:root ~cli_args ~file:lockfile_path lockfile
   in
   Common.Logs.app (fun l ->
       l

@@ -20,6 +20,7 @@ val ocaml_version : t -> OpamPackage.Version.t option
 
 val save :
   opam_monorepo_cwd:Fpath.t ->
+  cli_args:string list ->
   file:Fpath.t ->
   t ->
   (unit, [ `Msg of string ]) result
