@@ -118,8 +118,7 @@ module Opam_repositories = struct
     in
     [
       make_test ~name:"Simple" ~value:{|[ "https://github.com/repo" ]|}
-        ~expected:(Ok [ "https://github.com/repo" ])
-        ();
+        ~expected:(Ok [ "https://github.com/repo" ]) ();
       make_test ~name:"Multiple" ~value:{|[ "https://a.com" "https://b.com" ]|}
         ~expected:(Ok [ "https://a.com"; "https://b.com" ])
         ();
