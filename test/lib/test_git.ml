@@ -66,12 +66,10 @@ module Ls_remote = struct
     in
     [
       make_test ~name:"Empty output" ~ref:"v1" ~lines:[]
-        ~expected:(Error `No_such_ref)
-        ();
+        ~expected:(Error `No_such_ref) ();
       make_test ~name:"Not in output" ~ref:"v1"
         ~lines:[ "0001    refs/heads/master" ]
-        ~expected:(Error `No_such_ref)
-        ();
+        ~expected:(Error `No_such_ref) ();
       make_test ~name:"Invalid output" ~ref:"v1" ~lines:[ "invalid-output" ]
         ~expected:
           (Error (`Msg "Invalid git ls-remote output line: \"invalid-output\""))
@@ -100,8 +98,7 @@ module Ls_remote = struct
         ~expected:(Ok "0002") ();
       make_test ~name:"Points to several commits" ~ref:"abc"
         ~lines:[ "001   refs/heads/abc"; "002   refs/tags/abc" ]
-        ~expected:(Error `Multiple_such_refs)
-        ();
+        ~expected:(Error `Multiple_such_refs) ();
       make_test ~name:"Points to several commits (with packed-refs)" ~ref:"abc"
         ~lines:
           [
@@ -110,11 +107,9 @@ module Ls_remote = struct
             "003   refs/tags/abc";
             "004   refs/tags/abc^{}";
           ]
-        ~expected:(Error `Multiple_such_refs)
-        ();
+        ~expected:(Error `Multiple_such_refs) ();
       make_test ~name:"Empty output" ~ref:"abc" ~lines:[ "" ]
-        ~expected:(Error `No_such_ref)
-        ();
+        ~expected:(Error `No_such_ref) ();
       make_test ~name:"Not branch or tag" ~ref:"abc"
         ~lines:
           [
@@ -125,8 +120,7 @@ module Ls_remote = struct
         ~expected:(Ok "003") ();
       make_test ~name:"Same suffix" ~ref:"abc"
         ~lines:[ "001   refs/heads/xabc" ]
-        ~expected:(Error `No_such_ref)
-        ();
+        ~expected:(Error `No_such_ref) ();
       make_test ~name:"Ref is a commit" ~ref:"000456"
         ~lines:[ "00017f   refs/heads/master"; "000456   refs/heads/abc" ]
         ~expected:(Ok "000456") ();
@@ -150,11 +144,9 @@ module Ls_remote = struct
     in
     [
       make_test ~name:"Empty output" ~symref:"abc" ~lines:[ "" ]
-        ~expected:(Error `Not_a_symref)
-        ();
+        ~expected:(Error `Not_a_symref) ();
       make_test ~name:"No output" ~symref:"abc" ~lines:[]
-        ~expected:(Error `Not_a_symref)
-        ();
+        ~expected:(Error `Not_a_symref) ();
       make_test ~name:"Typical output" ~symref:"HEAD"
         ~lines:[ "ref: refs/heads/master  HEAD"; "0000        HEAD" ]
         ~expected:(Ok "master") ();
