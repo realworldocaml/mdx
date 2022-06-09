@@ -7,6 +7,8 @@
   @NathanReb)
 - Add command line options to complement or overwrite `x-opam-monorepo-*`
   fields. (#307, @NathanReb)
+- Save the `lock` CLI arguments in `x-opam-monorepo-cli-args` when generating a
+  lock file. (#309, @NathanReb)
 
 ### Changed
 

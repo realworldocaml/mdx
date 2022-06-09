@@ -261,6 +261,21 @@ module Depexts = struct
     List.concat all |> List.sort_uniq ~cmp:compare_elm
 end
 
+module Cli_args = struct
+  (** Field used to store the raw command line arguments passed to [lock].
+      It is set but not read and therefore is not part of the main lock file
+      type. *)
+
+  type _t = string list
+
+  let name = "cli-args"
+  let shape = Serial_shape.(list string)
+  let from_opam_value value = Serial_shape.from_opam_val shape value
+  let to_opam_value t = Serial_shape.to_opam_val shape t
+  let field = Extra_field.make ~name ~to_opam_value ~from_opam_value
+  let add t opam = match t with [] -> opam | _ -> Extra_field.set field t opam
+end
+
 type t = {
   version : Version.t;
   root_packages : Root_packages.t;
@@ -364,8 +379,8 @@ let from_opam ~opam_monorepo_cwd ?file opam =
       source_config;
     }
 
-let save ~opam_monorepo_cwd ~file t =
-  let opam = to_opam ~opam_monorepo_cwd t in
+let save ~opam_monorepo_cwd ~cli_args ~file t =
+  let opam = Cli_args.add cli_args (to_opam ~opam_monorepo_cwd t) in
   Bos.OS.File.with_oc file
     (fun oc () ->
       OpamFile.OPAM.write_to_channel oc opam;
