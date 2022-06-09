@@ -1,0 +1,58 @@
+(lang dune 2.7)
+(name opam-0install)
+(version v0.4.3)
+(formatting disabled)
+
+(generate_opam_files true)
+
+(source (github ocaml-opam/opam-0install-solver))
+(authors "talex5@gmail.com")
+(maintainers "talex5@gmail.com")
+(documentation "https://ocaml-opam.github.io/opam-0install-solver/")
+(license ISC)
+
+(package
+ (name opam-0install)
+ (synopsis "Opam solver using 0install backend")
+ (description "\
+Opam's default solver is designed to maintain a set of packages
+over time, minimising disruption when installing new programs and
+finding a compromise solution across all packages.
+
+In many situations (e.g. CI, local roots or duniverse builds) this
+is not necessary, and we can get a solution much faster by using
+a different algorithm.
+
+This package uses 0install's solver algorithm with opam packages.
+")
+ (depends
+  (fmt (>= 0.8.7))
+  (cmdliner (>= 1.1.0))
+  (opam-state (>= 2.1.0~rc))
+  (ocaml (>= 4.08.0))
+  0install-solver
+  (opam-file-format (>= 2.1.1))
+  (opam-client :with-test)
+  (opam-solver :with-test)
+  (astring :with-test)
+  (alcotest :with-test)))
+
+(package
+ (name opam-0install-cudf)
+ (synopsis "Opam solver using 0install backend using the CUDF interface")
+ (description "\
+Opam's default solver is designed to maintain a set of packages
+over time, minimising disruption when installing new programs and
+finding a compromise solution across all packages.
+
+In many situations (e.g. CI, local roots or duniverse builds) this
+is not necessary, and we can get a solution much faster by using
+a different algorithm.
+
+This package uses 0install's solver algorithm with opam packages using
+the CUDF interface.
+")
+ (depends
+  cudf
+  (ocaml (>= 4.08.0))
+  0install-solver))

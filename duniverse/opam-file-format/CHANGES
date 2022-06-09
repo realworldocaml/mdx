@@ -1,0 +1,31 @@
+2.1.4 [12 April 2022]
+* Fix position in the sections parser [#46 @hhugo]
+
+2.1.3 [21 May 2021]
+* Fix module link order (broken by #37) [#41 @dra27]
+* opam-version: "2.1" must appear at most once and as the first non-comment
+  item. If opam-version is at the start and is greater than the library version,
+  `OpamLexer.Error` and `Parsing.Parse_error` are no longer raised; instead the
+  opam-version variable is returned along with an invalid group to signal the
+  parsing error, giving the client enough information to act.
+  [#43, #44, #45 @dra27]
+
+2.1.2 [07 Jan 2021]
+* Some hash-consing for strings [#27 @AltGr]
+* Fix named section position [#31 @rjbou]
+* Don't include build system Flags module in installation [#34 @dra27]
+* Allow compilation with Dune 1.x [#35 @kit-ty-kate]
+* Fix compilation of OpamParserTypes [#36 @dra27]
+
+2.1.1 [17 Nov 2020]
+* New types with more complete positions [#24 @rjbou]
+* Deprecation of all old functions [#24 @rjbou]
+* Add tests [#28 @rjbou]
+
+2.1.0 [26 Aug 2020]
+* Don't add a newline at the start of strings with newlines [#18 @dra27]
+* Report starting position of strings correctly [#19 @rjbou]
+* Add dune files [#13 @avsm @jonludlam @dra27]
+
+2.0.0 [1 Aug 2018]
+* Initial version

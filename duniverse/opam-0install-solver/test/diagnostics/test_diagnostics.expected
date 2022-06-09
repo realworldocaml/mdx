@@ -1,0 +1,7 @@
+Can't find all required versions.
+Selected: main.1
+- foo -> (problem)
+    main 1 requires >= 2
+    Rejected candidates:
+      foo.1: Incompatible with restriction: >= 2
+      foo.2: Availability condition not satisfied

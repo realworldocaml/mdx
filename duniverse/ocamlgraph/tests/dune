@@ -1,0 +1,194 @@
+(test
+ (name check)
+ (libraries graph)
+ (modules check))
+
+(test
+ (name test_topsort)
+ (libraries graph)
+ (modules test_topsort))
+
+;; Rules for the Bellman-Ford tests
+
+(rule
+ (with-stdout-to
+  test_bf.output
+  (run ./test_bf.exe)))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (diff test_bf.expected test_bf.output)
+   (echo "test_bf: all tests succeeded.\n"))))
+
+(executable
+ (name test_bf)
+ (modules test_bf)
+ (libraries graph))
+
+;; Rules for the chaotic tests
+
+(rule
+ (with-stdout-to
+  test_chaotic.output
+  (run ./test_chaotic.exe)))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (diff test_chaotic.expected test_chaotic.output)
+   (echo "test_chaotic: all tests succeeded.\n"))))
+
+(executable
+ (name test_chaotic)
+ (modules test_chaotic)
+ (libraries graph))
+
+;; Rules for the strat test
+
+(rule
+ (with-stdout-to
+  strat.output
+  (run ./strat.exe)))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (diff strat.expected strat.output)
+   (echo "strat: all tests succeeded.\n"))))
+
+(executable
+ (name strat)
+ (modules strat)
+ (libraries graph))
+
+;; Rules for the fixpoint test
+
+(rule
+ (with-stdout-to
+  test_fixpoint.output
+  (run ./test_fixpoint.exe)))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (diff test_fixpoint.expected test_fixpoint.output)
+   (echo "test_fixpoint: all tests succeeded.\n"))))
+
+(executable
+ (name test_fixpoint)
+ (modules test_fixpoint)
+ (libraries graph))
+
+;; Rules for the Johnson test
+
+(rule
+ (with-stdout-to
+  test_johnson.output
+  (run ./test_johnson.exe)))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (diff test_johnson.expected test_johnson.output)
+   (echo "test_johnson: all tests succeeded.\n"))))
+
+(executable
+ (name test_johnson)
+ (modules test_johnson)
+ (libraries graph))
+
+;; Rules for the weak topological test
+
+(rule
+ (with-stdout-to
+  test_wto.output
+  (run ./test_wto.exe)))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (diff test_wto.expected test_wto.output)
+   (echo "test_wto: all tests succeeded.\n"))))
+
+(executable
+ (name test_wto)
+ (modules test_wto)
+ (libraries graph))
+
+;; Rules for the basic test
+
+(rule
+ (with-stdout-to
+  basic.output
+  (run ./basic.exe)))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (diff basic.expected basic.output)
+   (echo "basic: all tests succeeded.\n"))))
+
+(executable
+ (name basic)
+ (modules basic)
+ (libraries graph))
+
+;; Rules for the test_components test
+
+(rule
+ (with-stdout-to
+  test_components.output
+  (run ./test_components.exe)))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (diff test_components.expected test_components.output)
+   (echo "test_components: all tests succeeded.\n"))))
+
+(executable
+ (name test_components)
+ (modules test_components)
+ (libraries graph))
+
+;; rules for the dot test
+
+(rule
+ (deps dot.dot)
+ (action
+  (with-stdout-to
+   dot.output
+   (run ./dot.exe %{deps}))))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (diff dot.expected dot.output)
+   (echo "dot: all tests succeeded.\n"))))
+
+(executable
+ (name dot)
+ (modules dot)
+ (libraries graph))
+
+;; rules for the running the benchmark
+
+(rule
+ (alias bench)
+ (action
+  (run ./bench.exe)))
+
+(executable
+ (name bench)
+ (modules bench)
+ (libraries graph unix))

@@ -1,0 +1,8 @@
+(executables
+ (names color compare_prim_kruskal demo_planar demo_prim demo sudoku)
+ (libraries graph unix graphics threads))
+
+(alias
+ (name runtest)
+ (deps color.exe compare_prim_kruskal.exe demo_planar.exe demo_prim.exe
+   demo.exe sudoku.exe))
