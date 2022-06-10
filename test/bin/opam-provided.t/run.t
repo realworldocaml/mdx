@@ -66,6 +66,16 @@ It also should not be in `duniverse-dirs` in the locked Opam file:
   $ opam show --just-file --raw -fx-opam-monorepo-duniverse-dirs ./opam-provided.opam.locked
   
 
+Alternatively this can be done using the CLI options generated for any elements
+of the solver config, including `opam-provided`:
+
+  $ opam-monorepo lock vendored --opam-provided b > /dev/null
+  $ opam show --just-file -fdepends ./vendored.opam.locked | grep '"b"'
+  "b" {= "1" & ?vendor}
+
+As demonstrated above, the CLI argument is taken into account and 'b' is
+not vendored.
+
 What happens in the case that a package would be ok to vendor but the
 transitive dependency is `opam`-provided? In this case we have a package
 `transitive` that depends on packages that will
