@@ -9,7 +9,7 @@
 ### Fixed
 
 - Fix a bug that caused `--add-opam-provided` and `--opam-provided` to be
-  ignored by the solver. (#<PR_NUMBER>, @NathanReb)
+  ignored by the solver. (#314, @NathanReb)
 
 ### Removed
 
