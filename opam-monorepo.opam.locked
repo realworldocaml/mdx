@@ -16,18 +16,18 @@ depends: [
   "bos" {= "0.2.1+dune" & ?vendor}
   "cmdliner" {= "1.1.1+dune" & ?vendor}
   "conf-pkg-config" {= "2"}
-  "cppo" {= "1.6.8" & ?vendor}
+  "cppo" {= "1.6.9" & ?vendor}
   "csexp" {= "1.5.1" & ?vendor}
-  "dune" {= "3.1.1"}
-  "dune-build-info" {= "3.1.1" & ?vendor}
-  "dune-configurator" {= "3.1.1" & ?vendor}
+  "dune" {= "3.2.0"}
+  "dune-build-info" {= "3.2.0" & ?vendor}
+  "dune-configurator" {= "3.2.0" & ?vendor}
   "findlib" {= "1.8.1+dune" & ?vendor}
   "fmt" {= "0.9.0+dune" & ?vendor}
   "fpath" {= "0.7.3+dune" & ?vendor}
   "logs" {= "0.7.0+dune2" & ?vendor}
   "lwt" {= "5.5.0" & ?vendor}
   "mmap" {= "1.2.0" & ?vendor}
-  "num" {= "1.4+dune" & ?vendor}
+  "num" {= "1.4+dune2" & ?vendor}
   "ocaml" {= "4.14.0"}
   "ocaml-base-compiler" {= "4.14.0"}
   "ocaml-config" {= "2"}
@@ -112,20 +112,20 @@ pin-depends: [
     "https://erratique.ch/software/cmdliner/releases/cmdliner-1.1.1.tbz"
   ]
   [
-    "cppo.1.6.8"
-    "https://github.com/ocaml-community/cppo/archive/v1.6.8.tar.gz"
+    "cppo.1.6.9"
+    "https://github.com/ocaml-community/cppo/archive/v1.6.9.tar.gz"
   ]
   [
     "csexp.1.5.1"
     "https://github.com/ocaml-dune/csexp/releases/download/1.5.1/csexp-1.5.1.tbz"
   ]
   [
-    "dune-build-info.3.1.1"
-    "https://github.com/ocaml/dune/releases/download/3.1.1/fiber-3.1.1.tbz"
+    "dune-build-info.3.2.0"
+    "https://github.com/ocaml/dune/releases/download/3.2.0/chrome-trace-3.2.0.tbz"
   ]
   [
-    "dune-configurator.3.1.1"
-    "https://github.com/ocaml/dune/releases/download/3.1.1/fiber-3.1.1.tbz"
+    "dune-configurator.3.2.0"
+    "https://github.com/ocaml/dune/releases/download/3.2.0/chrome-trace-3.2.0.tbz"
   ]
   [
     "findlib.1.8.1+dune"
@@ -151,7 +151,10 @@ pin-depends: [
     "mmap.1.2.0"
     "https://github.com/mirage/mmap/releases/download/v1.2.0/mmap-1.2.0.tbz"
   ]
-  ["num.1.4+dune" "https://github.com/ocaml/num/archive/v1.4.tar.gz"]
+  [
+    "num.1.4+dune2"
+    "https://github.com/dune-universe/num/releases/download/v1.4%2Bdune2/num-v1.4.dune2.tbz"
+  ]
   [
     "ocaml-syntax-shims.1.0.0"
     "https://github.com/ocaml-ppx/ocaml-syntax-shims/releases/download/1.0.0/ocaml-syntax-shims-1.0.0.tbz"
@@ -315,6 +318,14 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
+    "https://github.com/dune-universe/num/releases/download/v1.4%2Bdune2/num-v1.4.dune2.tbz"
+    "num"
+    [
+      "sha256=ec52dcab09b6b638d1a2048e733ec402ee687e89383c3a62d7c0e12f8ed661ad"
+      "sha512=7d6035bd96a71d248c31662b877330656cd29040f45a143695bfa96765b91cea2f4c04b6ff78fdfa5876c1032c3baf4fd22c679b0ae09858d93cf46c1474b5cb"
+    ]
+  ]
+  [
     "https://github.com/dune-universe/rresult/releases/download/v0.7.0%2Bdune/rresult-0.7.0.dune.tbz"
     "rresult"
     [
@@ -378,11 +389,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/ocaml-community/cppo/archive/v1.6.8.tar.gz"
+    "https://github.com/ocaml-community/cppo/archive/v1.6.9.tar.gz"
     "cppo"
     [
-      "md5=fed401197d86f9089e89f6cbdf1d660d"
-      "sha512=069bbe0ef09c03b0dc4b5795f909c3ef872fe99c6f1e6704a0fa97594b1570b3579226ec67fe11d696ccc349a4585055bbaf07c65eff423aa45af28abf38c858"
+      "md5=d23ffe85ac7dc8f0afd1ddf622770d09"
+      "sha512=26ff5a7b7f38c460661974b23ca190f0feae3a99f1974e0fd12ccf08745bd7d91b7bc168c70a5385b837bfff9530e0e4e41cf269f23dd8cf16ca658008244b44"
     ]
   ]
   [
@@ -410,19 +421,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/ocaml/dune/releases/download/3.1.1/fiber-3.1.1.tbz"
+    "https://github.com/ocaml/dune/releases/download/3.2.0/chrome-trace-3.2.0.tbz"
     "dune_"
     [
-      "sha256=02484454ab1b998840c7873509ec6b2301eb92662c132ef8f5f4f569b35a6b60"
-      "sha512=c92199924af75f801d264d3b3e98497757c9932d8e03fa100fca2df16315b87d595a3e0cbbc3ce9b8d86adb2a8b6d3a7cef0f88c7654f15f6b6a4d10d523fad1"
-    ]
-  ]
-  [
-    "https://github.com/ocaml/num/archive/v1.4.tar.gz"
-    "num"
-    [
-      "md5=cda2b727e116a0b6a9c03902cc4b2415"
-      "sha512=0cc9be8ad95704bb683b4bf6698bada1ee9a40dc05924b72adc7b969685c33eeb68ccf174cc09f6a228c48c18fe94af06f28bebc086a24973a066da620db8e6f"
+      "sha256=bd1fbce6ae79ed1eb26fa89bb2e2e23978afceb3f53f5578cf1bdab08a1ad5bc"
+      "sha512=b99e82d7e2233a9dd8c1fae591a03f9470fcdf9750d0e428cee2d4c8bcfa4da1595e9e10af2f234279a6ca8a120a773b247d4761d2c39210fc6101076631690e"
     ]
   ]
   [
