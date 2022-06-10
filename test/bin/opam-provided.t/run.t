@@ -71,7 +71,7 @@ of the solver config, including `opam-provided`:
 
   $ opam-monorepo lock vendored --opam-provided b > /dev/null
   $ opam show --just-file -fdepends ./vendored.opam.locked | grep '"b"'
-  "b" {= "1" & ?vendor}
+  "b" {= "1"}
 
 As demonstrated above, the CLI argument is taken into account and 'b' is
 not vendored.

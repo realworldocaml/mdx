@@ -252,27 +252,15 @@ let extract_opam_env ~source_config global_state =
   | { global_vars = Some env; _ } -> env
   | { global_vars = None; _ } -> opam_env_from_global_state global_state
 
-let opam_provided_packages ~opam_monorepo_cwd local_packages target_packages =
-  let open Result.O in
-  OpamPackage.Name.Set.fold
-    (fun name acc ->
-      let* acc = acc in
-      match OpamPackage.Name.Map.find_opt name local_packages with
-      | Some (_version, opam) -> (
-          match Source_opam_config.get ~opam_monorepo_cwd opam with
-          | Ok config -> (
-              match config.opam_provided with
-              | None -> Ok acc
-              | Some provided -> Ok (OpamPackage.Name.Set.union provided acc))
-          | Error (`Msg msg) -> Error (`Msg msg))
-      | None -> Ok acc)
-    target_packages (Ok OpamPackage.Name.Set.empty)
-
 let calculate_opam ~source_config ~build_only ~allow_jbuilder
     ~require_cross_compile ~preferred_versions ~local_opam_files ~ocaml_version
-    ~target_packages ~opam_provided =
+    ~target_packages =
   let open Result.O in
   OpamGlobalState.with_ `Lock_none (fun global_state ->
+      let opam_provided =
+        Option.value ~default:OpamPackage.Name.Set.empty
+          source_config.Source_opam_config.opam_provided
+      in
       let* pin_depends = get_pin_depends ~global_state local_opam_files in
       match (source_config : Source_opam_config.t) with
       | { repositories = Some repositories; _ } ->
@@ -472,16 +460,13 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     extract_source_config ~adjustment ~opam_monorepo_cwd:root ~opam_files
       target_packages
   in
-  let* opam_provided =
-    opam_provided_packages ~opam_monorepo_cwd:root opam_files target_packages
-  in
   let* preferred_versions =
     preferred_versions ~minimal_update ~root lockfile_path
   in
   let* dependency_entries =
     calculate_opam ~source_config ~build_only ~allow_jbuilder
       ~require_cross_compile ~preferred_versions ~ocaml_version
-      ~local_opam_files:opam_files ~target_packages ~opam_provided
+      ~local_opam_files:opam_files ~target_packages
   in
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
   let* duniverse = compute_duniverse ~dependency_entries >>= resolve_ref in
