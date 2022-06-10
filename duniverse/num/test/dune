@@ -1,7 +1,0 @@
-(alias
-  (name runtest)
-  (action (progn (run %{dep:test.bc}) (run %{dep:test.exe}))))
-
-(executable
-  (name test)
-  (libraries num))

@@ -1,7 +1,0 @@
-(cram
- (applies_to :whole_subtree)
- (alias all-merlin-tests))
-
-(cram
- (applies_to merlin-tests)
- (deps %{bin:ocamlfind}))

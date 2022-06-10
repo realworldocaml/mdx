@@ -1,5 +1,0 @@
-(library
- (name hello_world)
- (foreign_stubs
-  (language cxx)
-  (names foreign_hello_world)))

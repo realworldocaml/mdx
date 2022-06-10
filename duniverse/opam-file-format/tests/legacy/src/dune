@@ -1,3 +1,0 @@
-; We mustn't copy the dune file, but Dune's globbing has no syntax for that
-(copy_files ../../../src/o*)
-(copy_files ../../../src/M*)

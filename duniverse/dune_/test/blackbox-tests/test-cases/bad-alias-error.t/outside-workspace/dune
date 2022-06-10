@@ -1,4 +1,0 @@
-(alias
- (name runtest)
- (deps
-  (alias %{workspace_root}/../../../foobar)))

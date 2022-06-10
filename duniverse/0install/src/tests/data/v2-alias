@@ -1,2 +1,0 @@
-#!/bin/sh
-exec 0launch --command 'run' 'http://example.com/alias2.xml' "$@"

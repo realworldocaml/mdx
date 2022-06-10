@@ -1,1 +1,0 @@
-val withContext : context:Pango.context -> fontName:string -> fontSize:int -> string -> int * int
