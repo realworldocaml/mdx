@@ -1,0 +1,11 @@
+(library
+ (name        bigstringaf)
+ (public_name bigstringaf)
+
+ (foreign_stubs
+  (language c)
+  (names     bigstringaf_stubs)
+  (flags     (:standard -Wall -Wextra -Wpedantic)))
+
+ (js_of_ocaml (javascript_files runtime.js))
+)

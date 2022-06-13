@@ -1,0 +1,48 @@
+(include_subdirs unqualified)
+
+(library
+ (name dune_rules)
+ (libraries
+  stdune
+  csexp
+  fiber
+  fiber_util
+  memo
+  dune_re
+  opam_file_format
+  dune_lang
+  dune_glob
+  ocaml_config
+  dune_action_plugin
+  chrome_trace
+  dune_stats
+  dune_util
+  dune_meta_parser
+  dune_section
+  dune_cache
+  build_path_prefix_map
+  dune_engine
+  dune_config)
+ (synopsis "Internal Dune library, do not use!"))
+
+(ocamllex ocamlobjinfo cram_lexer)
+
+(rule
+ (mode promote)
+ (target assets.ml)
+ (action
+  (with-stdout-to
+   %{target}
+   (progn
+    (echo "let jbuild_plugin_ml = {jbp|\n")
+    (cat %{project_root}/plugin/jbuild_plugin.ml)
+    (echo "|jbp}\n\n")
+    (echo "let jbuild_plugin_mli = {jbp|")
+    (cat %{project_root}/plugin/jbuild_plugin.mli)
+    (echo "|jbp}")))))
+
+(rule
+ (targets setup.ml)
+ (mode fallback)
+ (action
+  (copy# setup.defaults.ml setup.ml)))

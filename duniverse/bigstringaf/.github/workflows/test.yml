@@ -1,0 +1,40 @@
+name: build
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  tests:
+    name: Tests
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        ocaml-version:
+          - 4.08.1
+          - 4.09.1
+          - 4.11.2
+          - 4.13.1
+          - 4.14.0
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Use OCaml ${{ matrix.ocaml-version }}
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-version }}
+
+      - name: Deps
+        run: opam install -t --deps-only .
+
+      - name: Build
+        run: opam exec -- dune build
+
+      - name: Test
+        run: opam exec -- dune runtest
