@@ -79,11 +79,11 @@ let hpad_of_lines = function
 let of_lines ~syntax ~(loc : Location.t) t =
   let pos = loc.loc_start in
   let hpad =
-    match syntax with Syntax.Mli -> pos.pos_cnum + 2 | _ -> hpad_of_lines t
+    match syntax with Syntax.Mli | Mld -> pos.pos_cnum + 2 | _ -> hpad_of_lines t
   in
   let unpad line =
     match syntax with
-    | Syntax.Mli -> String.trim line
+    | Syntax.Mli | Mld -> String.trim line
     | _ ->
         if String.is_empty line then line
         else if String.length line < hpad then
@@ -94,7 +94,7 @@ let of_lines ~syntax ~(loc : Location.t) t =
   let lines =
     Lexer_cram.token (Lexing.from_string (String.concat ~sep:"\n" lines))
   in
-  let vpad = match syntax with Syntax.Mli -> 1 | _ -> 0 in
+  let vpad = match syntax with Syntax.Mli | Mld -> 1 | _ -> 0 in
   Log.debug (fun l ->
       l "Cram.of_lines (pad=%d) %a" hpad Fmt.(Dump.list dump_line) lines);
   let mk command output exit_code =

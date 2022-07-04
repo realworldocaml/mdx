@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-type syntax = Syntax.t = Normal | Cram | Mli
+type syntax = Syntax.t = Normal | Cram | Mli | Mld
 type line = Section of (int * string) | Text of string | Block of Block.t
 type t = line list
 
@@ -24,7 +24,7 @@ let pp_line ?syntax ppf (l : line) =
   | Section (d, s) -> Fmt.pf ppf "%s %s\n" (String.make d '#') s
   | Text s -> (
       match syntax with
-      | Some Mli -> Fmt.pf ppf "%s" s
+      | Some Mli | Some Mld -> Fmt.pf ppf "%s" s
       | _ -> Fmt.pf ppf "%s\n" s)
 
 let pp ?syntax ppf t =

@@ -84,11 +84,11 @@ let vpad_of_lines t =
 let of_lines ~syntax ~(loc : Location.t) t =
   let pos = loc.loc_start in
   let hpad =
-    match syntax with Syntax.Mli -> pos.pos_cnum + 2 | _ -> hpad_of_lines t
+    match syntax with Syntax.Mli | Mld -> pos.pos_cnum + 2 | _ -> hpad_of_lines t
   in
   let unpad line =
     match syntax with
-    | Syntax.Mli -> String.trim line
+    | Syntax.Mli | Syntax.Mld -> String.trim line
     | Syntax.Normal | Syntax.Cram ->
         if String.is_empty line then line
         else if String.length line < hpad then
@@ -96,7 +96,7 @@ let of_lines ~syntax ~(loc : Location.t) t =
         else String.with_index_range line ~first:hpad
   in
   let lines = List.map unpad t in
-  let lines = match syntax with Syntax.Mli -> "" :: lines | _ -> lines in
+  let lines = match syntax with Syntax.Mli | Syntax.Mld -> "" :: lines | _ -> lines in
   let lines = String.concat ~sep:"\n" lines in
   let lines = Lexer_top.token (lexbuf ~pos lines) in
   let vpad, lines = vpad_of_lines lines in
