@@ -53,7 +53,7 @@ let slice lines ~(start : Odoc_parser.Loc.point) ~(end_ : Odoc_parser.Loc.point)
       let last_line = String.sub last_line 0 end_.column in
       String.concat "\n" ([ first_line ] @ stripped @ [ last_line ])
 
-let extract_code_blocks ~(location : Lexing.position) ~docstring =
+let extract_code_blocks parsed =
   let rec acc blocks =
     List.map
       (fun block ->
@@ -71,7 +71,6 @@ let extract_code_blocks ~(location : Lexing.position) ~docstring =
       blocks
     |> List.concat
   in
-  let parsed = Odoc_parser.parse_comment ~location ~text:docstring in
   List.iter
     (fun error -> failwith (Odoc_parser.Warning.to_string error))
     (Odoc_parser.warnings parsed);
@@ -124,7 +123,8 @@ let docstring_code_blocks str =
       let location =
         { cmt_loc.loc_start with pos_cnum = cmt_loc.loc_start.pos_cnum + 3 }
       in
-      let blocks = extract_code_blocks ~location ~docstring in
+      let parsed = Odoc_parser.parse_comment ~location ~text:docstring in
+      let blocks = extract_code_blocks parsed in
       List.map
         (fun (b : Code_block.t) -> (b, convert_loc cmt_loc b.location))
         blocks)
@@ -178,11 +178,10 @@ let code_block_markup code_block =
   in
   (opening, [ Text (hpad ^ "]}") ])
 
-let parse_mli file_contents =
+let parse_general file_contents code_blocks =
   (* Find the locations of the code blocks within [file_contents], then slice it up into
      [Text] and [Block] parts by using the starts and ends of those blocks as
      boundaries. *)
-  let code_blocks = docstring_code_blocks file_contents in
   let cursor = ref { Odoc_parser.Loc.line = 1; column = 0 } in
   let lines = String.split_on_char '\n' file_contents |> Array.of_list in
   let tokens =
@@ -220,5 +219,34 @@ let parse_mli file_contents =
   else tokens
 
 let parse_mli file_contents =
+  let code_blocks = docstring_code_blocks file_contents in
+  parse_general file_contents code_blocks
+
+let parse_mld ~fname ~text =
+    let rec find_lines start =
+      match String.index_from_opt text (start+1) '\n' with
+      | Some i -> start :: find_lines i
+      | None -> [start]
+    in
+    let lines = find_lines 0 |> Array.of_list in
+    let location = {Lexing.pos_fname = fname; pos_lnum = 1; pos_bol = 0; pos_cnum = 0} in
+    let p = Odoc_parser.parse_comment ~location ~text in
+    let blocks = extract_code_blocks p |> List.map (fun b ->
+      let loc_of (p : Odoc_parser.Loc.point) =
+        let pos_bol = lines.(p.line - 1) in
+        let pos_cnum = (* pos_bol +*) p.column in
+        { Lexing.pos_bol; pos_cnum; pos_lnum = p.line-1; pos_fname = fname }
+      in
+      let location = b.Code_block.location in
+      let loc = { Location.loc_start = loc_of location.Odoc_parser.Loc.start; loc_end = loc_of location.end_; loc_ghost=false } in
+      (b, loc)) in
+    parse_general text blocks
+
+    
+let parse_mli file_contents =
   try Result.Ok (parse_mli file_contents)
+  with exn -> Util.Result.errorf "%s" (Printexc.to_string exn)
+
+let parse_mld ~fname ~text =
+  try Result.Ok (parse_mld ~fname ~text)
   with exn -> Util.Result.errorf "%s" (Printexc.to_string exn)

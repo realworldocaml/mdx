@@ -119,7 +119,7 @@ let pp_lines syntax t =
   let pp =
     match syntax with
     | Some Syntax.Cram -> Fmt.fmt "  %s"
-    | Some Syntax.Mli ->
+    | Some Syntax.Mli | Some Mld ->
         fun ppf -> Fmt.fmt "%*s%s" ppf (t.loc.loc_start.pos_cnum + 2) ""
     | _ -> Fmt.string
   in
@@ -131,8 +131,8 @@ let lstrip string =
 
 let pp_contents ?syntax ppf t =
   match (syntax, t.contents) with
-  | Some Syntax.Mli, [ line ] -> Fmt.pf ppf "%s" line
-  | Some Syntax.Mli, lines ->
+  | Some (Syntax.Mli | Mld), [ line ] -> Fmt.pf ppf "%s" line
+  | Some (Syntax.Mli | Mld), lines ->
       Fmt.pf ppf "@\n%a@\n" (pp_lines syntax t) (List.map lstrip lines)
   | (Some Cram | Some Normal | None), [] -> ()
   | (Some Cram | Some Normal | None), _ ->
@@ -148,7 +148,7 @@ let pp_errors ppf t =
 
 let pp_footer ?syntax ppf _ =
   match syntax with
-  | Some Syntax.Mli -> ()
+  | Some Syntax.Mli | Some Syntax.Mld -> ()
   | Some Syntax.Cram -> ()
   | _ -> Fmt.string ppf "```\n"
 
@@ -171,7 +171,7 @@ let pp_header ?syntax ppf t =
       | [ Non_det (Some Nd_command) ] ->
           Fmt.pf ppf "<-- non-deterministic command\n"
       | _ -> failwith "cannot happen: checked during parsing")
-  | Some Syntax.Mli -> ()
+  | Some Syntax.Mli | Some Syntax.Mld-> ()
   | _ ->
       if t.legacy_labels then
         Fmt.pf ppf "```%a%a\n"

@@ -40,6 +40,7 @@ let cwd_options_file = "test-case.opts"
 let cwd_test_file_md = "test-case.md"
 let cwd_test_file_t = "test-case.t"
 let cwd_test_file_mli = "test-case.mli"
+let cwd_test_file_mld = "test-case.mld"
 let cwd_enabled_if_file = "test-case.enabled-if"
 
 type dir = {
@@ -53,14 +54,14 @@ type dir = {
 
 let test_file ~dir_name files =
   let is_test_file f =
-    f = cwd_test_file_md || f = cwd_test_file_t || f = cwd_test_file_mli
+    f = cwd_test_file_md || f = cwd_test_file_t || f = cwd_test_file_mli || f = cwd_test_file_mld
   in
   match List.filter is_test_file files with
   | [ test_file ] -> test_file
   | [] ->
       Printf.eprintf "No test file for %s\n" dir_name;
-      Printf.eprintf "There should be one of %s, %s, or %s\n" cwd_test_file_md
-        cwd_test_file_t cwd_test_file_mli;
+      Printf.eprintf "There should be one of %s, %s, %s, or %s\n" cwd_test_file_md
+        cwd_test_file_t cwd_test_file_mli cwd_test_file_mld;
       exit 1
   | _ ->
       Printf.eprintf "More than one test file for %s\n" dir_name;
