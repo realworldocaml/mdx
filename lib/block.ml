@@ -171,7 +171,7 @@ let pp_header ?syntax ppf t =
       | [ Non_det (Some Nd_command) ] ->
           Fmt.pf ppf "<-- non-deterministic command\n"
       | _ -> failwith "cannot happen: checked during parsing")
-  | Some Syntax.Mli | Some Syntax.Mld-> ()
+  | Some Syntax.Mli | Some Syntax.Mld -> ()
   | _ ->
       if t.legacy_labels then
         Fmt.pf ppf "```%a%a\n"

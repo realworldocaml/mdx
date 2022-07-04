@@ -79,7 +79,9 @@ let hpad_of_lines = function
 let of_lines ~syntax ~(loc : Location.t) t =
   let pos = loc.loc_start in
   let hpad =
-    match syntax with Syntax.Mli | Mld -> pos.pos_cnum + 2 | _ -> hpad_of_lines t
+    match syntax with
+    | Syntax.Mli | Mld -> pos.pos_cnum + 2
+    | _ -> hpad_of_lines t
   in
   let unpad line =
     match syntax with
