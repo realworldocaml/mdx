@@ -64,7 +64,9 @@ let parse l =
 let parse_lexbuf file_contents syntax l =
   match syntax with
   | Syntax.Mli -> Mli_parser.parse_mli file_contents
-  | Syntax.Mld -> Mli_parser.parse_mld ~fname:l.Lexing.lex_start_p.pos_fname ~text:file_contents
+  | Syntax.Mld ->
+      Mli_parser.parse_mld ~fname:l.Lexing.lex_start_p.pos_fname
+        ~text:file_contents
   | Normal -> Lexer_mdx.markdown_token l >>| parse
   | Cram -> Lexer_mdx.cram_token l >>| parse
 

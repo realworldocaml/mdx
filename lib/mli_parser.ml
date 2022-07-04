@@ -223,26 +223,41 @@ let parse_mli file_contents =
   parse_general file_contents code_blocks
 
 let parse_mld ~fname ~text =
-    let rec find_lines start =
-      match String.index_from_opt text (start+1) '\n' with
-      | Some i -> start :: find_lines i
-      | None -> [start]
-    in
-    let lines = find_lines 0 |> Array.of_list in
-    let location = {Lexing.pos_fname = fname; pos_lnum = 1; pos_bol = 0; pos_cnum = 0} in
-    let p = Odoc_parser.parse_comment ~location ~text in
-    let blocks = extract_code_blocks p |> List.map (fun b ->
-      let loc_of (p : Odoc_parser.Loc.point) =
-        let pos_bol = lines.(p.line - 1) in
-        let pos_cnum = (* pos_bol +*) p.column in
-        { Lexing.pos_bol; pos_cnum; pos_lnum = p.line-1; pos_fname = fname }
-      in
-      let location = b.Code_block.location in
-      let loc = { Location.loc_start = loc_of location.Odoc_parser.Loc.start; loc_end = loc_of location.end_; loc_ghost=false } in
-      (b, loc)) in
-    parse_general text blocks
+  let rec find_lines start =
+    match String.index_from_opt text (start + 1) '\n' with
+    | Some i -> start :: find_lines i
+    | None -> [ start ]
+  in
+  let lines = find_lines 0 |> Array.of_list in
+  let location =
+    { Lexing.pos_fname = fname; pos_lnum = 1; pos_bol = 0; pos_cnum = 0 }
+  in
+  let p = Odoc_parser.parse_comment ~location ~text in
+  let blocks =
+    extract_code_blocks p
+    |> List.map (fun b ->
+           let loc_of (p : Odoc_parser.Loc.point) =
+             let pos_bol = lines.(p.line - 1) in
+             let pos_cnum = (* pos_bol +*) p.column in
+             {
+               Lexing.pos_bol;
+               pos_cnum;
+               pos_lnum = p.line - 1;
+               pos_fname = fname;
+             }
+           in
+           let location = b.Code_block.location in
+           let loc =
+             {
+               Location.loc_start = loc_of location.Odoc_parser.Loc.start;
+               loc_end = loc_of location.end_;
+               loc_ghost = false;
+             }
+           in
+           (b, loc))
+  in
+  parse_general text blocks
 
-    
 let parse_mli file_contents =
   try Result.Ok (parse_mli file_contents)
   with exn -> Util.Result.errorf "%s" (Printexc.to_string exn)
