@@ -63,11 +63,10 @@ let parse l =
     l
 
 let parse_lexbuf file_contents syntax l =
+  let fname = l.Lexing.lex_start_p.pos_fname in
   match syntax with
-  | Syntax.Mli -> Mli_parser.parse_mli file_contents
-  | Syntax.Mld ->
-      Mli_parser.parse_mld ~fname:l.Lexing.lex_start_p.pos_fname
-        ~text:file_contents
+  | Syntax.Mli -> Mli_parser.parse_mli ~fname file_contents
+  | Syntax.Mld -> Mli_parser.parse_mld ~fname ~text:file_contents
   | Normal -> Lexer_mdx.markdown_token l >>| parse
   | Cram -> Lexer_mdx.cram_token l >>| parse
 
@@ -77,8 +76,8 @@ let parse_file syntax f =
 
 let of_string syntax s =
   match syntax with
-  | Syntax.Mli -> Mli_parser.parse_mli s
-  | Syntax.Mld -> Mli_parser.parse_mld ~fname:"__unknown__" ~text:s
+  | Syntax.Mli -> Mli_parser.parse_mli ~fname:"_none_" s
+  | Syntax.Mld -> Mli_parser.parse_mld ~fname:"_none_" ~text:s
   | Syntax.Normal | Syntax.Cram -> parse_lexbuf s syntax (Lexing.from_string s)
 
 let dump_line ppf (l : line) =

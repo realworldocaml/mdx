@@ -110,9 +110,11 @@ let docstrings lexbuf =
 let convert_loc { Odoc_parser.Loc.file; start = { line; column }; _ } =
   { Block_location.fname = file; line; column }
 
-let docstring_code_blocks str =
+let docstring_code_blocks ~fname str =
   Lexer.handle_docstrings := true;
   Lexer.init ();
+  let lexbuf = Lexing.from_string str in
+  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = fname };
   List.map
     (fun (docstring, (cmt_loc : Location.t)) ->
       let location =
@@ -121,7 +123,7 @@ let docstring_code_blocks str =
       in
       let parsed = Odoc_parser.parse_comment ~location ~text:docstring in
       extract_code_blocks parsed)
-    (docstrings (Lexing.from_string str))
+    (docstrings lexbuf)
   |> List.concat
 
 let make_block code_block =
@@ -212,8 +214,8 @@ let parse_general file_contents code_blocks =
     else tokens
   else tokens
 
-let parse_mli file_contents =
-  let code_blocks = docstring_code_blocks file_contents in
+let parse_mli ~fname file_contents =
+  let code_blocks = docstring_code_blocks ~fname file_contents in
   parse_general file_contents code_blocks
 
 let parse_mld ~fname ~text =
@@ -224,8 +226,8 @@ let parse_mld ~fname ~text =
   let blocks = extract_code_blocks p in
   parse_general text blocks
 
-let parse_mli file_contents =
-  try Result.Ok (parse_mli file_contents)
+let parse_mli ~fname file_contents =
+  try Result.Ok (parse_mli ~fname file_contents)
   with exn -> Util.Result.errorf "%s" (Printexc.to_string exn)
 
 let parse_mld ~fname ~text =
