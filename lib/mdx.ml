@@ -76,8 +76,8 @@ let parse_file syntax f =
 
 let of_string syntax s =
   match syntax with
-  | Syntax.Mli -> Mli_parser.parse_mli ~fname:"_none_" s
-  | Syntax.Mld -> Mli_parser.parse_mld ~fname:"_none_" ~text:s
+  | Syntax.Mli -> Mli_parser.parse_mli ~fname:"" s
+  | Syntax.Mld -> Mli_parser.parse_mld ~fname:"" ~text:s
   | Syntax.Normal | Syntax.Cram -> parse_lexbuf s syntax (Lexing.from_string s)
 
 let dump_line ppf (l : line) =
