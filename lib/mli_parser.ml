@@ -107,13 +107,8 @@ let docstrings lexbuf =
   in
   loop [] |> List.rev
 
-let convert_pos (p : Lexing.position) (pt : Odoc_parser.Loc.point) =
-  { p with pos_lnum = pt.line; pos_cnum = pt.column }
-
-let convert_loc (loc : Location.t) (sp : Odoc_parser.Loc.span) =
-  let loc_start = convert_pos loc.loc_start sp.start in
-  let loc_end = convert_pos loc.loc_end sp.end_ in
-  { loc with loc_start; loc_end }
+let convert_loc { Odoc_parser.Loc.file; start = { line; column }; _ } =
+  { Block_location.fname = file; line; column }
 
 let docstring_code_blocks str =
   Lexer.handle_docstrings := true;
@@ -121,17 +116,15 @@ let docstring_code_blocks str =
   List.map
     (fun (docstring, (cmt_loc : Location.t)) ->
       let location =
+        (* Only [loc_start] will be used by Odoc. *)
         { cmt_loc.loc_start with pos_cnum = cmt_loc.loc_start.pos_cnum + 3 }
       in
       let parsed = Odoc_parser.parse_comment ~location ~text:docstring in
-      let blocks = extract_code_blocks parsed in
-      List.map
-        (fun (b : Code_block.t) -> (b, convert_loc cmt_loc b.location))
-        blocks)
+      extract_code_blocks parsed)
     (docstrings (Lexing.from_string str))
   |> List.concat
 
-let make_block ~loc code_block =
+let make_block code_block =
   let handle_header = function
     | Some Code_block.{ language_tag; labels } -> (
         let header =
@@ -152,6 +145,7 @@ let make_block ~loc code_block =
   match handle_header code_block.Code_block.metadata with
   | Error _ as e -> e
   | Ok (header, labels) ->
+      let loc = convert_loc code_block.location in
       let contents = String.split_on_char '\n' code_block.contents in
       Block.mk ~loc ~section:None ~labels ~header ~contents ~legacy_labels:false
         ~errors:[]
@@ -186,13 +180,13 @@ let parse_general file_contents code_blocks =
   let lines = String.split_on_char '\n' file_contents |> Array.of_list in
   let tokens =
     List.map
-      (fun ((code_block : Code_block.t), loc) ->
+      (fun (code_block : Code_block.t) ->
         let pre_text =
           Document.Text
             (slice lines ~start:!cursor ~end_:code_block.location.start)
         in
         let block =
-          match make_block ~loc code_block with
+          match make_block code_block with
           | Ok block -> Document.Block block
           | Error (`Msg msg) ->
               failwith (Fmt.str "Error creating block: %s" msg)
@@ -223,39 +217,11 @@ let parse_mli file_contents =
   parse_general file_contents code_blocks
 
 let parse_mld ~fname ~text =
-  let rec find_lines start =
-    match String.index_from_opt text (start + 1) '\n' with
-    | Some i -> start :: find_lines i
-    | None -> [ start ]
-  in
-  let lines = find_lines 0 |> Array.of_list in
   let location =
     { Lexing.pos_fname = fname; pos_lnum = 1; pos_bol = 0; pos_cnum = 0 }
   in
   let p = Odoc_parser.parse_comment ~location ~text in
-  let blocks =
-    extract_code_blocks p
-    |> List.map (fun b ->
-           let loc_of (p : Odoc_parser.Loc.point) =
-             let pos_bol = lines.(p.line - 1) in
-             let pos_cnum = (* pos_bol +*) p.column in
-             {
-               Lexing.pos_bol;
-               pos_cnum;
-               pos_lnum = p.line - 1;
-               pos_fname = fname;
-             }
-           in
-           let location = b.Code_block.location in
-           let loc =
-             {
-               Location.loc_start = loc_of location.Odoc_parser.Loc.start;
-               loc_end = loc_of location.end_;
-               loc_ghost = false;
-             }
-           in
-           (b, loc))
-  in
+  let blocks = extract_code_blocks p in
   parse_general text blocks
 
 let parse_mli file_contents =

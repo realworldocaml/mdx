@@ -13,6 +13,10 @@ let labels l =
     let msgs = List.map (fun (`Msg (x : string)) -> x) msgs in
     let msg = String.concat ~sep:" " msgs in
     failwith msg
+
+let block_location lexbuf =
+  let { Location.loc_start; _ } = Location.curr lexbuf in
+  Block_location.of_lexpos loc_start
 }
 
 let eol = '\n' | eof
@@ -45,7 +49,7 @@ rule text section = parse
         in
         newline lexbuf;
         List.iter (fun _ -> newline lexbuf) contents;
-        let loc = Location.curr lexbuf in
+        let loc = block_location lexbuf in
         newline lexbuf;
         let block =
           match
@@ -65,7 +69,7 @@ rule text section = parse
   | "<!--" ws* "$MDX" ws* ([^' ' '\n']* as label_cmt) ws* "-->" ws* eol
       { let labels = labels label_cmt in
         newline lexbuf;
-        let loc = Location.curr lexbuf in
+        let loc = block_location lexbuf in
         let block =
           match Block.mk_include ~loc ~section ~labels with
           | Ok block -> block
@@ -95,7 +99,7 @@ and cram_text section = parse
         let contents = first_line :: contents in
         let labels = [] in
         let legacy_labels = false in
-        let loc = Location.curr lexbuf in
+        let loc = block_location lexbuf in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
         let block =
@@ -118,7 +122,7 @@ and cram_text section = parse
         in
         let legacy_labels = false in
         newline lexbuf;
-        let loc = Location.curr lexbuf in
+        let loc = block_location lexbuf in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
         let block =

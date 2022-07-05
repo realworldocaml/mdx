@@ -22,7 +22,7 @@ let test_mk =
     let test_name = Printf.sprintf "mk: %S" name in
     let test_fun () =
       let actual =
-        Mdx.Block.mk ~loc:Location.none ~section:None ~labels
+        Mdx.Block.mk ~loc:Mdx.Block_location.none ~section:None ~labels
           ~legacy_labels:false ~header ~contents ~errors:[]
       in
       Alcotest.(check (result Testable.block Testable.msg))

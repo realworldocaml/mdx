@@ -23,7 +23,7 @@ open Misc
 type t = {
   vpad : int;
   hpad : int;
-  pos : Lexing.position;
+  loc : Block_location.t;
   command : string list;
   output : Output.t list;
 }
@@ -68,7 +68,8 @@ let pp ppf (t : t) =
   pp_command ppf t;
   pp_lines (Output.pp ~pad:t.vpad) ppf t.output
 
-let lexbuf ~(pos : Lexing.position) s =
+let lexbuf ~(loc : Block_location.t) s =
+  let pos = Block_location.to_lexpos loc in
   let lexbuf = Lexing.from_string s in
   lexbuf.lex_start_p <- pos;
   lexbuf.lex_curr_p <- pos;
@@ -81,11 +82,10 @@ let vpad_of_lines t =
   in
   aux 0 t
 
-let of_lines ~syntax ~(loc : Location.t) t =
-  let pos = loc.loc_start in
+let of_lines ~syntax ~loc t =
   let hpad =
     match syntax with
-    | Syntax.Mli | Mld -> pos.pos_cnum + 2
+    | Syntax.Mli | Mld -> loc.Block_location.column + 2
     | _ -> hpad_of_lines t
   in
   let unpad line =
@@ -102,12 +102,12 @@ let of_lines ~syntax ~(loc : Location.t) t =
     match syntax with Syntax.Mli | Syntax.Mld -> "" :: lines | _ -> lines
   in
   let lines = String.concat ~sep:"\n" lines in
-  let lines = Lexer_top.token (lexbuf ~pos lines) in
+  let lines = Lexer_top.token (lexbuf ~loc lines) in
   let vpad, lines = vpad_of_lines lines in
   Log.debug (fun l ->
       l "Toplevel.of_lines (vpad=%d, hpad=%d) %a" vpad hpad dump_lines lines);
-  let mk vpad (command, (loc : Location.t)) output =
-    { vpad; hpad; pos = loc.loc_start; command; output = List.rev output }
+  let mk vpad (command, loc) output =
+    { vpad; hpad; loc; command; output = List.rev output }
   in
   let rec aux vpad command output acc = function
     | [] -> List.rev (mk vpad command output :: acc)

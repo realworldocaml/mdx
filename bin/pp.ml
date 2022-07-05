@@ -53,7 +53,7 @@ let run (`Setup ()) (`File file) (`Section section) =
                 | OCaml _ ->
                     let vpad = vpad_of_lines contents in
                     rvpad := vpad + !rvpad;
-                    let line = b.loc.loc_start.pos_lnum + !rvpad in
+                    let line = b.loc.line + !rvpad in
                     Fmt.pr "%a\n%a\n" Mdx.Block.pp_line_directive (file, line)
                       pp_lines contents
                 | _ -> ()))

@@ -1,5 +1,9 @@
 {
 let newline lexbuf = Lexing.new_line lexbuf
+
+let block_location lexbuf =
+  let { Location.loc_start; _ } = Location.curr lexbuf in
+  Block_location.of_lexpos loc_start
 }
 
 let eol = '\n' | eof
@@ -9,7 +13,7 @@ rule token = parse
  | eof           { [] }
  | "..." ws* eol { newline lexbuf; `Ellipsis :: token lexbuf }
  | '\n'          { newline lexbuf; `Output "" :: token lexbuf }
- | "# "          { let loc = Location.curr lexbuf in
+ | "# "          { let loc = block_location lexbuf in
                    let c = phrase [] (Buffer.create 8) lexbuf in
                    `Command (c, loc) :: token lexbuf }
  | ([^'#' '\n'] [^'\n']* as str) eol

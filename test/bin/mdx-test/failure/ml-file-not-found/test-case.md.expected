@@ -1,2 +1,2 @@
-File "test-case.md", lines 3-4: Error in the OCaml file include code block
+File "test-case.md", line 3, column 27: Error in the OCaml file include code block
 ./not_found.ml: No such file or directory

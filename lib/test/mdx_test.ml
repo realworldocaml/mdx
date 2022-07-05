@@ -85,10 +85,10 @@ let run_test ?root unset_variables temp_file t =
 let root_dir ?root ?block () =
   match (block : Block.t option) with
   | Some { dir = None; _ } -> root
-  | Some { dir = Some d; loc = { loc_start = { pos_fname; _ }; _ }; _ } -> (
+  | Some { dir = Some d; loc; _ } -> (
       match root with
       | Some r -> Some (r / d)
-      | None -> Some (Filename.dirname pos_fname / d))
+      | None -> Some (Filename.dirname loc.fname / d))
   | None -> root
 
 let resolve_root file dir root =

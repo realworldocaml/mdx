@@ -76,11 +76,10 @@ let hpad_of_lines = function
       done;
       !i
 
-let of_lines ~syntax ~(loc : Location.t) t =
-  let pos = loc.loc_start in
+let of_lines ~syntax ~(loc : Block_location.t) t =
   let hpad =
     match syntax with
-    | Syntax.Mli | Mld -> pos.pos_cnum + 2
+    | Syntax.Mli | Mld -> loc.column + 2
     | _ -> hpad_of_lines t
   in
   let unpad line =

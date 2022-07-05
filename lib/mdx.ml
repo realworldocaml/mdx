@@ -26,6 +26,7 @@ module Toplevel = Toplevel
 module Ocaml_delimiter = Ocaml_delimiter
 module Part = Part
 module Block = Block
+module Block_location = Block_location
 module Mli_parser = Mli_parser
 module Compat = Compat
 module Util = Util

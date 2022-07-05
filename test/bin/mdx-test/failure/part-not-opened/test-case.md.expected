@@ -1,2 +1,2 @@
-File "test-case.md", lines 2-3: Error in the OCaml file include code block
+File "test-case.md", line 2, column 43: Error in the OCaml file include code block
 In file ./parts-begin-end.ml, line 6: There is no part to end.

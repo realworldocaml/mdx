@@ -69,7 +69,7 @@ type value =
   | Include of include_value
 
 type t = {
-  loc : Location.t;
+  loc : Block_location.t;
   section : section option;
   dir : string option;
   labels : Label.t list;
@@ -105,7 +105,7 @@ let dump ppf ({ loc; section; labels; contents; value; _ } as b) =
   Fmt.pf ppf
     "{@[loc: %a;@ section: %a;@ labels: %a;@ header: %a;@ contents: %a;@ \
      value: %a@]}"
-    Stable_printer.Location.print_loc loc
+    Block_location.pp loc
     Fmt.(Dump.option dump_section)
     section
     Fmt.Dump.(list Label.pp)
@@ -120,7 +120,7 @@ let pp_lines syntax t =
     match syntax with
     | Some Syntax.Cram -> Fmt.fmt "  %s"
     | Some Syntax.Mli | Some Mld ->
-        fun ppf -> Fmt.fmt "%*s%s" ppf (t.loc.loc_start.pos_cnum + 2) ""
+        fun ppf -> Fmt.fmt "%*s%s" ppf (t.loc.column + 2) ""
     | _ -> Fmt.string
   in
   Fmt.(list ~sep:(any "\n") pp)
@@ -239,7 +239,7 @@ let executable_contents ~syntax b =
                | [] -> []
                | cs ->
                    let mk s = String.make (t.hpad + 2) ' ' ^ s in
-                   line_directive (t.pos.pos_fname, t.pos.pos_lnum)
+                   line_directive (t.loc.fname, t.loc.line)
                    :: List.map mk cs)
              phrases)
   in

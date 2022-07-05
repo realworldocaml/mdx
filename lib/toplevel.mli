@@ -19,7 +19,7 @@
 type t = {
   vpad : int;
   hpad : int;
-  pos : Lexing.position;
+  loc : Block_location.t;
   command : string list;
   output : Output.t list;
 }
@@ -41,6 +41,6 @@ val pp_command : t Fmt.t
 
 (** {2 Parser} *)
 
-val of_lines : syntax:Syntax.t -> loc:Location.t -> string list -> t list
+val of_lines : syntax:Syntax.t -> loc:Block_location.t -> string list -> t list
 (** [of_lines ~loc lines] is the list of toplevel blocks from location [loc].
     Return the vertical and horizontal whitespace padding as well. *)
