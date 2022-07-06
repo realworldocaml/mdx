@@ -6,13 +6,19 @@ type token = [ `Block of Block.t | `Section of int * string | `Text of string ]
 
 let newline lexbuf = Lexing.new_line lexbuf
 
-let labels l =
+exception Lex_error of Block_location.t * string
+
+let labels ~loc l =
   match Label.of_string l with
   | Ok labels -> labels
   | Error msgs ->
     let msgs = List.map (fun (`Msg (x : string)) -> x) msgs in
     let msg = String.concat ~sep:" " msgs in
-    failwith msg
+    raise (Lex_error (loc, msg))
+
+let raise_error ~loc = function
+  | Ok x -> x
+  | Error (`Msg msg) -> raise (Lex_error (loc, msg))
 
 let block_location lexbuf =
   let { Location.loc_start; _ } = Location.curr lexbuf in
@@ -35,9 +41,9 @@ rule text section = parse
         let contents = block lexbuf in
         let labels, legacy_labels =
           match (label_cmt, legacy_labels) with
-          | Some label_cmt, "" -> labels label_cmt, false
-          | Some _, _ -> failwith "cannot mix both block labels syntax"
-          | None, l -> labels l, true
+          | Some label_cmt, "" -> labels ~loc label_cmt, false
+          | Some _, _ -> raise (Lex_error (loc, "cannot mix both block labels syntax"))
+          | None, l -> labels ~loc l, true
         in
         let errors =
           match error_block lexbuf with
@@ -52,12 +58,9 @@ rule text section = parse
         List.iter (fun _ -> newline lexbuf) contents;
         newline lexbuf;
         let block =
-          match
-            Block.mk ~loc ~section ~header ~contents ~labels
-              ~legacy_labels ~errors
-          with
-          | Ok block -> block
-          | Error (`Msg msg) -> failwith msg
+          Block.mk ~loc ~section ~header ~contents ~labels ~legacy_labels
+            ~errors
+          |> raise_error ~loc
         in
         (match errors with
          | [] -> ()
@@ -68,12 +71,11 @@ rule text section = parse
         `Block block :: text section lexbuf }
   | "<!--" ws* "$MDX" ws* ([^' ' '\n']* as label_cmt) ws* "-->" ws* eol
       { let loc = block_location lexbuf in
-        let labels = labels label_cmt in
+        let labels = labels ~loc label_cmt in
         newline lexbuf;
         let block =
-          match Block.mk_include ~loc ~section ~labels with
-          | Ok block -> block
-          | Error (`Msg msg) -> failwith msg
+          Block.mk_include ~loc ~section ~labels
+          |> raise_error ~loc
         in
         `Block block :: text section lexbuf }
   | ([^'\n']* as str) eol
@@ -103,12 +105,9 @@ and cram_text section = parse
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
         let block =
-          match
-            Block.mk ~loc ~section ~header ~contents ~labels
-              ~legacy_labels ~errors:[]
-          with
-          | Ok block -> block
-          | Error (`Msg msg) -> failwith msg
+          Block.mk ~loc ~section ~header ~contents ~labels ~legacy_labels
+            ~errors:[]
+          |> raise_error ~loc
         in
         `Block block
         :: (if requires_empty_line then `Text "" :: rest else rest) }
@@ -116,22 +115,18 @@ and cram_text section = parse
       { let loc = block_location lexbuf in
         let header = Some (Block.Header.Shell `Sh) in
         let requires_empty_line, contents = cram_block lexbuf in
-        let labels =
-          match Label.interpret "non-deterministic" (Some (Eq, choice)) with
-          | Ok label -> [label]
-          | Error (`Msg msg) -> failwith msg
+        let label =
+          Label.interpret "non-deterministic" (Some (Eq, choice))
+          |> raise_error ~loc
         in
         let legacy_labels = false in
         newline lexbuf;
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
         let block =
-          match
-            Block.mk ~loc ~section ~header ~contents ~labels
-              ~legacy_labels ~errors:[]
-          with
-          | Ok block -> block
-          | Error (`Msg msg) -> failwith msg
+          Block.mk ~loc ~section ~header ~contents ~labels:[label]
+            ~legacy_labels ~errors:[]
+          |> raise_error ~loc
         in
         `Block block
         :: (if requires_empty_line then `Text "" :: rest else rest) }
@@ -147,36 +142,15 @@ and cram_block = parse
         requires_empty_line, str :: lst }
 
 {
-  let markdown_token lexbuf =
-    try Ok (text None lexbuf)
-    with
-    | Failure e ->
-      let loc = block_location lexbuf in
-      let msg =
-        Format.asprintf "%a: invalid code block: %s" Block_location.pp loc e
-      in
-      Util.Result.errorf "%s" msg
-    | exn ->
-      let loc = block_location lexbuf in
-      let msg =
-        Format.asprintf "%a: %s" Block_location.pp loc (Printexc.to_string exn)
-      in
-      Util.Result.errorf "%s" msg
-
+let markdown_token lexbuf =
+  try Ok (text None lexbuf)
+  with
+  | Lex_error (loc, msg) ->
+    Util.Result.errorf "%a: invalid code block: %s" Block_location.pp loc msg
 
 let cram_token lexbuf =
-    try Ok (cram_text None lexbuf)
-    with
-    | Failure e ->
-      let loc = block_location lexbuf in
-      let msg =
-        Format.asprintf "%a: invalid code block: %s" Block_location.pp loc e
-      in
-      Util.Result.errorf "%s" msg
-    | exn ->
-      let loc = block_location lexbuf in
-      let msg =
-        Format.asprintf "%a: %s" Block_location.pp loc (Printexc.to_string exn)
-      in
-      Util.Result.errorf "%s" msg
+  try Ok (cram_text None lexbuf)
+  with
+  | Lex_error (loc, msg) ->
+    Util.Result.errorf "%a: invalid code block: %s" Block_location.pp loc msg
 }

@@ -1,1 +1,1 @@
-[mdx] Fatal error: File "test-case.md", line 3, column 36: invalid code block: `part` label is not allowed for non-OCaml include blocks.
+[mdx] Fatal error: File "test-case.md", line 3, column 0: invalid code block: `part` label is not allowed for non-OCaml include blocks.

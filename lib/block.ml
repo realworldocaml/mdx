@@ -239,8 +239,7 @@ let executable_contents ~syntax b =
                | [] -> []
                | cs ->
                    let mk s = String.make (t.hpad + 2) ' ' ^ s in
-                   line_directive (t.loc.fname, t.loc.line)
-                   :: List.map mk cs)
+                   line_directive (t.loc.fname, t.loc.line) :: List.map mk cs)
              phrases)
   in
   if contents = [] || ends_by_semi_semi contents then contents

@@ -1,6 +1,7 @@
 type t = { fname : string; line : int; column : int }
 
 let none = { fname = ""; line = 0; column = 0 }
+
 let pp ppf t =
   let fname = if t.fname = "" then "_none_" else t.fname in
   Fmt.fmt "File %S, line %d, column %d" ppf fname t.line t.column

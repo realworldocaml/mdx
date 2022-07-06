@@ -29,7 +29,7 @@ module Result = struct
           1
   end
 
-  let errorf fmt = Format.ksprintf (fun s -> Error (`Msg s)) fmt
+  let errorf fmt = Format.kasprintf (fun s -> Error (`Msg s)) fmt
 
   module List = struct
     open Infix
