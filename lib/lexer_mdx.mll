@@ -151,15 +151,15 @@ and cram_block = parse
     try Ok (text None lexbuf)
     with
     | Failure e ->
-      let loc = Location.curr lexbuf in
+      let loc = block_location lexbuf in
       let msg =
-        Format.asprintf "%a: invalid code block: %s" Stable_printer.Location.print_loc loc e
+        Format.asprintf "%a: invalid code block: %s" Block_location.pp loc e
       in
       Util.Result.errorf "%s" msg
     | exn ->
-      let loc = Location.curr lexbuf in
+      let loc = block_location lexbuf in
       let msg =
-        Format.asprintf "%a: %s" Stable_printer.Location.print_loc loc (Printexc.to_string exn)
+        Format.asprintf "%a: %s" Block_location.pp loc (Printexc.to_string exn)
       in
       Util.Result.errorf "%s" msg
 
@@ -168,15 +168,15 @@ let cram_token lexbuf =
     try Ok (cram_text None lexbuf)
     with
     | Failure e ->
-      let loc = Location.curr lexbuf in
+      let loc = block_location lexbuf in
       let msg =
-        Format.asprintf "%a: invalid code block: %s" Stable_printer.Location.print_loc loc e
+        Format.asprintf "%a: invalid code block: %s" Block_location.pp loc e
       in
       Util.Result.errorf "%s" msg
     | exn ->
-      let loc = Location.curr lexbuf in
+      let loc = block_location lexbuf in
       let msg =
-        Format.asprintf "%a: %s" Stable_printer.Location.print_loc loc (Printexc.to_string exn)
+        Format.asprintf "%a: %s" Block_location.pp loc (Printexc.to_string exn)
       in
       Util.Result.errorf "%s" msg
 }
