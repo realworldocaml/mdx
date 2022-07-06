@@ -1,2 +1,2 @@
-File "test-case.md", line 3, column 43: Error in the OCaml file include code block
+File "test-case.md", line 3, column 0: Error in the OCaml file include code block
 Cannot find part "part1" in ./part_not_found.ml

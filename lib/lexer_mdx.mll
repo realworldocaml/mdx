@@ -30,7 +30,8 @@ rule text section = parse
         `Section section :: text (Some section) lexbuf }
   | ( "<!--" ws* "$MDX" ws* ([^' ' '\n']* as label_cmt) ws* "-->" ws* eol? )?
       "```" ([^' ' '\n']* as h) ws* ([^'\n']* as legacy_labels) eol
-      { let header = Block.Header.of_string h in
+      { let loc = block_location lexbuf in
+        let header = Block.Header.of_string h in
         let contents = block lexbuf in
         let labels, legacy_labels =
           match (label_cmt, legacy_labels) with
@@ -49,7 +50,6 @@ rule text section = parse
         in
         newline lexbuf;
         List.iter (fun _ -> newline lexbuf) contents;
-        let loc = block_location lexbuf in
         newline lexbuf;
         let block =
           match
@@ -67,9 +67,9 @@ rule text section = parse
            newline lexbuf);
         `Block block :: text section lexbuf }
   | "<!--" ws* "$MDX" ws* ([^' ' '\n']* as label_cmt) ws* "-->" ws* eol
-      { let labels = labels label_cmt in
+      { let loc = block_location lexbuf in
+        let labels = labels label_cmt in
         newline lexbuf;
-        let loc = block_location lexbuf in
         let block =
           match Block.mk_include ~loc ~section ~labels with
           | Ok block -> block
@@ -94,12 +94,12 @@ and cram_text section = parse
         newline lexbuf;
         `Section section :: cram_text (Some section) lexbuf }
   | "  " ([^'\n']* as first_line) eol
-      { let header = Some (Block.Header.Shell `Sh) in
+      { let loc = block_location lexbuf in
+        let header = Some (Block.Header.Shell `Sh) in
         let requires_empty_line, contents = cram_block lexbuf in
         let contents = first_line :: contents in
         let labels = [] in
         let legacy_labels = false in
-        let loc = block_location lexbuf in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
         let block =
@@ -113,7 +113,8 @@ and cram_text section = parse
         `Block block
         :: (if requires_empty_line then `Text "" :: rest else rest) }
   | "<-- non-deterministic" ws* ([^'\n']* as choice) eol
-      { let header = Some (Block.Header.Shell `Sh) in
+      { let loc = block_location lexbuf in
+        let header = Some (Block.Header.Shell `Sh) in
         let requires_empty_line, contents = cram_block lexbuf in
         let labels =
           match Label.interpret "non-deterministic" (Some (Eq, choice)) with
@@ -122,7 +123,6 @@ and cram_text section = parse
         in
         let legacy_labels = false in
         newline lexbuf;
-        let loc = block_location lexbuf in
         List.iter (fun _ -> newline lexbuf) contents;
         let rest = cram_text section lexbuf in
         let block =

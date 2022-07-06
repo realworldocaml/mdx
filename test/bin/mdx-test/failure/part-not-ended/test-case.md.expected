@@ -1,2 +1,2 @@
-File "test-case.md", line 2, column 43: Error in the OCaml file include code block
+File "test-case.md", line 2, column 0: Error in the OCaml file include code block
 In file ./parts-begin-end.ml, line 18: Part toto has no end.
