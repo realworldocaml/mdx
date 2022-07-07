@@ -251,6 +251,18 @@ let update_file_or_block ?syntax ?root ppf md_file ml_file block part =
   let ml_file = resolve_root ml_file dir root in
   update_block_content ?syntax ppf block (read_part ml_file part)
 
+let write_file ?root md_file target block =
+  let root = root_dir ?root ~block () in
+  let dir = Filename.dirname md_file in
+  let target = resolve_root target dir root in
+  let ch = open_out target in
+  let write_line ch x =
+    output_string ch x;
+    output_char ch '\n'
+  in
+  List.iter (write_line ch) block.Block.contents;
+  close_out ch
+
 exception Test_block_failure of Block.t * string
 
 let with_non_det ~command ~output ~det non_deterministic = function
@@ -289,6 +301,9 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
     if Block.is_active ?section t then
       match Block.value t with
       | Raw _ -> print_block ()
+      | Write { target; header = _ } ->
+          write_file ?root file target t;
+          print_block ()
       | Include { file_included; file_kind = Fk_ocaml { part_included } } ->
           assert (syntax <> Some Cram);
           update_file_or_block ?syntax ?root ppf file file_included t

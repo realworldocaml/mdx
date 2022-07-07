@@ -48,6 +48,7 @@ let report_error_in_block block msg =
     | Raw _ -> ""
     | Include { file_kind = Fk_ocaml _; _ } -> "OCaml file include "
     | Include { file_kind = Fk_other _; _ } -> "file include "
+    | Write _ -> "file write "
     | OCaml _ -> "OCaml "
     | Cram _ -> "cram "
     | Toplevel _ -> "toplevel "

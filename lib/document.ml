@@ -39,6 +39,6 @@ let envs t =
       | Block b -> (
           match b.value with
           | OCaml { env; _ } | Toplevel { env; _ } -> Ocaml_env.Set.add env acc
-          | Raw _ | Cram _ | Include _ -> acc)
+          | Raw _ | Cram _ | Include _ | Write _ -> acc)
       | Section _ | Text _ -> acc)
     Ocaml_env.Set.empty t

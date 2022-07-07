@@ -60,6 +60,7 @@ type include_file_kind =
 
 type include_value = { file_included : string; file_kind : include_file_kind }
 type raw_value = { header : Header.t option }
+type write_value = { target : string; header : Header.t option }
 
 type value =
   | Raw of raw_value
@@ -67,6 +68,7 @@ type value =
   | Cram of cram_value
   | Toplevel of toplevel_value
   | Include of include_value
+  | Write of write_value
 
 type t = {
   loc : Location.t;
@@ -93,6 +95,7 @@ let header t =
   | Toplevel _ -> Some Header.OCaml
   | Include { file_kind = Fk_ocaml _; _ } -> Some Header.OCaml
   | Include { file_kind = Fk_other b; _ } -> b.header
+  | Write b -> b.header
 
 let dump_value ppf = function
   | Raw _ -> Fmt.string ppf "Raw"
@@ -100,6 +103,7 @@ let dump_value ppf = function
   | Cram _ -> Fmt.string ppf "Cram"
   | Toplevel _ -> Fmt.string ppf "Toplevel"
   | Include _ -> Fmt.string ppf "Include"
+  | Write _ -> Fmt.string ppf "Write"
 
 let dump ppf ({ loc; section; labels; contents; value; _ } as b) =
   Fmt.pf ppf
@@ -196,7 +200,7 @@ let non_det t =
   | OCaml b -> b.non_det
   | Cram b -> b.non_det
   | Toplevel b -> b.non_det
-  | Include _ | Raw _ -> None
+  | Include _ | Raw _ | Write _ -> None
 
 let skip t = t.skip
 let set_variables t = t.set_variables
@@ -229,7 +233,7 @@ let executable_contents ~syntax b =
   let contents =
     match b.value with
     | OCaml _ -> b.contents
-    | Raw _ | Cram _ | Include _ -> []
+    | Raw _ | Cram _ | Include _ | Write _ -> []
     | Toplevel _ ->
         let phrases = Toplevel.of_lines ~syntax ~loc:b.loc b.contents in
         List.flatten
@@ -280,7 +284,7 @@ type block_config = {
   version : (Label.Relation.t * Ocaml_version.t) option;
   set_variables : (string * string) list;
   unset_variables : string list;
-  file_inc : string option;
+  file_to_sync : string option;
 }
 
 let get_block_config l =
@@ -301,24 +305,24 @@ let get_block_config l =
       List.filter_map (function Label.Set (v, x) -> Some (v, x) | _ -> None) l;
     unset_variables =
       List.filter_map (function Label.Unset x -> Some x | _ -> None) l;
-    file_inc = get_label (function File x -> Some x | _ -> None) l;
+    file_to_sync = get_label (function File x -> Some x | _ -> None) l;
   }
 
 let mk_ocaml ~config ~contents ~errors =
   let kind = "OCaml" in
   match config with
-  | { file_inc = None; part = None; env; non_det; _ } -> (
+  | { file_to_sync = None; part = None; env; non_det; _ } -> (
       match guess_ocaml_kind contents with
       | `Code -> Ok (OCaml { env = Ocaml_env.mk env; non_det; errors })
       | `Toplevel ->
           Util.Result.errorf "toplevel syntax is not allowed in OCaml blocks.")
-  | { file_inc = Some _; _ } -> label_not_allowed ~label:"file" ~kind
+  | { file_to_sync = Some _; _ } -> label_not_allowed ~label:"file" ~kind
   | { part = Some _; _ } -> label_not_allowed ~label:"part" ~kind
 
 let mk_cram ?language ~config ~header ~errors () =
   let kind = "shell" in
   match config with
-  | { file_inc = None; part = None; env = None; non_det; _ } ->
+  | { file_to_sync = None; part = None; env = None; non_det; _ } ->
       check_no_errors errors >>| fun () ->
       let language =
         Util.Option.value language
@@ -328,27 +332,28 @@ let mk_cram ?language ~config ~header ~errors () =
             | _ -> `Sh)
       in
       Cram { language; non_det }
-  | { file_inc = Some _; _ } -> label_not_allowed ~label:"file" ~kind
+  | { file_to_sync = Some _; _ } -> label_not_allowed ~label:"file" ~kind
   | { part = Some _; _ } -> label_not_allowed ~label:"part" ~kind
   | { env = Some _; _ } -> label_not_allowed ~label:"env" ~kind
 
 let mk_toplevel ~config ~contents ~errors =
   let kind = "toplevel" in
   match config with
-  | { file_inc = None; part = None; env; non_det; _ } -> (
+  | { file_to_sync = None; part = None; env; non_det; _ } -> (
       match guess_ocaml_kind contents with
       | `Code ->
           Util.Result.errorf "invalid toplevel syntax in toplevel blocks."
       | `Toplevel ->
           check_no_errors errors >>| fun () ->
           Toplevel { env = Ocaml_env.mk env; non_det })
-  | { file_inc = Some _; _ } -> label_not_allowed ~label:"file" ~kind
+  | { file_to_sync = Some _; _ } -> label_not_allowed ~label:"file" ~kind
   | { part = Some _; _ } -> label_not_allowed ~label:"part" ~kind
 
 let mk_include ~config ~header ~errors =
   let kind = "include" in
   match config with
-  | { file_inc = Some file_included; part; non_det = None; env = None; _ } -> (
+  | { file_to_sync = Some file_included; part; non_det = None; env = None; _ }
+    -> (
       check_no_errors errors >>= fun () ->
       match header with
       | Some Header.OCaml ->
@@ -361,15 +366,27 @@ let mk_include ~config ~header ~errors =
               Ok (Include { file_included; file_kind })
           | Some _ -> label_not_allowed ~label:"part" ~kind:"non-OCaml include")
       )
-  | { file_inc = None; _ } -> label_required ~label:"file" ~kind
+  | { file_to_sync = None; _ } -> label_required ~label:"file" ~kind
+  | { non_det = Some _; _ } ->
+      label_not_allowed ~label:"non-deterministic" ~kind
+  | { env = Some _; _ } -> label_not_allowed ~label:"env" ~kind
+
+let mk_write ~config ~header ~errors =
+  let kind = "write" in
+  match config with
+  | { file_to_sync = Some target; part = None; non_det = None; env = None; _ }
+    ->
+      check_no_errors errors >>= fun () -> Ok (Write { target; header })
+  | { file_to_sync = None; _ } -> label_required ~label:"file" ~kind
+  | { part = Some _; _ } -> label_not_allowed ~label:"part" ~kind
   | { non_det = Some _; _ } ->
       label_not_allowed ~label:"non-deterministic" ~kind
   | { env = Some _; _ } -> label_not_allowed ~label:"env" ~kind
 
 let infer_block ~config ~header ~contents ~errors =
   match config with
-  | { file_inc = Some _; _ } -> mk_include ~config ~header ~errors
-  | { file_inc = None; part; _ } -> (
+  | { file_to_sync = Some _; _ } -> mk_include ~config ~header ~errors
+  | { file_to_sync = None; part; _ } -> (
       match header with
       | Some (Header.Shell language) ->
           mk_cram ~language ~config ~header ~errors ()
@@ -392,6 +409,7 @@ let mk ~loc ~section ~labels ~legacy_labels ~header ~contents ~errors =
   | Some Cram -> mk_cram ~config ~header ~errors ()
   | Some Toplevel -> mk_toplevel ~config ~contents ~errors
   | Some Include -> mk_include ~config ~header ~errors
+  | Some Write -> mk_write ~config ~header ~errors
   | None -> infer_block ~config ~header ~contents ~errors)
   >>= fun value ->
   version_enabled config.version >>| fun version_enabled ->

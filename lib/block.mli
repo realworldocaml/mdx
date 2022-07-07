@@ -59,6 +59,7 @@ type include_value = {
   file_kind : include_file_kind;
 }
 
+type write_value = { target : string; header : Header.t option }
 type raw_value = { header : Header.t option }
 
 (** The type for block values. *)
@@ -68,6 +69,7 @@ type value =
   | Cram of cram_value
   | Toplevel of toplevel_value
   | Include of include_value
+  | Write of write_value
 
 type section = int * string
 (** The type for sections. *)

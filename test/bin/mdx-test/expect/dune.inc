@@ -514,3 +514,15 @@
 (rule
  (alias runtest)
  (action (diff warnings/test-case.md warnings.actual)))
+
+(rule
+ (target write-block.actual)
+ (deps (package mdx) (source_tree write-block))
+ (action
+  (with-stdout-to %{target}
+   (chdir write-block
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff write-block/test-case.md.expected write-block.actual)))

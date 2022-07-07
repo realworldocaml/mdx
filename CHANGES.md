@@ -2,6 +2,8 @@
 
 #### Added
 
+- Support for writing files from blocks. (#381, @talex5)
+
 #### Changed
 
 #### Deprecated

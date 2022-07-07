@@ -139,7 +139,7 @@ OCaml documentation comments:
 The possible labels are:
 
 - `skip` -- ignore this block
-- `ocaml`, `cram`, `toplevel`, `include` -- set the block type
+- `ocaml`, `cram`, `toplevel`, `include`, `write` -- set the block type
 - `version=VERSION` -- set OCaml version
 - `non-deterministic[=output|command]` -- see "Non-deterministic tests" section
 - `dir=PATH` -- set the directory where the tests should be run
@@ -247,6 +247,14 @@ Non-OCaml files can also be read and included in a block:
     ```
     ```
 However, part splitting is only supported for OCaml files.
+
+It is also possible to copy from the document to a file:
+
+    <!-- $MDX write,file=data.csv -->
+    ```csv
+    "a",1
+    "b",2
+    ```
 
 ### Tests
 

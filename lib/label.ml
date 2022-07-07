@@ -73,7 +73,7 @@ type non_det = Nd_output | Nd_command
 
 let default_non_det = Nd_output
 
-type block_kind = OCaml | Cram | Toplevel | Include
+type block_kind = OCaml | Cram | Toplevel | Include | Write
 
 type t =
   | Dir of string
@@ -93,6 +93,7 @@ let pp_block_kind ppf = function
   | Cram -> Fmt.string ppf "cram"
   | Toplevel -> Fmt.string ppf "toplevel"
   | Include -> Fmt.string ppf "include"
+  | Write -> Fmt.string ppf "write"
 
 let pp ppf = function
   | Dir d -> Fmt.pf ppf "dir=%s" d
@@ -151,6 +152,7 @@ let interpret label value =
   | "cram" -> doesnt_accept_value ~label ~value (Block_kind Cram)
   | "toplevel" -> doesnt_accept_value ~label ~value (Block_kind Toplevel)
   | "include" -> doesnt_accept_value ~label ~value (Block_kind Include)
+  | "write" -> doesnt_accept_value ~label ~value (Block_kind Write)
   | v when is_prefix ~prefix:"unset-" v ->
       doesnt_accept_value ~label ~value
         (Unset (split_prefix ~prefix:"unset-" v))

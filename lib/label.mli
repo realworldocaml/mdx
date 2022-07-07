@@ -29,7 +29,7 @@ type non_det = Nd_output | Nd_command
 
 val default_non_det : non_det
 
-type block_kind = OCaml | Cram | Toplevel | Include
+type block_kind = OCaml | Cram | Toplevel | Include | Write
 
 type t =
   | Dir of string

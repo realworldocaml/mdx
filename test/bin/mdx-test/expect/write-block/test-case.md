@@ -1,0 +1,21 @@
+We can sync from the md to files with MDX comments:
+
+<!-- $MDX write,file=data.json -->
+```json
+{ "value": 42 }
+```
+
+```sh
+$ cat data.json
+```
+
+OCaml code can be written, but is not executed:
+
+<!-- $MDX write,file=test.ml -->
+```ocaml
+abcd + defg
+```
+
+```sh
+$ cat test.ml
+```
