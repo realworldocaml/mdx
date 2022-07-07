@@ -136,6 +136,19 @@ OCaml documentation comments:
         ]}
     *)
 
+The possible labels are:
+
+- `skip` -- ignore this block
+- `ocaml`, `cram`, `toplevel`, `include` -- set the block type
+- `version=VERSION` -- set OCaml version
+- `non-deterministic[=output|command]` -- see "Non-deterministic tests" section
+- `dir=PATH` -- set the directory where the tests should be run
+- `source-tree=PATH` -- does nothing?
+- `file=PATH` -- see the "File sync" section
+- `part=PART` -- see the "File sync" section
+- `env=ENV` -- see the "Named execution environments" section
+- `set-VAR=VALUE` -- set an environment variable
+- `unset-VAR` -- unset an environment variable
 
 #### Shell Scripts
 
