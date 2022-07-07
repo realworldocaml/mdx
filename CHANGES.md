@@ -4,6 +4,9 @@
 
 #### Changed
 
+- The formatting of error messages changed due to an internal change.
+  (#379, @Julow)
+
 #### Deprecated
 
 #### Fixed
