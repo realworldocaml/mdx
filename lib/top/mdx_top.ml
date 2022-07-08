@@ -337,7 +337,7 @@ type t = {
 let toplevel_exec_phrase t ppf p =
   match Phrase.result p with
   | Error exn -> raise exn
-  | Ok phrase ->
+  | Ok phrase -> (
       Warnings.reset_fatal ();
       let mapper = Lexbuf.position_mapper (Phrase.start p) in
       let phrase =
@@ -356,7 +356,10 @@ let toplevel_exec_phrase t ppf p =
       if !Clflags.dump_parsetree then Printast.top_phrase ppf phrase;
       if !Clflags.dump_source then Pprintast.top_phrase ppf phrase;
       Env.reset_cache_toplevel ();
-      Toploop.execute_phrase t.verbose ppf phrase
+      try Toploop.execute_phrase t.verbose ppf phrase
+      with Compenv.Exit_with_status code ->
+        Format.fprintf ppf "[%d]@." code;
+        false)
 
 type var_and_value = V : 'a ref * 'a -> var_and_value
 

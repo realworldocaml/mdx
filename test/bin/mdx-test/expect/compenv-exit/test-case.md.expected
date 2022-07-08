@@ -1,0 +1,7 @@
+Exits from the toplevel are reported correctly:
+
+```ocaml
+# #use "idontexist.ml";;
+Cannot find file idontexist.ml.
+[125]
+```
