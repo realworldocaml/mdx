@@ -167,3 +167,15 @@ let ctype_get_desc ty =
 #else
   (Ctype.repr ty).Types.desc
 #endif
+
+exception Exit_with_status of int
+
+let execute_phrase print_outcome ppf phr =
+#if OCAML_VERSION >= (4, 12, 0)
+  match Toploop.execute_phrase print_outcome ppf phr with
+  | v -> v
+  | exception Compenv.Exit_with_status status ->
+      raise (Exit_with_status status)
+#else
+  Toploop.execute_phrase print_outcome ppf phr
+#endif

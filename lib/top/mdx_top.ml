@@ -305,7 +305,7 @@ module Rewrite = struct
   let preload verbose ppf =
     let require pkg =
       let p = top_directive_require pkg in
-      let _ = Toploop.execute_phrase verbose ppf p in
+      let _ = execute_phrase verbose ppf p in
       ()
     in
     match active_rewriters () with
@@ -356,8 +356,8 @@ let toplevel_exec_phrase t ppf p =
       if !Clflags.dump_parsetree then Printast.top_phrase ppf phrase;
       if !Clflags.dump_source then Pprintast.top_phrase ppf phrase;
       Env.reset_cache_toplevel ();
-      try Toploop.execute_phrase t.verbose ppf phrase
-      with Compenv.Exit_with_status code ->
+      try execute_phrase t.verbose ppf phrase
+      with Exit_with_status code ->
         Format.fprintf ppf "[%d]@." code;
         false)
 

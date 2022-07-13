@@ -59,3 +59,8 @@ val ctype_is_equal :
 
 val ctype_expand_head_and_get_desc : Env.t -> Types.type_expr -> Types.type_desc
 val ctype_get_desc : Types.type_expr -> Types.type_desc
+
+exception Exit_with_status of int
+
+val execute_phrase :
+  bool -> Format.formatter -> Parsetree.toplevel_phrase -> bool
