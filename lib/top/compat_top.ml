@@ -170,6 +170,7 @@ let ctype_get_desc ty =
 
 exception Exit_with_status of int
 
+
 let execute_phrase print_outcome ppf phr =
 #if OCAML_VERSION >= (4, 12, 0)
   match Toploop.execute_phrase print_outcome ppf phr with
@@ -189,14 +190,30 @@ let patch_directive name directive =
   Toploop.add_directive patched_name directive directive_info;
   patched_name
 
+(* port of Topdirs.action_on_suberror *)
+let action_on_suberror b =
+  if not b && not !Sys.interactive then
+    raise (Exit_with_status 125)
+
+(* [load] cannot be patched to return errors because the underlying code is not exposed:
+   It would require [Topdirs.load_file] with the first argument to be [false] but the exposed
+   version hardcodes it to [true].
+  *)
 let mdx_load = patch_directive "load" (Directive_string (Topdirs.dir_load std_err))
-let mdx_use = patch_directive "use" (Directive_string (Topdirs.dir_use std_err))
+
+let dir_use ppf name =
+  action_on_suberror (Toploop.use_file ppf name)
+
+let mdx_use = patch_directive "use" (Directive_string (dir_use std_err))
 let mdx_install_printer = patch_directive "install_printer" (Directive_ident (Topdirs.dir_install_printer std_err))
 let mdx_remove_printer = patch_directive "remove_printer" (Directive_ident (Topdirs.dir_remove_printer std_err))
 #endif
 
 #if OCAML_VERSION > (4, 11, 0) && OCAML_VERSION < (4, 14, 0)
-let mdx_use_output = patch_directive "use_output" (Directive_string (Topdirs.dir_use_output std_err))
+
+let dir_use_output ppf name = action_on_suberror (Toploop.use_output ppf name)
+
+let mdx_use_output = patch_directive "use_output" (Directive_string (dir_use_output std_err))
 #endif
 
 #if OCAML_VERSION < (4, 13, 0)
