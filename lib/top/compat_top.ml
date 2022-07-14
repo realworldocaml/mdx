@@ -195,23 +195,19 @@ let action_on_suberror b =
   if not b && not !Sys.interactive then
     raise (Exit_with_status 125)
 
-(* [load] cannot be patched to return errors because the underlying code is not exposed:
-   It would require [Topdirs.load_file] with the first argument to be [false] but the exposed
-   version hardcodes it to [true].
-  *)
-let mdx_load = patch_directive "load" (Directive_string (Topdirs.dir_load std_err))
-
 let dir_use ppf name =
   action_on_suberror (Toploop.use_file ppf name)
 
 let mdx_use = patch_directive "use" (Directive_string (dir_use std_err))
+
 let mdx_install_printer = patch_directive "install_printer" (Directive_ident (Topdirs.dir_install_printer std_err))
 let mdx_remove_printer = patch_directive "remove_printer" (Directive_ident (Topdirs.dir_remove_printer std_err))
 #endif
 
 #if OCAML_VERSION > (4, 11, 0) && OCAML_VERSION < (4, 14, 0)
 
-let dir_use_output ppf name = action_on_suberror (Toploop.use_output ppf name)
+let dir_use_output ppf name =
+  action_on_suberror (Toploop.use_output ppf name)
 
 let mdx_use_output = patch_directive "use_output" (Directive_string (dir_use_output std_err))
 #endif
@@ -222,10 +218,39 @@ let mdx_untrace = patch_directive "untrace" (Directive_ident (Topdirs.dir_untrac
 let mdx_untrace_all = patch_directive "untrace_all" (Directive_none (Topdirs.dir_untrace_all std_err))
 #endif
 
+#if OCAML_VERSION < (4, 13, 0)
+(* [load] cannot be patched to return errors because the underlying code is not exposed:
+   It would require [Topdirs.load_file] with the first argument to be [false] but the exposed
+   version hardcodes it to [true].
+  *)
+let mdx_load = patch_directive "load" (Directive_string (Topdirs.dir_load std_err))
+
+(* On the other hand, [load_rec] can be patched because the curried [true] is the only
+   difference between these directives *)
+let dir_load_rec ppf name =
+  action_on_suberror (Topdirs.load_file ppf name)
+
+let mdx_load_rec = patch_directive "load_rec" (Directive_string (dir_load_rec std_err))
+
+#elif OCAML_VERSION > (4, 13, 0) && OCAML_VERSION < (4, 14, 0)
+(* OCaml 4.13 exposes [Topeval.load_file] which allows us to patch [#load] too *)
+let dir_load ppf name =
+  action_on_suberror (Topeval.load_file false ppf name)
+
+let mdx_load = patch_directive "load" (Directive_string (dir_load std_err))
+
+(* This uses [Topeval.load_file] because [Topdirs.load_file] is deprecated on 4.13 *)
+let dir_load_rec ppf name =
+  action_on_suberror (Topeval.load_file true ppf name)
+
+let mdx_load_rec = patch_directive "load_rec" (Directive_string (dir_load_rec std_err))
+#endif
+
 let redirect_directive directive =
   match directive with
 #if OCAML_VERSION < (4, 14, 0)
   | "load" -> mdx_load
+  | "load_rec" -> mdx_load_rec
   | "use" -> mdx_use
   | "install_printer" -> mdx_install_printer
   | "remove_printer" -> mdx_remove_printer
