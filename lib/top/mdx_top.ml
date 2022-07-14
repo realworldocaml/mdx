@@ -161,7 +161,7 @@ module Phrase = struct
 
   let is_findlib_directive =
     let findlib_directive = function
-      | "require" | "use" | "camlp4o" | "camlp4r" | "thread" -> true
+      | "require" | "camlp4o" | "camlp4r" | "thread" -> true
       | _ -> false
     in
     function
@@ -290,6 +290,12 @@ module Rewrite = struct
           in
           Btype.backtrack snap;
           Ptop_def pstr)
+    | Ptop_dir pdir ->
+        let pdir_name = pdir.pdir_name in
+        let pdir_name =
+          { pdir_name with txt = Compat_top.redirect_directive pdir_name.txt }
+        in
+        Ptop_dir { pdir with pdir_name }
     | _ -> phrase
 
   (** [top_directive require "pkg"] builds the AST for [#require "pkg"] *)

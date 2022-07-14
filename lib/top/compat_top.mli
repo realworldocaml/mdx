@@ -64,3 +64,6 @@ exception Exit_with_status of int
 
 val execute_phrase :
   bool -> Format.formatter -> Parsetree.toplevel_phrase -> bool
+
+(* If the directive has to be intercepted, this function will return the new name of the directive *)
+val redirect_directive : string -> string

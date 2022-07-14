@@ -179,3 +179,36 @@ let execute_phrase print_outcome ppf phr =
 #else
   Toploop.execute_phrase print_outcome ppf phr
 #endif
+
+#if OCAML_VERSION < (4, 14, 0)
+let std_err = Format.err_formatter
+
+let patch_directive name directive =
+  let patched_name = Format.asprintf "mdx_%s" name in
+  let directive_info = Toploop.{ section = "MDX PATCHED"; doc = "Patched by MDX" } in
+  Toploop.add_directive patched_name directive directive_info;
+  patched_name
+
+let mdx_load = patch_directive "load" (Directive_string (Topdirs.dir_load std_err))
+let mdx_use = patch_directive "use" (Directive_string (Topdirs.dir_use std_err))
+let mdx_use_output = patch_directive "use_output" (Directive_string (Topdirs.dir_use_output std_err))
+let mdx_install_printer = patch_directive "install_printer" (Directive_ident (Topdirs.dir_install_printer std_err))
+let mdx_remove_printer = patch_directive "remove_printer" (Directive_ident (Topdirs.dir_remove_printer std_err))
+let mdx_trace = patch_directive "trace" (Directive_ident (Topdirs.dir_trace std_err))
+let mdx_untrace = patch_directive "untrace" (Directive_ident (Topdirs.dir_untrace std_err))
+let mdx_untrace_all = patch_directive "untrace_all" (Directive_none (Topdirs.dir_untrace_all std_err))
+#endif
+
+let redirect_directive directive =
+  match directive with
+#if OCAML_VERSION < (4, 14, 0)
+  | "load" -> mdx_load
+  | "use" -> mdx_use
+  | "use_output" -> mdx_use_output
+  | "install_printer" -> mdx_install_printer
+  | "remove_printer" -> mdx_remove_printer
+  | "trace" -> mdx_trace
+  | "untrace" -> mdx_untrace
+  | "untrace_all" -> mdx_untrace_all
+#endif
+  | v -> v
