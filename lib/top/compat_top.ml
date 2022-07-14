@@ -191,9 +191,15 @@ let patch_directive name directive =
 
 let mdx_load = patch_directive "load" (Directive_string (Topdirs.dir_load std_err))
 let mdx_use = patch_directive "use" (Directive_string (Topdirs.dir_use std_err))
-let mdx_use_output = patch_directive "use_output" (Directive_string (Topdirs.dir_use_output std_err))
 let mdx_install_printer = patch_directive "install_printer" (Directive_ident (Topdirs.dir_install_printer std_err))
 let mdx_remove_printer = patch_directive "remove_printer" (Directive_ident (Topdirs.dir_remove_printer std_err))
+#endif
+
+#if OCAML_VERSION > (4, 11, 0) && OCAML_VERSION < (4, 14, 0)
+let mdx_use_output = patch_directive "use_output" (Directive_string (Topdirs.dir_use_output std_err))
+#endif
+
+#if OCAML_VERSION < (4, 13, 0)
 let mdx_trace = patch_directive "trace" (Directive_ident (Topdirs.dir_trace std_err))
 let mdx_untrace = patch_directive "untrace" (Directive_ident (Topdirs.dir_untrace std_err))
 let mdx_untrace_all = patch_directive "untrace_all" (Directive_none (Topdirs.dir_untrace_all std_err))
@@ -204,9 +210,13 @@ let redirect_directive directive =
 #if OCAML_VERSION < (4, 14, 0)
   | "load" -> mdx_load
   | "use" -> mdx_use
-  | "use_output" -> mdx_use_output
   | "install_printer" -> mdx_install_printer
   | "remove_printer" -> mdx_remove_printer
+#endif
+#if OCAML_VERSION > (4, 11, 0) && OCAML_VERSION < (4, 14, 0)
+  | "use_output" -> mdx_use_output
+#endif
+#if OCAML_VERSION < (4, 13, 0)
   | "trace" -> mdx_trace
   | "untrace" -> mdx_untrace
   | "untrace_all" -> mdx_untrace_all
