@@ -8,5 +8,4 @@ let () =
       Test_syntax.suite;
       Test_util.suite;
       Test_part.suite;
-      Test_mli_parser.suite;
     ]
