@@ -204,7 +204,7 @@ let mdx_install_printer = patch_directive "install_printer" (Directive_ident (To
 let mdx_remove_printer = patch_directive "remove_printer" (Directive_ident (Topdirs.dir_remove_printer std_err))
 #endif
 
-#if OCAML_VERSION > (4, 11, 0) && OCAML_VERSION < (4, 14, 0)
+#if OCAML_VERSION >= (4, 11, 0) && OCAML_VERSION < (4, 14, 0)
 
 let dir_use_output ppf name =
   action_on_suberror (Toploop.use_output ppf name)
@@ -232,7 +232,7 @@ let dir_load_rec ppf name =
 
 let mdx_load_rec = patch_directive "load_rec" (Directive_string (dir_load_rec std_err))
 
-#elif OCAML_VERSION > (4, 13, 0) && OCAML_VERSION < (4, 14, 0)
+#elif OCAML_VERSION >= (4, 13, 0) && OCAML_VERSION < (4, 14, 0)
 (* OCaml 4.13 exposes [Topeval.load_file] which allows us to patch [#load] too *)
 let dir_load ppf name =
   action_on_suberror (Topeval.load_file false ppf name)
@@ -255,7 +255,7 @@ let redirect_directive directive =
   | "install_printer" -> mdx_install_printer
   | "remove_printer" -> mdx_remove_printer
 #endif
-#if OCAML_VERSION > (4, 11, 0) && OCAML_VERSION < (4, 14, 0)
+#if OCAML_VERSION >= (4, 11, 0) && OCAML_VERSION < (4, 14, 0)
   | "use_output" -> mdx_use_output
 #endif
 #if OCAML_VERSION < (4, 13, 0)
