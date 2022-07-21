@@ -1,0 +1,21 @@
+It is possible to explicitly state the type of a block using the
+`block-type` label, working around language header and content based
+inference which can sometime lead to troublesome error messages.
+
+The following blocks use a volontarily misleading language header that would
+normally lead to errors if we let MDX infer the type of block based on them.
+
+```sh block-type=toplevel
+# 1 + 1;;
+```
+
+```sh block-type=ocaml
+let x = 2
+```
+
+```ocaml block-type=cram
+$ echo "boom"
+```
+
+The include block type is somewhat redundant with the `file=...` label as
+so it is not tested here.

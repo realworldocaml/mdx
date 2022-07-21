@@ -1,0 +1,2 @@
+[mdx] Fatal error: File "test-case.md", lines 6-7: invalid code block: Label `block-type` requires a value.
+[mdx] Fatal error: File "test-case.md", lines 11-12: invalid code block: "invalid" is not a valid value for label `block-type`. Valid values are "ocaml", "cram", "toplevel" and "include".

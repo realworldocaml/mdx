@@ -38,10 +38,10 @@ let test_mk =
     (test_name, `Quick, test_fun)
   in
   [
-    make_test ~name:"invalid ocaml" ~labels:[ Block_kind OCaml ]
+    make_test ~name:"invalid ocaml" ~labels:[ Block_type OCaml ]
       ~header:(Some OCaml) ~contents:[ "# let x = 2;;" ]
       ~expected:(Error (`Msg "toplevel syntax is not allowed in OCaml blocks."));
-    make_test ~name:"invalid toplevel" ~labels:[ Block_kind Toplevel ]
+    make_test ~name:"invalid toplevel" ~labels:[ Block_type Toplevel ]
       ~header:(Some OCaml) ~contents:[ "let x = 2;;" ]
       ~expected:(Error (`Msg "invalid toplevel syntax in toplevel blocks."));
   ]
