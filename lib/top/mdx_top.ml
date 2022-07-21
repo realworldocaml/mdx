@@ -161,7 +161,7 @@ module Phrase = struct
 
   let is_findlib_directive =
     let findlib_directive = function
-      | "require" | "use" | "camlp4o" | "camlp4r" | "thread" -> true
+      | "require" | "camlp4o" | "camlp4r" | "thread" -> true
       | _ -> false
     in
     function
@@ -290,6 +290,12 @@ module Rewrite = struct
           in
           Btype.backtrack snap;
           Ptop_def pstr)
+    | Ptop_dir pdir ->
+        let pdir_name = pdir.pdir_name in
+        let pdir_name =
+          { pdir_name with txt = Compat_top.redirect_directive pdir_name.txt }
+        in
+        Ptop_dir { pdir with pdir_name }
     | _ -> phrase
 
   (** [top_directive require "pkg"] builds the AST for [#require "pkg"] *)
@@ -305,7 +311,7 @@ module Rewrite = struct
   let preload verbose ppf =
     let require pkg =
       let p = top_directive_require pkg in
-      let _ = Toploop.execute_phrase verbose ppf p in
+      let _ = execute_phrase verbose ppf p in
       ()
     in
     match active_rewriters () with
@@ -337,7 +343,7 @@ type t = {
 let toplevel_exec_phrase t ppf p =
   match Phrase.result p with
   | Error exn -> raise exn
-  | Ok phrase ->
+  | Ok phrase -> (
       Warnings.reset_fatal ();
       let mapper = Lexbuf.position_mapper (Phrase.start p) in
       let phrase =
@@ -356,7 +362,10 @@ let toplevel_exec_phrase t ppf p =
       if !Clflags.dump_parsetree then Printast.top_phrase ppf phrase;
       if !Clflags.dump_source then Pprintast.top_phrase ppf phrase;
       Env.reset_cache_toplevel ();
-      Toploop.execute_phrase t.verbose ppf phrase
+      try execute_phrase t.verbose ppf phrase
+      with Exit_with_status code ->
+        Format.fprintf ppf "[%d]@." code;
+        false)
 
 type var_and_value = V : 'a ref * 'a -> var_and_value
 

@@ -36,6 +36,18 @@
  (action (diff code/test-case.md code.actual)))
 
 (rule
+ (target compenv-exit.actual)
+ (deps (package mdx) (source_tree compenv-exit))
+ (action
+  (with-stdout-to %{target}
+   (chdir compenv-exit
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff compenv-exit/test-case.md.expected compenv-exit.actual)))
+
+(rule
  (target cram.actual)
  (deps (package mdx) (source_tree cram))
  (action
