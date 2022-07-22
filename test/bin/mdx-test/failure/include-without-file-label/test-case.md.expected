@@ -1,1 +1,1 @@
-[mdx] Fatal error: File "test-case.md", lines 4-5: invalid code block: `file` label is required for include blocks.
+[mdx] Fatal error: File "test-case.md", lines 4-6: invalid code block: `file` label is required for include blocks.

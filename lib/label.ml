@@ -106,7 +106,7 @@ let pp ppf = function
       Fmt.pf ppf "version%a%a" Relation.pp op Ocaml_version.pp v
   | Set (v, x) -> Fmt.pf ppf "set-%s=%s" v x
   | Unset x -> Fmt.pf ppf "unset-%s" x
-  | Block_type bt -> Fmt.pf ppf "block-type=%a" pp_block_type bt
+  | Block_type bt -> Fmt.pf ppf "type=%a" pp_block_type bt
 
 let is_prefix ~prefix s =
   let len_prefix = String.length prefix in
@@ -193,7 +193,7 @@ let interpret label value =
   | "file" -> requires_eq_value ~label ~value (fun x -> Ok (File x))
   | "part" -> requires_eq_value ~label ~value (fun x -> Ok (Part x))
   | "env" -> requires_eq_value ~label ~value (fun x -> Ok (Env x))
-  | "block-type" ->
+  | "type" ->
       requires_eq_value ~label ~value (fun x ->
           parse_block_type_value ~label x >>= fun bt -> Ok (Block_type bt))
   | l when is_prefix ~prefix:"set-" l ->

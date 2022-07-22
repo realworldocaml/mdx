@@ -3,10 +3,12 @@ is misused.
 
 It requires a value
 
-```ocaml block-type
+<!-- $MDX type -->
+```ocaml
 ```
 
 It only accept a fixed set of values
 
-```ocaml block-type=invalid
+<!-- $MDX type=invalid -->
+```ocaml
 ```

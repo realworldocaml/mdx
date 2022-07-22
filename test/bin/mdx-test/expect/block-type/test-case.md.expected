@@ -5,16 +5,19 @@ inference which can sometime lead to troublesome error messages.
 The following blocks use a volontarily misleading language header that would
 normally lead to errors if we let MDX infer the type of block based on them.
 
-```ocaml block-type=toplevel
+<!-- $MDX type=toplevel -->
+```ocaml
 # 1 + 1;;
 - : int = 2
 ```
 
-```ocaml block-type=ocaml
+<!-- $MDX type=ocaml -->
+```ocaml
 let x = 2
 ```
 
-```sh block-type=cram
+<!-- $MDX type=cram -->
+```sh
 $ echo "boom"
 boom
 ```
