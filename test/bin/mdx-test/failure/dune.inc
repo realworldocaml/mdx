@@ -106,6 +106,19 @@
  (action (diff ml-file-not-found/test-case.md.expected ml-file-not-found.actual)))
 
 (rule
+ (target multiple-errors.actual)
+ (deps (package mdx) (source_tree multiple-errors))
+ (action
+  (with-accepted-exit-codes 1
+   (with-outputs-to %{target}
+    (chdir multiple-errors
+     (run %{bin:ocaml-mdx} test test-case.md))))))
+
+(rule
+ (alias runtest)
+ (action (diff multiple-errors/test-case.md.expected multiple-errors.actual)))
+
+(rule
  (target part-not-ended.actual)
  (deps (package mdx) (source_tree part-not-ended))
  (action
