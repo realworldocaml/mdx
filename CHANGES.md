@@ -5,7 +5,7 @@
 - Report all parsing errors in Markdown files (#389, @NathanReb)
 - Add alternative syntax for explicitly setting the block-type.
   The new label `block-type=...` can be set to `ocaml`, `toplevel`, `cram` or
-  `include`. (#<PR_NUMBER>, @NathanReb)
+  `include`. (#385, @NathanReb)
 
 #### Changed
 
