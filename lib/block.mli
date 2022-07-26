@@ -159,3 +159,7 @@ val executable_contents : syntax:Syntax.t -> t -> string list
    (e.g. the phrase result is discarded). *)
 
 val is_active : ?section:string -> t -> bool
+
+(** {2 Helpers} *)
+
+val ends_by_semi_semi : string list -> bool

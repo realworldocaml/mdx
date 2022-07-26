@@ -219,7 +219,7 @@ let ends_by_semi_semi c =
   match List.rev c with
   | h :: _ ->
       let len = String.length h in
-      len > 2 && h.[len - 1] = ';' && h.[len - 2] = ';'
+      len > 2 && Astring.String.is_suffix ~affix:";;" h
   | _ -> false
 
 let pp_line_directive ppf (file, line) = Fmt.pf ppf "#%d %S" line file
