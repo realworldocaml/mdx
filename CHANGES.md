@@ -16,6 +16,9 @@
 - Report errors and exit codes of toplevel directives (#382, @talex5,
   @Leonidas-from-XIV)
 - Fix block locations in error reporting (#389, @NathanReb)
+- Include the content of the line that features the `part-end` MDX directive in
+  the output, before that line would've been dropped (#374, #387,
+  @Leonidas-from-XIV)
 
 #### Removed
 
