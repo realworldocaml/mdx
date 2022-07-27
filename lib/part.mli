@@ -46,7 +46,7 @@ module Parse_parts : sig
     | Part_end
     | File_end
 
-  val parse_line : (string, [< `End_of_file ]) Result.result -> part_decl
+  val parse_line : (string, [< `End_of_file ]) result -> part_decl
 end
 
 (**/**)

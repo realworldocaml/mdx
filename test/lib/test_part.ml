@@ -1,5 +1,4 @@
 open Mdx.Part
-open Result
 
 module Testable = struct
   let parse_parts_part_decl =

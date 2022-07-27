@@ -14,8 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Result
-
 type syntax = Cmt | Attr
 type part_begin = { indent : string; payload : string }
 type t = Part_begin of syntax * part_begin | Part_end

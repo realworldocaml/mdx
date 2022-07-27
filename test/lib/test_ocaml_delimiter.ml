@@ -1,5 +1,4 @@
 open Mdx.Ocaml_delimiter
-open Result
 
 let test_parse =
   let make_test ~line ~expected =

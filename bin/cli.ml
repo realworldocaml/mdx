@@ -1,5 +1,4 @@
 open Cmdliner
-open Result
 
 let named wrapper = Term.(app (const wrapper))
 
