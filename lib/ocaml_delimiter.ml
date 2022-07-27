@@ -22,13 +22,14 @@ module Regexp = struct
   let marker = Re.str "$MDX"
   let spaces = Re.rep1 Re.space
   let id = Re.(rep1 (alt [ alnum; char '_'; char '-'; char '=' ]))
+  let ws = Re.(rep space)
 
   let cmt =
     let open Re in
     compile
     @@ seq
          [
-           group (rep space);
+           group ws;
            str "(*";
            spaces;
            marker;
@@ -40,7 +41,6 @@ module Regexp = struct
 
   let attribute =
     let open Re in
-    let ws = rep space in
     compile @@ whole_string
     @@ seq
          [
