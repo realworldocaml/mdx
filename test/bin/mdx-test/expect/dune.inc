@@ -228,6 +228,18 @@
  (action (diff labels-syntax/test-case.md labels-syntax.actual)))
 
 (rule
+ (target line-delimiters.actual)
+ (deps (package mdx) (source_tree line-delimiters))
+ (action
+  (with-stdout-to %{target}
+   (chdir line-delimiters
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff line-delimiters/test-case.md line-delimiters.actual)))
+
+(rule
  (target lines.actual)
  (deps (package mdx) (source_tree lines))
  (action
