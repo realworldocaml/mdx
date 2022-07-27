@@ -141,15 +141,10 @@ module Phrase = struct
     let endpos = lexbuf.Lexing.lex_curr_p in
     { doc = { lexbuf; contents }; startpos; endpos; parsed }
 
-  let ends_by_semi_semi c =
-    match List.rev c with
-    | h :: _ ->
-        let len = String.length h in
-        len > 2 && h.[len - 1] = ';' && h.[len - 2] = ';'
-    | _ -> false
-
   let parse lines =
-    let lines = if ends_by_semi_semi lines then lines else lines @ [ ";;" ] in
+    let lines =
+      if Mdx.Block.ends_by_semi_semi lines then lines else lines @ [ ";;" ]
+    in
     match parse lines with exception End_of_file -> None | t -> Some t
 
   (** Returns the name of the toplevel directive or [None] if the given phrase
@@ -394,13 +389,9 @@ let rtrim l = List.rev (ltrim (List.rev l))
 let trim l = ltrim (rtrim (List.map trim_line l))
 
 let cut_into_sentences l =
-  let ends_by_semi_semi h =
-    let len = String.length h in
-    len > 2 && h.[len - 1] = ';' && h.[len - 2] = ';'
-  in
   let rec aux acc sentence = function
     | [] -> List.rev (List.rev sentence :: acc)
-    | h :: t when ends_by_semi_semi h ->
+    | h :: t when Mdx.Block.ends_by_semi_semi [ h ] ->
         aux (List.rev (h :: sentence) :: acc) [] t
     | h :: t -> aux acc (h :: sentence) t
   in
