@@ -52,26 +52,19 @@ module Parse_parts = struct
 
   let anonymous_part = next_part ~name:"" ~sep_indent:""
 
-  (* let next_part_of_groups name sep_indent =
-     let sep_indent = Re.Group.get groups 1 in
-     let name = part_name_of_groups groups in
-     next_part ~name ~sep_indent *)
-
   let parse_line line =
     match line with
     | Error `End_of_file -> File_end
     | Ok line -> (
         match Ocaml_delimiter.parse line with
-        | Ok delim -> (
+        | Ok (Some delim) -> (
             match delim with
-            | Some delim -> (
-                match delim with
-                | Part_begin (syntax, { indent; payload }) -> (
-                    match syntax with
-                    | Attr -> Compat_attr (payload, indent)
-                    | Cmt -> Part_begin (payload, indent))
-                | Part_end -> Part_end)
-            | None -> Normal line)
+            | Part_begin (syntax, { indent; payload }) -> (
+                match syntax with
+                | Attr -> Compat_attr (payload, indent)
+                | Cmt -> Part_begin (payload, indent))
+            | Part_end _ -> Part_end)
+        | Ok None -> Normal line
         | Error (`Msg msg) ->
             Fmt.epr "Warning: %s\n" msg;
             Normal line)
