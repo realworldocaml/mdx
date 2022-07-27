@@ -10,7 +10,7 @@ module Testable = struct
           Fmt.pf fmt "Compat_attr (%S, %S)" n sep_indent
       | Part_begin (n, sep_indent) ->
           Fmt.pf fmt "Part_begin (%S, %S)" n sep_indent
-      | Part_end -> Fmt.pf fmt "Part_end"
+      | Part_end prefix -> Fmt.pf fmt "Part_end %a" Fmt.(option string) prefix
       | File_end -> Fmt.pf fmt "File_end"
     in
     Alcotest.testable pp equal
@@ -36,7 +36,8 @@ let test_of_line =
       ();
     make_test ~line:(Ok "(* $MDX part-begin=bar     ")
       ~expected:(Normal "(* $MDX part-begin=bar     ") ();
-    make_test ~line:(Ok "   (* $MDX part-end   *)   ") ~expected:Part_end ();
+    make_test ~line:(Ok "   (* $MDX part-end   *)   ") ~expected:(Part_end None)
+      ();
     make_test ~line:(Ok "    [@@@part \"foobar\"]    ")
       ~expected:(Compat_attr ("foobar", "    "))
       ();

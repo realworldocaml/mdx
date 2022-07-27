@@ -16,7 +16,8 @@ let ocaml_delimiter =
         | Attr -> Fmt.string fs "Attr");
         Fmt.fmt "indent:%s" fs indent;
         Fmt.fmt "payload:%s" fs payload
-    | Part_end -> Fmt.string fs "Part_end"
+    | Part_end prefix ->
+        Fmt.pf fs "Part_end '%a'" Fmt.Dump.(option string) prefix
   in
   Alcotest.testable pp ( = )
 

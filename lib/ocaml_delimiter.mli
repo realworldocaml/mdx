@@ -18,6 +18,6 @@
 type syntax = Cmt | Attr
 
 type part_begin = { indent : string; payload : string }
-type t = Part_begin of syntax * part_begin | Part_end
+type t = Part_begin of syntax * part_begin | Part_end of string option
 
 val parse : string -> (t option, [ `Msg of string ]) result

@@ -40,7 +40,7 @@ module Parse_parts = struct
     | Compat_attr of string * string
     (* ^^^^ This is for compat with the [[@@@part name]] delimiters *)
     | Part_begin of string * string
-    | Part_end
+    | Part_end of string option
     | File_end
 
   let next_part ~name ~sep_indent ~is_begin_end_part lines_rev =
@@ -63,7 +63,7 @@ module Parse_parts = struct
                 match syntax with
                 | Attr -> Compat_attr (payload, indent)
                 | Cmt -> Part_begin (payload, indent))
-            | Part_end _ -> Part_end)
+            | Part_end prefix -> Part_end prefix)
         | Ok None -> Normal line
         | Error (`Msg msg) ->
             Fmt.epr "Warning: %s\n" msg;
@@ -82,10 +82,15 @@ module Parse_parts = struct
     match (parse_line line, current_part) with
     | Normal line, _ ->
         parse_parts input make_part current_part (line :: part_lines) nline
-    | Part_end, Some _ ->
+    | Part_end line_prefix, Some _ ->
+        let part_lines =
+          match line_prefix with
+          | None -> part_lines
+          | Some line_prefix -> line_prefix :: part_lines
+        in
         parse_parts input anonymous_part None [] nline
         >>| List.cons (make_part ~is_begin_end_part:true part_lines)
-    | Part_end, None -> Error ("There is no part to end.", nline)
+    | Part_end _, None -> Error ("There is no part to end.", nline)
     | Part_begin (next_part_name, sep_indent), None ->
         let next_part = next_part ~name:next_part_name ~sep_indent in
         let rcall =

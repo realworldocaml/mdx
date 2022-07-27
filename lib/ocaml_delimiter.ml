@@ -16,7 +16,7 @@
 
 type syntax = Cmt | Attr
 type part_begin = { indent : string; payload : string }
-type t = Part_begin of syntax * part_begin | Part_end
+type t = Part_begin of syntax * part_begin | Part_end of string option
 
 module Regexp = struct
   let marker = Re.str "$MDX"
@@ -29,6 +29,7 @@ module Regexp = struct
     compile
     @@ seq
          [
+           group (non_greedy (rep any));
            group ws;
            str "(*";
            spaces;
@@ -74,9 +75,11 @@ let parse_attr line =
 let parse_cmt line =
   match Re.exec_opt Regexp.cmt line with
   | Some g -> (
-      let indent = Re.Group.get g 1 in
-      match Re.Group.get g 2 with
-      | "part-end" -> Ok (Some Part_end)
+      let indent = Re.Group.get g 2 in
+      match Re.Group.get g 3 with
+      | "part-end" ->
+          let prefix = match Re.Group.get g 1 with "" -> None | s -> Some s in
+          Ok (Some (Part_end prefix))
       | s -> (
           match Astring.String.cut ~sep:"=" s with
           | Some ("part-begin", payload) ->

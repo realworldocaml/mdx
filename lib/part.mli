@@ -43,7 +43,7 @@ module Parse_parts : sig
     | Compat_attr of string * string
     (* ^^^^ This is for compat with the [[@@@part name]] delimiters *)
     | Part_begin of string * string
-    | Part_end
+    | Part_end of string option
     | File_end
 
   val parse_line : (string, [< `End_of_file ]) result -> part_decl
