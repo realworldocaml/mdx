@@ -15,17 +15,21 @@ let labels l =
     failwith msg
 }
 
-let eol = '\n' | eof
-let ws = ' ' | '\t'
+let eol = '\n' | "\r\n" | eof
+let ws = [' ' '\t']
+
+let not_eol = [^'\n' '\r']
+let not_ws = [^' ' '\t']
+let not_ws_or_eol = [^' ' '\t' '\n' '\r']
 
 rule text section = parse
   | eof { [] }
-  | ("#"+ as n) " " ([^'\n']* as str) eol
+  | ("#"+ as n) " " (not_eol* as str) eol
       { let section = (String.length n, str) in
         newline lexbuf;
         `Section section :: text (Some section) lexbuf }
-  | ( "<!--" ws* "$MDX" ws* ([^' ' '\n']* as label_cmt) ws* "-->" ws* eol? )?
-      "```" ([^' ' '\n']* as h) ws* ([^'\n']* as legacy_labels) eol
+  | ( "<!--" ws* "$MDX" ws* (not_ws* as label_cmt) ws* "-->" ws* eol? )?
+      "```" (not_ws_or_eol* as h) ws* (not_eol* as legacy_labels) eol
       { let header = Block.Header.of_string h in
         let contents = block lexbuf in
         let labels, legacy_labels =
@@ -62,7 +66,7 @@ rule text section = parse
            List.iter (fun _ -> newline lexbuf) errors;
            newline lexbuf);
         `Block block :: text section lexbuf }
-  | "<!--" ws* "$MDX" ws* ([^' ' '\n']* as label_cmt) ws* "-->" ws* eol
+  | "<!--" ws* "$MDX" ws* (not_ws* as label_cmt) ws* "-->" ws* eol
       { let labels = labels label_cmt in
         newline lexbuf;
         let loc = Location.curr lexbuf in
@@ -72,24 +76,24 @@ rule text section = parse
           | Error (`Msg msg) -> failwith msg
         in
         `Block block :: text section lexbuf }
-  | ([^'\n']* as str) eol
+  | (not_eol* as str) eol
       { newline lexbuf;
         `Text str :: text section lexbuf }
 
 and block = parse
   | eof | "```" ws* eol    { [] }
-  | ([^'\n'] * as str) eol { str :: block lexbuf }
+  | (not_eol* as str) eol { str :: block lexbuf }
 
 and error_block = parse
   | "```mdx-error" ws* eol { block lexbuf }
 
 and cram_text section = parse
   | eof { [] }
-  | ("#"+ as n) " " ([^'\n']* as str) eol
+  | ("#"+ as n) " " (not_eol* as str) eol
       { let section = (String.length n, str) in
         newline lexbuf;
         `Section section :: cram_text (Some section) lexbuf }
-  | "  " ([^'\n']* as first_line) eol
+  | "  " (not_eol* as first_line) eol
       { let header = Some (Block.Header.Shell `Sh) in
         let requires_empty_line, contents = cram_block lexbuf in
         let contents = first_line :: contents in
@@ -108,7 +112,7 @@ and cram_text section = parse
         in
         `Block block
         :: (if requires_empty_line then `Text "" :: rest else rest) }
-  | "<-- non-deterministic" ws* ([^'\n']* as choice) eol
+  | "<-- non-deterministic" ws* (not_eol* as choice) eol
       { let header = Some (Block.Header.Shell `Sh) in
         let requires_empty_line, contents = cram_block lexbuf in
         let labels =
@@ -131,14 +135,14 @@ and cram_text section = parse
         in
         `Block block
         :: (if requires_empty_line then `Text "" :: rest else rest) }
-  | ([^'\n']* as str) eol
+  | (not_eol* as str) eol
       { newline lexbuf;
         `Text str :: cram_text section lexbuf }
 
 and cram_block = parse
   | eof { false, [] }
   | eol { newline lexbuf; true, [] }
-  | "  " ([^'\n'] * as str) eol
+  | "  " (not_eol* as str) eol
       { let requires_empty_line, lst = cram_block lexbuf in
         requires_empty_line, str :: lst }
 
