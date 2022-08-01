@@ -15,7 +15,6 @@
  *)
 
 open Mdx
-open Result
 open Astring
 open Mdx.Util.Result.Infix
 

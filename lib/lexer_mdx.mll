@@ -1,5 +1,4 @@
 {
-open Result
 open Astring
 
 type token = [ `Block of Block.t | `Section of int * string | `Text of string ]

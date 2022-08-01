@@ -32,7 +32,6 @@
    (>= 1.1.0))
   (re
    (>= 1.7.2))
-  result
   (ocaml-version
    (>= 2.3.0))
   (odoc-parser (>= 1.0.0))

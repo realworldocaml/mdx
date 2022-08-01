@@ -24,7 +24,7 @@ val equal : t -> t -> bool
 val compare : t -> t -> int
 val pp : t Fmt.t
 
-val from_string : string -> (t, string) Result.result
+val from_string : string -> (t, string) result
 (** [from_string s] returns the library represented by [s] or an error if [s]
     isn't a valid library. *)
 

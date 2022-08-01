@@ -96,13 +96,13 @@ val mk :
   header:Header.t option ->
   contents:string list ->
   errors:Output.t list ->
-  (t, [ `Msg of string ]) Result.result
+  (t, [ `Msg of string ]) result
 
 val mk_include :
   loc:Location.t ->
   section:section option ->
   labels:Label.t list ->
-  (t, [ `Msg of string ]) Result.result
+  (t, [ `Msg of string ]) result
 (** [mk_include] builds an include block from a comment [<!-- $MDX ... -->]
     that is not followed by a code block [``` ... ```]. *)
 

@@ -102,7 +102,7 @@ module Phrase = struct
     doc : Lexbuf.t;
     startpos : position;
     endpos : position;
-    parsed : (toplevel_phrase, exn) Result.result;
+    parsed : (toplevel_phrase, exn) result;
   }
 
   let result t = t.parsed
@@ -120,7 +120,7 @@ module Phrase = struct
     let startpos = lexbuf.Lexing.lex_start_p in
     let parsed =
       match Parse.toplevel_phrase lexbuf with
-      | phrase -> Result.Ok phrase
+      | phrase -> Ok phrase
       | exception exn ->
           let exn =
             match error_of_exn exn with
@@ -456,7 +456,7 @@ let eval t cmd =
               | None -> [])
             phrases
           |> List.concat
-          |> fun x -> if !errors then Result.Error x else Result.Ok x))
+          |> fun x -> if !errors then Error x else Ok x))
 
 let add_directive ~name ~doc kind =
   let directive =

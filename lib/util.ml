@@ -14,8 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Result
-
 module Result = struct
   module Infix = struct
     let ( >>= ) r f = match r with Ok x -> f x | Error _ as e -> e
