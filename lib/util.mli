@@ -20,11 +20,13 @@ module Result : sig
       ('a, 'err) result -> ('a -> ('b, 'err) result) -> ('b, 'err) result
 
     val ( >>| ) : ('a, 'err) result -> ('a -> 'b) -> ('b, 'err) result
-    val ( >>! ) : ('a, [ `Msg of string ]) result -> ('a -> int) -> int
+    val ( >>! ) : ('a, [ `Msg of string ] list) result -> ('a -> int) -> int
   end
 
   val errorf :
     ('a, unit, string, ('b, [> `Msg of string ]) result) format4 -> 'a
+
+  val to_error_list : ('a, 'err) result -> ('a, 'err list) result
 
   module List : sig
     val fold :

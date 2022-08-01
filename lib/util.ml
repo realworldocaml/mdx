@@ -22,12 +22,15 @@ module Result = struct
     let ( >>! ) r f =
       match r with
       | Ok x -> f x
-      | Error (`Msg e) ->
-          Printf.eprintf "[mdx] Fatal error: %s\n" e;
+      | Error l ->
+          List.iter
+            (function `Msg m -> Printf.eprintf "[mdx] Fatal error: %s\n" m)
+            l;
           1
   end
 
   let errorf fmt = Format.ksprintf (fun s -> Error (`Msg s)) fmt
+  let to_error_list = function Ok x -> Ok x | Error err -> Error [ err ]
 
   module List = struct
     open Infix

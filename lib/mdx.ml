@@ -56,16 +56,25 @@ let filter_section re (t : t) =
   | l -> Some l
 
 let parse l =
-  List.map
-    (function
-      | `Text t -> Text t | `Section s -> Section s | `Block b -> Block b)
-    l
+  let results =
+    List.map
+      (function
+        | `Text t -> Ok (Text t)
+        | `Section s -> Ok (Section s)
+        | `Block rb -> Block.from_raw rb >>= fun b -> Ok (Block b))
+      l
+  in
+  let errors = List.concat_map (function Ok _ -> [] | Error l -> l) results in
+  let ok =
+    List.filter_map (function Ok x -> Some x | Error _ -> None) results
+  in
+  match errors with [] -> Ok ok | _ -> Error errors
 
 let parse_lexbuf file_contents syntax l =
   match syntax with
   | Syntax.Mli -> Mli_parser.parse_mli file_contents
-  | Normal -> Lexer_mdx.markdown_token l >>| parse
-  | Cram -> Lexer_mdx.cram_token l >>| parse
+  | Normal -> Util.Result.to_error_list @@ Lexer_mdx.markdown_token l >>= parse
+  | Cram -> Util.Result.to_error_list @@ Lexer_mdx.cram_token l >>= parse
 
 let parse_file syntax f =
   let l = snd (Misc.init f) in

@@ -2,6 +2,8 @@
 
 #### Added
 
+- Report all parsing errors in Markdown files (#<PR_NUMBER>, @NathanReb)
+
 #### Changed
 
 #### Deprecated
