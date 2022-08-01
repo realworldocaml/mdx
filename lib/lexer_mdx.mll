@@ -4,6 +4,9 @@ open Astring
 type token = [ `Block of Block.Raw.t | `Section of int * string | `Text of string ]
 
 let newline lexbuf = Lexing.new_line lexbuf
+
+let loc ~start ~end_ =
+  Location.{loc_start = start; loc_end = end_; loc_ghost = false}
 }
 
 let eol = '\n' | eof
@@ -17,7 +20,12 @@ rule text section = parse
         `Section section :: text (Some section) lexbuf }
   | ( "<!--" ws* "$MDX" ws* ([^' ' '\n']* as label_cmt) ws* "-->" ws* eol? )?
       "```" ([^' ' '\n']* as header) ws* ([^'\n']* as legacy_labels) eol
-      { let contents = block lexbuf in
+      { let start = Lexing.lexeme_start_p lexbuf in
+        newline lexbuf;
+        (match label_cmt with
+         | Some _ -> newline lexbuf
+         | None -> ());
+        let contents = block lexbuf in
         let errors =
           match error_block lexbuf with
           | exception _ -> []
@@ -27,24 +35,16 @@ rule text section = parse
                 | "..." -> `Ellipsis
                 | _ -> `Output x) e
         in
-        newline lexbuf;
-        List.iter (fun _ -> newline lexbuf) contents;
-        let loc = Location.curr lexbuf in
-        newline lexbuf;
+        let end_ = Lexing.lexeme_start_p lexbuf in
+        let loc = loc ~start ~end_ in
         let block =
           Block.Raw.make ~loc ~section ~header ~contents ~label_cmt
             ~legacy_labels ~errors
         in
-        (match errors with
-         | [] -> ()
-         | _ ->
-           newline lexbuf;
-           List.iter (fun _ -> newline lexbuf) errors;
-           newline lexbuf);
         `Block block :: text section lexbuf }
   | "<!--" ws* "$MDX" ws* ([^' ' '\n']* as labels) ws* "-->" ws* eol
-      { newline lexbuf;
-        let loc = Location.curr lexbuf in
+      { let loc = Location.curr lexbuf in
+        newline lexbuf;
         let block = Block.Raw.make_include ~loc ~section ~labels in
         `Block block :: text section lexbuf }
   | ([^'\n']* as str) eol
@@ -52,11 +52,11 @@ rule text section = parse
         `Text str :: text section lexbuf }
 
 and block = parse
-  | eof | "```" ws* eol    { [] }
-  | ([^'\n'] * as str) eol { str :: block lexbuf }
+  | eof | "```" ws* eol    { newline lexbuf; [] }
+  | ([^'\n'] * as str) eol { newline lexbuf; str :: block lexbuf }
 
 and error_block = parse
-  | "```mdx-error" ws* eol { block lexbuf }
+  | "```mdx-error" ws* eol { newline lexbuf; block lexbuf }
 
 and cram_text section = parse
   | eof { [] }
@@ -65,14 +65,16 @@ and cram_text section = parse
         newline lexbuf;
         `Section section :: cram_text (Some section) lexbuf }
   | "  " ([^'\n']* as first_line) eol
-      { let header = "sh" in
+      { let start = Lexing.lexeme_start_p lexbuf in
+        newline lexbuf;
+        let header = "sh" in
         let requires_empty_line, contents = cram_block lexbuf in
         let contents = first_line :: contents in
         let label_cmt = Some "" in
         let legacy_labels = "" in
-        let loc = Location.curr lexbuf in
-        List.iter (fun _ -> newline lexbuf) contents;
+        let end_ = Lexing.lexeme_start_p lexbuf in
         let rest = cram_text section lexbuf in
+        let loc = loc ~start ~end_ in
         let block =
             Block.Raw.make ~loc ~section ~header ~contents ~label_cmt
               ~legacy_labels ~errors:[]
@@ -80,13 +82,14 @@ and cram_text section = parse
         `Block block
         :: (if requires_empty_line then `Text "" :: rest else rest) }
   | "<-- non-deterministic" ws* ([^'\n']* as choice) eol
-      { let header = "sh" in
+      { let start = Lexing.lexeme_start_p lexbuf in
+        newline lexbuf;
+        let header = "sh" in
         let requires_empty_line, contents = cram_block lexbuf in
         let label_cmt = Some (Printf.sprintf "non-deterministic=%s" choice) in
         let legacy_labels = "" in
-        newline lexbuf;
-        let loc = Location.curr lexbuf in
-        List.iter (fun _ -> newline lexbuf) contents;
+        let end_ = Lexing.lexeme_start_p lexbuf in
+        let loc = loc ~start ~end_ in
         let rest = cram_text section lexbuf in
         let block =
             Block.Raw.make ~loc ~section ~header ~contents ~label_cmt
@@ -103,6 +106,7 @@ and cram_block = parse
   | eol { newline lexbuf; true, [] }
   | "  " ([^'\n'] * as str) eol
       { let requires_empty_line, lst = cram_block lexbuf in
+        newline lexbuf;
         requires_empty_line, str :: lst }
 
 {

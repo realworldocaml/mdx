@@ -13,6 +13,7 @@
 - Fixed compatibility with Cmdliner 1.1.0 (#371, @Leonidas-from-XIV)
 - Report errors and exit codes of toplevel directives (#382, @talex5,
   @Leonidas-from-XIV)
+- Fix block locations in error reporting (#<PR_NUMBER>, @NathanReb)
 
 #### Removed
 
