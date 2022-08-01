@@ -2,7 +2,7 @@
 
 #### Added
 
-- Report all parsing errors in Markdown files (#<PR_NUMBER>, @NathanReb)
+- Report all parsing errors in Markdown files (#389, @NathanReb)
 
 #### Changed
 
@@ -13,7 +13,7 @@
 - Fixed compatibility with Cmdliner 1.1.0 (#371, @Leonidas-from-XIV)
 - Report errors and exit codes of toplevel directives (#382, @talex5,
   @Leonidas-from-XIV)
-- Fix block locations in error reporting (#<PR_NUMBER>, @NathanReb)
+- Fix block locations in error reporting (#389, @NathanReb)
 
 #### Removed
 
