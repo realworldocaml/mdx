@@ -64,13 +64,8 @@ let parse l =
         | `Block rb -> Block.from_raw rb >>= fun b -> Ok (Block b))
       l
   in
-  let errors =
-    Util.List.concat_map (function Ok _ -> [] | Error l -> l) results
-  in
-  let ok =
-    List.filter_map (function Ok x -> Some x | Error _ -> None) results
-  in
-  match errors with [] -> Ok ok | _ -> Error errors
+  let ok, errors = Util.Result.List.split results in
+  match errors with [] -> Ok ok | _ -> Error (List.concat errors)
 
 let parse_lexbuf file_contents syntax l =
   match syntax with

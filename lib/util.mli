@@ -36,6 +36,7 @@ module Result : sig
       ('acc, 'err) result
 
     val map : f:('a -> ('b, 'err) result) -> 'a list -> ('b list, 'err) result
+    val split : ('a, 'err) result list -> 'a list * 'err list
   end
 end
 
@@ -50,7 +51,6 @@ end
 
 module List : sig
   val find_map : ('a -> 'b option) -> 'a list -> 'b option
-  val concat_map : ('a -> 'b list) -> 'a list -> 'b list
 end
 
 module String : sig

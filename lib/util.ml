@@ -45,6 +45,15 @@ module Result = struct
     let map ~f l =
       fold ~f:(fun acc elm -> f elm >>| fun elm' -> elm' :: acc) ~init:[] l
       >>| List.rev
+
+    let split l =
+      let rec split_rec oks errors l =
+        match l with
+        | [] -> (List.rev oks, List.rev errors)
+        | Ok x :: tl -> split_rec (x :: oks) errors tl
+        | Error x :: tl -> split_rec oks (x :: errors) tl
+      in
+      split_rec [] [] l
   end
 end
 
@@ -95,15 +104,6 @@ module List = struct
       | h :: t -> ( match f h with Some x -> Some x | None -> aux t)
     in
     aux l
-
-  let concat_map f l =
-    let rec aux f acc = function
-      | [] -> List.rev acc
-      | x :: l ->
-          let xs = f x in
-          aux f (List.rev_append xs acc) l
-    in
-    aux f [] l
 end
 
 module Array = struct
