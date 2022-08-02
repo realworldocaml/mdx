@@ -95,6 +95,15 @@ module List = struct
       | h :: t -> ( match f h with Some x -> Some x | None -> aux t)
     in
     aux l
+
+  let concat_map f l =
+    let rec aux f acc = function
+      | [] -> List.rev acc
+      | x :: l ->
+          let xs = f x in
+          aux f (List.rev_append xs acc) l
+    in
+    aux f [] l
 end
 
 module Array = struct

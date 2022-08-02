@@ -50,6 +50,7 @@ end
 
 module List : sig
   val find_map : ('a -> 'b option) -> 'a list -> 'b option
+  val concat_map : ('a -> 'b list) -> 'a list -> 'b list
 end
 
 module String : sig

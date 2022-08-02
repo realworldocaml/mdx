@@ -64,7 +64,9 @@ let parse l =
         | `Block rb -> Block.from_raw rb >>= fun b -> Ok (Block b))
       l
   in
-  let errors = List.concat_map (function Ok _ -> [] | Error l -> l) results in
+  let errors =
+    Util.List.concat_map (function Ok _ -> [] | Error l -> l) results
+  in
   let ok =
     List.filter_map (function Ok x -> Some x | Error _ -> None) results
   in
