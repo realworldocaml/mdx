@@ -289,7 +289,7 @@ let version_enabled version =
 let get_label f (labels : Label.t list) = Util.List.find_map f labels
 
 let label_not_allowed ~loc ~label ~kind =
-  loc_error ~loc "`%s` label is required for %s blocks." label kind
+  loc_error ~loc "`%s` label is not allowed for %s blocks." label kind
 
 let label_required ~loc ~label ~kind =
   loc_error ~loc "`%s` label is required for %s blocks." label kind
