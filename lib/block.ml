@@ -27,7 +27,7 @@ let locate_error_msg ~loc s =
 
 let locate_errors ~loc r =
   Result.map_error
-    (fun l -> List.map (function `Msg m -> `Msg (locate_error_msg ~loc m)) l)
+    (fun l -> List.map (fun (`Msg m) -> `Msg (locate_error_msg ~loc m)) l)
     r
 
 module Header = struct

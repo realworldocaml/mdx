@@ -24,7 +24,7 @@ module Result = struct
       | Ok x -> f x
       | Error l ->
           List.iter
-            (function `Msg m -> Printf.eprintf "[mdx] Fatal error: %s\n" m)
+            (fun (`Msg m) -> Printf.eprintf "[mdx] Fatal error: %s\n" m)
             l;
           1
   end
