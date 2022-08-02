@@ -20,11 +20,10 @@ let loc_error ~loc fmt =
   Format.kasprintf
     (fun s -> Error (`Msg s))
     ("%a: invalid code block: " ^^ fmt)
-    Stable_printer.Location.print_loc loc
+    Stable_printer.Location.pp loc
 
 let locate_error_msg ~loc s =
-  Format.asprintf "%a: invalid code block: %s" Stable_printer.Location.print_loc
-    loc s
+  Format.asprintf "%a: invalid code block: %s" Stable_printer.Location.pp loc s
 
 let locate_errors ~loc r =
   Result.map_error
@@ -139,7 +138,7 @@ let dump ppf ({ loc; section; labels; contents; value; _ } as b) =
   Fmt.pf ppf
     "{@[loc: %a;@ section: %a;@ labels: %a;@ header: %a;@ contents: %a;@ \
      value: %a@]}"
-    Stable_printer.Location.print_loc loc
+    Stable_printer.Location.pp loc
     Fmt.(Dump.option dump_section)
     section
     Fmt.Dump.(list Label.pp)

@@ -116,7 +116,8 @@ and cram_block = parse
     | exn ->
       let loc = Location.curr lexbuf in
       let msg =
-        Format.asprintf "%a: %s" Stable_printer.Location.print_loc loc (Printexc.to_string exn)
+        Format.asprintf "%a: %s" Stable_printer.Location.pp loc
+          (Printexc.to_string exn)
       in
       Util.Result.errorf "%s" msg
 
@@ -127,7 +128,8 @@ let cram_token lexbuf =
     | exn ->
       let loc = Location.curr lexbuf in
       let msg =
-        Format.asprintf "%a: %s" Stable_printer.Location.print_loc loc (Printexc.to_string exn)
+        Format.asprintf "%a: %s" Stable_printer.Location.pp loc
+          (Printexc.to_string exn)
       in
       Util.Result.errorf "%s" msg
 }
