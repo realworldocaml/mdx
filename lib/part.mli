@@ -44,9 +44,8 @@ module Parse_parts : sig
     (* ^^^^ This is for compat with the [[@@@part name]] delimiters *)
     | Part_begin of string * string
     | Part_end of string option
-    | File_end
 
-  val parse_line : (string, [< `End_of_file ]) result -> part_decl
+  val parse_line : string -> part_decl
 end
 
 (**/**)
