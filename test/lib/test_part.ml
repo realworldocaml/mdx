@@ -3,7 +3,7 @@ open Mdx.Part
 let parse_parts =
   let equal = ( = ) in
   let pp fmt = function
-    | Parse_parts.Normal s -> Fmt.pf fmt "Normal: %S" s
+    | Parse_parts.Content s -> Fmt.pf fmt "Content: %S" s
     | Compat_attr (n, sep_indent) ->
         Fmt.pf fmt "Compat_attr (%S, %S)" n sep_indent
     | Part_begin (n, sep_indent) ->
@@ -22,12 +22,12 @@ let test_of_line =
     (test_name, `Quick, test_fun)
   in
   [
-    make_test ~line:"foo" ~expected:(Normal "foo") ();
+    make_test ~line:"foo" ~expected:(Content "foo") ();
     make_test ~line:"    (* $MDX part-begin=bar *)    "
       ~expected:(Part_begin ("bar", "    "))
       ();
     make_test ~line:"(* $MDX part-begin=bar     "
-      ~expected:(Normal "(* $MDX part-begin=bar     ") ();
+      ~expected:(Content "(* $MDX part-begin=bar     ") ();
     make_test ~line:"   (* $MDX part-end   *)   " ~expected:(Part_end None) ();
     make_test ~line:"    [@@@part \"foobar\"]    "
       ~expected:(Compat_attr ("foobar", "    "))

@@ -36,7 +36,7 @@ let trim_empty_rev l = remove_empty_heads (List.rev (remove_empty_heads l))
 
 module Parse_parts = struct
   type t =
-    | Normal of string
+    | Content of string
     | Compat_attr of string * string
     (* ^^^^ This is for compat with the [[@@@part name]] delimiters *)
     | Part_begin of string * string
@@ -60,10 +60,10 @@ module Parse_parts = struct
             | Attr -> Compat_attr (payload, indent)
             | Cmt -> Part_begin (payload, indent))
         | Part_end prefix -> Part_end prefix)
-    | Ok None -> Normal line
+    | Ok None -> Content line
     | Error (`Msg msg) ->
         Fmt.epr "Warning: %s\n" msg;
-        Normal line
+        Content line
 
   let input_line_err i =
     match input_line i with
@@ -83,7 +83,7 @@ module Parse_parts = struct
         | None -> Ok [ make_part ~is_begin_end_part:true part_lines ])
     | Ok line -> (
         match (parse_line line, current_part) with
-        | Normal line, _ ->
+        | Content line, _ ->
             parse_parts input make_part current_part (line :: part_lines) nline
         | Part_end line_prefix, Some _ ->
             let part_lines =

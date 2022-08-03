@@ -39,7 +39,7 @@ val replace : file -> part:string option -> lines:string list -> file
 
 module Parse_parts : sig
   type t =
-    | Normal of string
+    | Content of string
     | Compat_attr of string * string
     (* ^^^^ This is for compat with the [[@@@part name]] delimiters *)
     | Part_begin of string * string
