@@ -1,1 +1,1 @@
-[mdx] Fatal error: File "test-case.md", line 3: invalid code block: cannot mix both block labels syntax
+[mdx] Fatal error: File "test-case.md", lines 3-9: invalid code block: cannot mix both block labels syntax

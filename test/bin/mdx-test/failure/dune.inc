@@ -1,5 +1,18 @@
 
 (rule
+ (target block-locations.actual)
+ (deps (package mdx) (source_tree block-locations))
+ (action
+  (with-accepted-exit-codes 1
+   (with-outputs-to %{target}
+    (chdir block-locations
+     (run %{bin:ocaml-mdx} test test-case.md))))))
+
+(rule
+ (alias runtest)
+ (action (diff block-locations/test-case.md.expected block-locations.actual)))
+
+(rule
  (target both-prelude.actual)
  (deps (package mdx) (source_tree both-prelude))
  (action
@@ -104,6 +117,19 @@
  (alias runtest)
  (enabled_if (<> %{os_type} Win32))
  (action (diff ml-file-not-found/test-case.md.expected ml-file-not-found.actual)))
+
+(rule
+ (target multiple-errors.actual)
+ (deps (package mdx) (source_tree multiple-errors))
+ (action
+  (with-accepted-exit-codes 1
+   (with-outputs-to %{target}
+    (chdir multiple-errors
+     (run %{bin:ocaml-mdx} test test-case.md))))))
+
+(rule
+ (alias runtest)
+ (action (diff multiple-errors/test-case.md.expected multiple-errors.actual)))
 
 (rule
  (target part-not-ended.actual)

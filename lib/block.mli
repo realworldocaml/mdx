@@ -72,6 +72,23 @@ type value =
 type section = int * string
 (** The type for sections. *)
 
+module Raw : sig
+  type t
+
+  val make :
+    loc:Location.t ->
+    section:section option ->
+    header:string ->
+    contents:string list ->
+    label_cmt:string option ->
+    legacy_labels:string ->
+    errors:Output.t list ->
+    t
+
+  val make_include :
+    loc:Location.t -> section:section option -> labels:string -> t
+end
+
 type t = {
   loc : Location.t;
   section : section option;
@@ -105,6 +122,8 @@ val mk_include :
   (t, [ `Msg of string ]) result
 (** [mk_include] builds an include block from a comment [<!-- $MDX ... -->]
     that is not followed by a code block [``` ... ```]. *)
+
+val from_raw : Raw.t -> (t, [ `Msg of string ] list) Result.result
 
 (** {2 Printers} *)
 

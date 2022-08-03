@@ -221,4 +221,4 @@ let parse_mli file_contents =
 
 let parse_mli file_contents =
   try Ok (parse_mli file_contents)
-  with exn -> Util.Result.errorf "%s" (Printexc.to_string exn)
+  with exn -> Error [ `Msg (Printexc.to_string exn) ]

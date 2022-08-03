@@ -22,12 +22,15 @@ module Result = struct
     let ( >>! ) r f =
       match r with
       | Ok x -> f x
-      | Error (`Msg e) ->
-          Printf.eprintf "[mdx] Fatal error: %s\n" e;
+      | Error l ->
+          List.iter
+            (fun (`Msg m) -> Printf.eprintf "[mdx] Fatal error: %s\n" m)
+            l;
           1
   end
 
   let errorf fmt = Format.ksprintf (fun s -> Error (`Msg s)) fmt
+  let to_error_list = function Ok x -> Ok x | Error err -> Error [ err ]
 
   module List = struct
     open Infix
@@ -42,6 +45,15 @@ module Result = struct
     let map ~f l =
       fold ~f:(fun acc elm -> f elm >>| fun elm' -> elm' :: acc) ~init:[] l
       >>| List.rev
+
+    let split l =
+      let rec split_rec oks errors l =
+        match l with
+        | [] -> (List.rev oks, List.rev errors)
+        | Ok x :: tl -> split_rec (x :: oks) errors tl
+        | Error x :: tl -> split_rec oks (x :: errors) tl
+      in
+      split_rec [] [] l
   end
 end
 
