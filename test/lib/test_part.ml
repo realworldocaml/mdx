@@ -1,26 +1,23 @@
 open Mdx.Part
 
-module Testable = struct
-  let parse_parts_part_decl =
-    let open Parse_parts in
-    let equal = ( = ) in
-    let pp fmt = function
-      | Normal s -> Fmt.pf fmt "Normal: %S" s
-      | Compat_attr (n, sep_indent) ->
-          Fmt.pf fmt "Compat_attr (%S, %S)" n sep_indent
-      | Part_begin (n, sep_indent) ->
-          Fmt.pf fmt "Part_begin (%S, %S)" n sep_indent
-      | Part_end prefix -> Fmt.pf fmt "Part_end %a" Fmt.(option string) prefix
-    in
-    Alcotest.testable pp equal
-end
+let parse_parts =
+  let equal = ( = ) in
+  let pp fmt = function
+    | Parse_parts.Normal s -> Fmt.pf fmt "Normal: %S" s
+    | Compat_attr (n, sep_indent) ->
+        Fmt.pf fmt "Compat_attr (%S, %S)" n sep_indent
+    | Part_begin (n, sep_indent) ->
+        Fmt.pf fmt "Part_begin (%S, %S)" n sep_indent
+    | Part_end prefix -> Fmt.pf fmt "Part_end %a" Fmt.(option string) prefix
+  in
+  Alcotest.testable pp equal
 
 let test_of_line =
   let make_test ~line ~expected () =
     let test_name = Printf.sprintf "parse_line: %S" line in
     let test_fun () =
       let actual = Parse_parts.parse_line line in
-      Alcotest.(check Testable.parse_parts_part_decl) test_name expected actual
+      Alcotest.(check parse_parts) test_name expected actual
     in
     (test_name, `Quick, test_fun)
   in

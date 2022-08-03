@@ -38,14 +38,14 @@ val replace : file -> part:string option -> lines:string list -> file
 (* Exposed for test purposes only *)
 
 module Parse_parts : sig
-  type part_decl =
+  type t =
     | Normal of string
     | Compat_attr of string * string
     (* ^^^^ This is for compat with the [[@@@part name]] delimiters *)
     | Part_begin of string * string
     | Part_end of string option
 
-  val parse_line : string -> part_decl
+  val parse_line : string -> t
 end
 
 (**/**)

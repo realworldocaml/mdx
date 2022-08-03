@@ -35,7 +35,7 @@ let rec remove_empty_heads = function
 let trim_empty_rev l = remove_empty_heads (List.rev (remove_empty_heads l))
 
 module Parse_parts = struct
-  type part_decl =
+  type t =
     | Normal of string
     | Compat_attr of string * string
     (* ^^^^ This is for compat with the [[@@@part name]] delimiters *)
