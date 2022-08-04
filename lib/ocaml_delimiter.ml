@@ -16,7 +16,7 @@
 
 type syntax = Cmt | Attr
 type part_begin = { indent : string; payload : string }
-type t = Part_begin of syntax * part_begin | Part_end of string option
+type t = Part_begin of syntax * part_begin | Part_end | Content of string
 
 module Regexp = struct
   let marker = Re.str "$MDX"
@@ -68,9 +68,9 @@ let parse_attr line =
       let name = Re.Group.get g 2 in
       let payload = Re.Group.get g 3 in
       match name with
-      | "part" -> Some (Part_begin (Attr, { indent; payload }))
-      | _ -> None)
-  | None -> None
+      | "part" -> [ Part_begin (Attr, { indent; payload }) ]
+      | _ -> [])
+  | None -> []
 
 let parse_cmt line =
   match Re.exec_opt Regexp.cmt line with
@@ -78,12 +78,16 @@ let parse_cmt line =
       let indent = Re.Group.get g 2 in
       match Re.Group.get g 3 with
       | "part-end" ->
-          let prefix = match Re.Group.get g 1 with "" -> None | s -> Some s in
-          Ok (Some (Part_end prefix))
+          let entries =
+            match Re.Group.get g 1 with
+            | "" -> [ Part_end ]
+            | s -> [ Content s; Part_end ]
+          in
+          Ok entries
       | s -> (
           match Astring.String.cut ~sep:"=" s with
           | Some ("part-begin", payload) ->
-              Ok (Some (Part_begin (Cmt, { indent; payload })))
+              Ok [ Part_begin (Cmt, { indent; payload }) ]
           | Some ("part-end", _) ->
               Util.Result.errorf
                 "'part-end' delimiter does not accept a value. Please write \
@@ -91,9 +95,9 @@ let parse_cmt line =
           | _ ->
               Util.Result.errorf "'%s' is not a valid ocaml delimiter for mdx."
                 line))
-  | None -> Ok None
+  | None -> Ok []
 
 let parse line =
   match parse_attr line with
-  | Some delimiter -> Ok (Some delimiter)
-  | None -> parse_cmt line
+  | [] -> parse_cmt line
+  | delimiters -> Ok delimiters

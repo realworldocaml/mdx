@@ -4,11 +4,11 @@ let parse_parts =
   let equal = ( = ) in
   let pp fmt = function
     | Parse_parts.Content s -> Fmt.pf fmt "Content: %S" s
-    | Compat_attr (n, sep_indent) ->
-        Fmt.pf fmt "Compat_attr (%S, %S)" n sep_indent
-    | Part_begin (n, sep_indent) ->
-        Fmt.pf fmt "Part_begin (%S, %S)" n sep_indent
-    | Part_end prefix -> Fmt.pf fmt "Part_end %a" Fmt.(option string) prefix
+    | Compat_attr { name; sep_indent } ->
+        Fmt.pf fmt "Compat_attr {name=%S; sep_indent=%S}" name sep_indent
+    | Part_begin { name; sep_indent } ->
+        Fmt.pf fmt "Part_begin {name=%S; sep_indent=%S}" name sep_indent
+    | Part_end -> Fmt.pf fmt "Part_end"
   in
   Alcotest.testable pp equal
 
@@ -17,20 +17,21 @@ let test_of_line =
     let test_name = Printf.sprintf "parse_line: %S" line in
     let test_fun () =
       let actual = Parse_parts.parse_line line in
-      Alcotest.(check parse_parts) test_name expected actual
+      Alcotest.(check (list parse_parts)) test_name expected actual
     in
     (test_name, `Quick, test_fun)
   in
   [
-    make_test ~line:"foo" ~expected:(Content "foo") ();
+    make_test ~line:"foo" ~expected:[ Content "foo" ] ();
     make_test ~line:"    (* $MDX part-begin=bar *)    "
-      ~expected:(Part_begin ("bar", "    "))
+      ~expected:[ Part_begin { name = "bar"; sep_indent = "    " } ]
       ();
     make_test ~line:"(* $MDX part-begin=bar     "
-      ~expected:(Content "(* $MDX part-begin=bar     ") ();
-    make_test ~line:"   (* $MDX part-end   *)   " ~expected:(Part_end None) ();
+      ~expected:[ Content "(* $MDX part-begin=bar     " ]
+      ();
+    make_test ~line:"   (* $MDX part-end   *)   " ~expected:[ Part_end ] ();
     make_test ~line:"    [@@@part \"foobar\"]    "
-      ~expected:(Compat_attr ("foobar", "    "))
+      ~expected:[ Compat_attr { name = "foobar"; sep_indent = "    " } ]
       ();
   ]
 

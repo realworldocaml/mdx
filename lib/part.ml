@@ -35,12 +35,14 @@ let rec remove_empty_heads = function
 let trim_empty_rev l = remove_empty_heads (List.rev (remove_empty_heads l))
 
 module Parse_parts = struct
+  type part_meta = { sep_indent : string; name : string }
+
   type t =
     | Content of string
-    | Compat_attr of string * string
+    | Compat_attr of part_meta
     (* ^^^^ This is for compat with the [[@@@part name]] delimiters *)
-    | Part_begin of string * string
-    | Part_end of string option
+    | Part_begin of part_meta
+    | Part_end
 
   let next_part ~name ~sep_indent ~is_begin_end_part lines_rev =
     let body =
@@ -53,57 +55,64 @@ module Parse_parts = struct
 
   let parse_line line =
     match Ocaml_delimiter.parse line with
-    | Ok (Some delim) -> (
-        match delim with
-        | Part_begin (syntax, { indent; payload }) -> (
-            match syntax with
-            | Attr -> Compat_attr (payload, indent)
-            | Cmt -> Part_begin (payload, indent))
-        | Part_end prefix -> Part_end prefix)
-    | Ok None -> Content line
+    | Ok [] -> [ Content line ]
+    | Ok delimiters ->
+        List.map
+          (function
+            | Ocaml_delimiter.Content s -> Content s
+            | Ocaml_delimiter.Part_begin
+                (syntax, { indent = sep_indent; payload = name }) -> (
+                match syntax with
+                | Attr -> Compat_attr { name; sep_indent }
+                | Cmt -> Part_begin { name; sep_indent })
+            | Part_end -> Part_end)
+          delimiters
     | Error (`Msg msg) ->
         Fmt.epr "Warning: %s\n" msg;
-        Content line
+        [ Content line ]
 
   let parsed_input_line i =
     match input_line i with
     | exception End_of_file -> None
     | line -> Some (parse_line line)
 
+  let parsed_list i =
+    let rec loop xs =
+      match parsed_input_line i with
+      | None -> List.rev xs
+      | Some inputs ->
+          let xs = List.rev_append inputs xs in
+          loop xs
+    in
+    loop []
+
   (* Once support for [@@@ parts] will be dropped `parse_part` should be much simpler *)
   let rec parse_parts input make_part current_part part_lines lineno =
     let open Util.Result.Infix in
     let lineno = lineno + 1 in
-    match parsed_input_line input with
-    | None -> (
+    match input with
+    | [] -> (
         match current_part with
         | Some part ->
             let msg = Printf.sprintf "File ended before part %s ended." part in
             Error (msg, lineno)
         | None -> Ok [ make_part ~is_begin_end_part:true part_lines ])
-    | Some part -> (
-        match (part, current_part) with
+    | parse_part :: input -> (
+        match (parse_part, current_part) with
         | Content line, _ ->
             parse_parts input make_part current_part (line :: part_lines) lineno
-        | Part_end line_prefix, Some _ ->
-            let part_lines =
-              match line_prefix with
-              | None -> part_lines
-              | Some line_prefix -> line_prefix :: part_lines
-            in
+        | Part_end, Some _ ->
             parse_parts input anonymous_part None [] lineno
             >>| List.cons (make_part ~is_begin_end_part:true part_lines)
-        | Part_end _, None -> Error ("There is no part to end.", lineno)
-        | Part_begin (next_part_name, sep_indent), None ->
-            let next_part = next_part ~name:next_part_name ~sep_indent in
-            let rcall =
-              parse_parts input next_part (Some next_part_name) [] lineno
-            in
+        | Part_end, None -> Error ("There is no part to end.", lineno)
+        | Part_begin { name; sep_indent }, None ->
+            let named_part = next_part ~name ~sep_indent in
+            let rcall = parse_parts input named_part (Some name) [] lineno in
             if part_lines = [] then rcall
               (* Ignore empty anonymous parts: needed for legacy support *)
             else
               rcall >>| List.cons (make_part ~is_begin_end_part:true part_lines)
-        | Compat_attr (name, sep_indent), None ->
+        | Compat_attr { name; sep_indent }, None ->
             let next_part = next_part ~name ~sep_indent in
             parse_parts input next_part None [] lineno
             >>| List.cons (make_part ~is_begin_end_part:false part_lines)
@@ -112,7 +121,8 @@ module Parse_parts = struct
             Error (msg, lineno))
 
   let of_file name =
-    let input = open_in name in
+    let channel = open_in name in
+    let input = parsed_list channel in
     match parse_parts input anonymous_part None [] 0 with
     | Ok parts -> parts
     | Error (msg, line) -> Fmt.failwith "In file %s, line %d: %s" name line msg
