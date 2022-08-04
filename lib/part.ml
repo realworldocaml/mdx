@@ -65,39 +65,39 @@ module Parse_parts = struct
         Fmt.epr "Warning: %s\n" msg;
         Content line
 
-  let input_line_err i =
+  let parsed_input_line i =
     match input_line i with
-    | exception End_of_file -> Error `End_of_file
-    | line -> Ok line
+    | exception End_of_file -> None
+    | line -> Some (parse_line line)
 
   (* Once support for [@@@ parts] will be dropped `parse_part` should be much simpler *)
-  let rec parse_parts input make_part current_part part_lines nline =
+  let rec parse_parts input make_part current_part part_lines lineno =
     let open Util.Result.Infix in
-    let nline = nline + 1 in
-    match input_line_err input with
-    | Error `End_of_file -> (
+    let lineno = lineno + 1 in
+    match parsed_input_line input with
+    | None -> (
         match current_part with
         | Some part ->
             let msg = Printf.sprintf "File ended before part %s ended." part in
-            Error (msg, nline)
+            Error (msg, lineno)
         | None -> Ok [ make_part ~is_begin_end_part:true part_lines ])
-    | Ok line -> (
-        match (parse_line line, current_part) with
+    | Some part -> (
+        match (part, current_part) with
         | Content line, _ ->
-            parse_parts input make_part current_part (line :: part_lines) nline
+            parse_parts input make_part current_part (line :: part_lines) lineno
         | Part_end line_prefix, Some _ ->
             let part_lines =
               match line_prefix with
               | None -> part_lines
               | Some line_prefix -> line_prefix :: part_lines
             in
-            parse_parts input anonymous_part None [] nline
+            parse_parts input anonymous_part None [] lineno
             >>| List.cons (make_part ~is_begin_end_part:true part_lines)
-        | Part_end _, None -> Error ("There is no part to end.", nline)
+        | Part_end _, None -> Error ("There is no part to end.", lineno)
         | Part_begin (next_part_name, sep_indent), None ->
             let next_part = next_part ~name:next_part_name ~sep_indent in
             let rcall =
-              parse_parts input next_part (Some next_part_name) [] nline
+              parse_parts input next_part (Some next_part_name) [] lineno
             in
             if part_lines = [] then rcall
               (* Ignore empty anonymous parts: needed for legacy support *)
@@ -105,11 +105,11 @@ module Parse_parts = struct
               rcall >>| List.cons (make_part ~is_begin_end_part:true part_lines)
         | Compat_attr (name, sep_indent), None ->
             let next_part = next_part ~name ~sep_indent in
-            parse_parts input next_part None [] nline
+            parse_parts input next_part None [] lineno
             >>| List.cons (make_part ~is_begin_end_part:false part_lines)
         | Part_begin _, Some p | Compat_attr _, Some p ->
             let msg = Printf.sprintf "Part %s has no end." p in
-            Error (msg, nline))
+            Error (msg, lineno))
 
   let of_file name =
     let input = open_in name in
