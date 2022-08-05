@@ -76,20 +76,21 @@ module Parse_parts = struct
     | exception End_of_file -> None
     | line -> Some (parse_line line)
 
-  let parsed_list i =
-    let rec loop xs =
+  let parsed_seq i =
+    let rec loop seq =
       match parsed_input_line i with
-      | None -> List.rev xs
+      | None -> seq
       | Some inputs ->
-          let xs = List.rev_append inputs xs in
-          loop xs
+          let inputs = List.to_seq inputs in
+          let tail = loop seq in
+          Seq.append inputs tail
     in
-    loop []
+    loop Seq.empty
 
   let parse_parts input =
     let open Util.Result.Infix in
     let* parts, make_part, current_part, part_lines, lineno =
-      List.fold_left
+      Seq.fold_left
         (fun acc parse_part ->
           let* parts, make_part, current_part, part_lines, lineno = acc in
           let lineno = lineno + 1 in
@@ -133,7 +134,7 @@ module Parse_parts = struct
 
   let of_file name =
     let channel = open_in name in
-    let input = parsed_list channel in
+    let input = parsed_seq channel in
     match parse_parts input with
     | Ok parts -> parts
     | Error (msg, line) -> Fmt.failwith "In file %s, line %d: %s" name line msg
