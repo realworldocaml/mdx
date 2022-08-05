@@ -9,11 +9,47 @@ it.
 
 {2 Description}
 
+This label allows you to specify the working directory from which the block
+should be evaluated.
+
 {2 Syntax}
+
+[dir=<value>]
+
+The dir label expects a single string value which corresponds to the path
+to the directory from which the block must be evaluated. It should be a path
+relative to the directory containing the current [.mli]/[.mld]/[.md] file.
+
+[.mli] example:
+{v
+(** We will list the files in subdir:
+    {@sh dir=subdir[
+    $ ls
+    something.ml something_else.ml
+    ]} *)
+v}
+
+[.md] example:
+{@markdown[
+We will list the files in subdir:
+<!-- $MDX dir=subdir -->
+```sh
+$ ls
+something.ml something_else.ml
+```
+]}
 
 {2 Applies to}
 
+- {{!page-types_of_blocks.ocaml_toplevel} OCaml Toplevel Blocks}
+- {{!page-types_of_blocks.ocaml} OCaml Blocks}
+- {{!page-types_of_blocks.file_include} File Include Blocks}
+- {{!page-types_of_blocks.shell} Shell Blocks}
+
 {2 Default}
+
+When absent, the block will be evaluated from the directory of
+the file being tested by MDX.
 
 {1:source_tree Source Tree}
 
@@ -29,11 +65,22 @@ it.
 
 {2 Description}
 
+This label allows you 
+
 {2 Syntax}
+
+[file=<value]
+
+The [file] label expects a single string value which corresponds to the path
 
 {2 Applies to}
 
+- {{!page-types_of_blocks.file_include} File Include Blocks}
+
 {2 Default}
+
+This label is mandatory for File Include Blocks and therefore has no default
+value.
 
 {1:part Part}
 
@@ -50,7 +97,7 @@ it.
 {2 Description}
 
 This label allows you to assign an environment to an OCaml block. That means
-you benefit from whole the code that has been previously evaluated in that
+you benefit from all the code that has been previously evaluated in that
 environment, be it from other code blocks or {{!page-preludes}preludes}.
 
 {2 Syntax}
@@ -63,10 +110,10 @@ name of the environment to use.
 [.mli] example:
 {v
 (** Here is how to use this function:
-  {@ocaml env=foo[
-  # f 0;;
-  - : int = 0
-  ]} *)
+    {@ocaml env=foo[
+    # f 0;;
+    - : int = 0
+    ]} *)
 v}
 
 [.md] example:
@@ -88,3 +135,138 @@ Here is how to use this function:
 
 When absent, the block will be evaluated in the default environment, e.g.
 the environment shared by all blocks without an [env] label.
+
+{1:skip Skip}
+
+{2 Description}
+
+This label allows you to explicitly ask MDX not to interpret a block, no
+matter its content.
+
+{2 Syntax}
+
+[skip]
+
+The [skip] label takes no value.
+
+[.mli] example:
+{v
+(** MDX should not interpret the following block:
+    {@ocaml skip[
+    # 1 + 1;;
+    - : int = 3
+    ]}
+v}
+
+[.md] example:
+{@markdown[
+MDX should not interpret the following block:
+<!-- $MDX skip -->
+```ocaml
+# 1 + 1;;
+- : int = 3
+```
+]}
+
+{2 Applies to}
+
+- {{!page-types_of_blocks.ocaml_toplevel} OCaml Toplevel Blocks}
+- {{!page-types_of_blocks.ocaml} OCaml Blocks}
+- {{!page-types_of_blocks.file_include} File Include Blocks}
+- {{!page-types_of_blocks.shell} Shell Blocks}
+
+{2 Default}
+
+By default MDX will interpret any block it knows how to deal with and skip
+any other block.
+
+{1:non_det Non Deterministic}
+
+{2 Description}
+
+{2 Syntax}
+
+{2 Applies to}
+
+{2 Default}
+
+{1:version Version}
+
+{2 Description}
+
+{2 Syntax}
+
+{2 Applies to}
+
+{2 Default}
+
+{1:set Set}
+
+{2 Description}
+
+{2 Syntax}
+
+{2 Applies to}
+
+{2 Default}
+
+{1:unset Unset}
+
+{2 Description}
+
+{2 Syntax}
+
+{2 Applies to}
+
+{2 Default}
+
+{1:type Type}
+
+{2 Description}
+
+This label allows you to explicitly set the type of the block as described
+in {{!page.types_of_blocks}this section}.
+Explicitly setting the type of the block instead of relying on MDX to infer
+it will provide better error messages and guidance in case of syntax errors or
+labels misuse.
+
+{2 Syntax}
+
+[type=<value>]
+
+The [type] label accepts one of the following values:
+- [toplevel] for OCaml Toplevel Blocks
+- [ocaml] for OCaml Blocks
+- [cram] for Shell Blocks
+- [include] for File Include Blocks
+
+[.mli] example:
+{v
+(** The following block is a toplevel block:
+  {@ocaml type=toplevel[
+  # 1 + 1;;
+  - : int = 2
+  ]} *)
+v}
+
+[.md] example:
+{@markdown[
+The following block is a toplevel block:
+<!-- $MDX type=toplevel -->
+```ocaml
+# 1 + 1;;
+- : int = 2
+```
+]}
+
+{2 Applies to}
+
+- {{!page-types_of_blocks.ocaml_toplevel} OCaml Toplevel Blocks}
+- {{!page-types_of_blocks.ocaml} OCaml Blocks}
+- {{!page-types_of_blocks.file_include} File Include Blocks}
+- {{!page-types_of_blocks.shell} Shell Blocks}
+
+{2 Default}
+
+By default, MDX will infer the type of the block based on its language header,
+its content and its labels.
