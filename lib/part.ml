@@ -83,7 +83,7 @@ module Parse_parts = struct
       | Some inputs ->
           let inputs = List.to_seq inputs in
           let tail = loop seq in
-          Seq.append inputs tail
+          Util.Seq.append inputs tail
     in
     loop Seq.empty
 

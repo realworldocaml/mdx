@@ -86,3 +86,7 @@ end
 module Int : sig
   val min : int -> int -> int
 end
+
+module Seq : sig
+  val append : 'a Seq.t -> 'a Seq.t -> 'a Seq.t
+end
