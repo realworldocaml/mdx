@@ -21,6 +21,11 @@ module Result : sig
 
     val ( >>| ) : ('a, 'err) result -> ('a -> 'b) -> ('b, 'err) result
     val ( >>! ) : ('a, [ `Msg of string ] list) result -> ('a -> int) -> int
+
+    val ( let* ) :
+      ('a, 'err) result -> ('a -> ('b, 'err) result) -> ('b, 'err) result
+
+    val ( let+ ) : ('a, 'err) result -> ('a -> 'b) -> ('b, 'err) result
   end
 
   val errorf :

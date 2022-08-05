@@ -86,44 +86,55 @@ module Parse_parts = struct
     in
     loop []
 
-  (* Once support for [@@@ parts] will be dropped `parse_part` should be much simpler *)
-  let rec parse_parts input make_part current_part part_lines lineno =
+  let parse_parts input =
     let open Util.Result.Infix in
-    let lineno = lineno + 1 in
-    match input with
-    | [] -> (
-        match current_part with
-        | Some part ->
-            let msg = Printf.sprintf "File ended before part %s ended." part in
-            Error (msg, lineno)
-        | None -> Ok [ make_part ~is_begin_end_part:true part_lines ])
-    | parse_part :: input -> (
-        match (parse_part, current_part) with
-        | Content line, _ ->
-            parse_parts input make_part current_part (line :: part_lines) lineno
-        | Part_end, Some _ ->
-            parse_parts input anonymous_part None [] lineno
-            >>| List.cons (make_part ~is_begin_end_part:true part_lines)
-        | Part_end, None -> Error ("There is no part to end.", lineno)
-        | Part_begin { name; sep_indent }, None ->
-            let named_part = next_part ~name ~sep_indent in
-            let rcall = parse_parts input named_part (Some name) [] lineno in
-            if part_lines = [] then rcall
-              (* Ignore empty anonymous parts: needed for legacy support *)
-            else
-              rcall >>| List.cons (make_part ~is_begin_end_part:true part_lines)
-        | Compat_attr { name; sep_indent }, None ->
-            let next_part = next_part ~name ~sep_indent in
-            parse_parts input next_part None [] lineno
-            >>| List.cons (make_part ~is_begin_end_part:false part_lines)
-        | Part_begin _, Some p | Compat_attr _, Some p ->
-            let msg = Printf.sprintf "Part %s has no end." p in
-            Error (msg, lineno))
+    let* parts, make_part, current_part, part_lines, lineno =
+      List.fold_left
+        (fun acc parse_part ->
+          let* parts, make_part, current_part, part_lines, lineno = acc in
+          let lineno = lineno + 1 in
+          match (parse_part, current_part) with
+          | Content line, _ ->
+              Ok (parts, make_part, current_part, line :: part_lines, lineno)
+          | Part_end, Some _ ->
+              let part = make_part ~is_begin_end_part:true part_lines in
+              Ok (part :: parts, anonymous_part, None, [], lineno)
+          | Part_end, None -> Error ("There is no part to end.", lineno)
+          | Part_begin { name; sep_indent }, None ->
+              let named_part = next_part ~name ~sep_indent in
+              let parts =
+                match part_lines with
+                | [] ->
+                    (* Ignore empty anonymous parts: needed for legacy support *)
+                    parts
+                | _ ->
+                    let part = make_part ~is_begin_end_part:true part_lines in
+                    part :: parts
+              in
+              Ok (parts, named_part, Some name, [], lineno)
+          | Compat_attr { name; sep_indent }, None ->
+              let named_part = next_part ~name ~sep_indent in
+              let part = make_part ~is_begin_end_part:false part_lines in
+              Ok (part :: parts, named_part, None, [], lineno)
+          | Part_begin _, Some p | Compat_attr _, Some p ->
+              let msg = Printf.sprintf "Part %s has no end." p in
+              Error (msg, lineno))
+        (Ok ([], anonymous_part, None, [], 0))
+        input
+    in
+    let* part =
+      match current_part with
+      | Some part ->
+          let msg = Printf.sprintf "File ended before part %s ended." part in
+          Error (msg, lineno + 1)
+      | None -> Ok (make_part ~is_begin_end_part:true part_lines)
+    in
+    part :: parts |> List.rev |> Result.ok
 
   let of_file name =
     let channel = open_in name in
     let input = parsed_list channel in
-    match parse_parts input anonymous_part None [] 0 with
+    match parse_parts input with
     | Ok parts -> parts
     | Error (msg, line) -> Fmt.failwith "In file %s, line %d: %s" name line msg
 end

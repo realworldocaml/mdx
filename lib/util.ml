@@ -27,6 +27,9 @@ module Result = struct
             (fun (`Msg m) -> Printf.eprintf "[mdx] Fatal error: %s\n" m)
             l;
           1
+
+    let ( let* ) = ( >>= )
+    let ( let+ ) = ( >>| )
   end
 
   let errorf fmt = Format.ksprintf (fun s -> Error (`Msg s)) fmt
