@@ -44,14 +44,14 @@ module Parse_parts = struct
     | Part_begin of part_meta
     | Part_end
 
-  let next_part ~name ~sep_indent ~is_begin_end_part lines_rev =
+  let next_part { name; sep_indent } ~is_begin_end_part lines_rev =
     let body =
       if is_begin_end_part then String.concat "\n" (List.rev lines_rev)
       else "\n" ^ String.concat "\n" (trim_empty_rev lines_rev)
     in
     Part.v ~name ~sep_indent ~body
 
-  let anonymous_part = next_part ~name:"" ~sep_indent:""
+  let anonymous_part = next_part { name = ""; sep_indent = "" }
 
   let parse_line line =
     match Ocaml_delimiter.parse line with
@@ -101,8 +101,8 @@ module Parse_parts = struct
               let part = make_part ~is_begin_end_part:true part_lines in
               Ok (part :: parts, anonymous_part, None, [], lineno)
           | Part_end, None -> Error ("There is no part to end.", lineno)
-          | Part_begin { name; sep_indent }, None ->
-              let named_part = next_part ~name ~sep_indent in
+          | Part_begin meta, None ->
+              let named_part = next_part meta in
               let parts =
                 match part_lines with
                 | [] ->
@@ -112,9 +112,9 @@ module Parse_parts = struct
                     let part = make_part ~is_begin_end_part:true part_lines in
                     part :: parts
               in
-              Ok (parts, named_part, Some name, [], lineno)
-          | Compat_attr { name; sep_indent }, None ->
-              let named_part = next_part ~name ~sep_indent in
+              Ok (parts, named_part, Some meta.name, [], lineno)
+          | Compat_attr meta, None ->
+              let named_part = next_part meta in
               let part = make_part ~is_begin_end_part:false part_lines in
               Ok (part :: parts, named_part, None, [], lineno)
           | Part_begin _, Some p | Compat_attr _, Some p ->
