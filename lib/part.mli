@@ -47,7 +47,6 @@ module Internal : sig
       | Part_begin of part_meta
       | Part_end
 
-    val parse_line : string -> t list
     val parse : string -> (t list, [> `Msg of string ]) result
   end
 end
