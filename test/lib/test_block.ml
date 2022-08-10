@@ -32,7 +32,7 @@ let test_mk =
                 `Msg ({|File "_none_", line 1: invalid code block: |} ^ m))
           expected
       in
-      Alcotest.(check (result Testable.block Testable.msg))
+      Alcotest.(check (Testable.errormsg Testable.block))
         test_name expected actual
     in
     (test_name, `Quick, test_fun)
