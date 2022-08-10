@@ -23,7 +23,6 @@ module Cram = Cram
 module Deprecated = Deprecated
 module Document = Document
 module Toplevel = Toplevel
-module Ocaml_delimiter = Ocaml_delimiter
 module Part = Part
 module Block = Block
 module Mli_parser = Mli_parser

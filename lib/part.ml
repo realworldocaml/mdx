@@ -35,11 +35,105 @@ let rec remove_empty_heads = function
 let trim_empty_rev l = remove_empty_heads (List.rev (remove_empty_heads l))
 
 module Parse_parts = struct
-  type part_meta = Ocaml_delimiter.part_meta
-  type t = Ocaml_delimiter.t
+  type part_meta = { sep_indent : string; name : string }
 
-  let next_part Ocaml_delimiter.{ name; sep_indent } ~is_begin_end_part
-      lines_rev =
+  type t =
+    | Content of string
+    | Compat_attr of part_meta
+    (* ^^^^ This is for compat with the [[@@@part name]] delimiters *)
+    | Part_begin of part_meta
+    | Part_end
+
+  module Regexp = struct
+    let marker = Re.str "$MDX"
+    let spaces = Re.rep1 Re.space
+    let id = Re.(rep1 (alt [ alnum; char '_'; char '-'; char '=' ]))
+    let ws = Re.(rep space)
+
+    let cmt =
+      let open Re in
+      compile
+      @@ seq
+           [
+             group (non_greedy (rep any));
+             group ws;
+             str "(*";
+             spaces;
+             marker;
+             spaces;
+             group id;
+             spaces;
+             str "*)";
+           ]
+
+    let attribute =
+      let open Re in
+      compile @@ whole_string
+      @@ seq
+           [
+             group ws;
+             str "[@@@";
+             ws;
+             group id;
+             ws;
+             str "\"";
+             group id;
+             str "\"";
+             ws;
+             str "]";
+             ws;
+             opt (str ";;");
+             ws;
+           ]
+  end
+
+  let parse_attr line =
+    match Re.exec_opt Regexp.attribute line with
+    | Some g -> (
+        let sep_indent = Re.Group.get g 1 in
+        let name = Re.Group.get g 2 in
+        let payload = Re.Group.get g 3 in
+        match name with
+        | "part" -> [ Compat_attr { sep_indent; name = payload } ]
+        | _ -> [])
+    | None -> []
+
+  let parse_cmt line =
+    match Re.exec_opt Regexp.cmt line with
+    | Some g -> (
+        let sep_indent = Re.Group.get g 2 in
+        match Re.Group.get g 3 with
+        | "part-end" ->
+            let entries =
+              match Re.Group.get g 1 with
+              | "" -> [ Part_end ]
+              | s -> [ Content s; Part_end ]
+            in
+            Ok entries
+        | s -> (
+            match Astring.String.cut ~sep:"=" s with
+            | Some ("part-begin", name) ->
+                Ok [ Part_begin { sep_indent; name } ]
+            | Some ("part-end", _) ->
+                Util.Result.errorf
+                  "'part-end' delimiter does not accept a value. Please write \
+                   '(* $MDX part-end *)' instead."
+            | _ ->
+                Util.Result.errorf
+                  "'%s' is not a valid ocaml delimiter for mdx." line))
+    | None -> Ok []
+
+  let parse line =
+    match parse_attr line with
+    | [] -> (
+        let open Util.Result.Infix in
+        let* delimiters = parse_cmt line in
+        match delimiters with
+        | [] -> Ok [ Content line ]
+        | delimiters -> Ok delimiters)
+    | delimiters -> Ok delimiters
+
+  let next_part { name; sep_indent } ~is_begin_end_part lines_rev =
     let body =
       if is_begin_end_part then String.concat "\n" (List.rev lines_rev)
       else "\n" ^ String.concat "\n" (trim_empty_rev lines_rev)
@@ -49,7 +143,7 @@ module Parse_parts = struct
   let anonymous_part = next_part { name = ""; sep_indent = "" }
 
   let parse_line line =
-    match Ocaml_delimiter.parse line with
+    match parse line with
     | Ok content -> content
     | Error (`Msg msg) ->
         Fmt.epr "Warning: %s\n" msg;
@@ -79,7 +173,7 @@ module Parse_parts = struct
           let* parts, make_part, current_part, part_lines, lineno = acc in
           let lineno = lineno + 1 in
           match (parse_part, current_part) with
-          | Ocaml_delimiter.Content line, _ ->
+          | Content line, _ ->
               Ok (parts, make_part, current_part, line :: part_lines, lineno)
           | Part_end, Some _ ->
               let part = make_part ~is_begin_end_part:true part_lines in
@@ -162,3 +256,7 @@ let contents file =
   let lines = List.rev lines in
   let lines = String.concat "\n" lines in
   String.trim lines ^ "\n"
+
+module Internal = struct
+  module Parse_parts = Parse_parts
+end
