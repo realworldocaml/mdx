@@ -1,9 +1,10 @@
 open Mdx.Part
+module D = Mdx.Ocaml_delimiter
 
 let parse_parts =
   let equal = ( = ) in
   let pp fmt = function
-    | Parse_parts.Content s -> Fmt.pf fmt "Content: %S" s
+    | D.Content s -> Fmt.pf fmt "Content: %S" s
     | Compat_attr { name; sep_indent } ->
         Fmt.pf fmt "Compat_attr {name=%S; sep_indent=%S}" name sep_indent
     | Part_begin { name; sep_indent } ->
