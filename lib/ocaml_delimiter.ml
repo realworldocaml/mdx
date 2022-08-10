@@ -14,9 +14,14 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-type syntax = Cmt | Attr
-type part_begin = { indent : string; payload : string }
-type t = Part_begin of syntax * part_begin | Part_end | Content of string
+type part_meta = { sep_indent : string; name : string }
+
+type t =
+  | Content of string
+  | Compat_attr of part_meta
+  (* ^^^^ This is for compat with the [[@@@part name]] delimiters *)
+  | Part_begin of part_meta
+  | Part_end
 
 module Regexp = struct
   let marker = Re.str "$MDX"
@@ -64,18 +69,18 @@ end
 let parse_attr line =
   match Re.exec_opt Regexp.attribute line with
   | Some g -> (
-      let indent = Re.Group.get g 1 in
+      let sep_indent = Re.Group.get g 1 in
       let name = Re.Group.get g 2 in
       let payload = Re.Group.get g 3 in
       match name with
-      | "part" -> [ Part_begin (Attr, { indent; payload }) ]
+      | "part" -> [ Compat_attr { sep_indent; name = payload } ]
       | _ -> [])
   | None -> []
 
 let parse_cmt line =
   match Re.exec_opt Regexp.cmt line with
   | Some g -> (
-      let indent = Re.Group.get g 2 in
+      let sep_indent = Re.Group.get g 2 in
       match Re.Group.get g 3 with
       | "part-end" ->
           let entries =
@@ -86,8 +91,7 @@ let parse_cmt line =
           Ok entries
       | s -> (
           match Astring.String.cut ~sep:"=" s with
-          | Some ("part-begin", payload) ->
-              Ok [ Part_begin (Cmt, { indent; payload }) ]
+          | Some ("part-begin", name) -> Ok [ Part_begin { sep_indent; name } ]
           | Some ("part-end", _) ->
               Util.Result.errorf
                 "'part-end' delimiter does not accept a value. Please write \
@@ -99,5 +103,10 @@ let parse_cmt line =
 
 let parse line =
   match parse_attr line with
-  | [] -> parse_cmt line
+  | [] -> (
+      let open Util.Result.Infix in
+      let* delimiters = parse_cmt line in
+      match delimiters with
+      | [] -> Ok [ Content line ]
+      | delimiters -> Ok delimiters)
   | delimiters -> Ok delimiters

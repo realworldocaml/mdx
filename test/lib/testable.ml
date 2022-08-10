@@ -8,16 +8,15 @@ let msg =
 
 let ocaml_delimiter =
   let open Mdx.Ocaml_delimiter in
-  let pp fs = function
-    | Part_begin (src, { indent; payload }) ->
-        Fmt.string fs "Part_begin";
-        (match src with
-        | Cmt -> Fmt.string fs "Cmt"
-        | Attr -> Fmt.string fs "Attr");
-        Fmt.fmt "indent:%s" fs indent;
-        Fmt.fmt "payload:%s" fs payload
-    | Part_end -> Fmt.pf fs "Part_end"
-    | Content s -> Fmt.pf fs "Content %S" s
+  let pp_part_meta pps { sep_indent; name } =
+    Fmt.pf pps "{sep_indent=%s; name=%s}" sep_indent name
+  in
+  let pp pps = function
+    | Part_begin part_meta -> Fmt.pf pps "Part_begin %a" pp_part_meta part_meta
+    | Part_end -> Fmt.pf pps "Part_end"
+    | Compat_attr part_meta ->
+        Fmt.pf pps "Compat_attr %a" pp_part_meta part_meta
+    | Content s -> Fmt.pf pps "Content %S" s
   in
   Alcotest.testable pp ( = )
 

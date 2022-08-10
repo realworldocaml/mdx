@@ -14,10 +14,13 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-(** The [Attr] syntax is legacy, its support will be dropped in 2.x in favor of [Cmt]. *)
-type syntax = Cmt | Attr
+type part_meta = { sep_indent : string; name : string }
 
-type part_begin = { indent : string; payload : string }
-type t = Part_begin of syntax * part_begin | Part_end | Content of string
+type t =
+  | Content of string
+  | Compat_attr of part_meta
+  (* ^^^^ This is for compat with the [[@@@part name]] delimiters *)
+  | Part_begin of part_meta
+  | Part_end
 
 val parse : string -> (t list, [ `Msg of string ]) result

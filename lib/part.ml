@@ -35,9 +35,12 @@ let rec remove_empty_heads = function
 let trim_empty_rev l = remove_empty_heads (List.rev (remove_empty_heads l))
 
 module Parse_parts = struct
-  type part_meta = { sep_indent : string; name : string }
+  type part_meta = Ocaml_delimiter.part_meta = {
+    sep_indent : string;
+    name : string;
+  }
 
-  type t =
+  type t = Ocaml_delimiter.t =
     | Content of string
     | Compat_attr of part_meta
     (* ^^^^ This is for compat with the [[@@@part name]] delimiters *)
@@ -55,18 +58,7 @@ module Parse_parts = struct
 
   let parse_line line =
     match Ocaml_delimiter.parse line with
-    | Ok [] -> [ Content line ]
-    | Ok delimiters ->
-        List.map
-          (function
-            | Ocaml_delimiter.Content s -> Content s
-            | Ocaml_delimiter.Part_begin
-                (syntax, { indent = sep_indent; payload = name }) -> (
-                match syntax with
-                | Attr -> Compat_attr { name; sep_indent }
-                | Cmt -> Part_begin { name; sep_indent })
-            | Part_end -> Part_end)
-          delimiters
+    | Ok content -> content
     | Error (`Msg msg) ->
         Fmt.epr "Warning: %s\n" msg;
         [ Content line ]
