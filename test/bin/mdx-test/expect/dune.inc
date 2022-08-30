@@ -276,6 +276,18 @@
  (action (diff multilines/test-case.md multilines.actual)))
 
 (rule
+ (target multilines-mli.actual)
+ (deps (package mdx) (source_tree multilines-mli))
+ (action
+  (with-stdout-to %{target}
+   (chdir multilines-mli
+    (run ocaml-mdx test --output - test-case.mli)))))
+
+(rule
+ (alias runtest)
+ (action (diff multilines-mli/test-case.mli multilines-mli.actual)))
+
+(rule
  (target non-det.actual)
  (deps (package mdx) (source_tree non-det))
  (action
