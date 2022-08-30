@@ -22,19 +22,20 @@ This works for normal OCaml fragments:
 ]}
 
 The formatting for multilines in .mli files is the following:
-- Everything is indented with two spaces after the column of the opening code
-  block.
+- The first line is indented two spaces after the comment opening
+- The other lines are indented to keep the original indentation relative to the
+  first line
 
   {[
     match None with
     | None -> ()
     | Some a -> match a with
-    | None -> ()
-    | Some b -> b
+      | None -> ()
+      | Some b -> b
   ]}
 
 But it does not work fine for toplevel (see [multilines/test-case.md] for the
-correct definition of [fact]):
+correct definition of [fact], which get erased by [mdx]):
 
 {[
   # let rec fact = function;;
