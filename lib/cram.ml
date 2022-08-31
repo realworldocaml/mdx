@@ -67,37 +67,40 @@ let pp ?pad ppf (t : t) =
   pp_lines (Output.pp ?pad) ppf t.output;
   pp_exit_code ?pad ppf t.exit_code
 
-let hpad_of_lines = function
+let rec hpad_of_lines = function
   | [] -> 0
-  | h :: _ ->
-      let i = ref 0 in
-      while !i < String.length h && h.[!i] = ' ' do
-        incr i
-      done;
-      !i
+  | h :: hs -> (
+      match String.equal String.empty h with
+      | true -> hpad_of_lines hs
+      | false ->
+          let i = ref 0 in
+          while !i < String.length h && h.[!i] = ' ' do
+            incr i
+          done;
+          !i)
 
-let of_lines ~syntax ~(loc : Location.t) t =
-  let pos = loc.loc_start in
-  let hpad =
-    match syntax with Syntax.Mli -> pos.pos_cnum + 2 | _ -> hpad_of_lines t
-  in
+let is_whitespace s = s |> String.trim |> String.is_empty
+
+let of_lines ~syntax:_ ~loc:_ t =
+  let hpad = hpad_of_lines t in
   let unpad line =
-    match syntax with
-    | Syntax.Mli -> String.trim line
-    | _ ->
-        if String.is_empty line then line
-        else if String.length line < hpad then
-          Fmt.failwith "invalid padding: %S" line
-        else String.with_index_range line ~first:hpad
+    match is_whitespace line with
+    | true -> String.with_index_range line ~first:hpad
+    | false -> (
+        match String.length line < hpad with
+        | true -> Fmt.failwith "invalid padding: %S" line
+        | false -> String.with_index_range line ~first:hpad)
   in
   let lines = List.map unpad t in
+  (* remove leading empty line, if any which is true for multipline blocks *)
+  let lines = match lines with "" :: lines -> lines | lines -> lines in
   let lines =
     Lexer_cram.token (Lexing.from_string (String.concat ~sep:"\n" lines))
   in
-  let vpad = match syntax with Syntax.Mli -> 1 | _ -> 0 in
+  let vpad = 0 in
   Log.debug (fun l ->
       l "Cram.of_lines (pad=%d) %a" hpad Fmt.(Dump.list dump_line) lines);
-  let mk command output exit_code =
+  let mk command output ~exit:exit_code =
     { command; output = List.rev output; exit_code; vpad }
   in
   let rec command_cont acc = function
@@ -107,15 +110,15 @@ let of_lines ~syntax ~(loc : Location.t) t =
   in
   let rec aux command output acc = function
     | [] when command = [] -> List.rev acc
-    | [] -> List.rev (mk command output 0 :: acc)
-    | `Exit i :: t -> aux [] [] (mk command output i :: acc) t
+    | [] -> List.rev (mk command output ~exit:0 :: acc)
+    | `Exit exit :: t -> aux [] [] (mk command output ~exit :: acc) t
     | (`Ellipsis as o) :: t -> aux command (o :: output) acc t
     | `Command cmd :: t ->
         if command = [] then aux [ cmd ] [] acc t
-        else aux [ cmd ] [] (mk command output 0 :: acc) t
+        else aux [ cmd ] [] (mk command output ~exit:0 :: acc) t
     | `Command_first cmd :: t ->
         let cmd, t = command_cont [ cmd ] t in
-        aux cmd [] (mk command output 0 :: acc) t
+        aux cmd [] (mk command output ~exit:0 :: acc) t
     | (`Output _ as o) :: t -> aux command (o :: output) acc t
     | (`Command_last s | `Command_cont s) :: t ->
         aux command output acc (`Output s :: t)

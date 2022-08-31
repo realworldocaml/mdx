@@ -33,4 +33,15 @@ The formatting for multilines in .mli files is the following:
       | None -> ()
       | Some b -> b
   ]}
+
+It should also work fine for toplevel descriptions (as in
+[multilines/test-case.md]):
+
+{@ocaml[
+  # let rec fact = function
+    | 1 -> 1
+    | n -> n * fact (n-1)
+    ;;
+  val fact : int -> int = <fun>
+]}
 *)

@@ -148,32 +148,35 @@ let dump ppf ({ loc; section; labels; contents; value; _ } as b) =
     Fmt.(Dump.list dump_string)
     contents dump_value value
 
-let pp_lines syntax t =
-  let pp =
-    match syntax with
-    | Some Syntax.Cram -> Fmt.fmt "  %s"
-    | Some Syntax.Mli ->
-        fun ppf -> Fmt.fmt "%*s%s" ppf (t.loc.loc_start.pos_cnum + 2) ""
-    | _ -> Fmt.string
+let pp_lines syntax _t ppf lines =
+  let print_line ppf first last line =
+    (match syntax with
+    | Some Syntax.Cram -> Fmt.pf ppf "%s" line
+    | Some Syntax.Mli -> (
+        match (first, last) with
+        | true, _ | _, true -> Fmt.pf ppf "%s" (String.trim line)
+        | false, false -> Fmt.pf ppf "%s" line)
+    | Some Syntax.Normal | None -> Fmt.pf ppf "%s" line);
+    match last with false -> Fmt.pf ppf "\n" | true -> ()
   in
-  Fmt.(list ~sep:(any "\n") pp)
 
-let lstrip strings =
-  let hpad = Misc.hpad_of_lines strings in
-  List.map
-    (fun string ->
-      let first = Util.Int.min (Misc.hpad_of_lines [ string ]) hpad in
-      Astring.String.with_index_range string ~first)
-    strings
+  let rec loop lines is_first =
+    match lines with
+    | [] -> ()
+    | [ line ] -> print_line ppf false true line
+    | line :: lines ->
+        print_line ppf is_first false line;
+        loop lines false
+  in
+  loop lines true
 
 let pp_contents ?syntax ppf t =
   match (syntax, t.contents) with
   | Some Syntax.Mli, [ line ] -> Fmt.pf ppf "%s" line
-  | Some Syntax.Mli, lines ->
-      Fmt.pf ppf "@\n%a@\n" (pp_lines syntax t) (lstrip lines)
+  | Some Syntax.Mli, lines -> Fmt.pf ppf "%a" (pp_lines syntax t) lines
   | (Some Cram | Some Normal | None), [] -> ()
-  | (Some Cram | Some Normal | None), _ ->
-      Fmt.pf ppf "%a\n" (pp_lines syntax t) t.contents
+  | (Some Cram | Some Normal | None), lines ->
+      Fmt.pf ppf "%a\n" (pp_lines syntax t) lines
 
 let pp_errors ppf t =
   match t.value with
@@ -209,7 +212,7 @@ let pp_header ?syntax ppf t =
           Fmt.pf ppf "<-- non-deterministic command\n"
       | _ -> failwith "cannot happen: checked during parsing")
   | Some Syntax.Mli -> ()
-  | _ ->
+  | Some Syntax.Normal | None ->
       if t.legacy_labels then
         Fmt.pf ppf "```%a%a\n"
           Fmt.(option Header.pp)

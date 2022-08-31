@@ -16,14 +16,17 @@
 
 open Astring
 
-let hpad_of_lines = function
+let rec hpad_of_lines = function
   | [] -> 0
-  | h :: _ ->
-      let i = ref 0 in
-      while !i < String.length h && h.[!i] = ' ' do
-        incr i
-      done;
-      !i
+  | h :: hs -> (
+      match String.is_empty @@ String.trim h with
+      | true -> hpad_of_lines hs
+      | false ->
+          let i = ref 0 in
+          while !i < String.length h && h.[!i] = ' ' do
+            incr i
+          done;
+          !i)
 
 let pp_pad ppf = function
   | 0 -> ()

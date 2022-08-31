@@ -99,8 +99,10 @@ let resolve_root file dir root =
   match root with None -> dir / file | Some r -> r / dir / file
 
 let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
+  (* TODO: for some reason this doesn't use Block.pp *)
   Block.pp_header ?syntax ppf t;
-  let pad = match syntax with Some Cram -> pad + 2 | _ -> pad in
+  (* TODO: this is ugly but required to print multiline cram blocks in Mli correctly *)
+  (match syntax with Some Mli -> Fmt.pf ppf "\n" | _ -> ());
   List.iter
     (fun test ->
       let root = root_dir ?root ~block:t () in
