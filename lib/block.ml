@@ -158,15 +158,19 @@ let pp_lines syntax t =
   in
   Fmt.(list ~sep:(any "\n") pp)
 
-let lstrip string =
-  let hpad = Misc.hpad_of_lines [ string ] in
-  Astring.String.with_index_range string ~first:hpad
+let lstrip strings =
+  let hpad = Misc.hpad_of_lines strings in
+  List.map
+    (fun string ->
+      let first = Util.Int.min (Misc.hpad_of_lines [ string ]) hpad in
+      Astring.String.with_index_range string ~first)
+    strings
 
 let pp_contents ?syntax ppf t =
   match (syntax, t.contents) with
   | Some Syntax.Mli, [ line ] -> Fmt.pf ppf "%s" line
   | Some Syntax.Mli, lines ->
-      Fmt.pf ppf "@\n%a@\n" (pp_lines syntax t) (List.map lstrip lines)
+      Fmt.pf ppf "@\n%a@\n" (pp_lines syntax t) (lstrip lines)
   | (Some Cram | Some Normal | None), [] -> ()
   | (Some Cram | Some Normal | None), _ ->
       Fmt.pf ppf "%a\n" (pp_lines syntax t) t.contents

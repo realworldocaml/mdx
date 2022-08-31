@@ -77,3 +77,7 @@ module Process : sig
       Exit code is the same as the child process if it exits normally, or 255
       otherwise. *)
 end
+
+module Int : sig
+  val min : int -> int -> int
+end

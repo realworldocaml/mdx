@@ -6,6 +6,8 @@
 
 #### Changed
 
+- Preserve indentation in multiline OCaml blocks in .mli files (#395, @panglesd)
+
 #### Deprecated
 
 #### Fixed
