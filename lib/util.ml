@@ -116,3 +116,7 @@ module Process = struct
   let wait ~pid =
     match snd (Unix.waitpid [] pid) with WEXITED n -> n | _ -> 255
 end
+
+module Int = struct
+  let min a b = if a < b then a else b
+end

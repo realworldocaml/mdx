@@ -162,8 +162,7 @@ let lstrip strings =
   let hpad = Misc.hpad_of_lines strings in
   List.map
     (fun string ->
-      let min a b = if a < b then a else b in
-      let first = min (Misc.hpad_of_lines [ string ]) hpad in
+      let first = Util.Int.min (Misc.hpad_of_lines [ string ]) hpad in
       Astring.String.with_index_range string ~first)
     strings
 
