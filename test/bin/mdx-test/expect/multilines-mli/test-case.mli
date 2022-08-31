@@ -33,13 +33,4 @@ The formatting for multilines in .mli files is the following:
       | None -> ()
       | Some b -> b
   ]}
-
-But it does not work fine for toplevel (see [multilines/test-case.md] for the
-correct definition of [fact], which get erased by [mdx]):
-
-{[
-  # let rec fact = function;;
-  Line 1, characters 24-26:
-  Error: Syntax error
-]}
 *)
