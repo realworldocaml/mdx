@@ -1,4 +1,4 @@
-This tests that erros are properly reported when the `block-type` label
+This tests that erros are properly reported when the `type` label
 is misused.
 
 It requires a value
@@ -7,7 +7,7 @@ It requires a value
 ```ocaml
 ```
 
-It only accept a fixed set of values
+It only accepts a fixed set of values
 
 <!-- $MDX type=invalid -->
 ```ocaml

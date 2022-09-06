@@ -1,6 +1,6 @@
 It is possible to explicitly state the type of a block using the
-`block-type` label, working around language header and content based
-inference which can sometime lead to troublesome error messages.
+`type` label to bypass the language header + content based inference,
+providing better, more focused error messages.
 
 The following blocks use a volontarily misleading language header that would
 normally lead to errors if we let MDX infer the type of block based on them.
