@@ -27,6 +27,9 @@ module Result = struct
             (fun (`Msg m) -> Printf.eprintf "[mdx] Fatal error: %s\n" m)
             l;
           1
+
+    let ( let* ) = ( >>= )
+    let ( let+ ) = ( >>| )
   end
 
   let errorf fmt = Format.ksprintf (fun s -> Error (`Msg s)) fmt
@@ -119,4 +122,12 @@ end
 
 module Int = struct
   let min a b = if a < b then a else b
+end
+
+module Seq = struct
+  (* [Seq.append] was added in 4.11, implement it for older versions *)
+  let rec append seq1 seq2 () =
+    match seq1 () with
+    | Seq.Nil -> seq2 ()
+    | Seq.Cons (x, next) -> Seq.Cons (x, append next seq2)
 end
