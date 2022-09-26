@@ -37,13 +37,9 @@ let get_files dir =
   read_dir dir |> List.filter is_file
 
 let cwd_options_file = "test-case.opts"
-
 let cwd_test_file_md = "test-case.md"
-
 let cwd_test_file_t = "test-case.t"
-
 let cwd_test_file_mli = "test-case.mli"
-
 let cwd_enabled_if_file = "test-case.enabled-if"
 
 type dir = {
@@ -148,16 +144,19 @@ let run generator =
   let cmds =
     Term.
       [
-        (const (rule_gen generator `Test_expect) $ const (), info "test_expect");
-        ( const (rule_gen generator `Test_failure) $ const (),
-          info "test_failure" );
+        (let term = const (rule_gen generator `Test_expect) $ const () in
+         let info = Cmd.info "test_expect" in
+         Cmd.v info term);
+        (let term = const (rule_gen generator `Test_failure) $ const () in
+         let info = Cmd.info "test_failure" in
+         Cmd.v info term);
       ]
   in
-  let default =
+  let info =
     let doc = "Generate dune files for the binary tests." in
-    let exits = Term.default_exits in
     let man = [] in
-    Term.
-      (ret (const (`Help (`Auto, None))), info "gen_dune_rules" ~doc ~exits ~man)
+    Cmd.info "gen_dune_rules" ~doc ~man
   in
-  Term.exit (Term.eval_choice default cmds)
+  let default = Term.(ret (const (`Help (`Auto, None)))) in
+  let group = Cmd.group ~default info cmds in
+  Stdlib.exit @@ Cmd.eval group

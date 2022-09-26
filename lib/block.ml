@@ -14,8 +14,21 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Result
 open Util.Result.Infix
+
+let loc_error ~loc fmt =
+  Format.kasprintf
+    (fun s -> Error (`Msg s))
+    ("%a: invalid code block: " ^^ fmt)
+    Stable_printer.Location.pp loc
+
+let locate_error_msg ~loc s =
+  Format.asprintf "%a: invalid code block: %s" Stable_printer.Location.pp loc s
+
+let locate_errors ~loc r =
+  Result.map_error
+    (fun l -> List.map (fun (`Msg m) -> `Msg (locate_error_msg ~loc m)) l)
+    r
 
 module Header = struct
   type t = Shell of [ `Sh | `Bash ] | OCaml | Other of string
@@ -43,6 +56,25 @@ end
 
 type section = int * string
 
+module Raw = struct
+  type t =
+    | Include of { loc : Location.t; section : section option; labels : string }
+    | Any of {
+        loc : Location.t;
+        section : section option;
+        header : string;
+        contents : string list;
+        label_cmt : string option;
+        legacy_labels : string;
+        errors : Output.t list;
+      }
+
+  let make ~loc ~section ~header ~contents ~label_cmt ~legacy_labels ~errors =
+    Any { loc; section; header; contents; label_cmt; legacy_labels; errors }
+
+  let make_include ~loc ~section ~labels = Include { loc; section; labels }
+end
+
 type cram_value = { language : [ `Sh | `Bash ]; non_det : Label.non_det option }
 
 type ocaml_value = {
@@ -52,9 +84,7 @@ type ocaml_value = {
 }
 
 type toplevel_value = { env : Ocaml_env.t; non_det : Label.non_det option }
-
 type include_ocaml_file = { part_included : string option }
-
 type include_other_file = { header : Header.t option }
 
 type include_file_kind =
@@ -62,7 +92,6 @@ type include_file_kind =
   | Fk_other of include_other_file
 
 type include_value = { file_included : string; file_kind : include_file_kind }
-
 type raw_value = { header : Header.t option }
 
 type value =
@@ -87,7 +116,6 @@ type t = {
 }
 
 let dump_string ppf s = Fmt.pf ppf "%S" s
-
 let dump_section = Fmt.(Dump.pair int string)
 
 let header t =
@@ -110,7 +138,7 @@ let dump ppf ({ loc; section; labels; contents; value; _ } as b) =
   Fmt.pf ppf
     "{@[loc: %a;@ section: %a;@ labels: %a;@ header: %a;@ contents: %a;@ \
      value: %a@]}"
-    Stable_printer.Location.print_loc loc
+    Stable_printer.Location.pp loc
     Fmt.(Dump.option dump_section)
     section
     Fmt.Dump.(list Label.pp)
@@ -128,17 +156,21 @@ let pp_lines syntax t =
         fun ppf -> Fmt.fmt "%*s%s" ppf (t.loc.loc_start.pos_cnum + 2) ""
     | _ -> Fmt.string
   in
-  Fmt.(list ~sep:(unit "\n") pp)
+  Fmt.(list ~sep:(any "\n") pp)
 
-let lstrip string =
-  let hpad = Misc.hpad_of_lines [ string ] in
-  Astring.String.with_index_range string ~first:hpad
+let lstrip strings =
+  let hpad = Misc.hpad_of_lines strings in
+  List.map
+    (fun string ->
+      let first = Util.Int.min (Misc.hpad_of_lines [ string ]) hpad in
+      Astring.String.with_index_range string ~first)
+    strings
 
 let pp_contents ?syntax ppf t =
   match (syntax, t.contents) with
-  | Some Syntax.Mli, [ _ ] -> Fmt.pf ppf "%s" (String.concat "\n" t.contents)
-  | Some Syntax.Mli, _ ->
-      Fmt.pf ppf "\n%a" (pp_lines syntax t) (List.map lstrip t.contents)
+  | Some Syntax.Mli, [ line ] -> Fmt.pf ppf "%s" line
+  | Some Syntax.Mli, lines ->
+      Fmt.pf ppf "@\n%a@\n" (pp_lines syntax t) (lstrip lines)
   | (Some Cram | Some Normal | None), [] -> ()
   | (Some Cram | Some Normal | None), _ ->
       Fmt.pf ppf "%a\n" (pp_lines syntax t) t.contents
@@ -151,20 +183,19 @@ let pp_errors ppf t =
       Fmt.string ppf "```\n"
   | _ -> ()
 
-let pp_footer ?syntax ppf t =
+let pp_footer ?syntax ppf _ =
   match syntax with
-  | Some Syntax.Mli ->
-      if List.length t.contents = 1 then Fmt.pf ppf "" else Fmt.pf ppf "\n"
+  | Some Syntax.Mli -> ()
   | Some Syntax.Cram -> ()
   | _ -> Fmt.string ppf "```\n"
 
 let pp_legacy_labels ppf = function
   | [] -> ()
-  | l -> Fmt.pf ppf " %a" Fmt.(list ~sep:(unit ",") Label.pp) l
+  | l -> Fmt.pf ppf " %a" Fmt.(list ~sep:(any ",") Label.pp) l
 
 let pp_labels ppf = function
   | [] -> ()
-  | l -> Fmt.pf ppf "<!-- $MDX %a -->\n" Fmt.(list ~sep:(unit ",") Label.pp) l
+  | l -> Fmt.pf ppf "<!-- $MDX %a -->\n" Fmt.(list ~sep:(any ",") Label.pp) l
 
 let pp_header ?syntax ppf t =
   match syntax with
@@ -195,7 +226,6 @@ let pp ?syntax ppf b =
   pp_errors ppf b
 
 let directory t = t.dir
-
 let file t = match t.value with Include t -> Some t.file_included | _ -> None
 
 let non_det t =
@@ -206,13 +236,9 @@ let non_det t =
   | Include _ | Raw _ -> None
 
 let skip t = t.skip
-
 let set_variables t = t.set_variables
-
 let unset_variables t = t.unset_variables
-
 let value t = t.value
-
 let section t = t.section
 
 let guess_ocaml_kind contents =
@@ -228,13 +254,10 @@ let guess_ocaml_kind contents =
 
 let ends_by_semi_semi c =
   match List.rev c with
-  | h :: _ ->
-      let len = String.length h in
-      len > 2 && h.[len - 1] = ';' && h.[len - 2] = ';'
+  | h :: _ -> Astring.String.is_suffix ~affix:";;" h
   | _ -> false
 
 let pp_line_directive ppf (file, line) = Fmt.pf ppf "#%d %S" line file
-
 let line_directive = Fmt.to_to_string pp_line_directive
 
 let executable_contents ~syntax b =
@@ -268,20 +291,20 @@ let version_enabled version =
 
 let get_label f (labels : Label.t list) = Util.List.find_map f labels
 
-let label_not_allowed ~label ~kind =
-  Util.Result.errorf "`%s` label is not allowed for %s blocks." label kind
+let label_not_allowed ~loc ~label ~kind =
+  loc_error ~loc "`%s` label is not allowed for %s blocks." label kind
 
-let label_required ~label ~kind =
-  Util.Result.errorf "`%s` label is required for %s blocks." label kind
+let label_required ~loc ~label ~kind =
+  loc_error ~loc "`%s` label is required for %s blocks." label kind
 
-let check_not_set msg = function
-  | Some _ -> Util.Result.errorf msg
+let check_not_set ~loc msg = function
+  | Some _ -> loc_error ~loc "%s" msg
   | None -> Ok ()
 
-let check_no_errors = function
+let check_no_errors ~loc = function
   | [] -> Ok ()
   | _ :: _ ->
-      Util.Result.errorf "error block cannot be attached to a non-OCaml block"
+      loc_error ~loc "error block cannot be attached to a non-OCaml block"
 
 type block_config = {
   non_det : Label.non_det option;
@@ -316,22 +339,22 @@ let get_block_config l =
     file_inc = get_label (function File x -> Some x | _ -> None) l;
   }
 
-let mk_ocaml ~config ~contents ~errors =
+let mk_ocaml ~loc ~config ~contents ~errors =
   let kind = "OCaml" in
   match config with
   | { file_inc = None; part = None; env; non_det; _ } -> (
       match guess_ocaml_kind contents with
       | `Code -> Ok (OCaml { env = Ocaml_env.mk env; non_det; errors })
       | `Toplevel ->
-          Util.Result.errorf "toplevel syntax is not allowed in OCaml blocks.")
-  | { file_inc = Some _; _ } -> label_not_allowed ~label:"file" ~kind
-  | { part = Some _; _ } -> label_not_allowed ~label:"part" ~kind
+          loc_error ~loc "toplevel syntax is not allowed in OCaml blocks.")
+  | { file_inc = Some _; _ } -> label_not_allowed ~loc ~label:"file" ~kind
+  | { part = Some _; _ } -> label_not_allowed ~loc ~label:"part" ~kind
 
-let mk_cram ?language ~config ~header ~errors () =
+let mk_cram ~loc ?language ~config ~header ~errors () =
   let kind = "shell" in
   match config with
   | { file_inc = None; part = None; env = None; non_det; _ } ->
-      check_no_errors errors >>| fun () ->
+      check_no_errors ~loc errors >>| fun () ->
       let language =
         Util.Option.value language
           ~default:
@@ -340,28 +363,27 @@ let mk_cram ?language ~config ~header ~errors () =
             | _ -> `Sh)
       in
       Cram { language; non_det }
-  | { file_inc = Some _; _ } -> label_not_allowed ~label:"file" ~kind
-  | { part = Some _; _ } -> label_not_allowed ~label:"part" ~kind
-  | { env = Some _; _ } -> label_not_allowed ~label:"env" ~kind
+  | { file_inc = Some _; _ } -> label_not_allowed ~loc ~label:"file" ~kind
+  | { part = Some _; _ } -> label_not_allowed ~loc ~label:"part" ~kind
+  | { env = Some _; _ } -> label_not_allowed ~loc ~label:"env" ~kind
 
-let mk_toplevel ~config ~contents ~errors =
+let mk_toplevel ~loc ~config ~contents ~errors =
   let kind = "toplevel" in
   match config with
   | { file_inc = None; part = None; env; non_det; _ } -> (
       match guess_ocaml_kind contents with
-      | `Code ->
-          Util.Result.errorf "invalid toplevel syntax in toplevel blocks."
+      | `Code -> loc_error ~loc "invalid toplevel syntax in toplevel blocks."
       | `Toplevel ->
-          check_no_errors errors >>| fun () ->
+          check_no_errors ~loc errors >>| fun () ->
           Toplevel { env = Ocaml_env.mk env; non_det })
-  | { file_inc = Some _; _ } -> label_not_allowed ~label:"file" ~kind
-  | { part = Some _; _ } -> label_not_allowed ~label:"part" ~kind
+  | { file_inc = Some _; _ } -> label_not_allowed ~loc ~label:"file" ~kind
+  | { part = Some _; _ } -> label_not_allowed ~loc ~label:"part" ~kind
 
-let mk_include ~config ~header ~errors =
+let mk_include ~loc ~config ~header ~errors =
   let kind = "include" in
   match config with
   | { file_inc = Some file_included; part; non_det = None; env = None; _ } -> (
-      check_no_errors errors >>= fun () ->
+      check_no_errors ~loc errors >>= fun () ->
       match header with
       | Some Header.OCaml ->
           let file_kind = Fk_ocaml { part_included = part } in
@@ -371,28 +393,28 @@ let mk_include ~config ~header ~errors =
           | None ->
               let file_kind = Fk_other { header } in
               Ok (Include { file_included; file_kind })
-          | Some _ -> label_not_allowed ~label:"part" ~kind:"non-OCaml include")
-      )
-  | { file_inc = None; _ } -> label_required ~label:"file" ~kind
+          | Some _ ->
+              label_not_allowed ~loc ~label:"part" ~kind:"non-OCaml include"))
+  | { file_inc = None; _ } -> label_required ~loc ~label:"file" ~kind
   | { non_det = Some _; _ } ->
-      label_not_allowed ~label:"non-deterministic" ~kind
-  | { env = Some _; _ } -> label_not_allowed ~label:"env" ~kind
+      label_not_allowed ~loc ~label:"non-deterministic" ~kind
+  | { env = Some _; _ } -> label_not_allowed ~loc ~label:"env" ~kind
 
-let infer_block ~config ~header ~contents ~errors =
+let infer_block ~loc ~config ~header ~contents ~errors =
   match config with
-  | { file_inc = Some _; _ } -> mk_include ~config ~header ~errors
+  | { file_inc = Some _; _ } -> mk_include ~loc ~config ~header ~errors
   | { file_inc = None; part; _ } -> (
       match header with
       | Some (Header.Shell language) ->
-          mk_cram ~language ~config ~header ~errors ()
+          mk_cram ~loc ~language ~config ~header ~errors ()
       | Some Header.OCaml -> (
           match guess_ocaml_kind contents with
-          | `Code -> mk_ocaml ~config ~contents ~errors
-          | `Toplevel -> mk_toplevel ~config ~contents ~errors)
+          | `Code -> mk_ocaml ~loc ~config ~contents ~errors
+          | `Toplevel -> mk_toplevel ~loc ~config ~contents ~errors)
       | _ ->
-          check_not_set "`part` label requires a `file` label." part
+          check_not_set ~loc "`part` label requires a `file` label." part
           >>= fun () ->
-          check_no_errors errors >>| fun () -> Raw { header })
+          check_no_errors ~loc errors >>| fun () -> Raw { header })
 
 let mk ~loc ~section ~labels ~legacy_labels ~header ~contents ~errors =
   let block_kind =
@@ -400,11 +422,11 @@ let mk ~loc ~section ~labels ~legacy_labels ~header ~contents ~errors =
   in
   let config = get_block_config labels in
   (match block_kind with
-  | Some OCaml -> mk_ocaml ~config ~contents ~errors
-  | Some Cram -> mk_cram ~config ~header ~errors ()
-  | Some Toplevel -> mk_toplevel ~config ~contents ~errors
-  | Some Include -> mk_include ~config ~header ~errors
-  | None -> infer_block ~config ~header ~contents ~errors)
+  | Some OCaml -> mk_ocaml ~loc ~config ~contents ~errors
+  | Some Cram -> mk_cram ~loc ~config ~header ~errors ()
+  | Some Toplevel -> mk_toplevel ~loc ~config ~contents ~errors
+  | Some Include -> mk_include ~loc ~config ~header ~errors
+  | None -> infer_block ~loc ~config ~header ~contents ~errors)
   >>= fun value ->
   version_enabled config.version >>| fun version_enabled ->
   {
@@ -427,7 +449,27 @@ let mk_include ~loc ~section ~labels =
       let header = Header.infer_from_file file_inc in
       mk ~loc ~section ~labels ~legacy_labels:false ~header ~contents:[]
         ~errors:[]
-  | None -> label_required ~label:"file" ~kind:"include"
+  | None -> label_required ~loc ~label:"file" ~kind:"include"
+
+let parse_labels ~label_cmt ~legacy_labels =
+  match (label_cmt, legacy_labels) with
+  | Some label_cmt, "" ->
+      Label.of_string label_cmt >>= fun labels -> Ok (labels, false)
+  | Some _, _ -> Error [ `Msg "cannot mix both block labels syntax" ]
+  | None, l -> Label.of_string l >>= fun labels -> Ok (labels, true)
+
+let from_raw raw =
+  match raw with
+  | Raw.Include { loc; section; labels } ->
+      locate_errors ~loc (Label.of_string labels) >>= fun labels ->
+      Util.Result.to_error_list @@ mk_include ~loc ~section ~labels
+  | Raw.Any { loc; section; header; contents; label_cmt; legacy_labels; errors }
+    ->
+      let header = Header.of_string header in
+      locate_errors ~loc (parse_labels ~label_cmt ~legacy_labels)
+      >>= fun (labels, legacy_labels) ->
+      Util.Result.to_error_list
+      @@ mk ~loc ~section ~header ~contents ~labels ~legacy_labels ~errors
 
 let is_active ?section:s t =
   let active =

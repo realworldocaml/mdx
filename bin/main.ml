@@ -17,14 +17,13 @@
 open Cmdliner
 
 let cmds = [ Test.cmd; Pp.cmd; Deps.cmd; Dune_gen.cmd; Jupyter.cmd ]
-
 let main (`Setup ()) = `Help (`Pager, None)
 
-let main =
+let info =
   let doc = "Execute markdown files." in
-  let exits = Term.default_exits in
   let man = [] in
-  ( Term.(ret (const main $ Cli.setup)),
-    Term.info "ocaml-mdx" ~version:"%%VERSION%%" ~doc ~exits ~man )
+  Cmd.info "ocaml-mdx" ~version:"%%VERSION%%" ~doc ~man
 
-let () = Term.(exit_status @@ eval_choice main cmds)
+let default = Term.(ret (const main $ Cli.setup))
+let group = Cmd.group ~default info cmds
+let () = Stdlib.exit @@ Cmd.eval' group

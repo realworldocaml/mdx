@@ -46,7 +46,7 @@ let run (`Setup ()) (`File file) (`Section section) =
           | Block b ->
               if not (Mdx.Block.skip b) then (
                 Log.debug (fun l -> l "pp: %a" Mdx.Block.dump b);
-                let pp_lines = Fmt.(list ~sep:(unit "\n") string) in
+                let pp_lines = Fmt.(list ~sep:(any "\n") string) in
                 let contents = Mdx.Block.executable_contents ~syntax:Normal b in
                 match b.value with
                 | Toplevel _ -> Fmt.pr "%a\n" pp_lines contents
@@ -62,8 +62,7 @@ let run (`Setup ()) (`File file) (`Section section) =
 
 open Cmdliner
 
-let cmd =
-  let doc = "Pre-process markdown files to produce OCaml code." in
-  let exits = Term.default_exits in
-  ( Term.(pure run $ Cli.setup $ Cli.file $ Cli.section),
-    Term.info "pp" ~doc ~exits )
+let term = Term.(const run $ Cli.setup $ Cli.file $ Cli.section)
+let doc = "Pre-process markdown files to produce OCaml code."
+let info = Cmd.info "pp" ~doc
+let cmd = Cmd.v info term

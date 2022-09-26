@@ -102,11 +102,10 @@ module Phrase = struct
     doc : Lexbuf.t;
     startpos : position;
     endpos : position;
-    parsed : (toplevel_phrase, exn) Result.result;
+    parsed : (toplevel_phrase, exn) result;
   }
 
   let result t = t.parsed
-
   let start t = t.startpos
 
   let error_of_exn exn =
@@ -121,7 +120,7 @@ module Phrase = struct
     let startpos = lexbuf.Lexing.lex_start_p in
     let parsed =
       match Parse.toplevel_phrase lexbuf with
-      | phrase -> Result.Ok phrase
+      | phrase -> Ok phrase
       | exception exn ->
           let exn =
             match error_of_exn exn with
@@ -142,15 +141,10 @@ module Phrase = struct
     let endpos = lexbuf.Lexing.lex_curr_p in
     { doc = { lexbuf; contents }; startpos; endpos; parsed }
 
-  let ends_by_semi_semi c =
-    match List.rev c with
-    | h :: _ ->
-        let len = String.length h in
-        len > 2 && h.[len - 1] = ';' && h.[len - 2] = ';'
-    | _ -> false
-
   let parse lines =
-    let lines = if ends_by_semi_semi lines then lines else lines @ [ ";;" ] in
+    let lines =
+      if Mdx.Block.ends_by_semi_semi lines then lines else lines @ [ ";;" ]
+    in
     match parse lines with exception End_of_file -> None | t -> Some t
 
   (** Returns the name of the toplevel directive or [None] if the given phrase
@@ -162,7 +156,7 @@ module Phrase = struct
 
   let is_findlib_directive =
     let findlib_directive = function
-      | "require" | "use" | "camlp4o" | "camlp4r" | "thread" -> true
+      | "require" | "camlp4o" | "camlp4r" | "thread" -> true
       | _ -> false
     in
     function
@@ -224,8 +218,8 @@ module Rewrite = struct
   let normalize_type_path env path =
     match Env.find_type path env with
     | { Types.type_manifest = Some ty; _ } -> (
-        match Ctype.expand_head env ty with
-        | { Types.desc = Types.Tconstr (path, _, _); _ } -> path
+        match Compat_top.ctype_expand_head_and_get_desc env ty with
+        | Types.Tconstr (path, _, _) -> path
         | _ -> path)
     | _ -> path
 
@@ -259,7 +253,7 @@ module Rewrite = struct
     match (pstr_item.Parsetree.pstr_desc, tstr_item.Typedtree.str_desc) with
     | ( Parsetree.Pstr_eval (e, _),
         Typedtree.Tstr_eval ({ Typedtree.exp_type = typ; _ }, _) ) -> (
-        match (Ctype.repr typ).Types.desc with
+        match Compat_top.ctype_get_desc typ with
         | Types.Tconstr (path, _, _) -> apply ts env pstr_item path e
         | _ -> pstr_item)
     | _ -> pstr_item
@@ -291,6 +285,12 @@ module Rewrite = struct
           in
           Btype.backtrack snap;
           Ptop_def pstr)
+    | Ptop_dir pdir ->
+        let pdir_name = pdir.pdir_name in
+        let pdir_name =
+          { pdir_name with txt = Compat_top.redirect_directive pdir_name.txt }
+        in
+        Ptop_dir { pdir with pdir_name }
     | _ -> phrase
 
   (** [top_directive require "pkg"] builds the AST for [#require "pkg"] *)
@@ -306,7 +306,7 @@ module Rewrite = struct
   let preload verbose ppf =
     let require pkg =
       let p = top_directive_require pkg in
-      let _ = Toploop.execute_phrase verbose ppf p in
+      let _ = execute_phrase verbose ppf p in
       ()
     in
     match active_rewriters () with
@@ -338,7 +338,7 @@ type t = {
 let toplevel_exec_phrase t ppf p =
   match Phrase.result p with
   | Error exn -> raise exn
-  | Ok phrase ->
+  | Ok phrase -> (
       Warnings.reset_fatal ();
       let mapper = Lexbuf.position_mapper (Phrase.start p) in
       let phrase =
@@ -357,7 +357,10 @@ let toplevel_exec_phrase t ppf p =
       if !Clflags.dump_parsetree then Printast.top_phrase ppf phrase;
       if !Clflags.dump_source then Pprintast.top_phrase ppf phrase;
       Env.reset_cache_toplevel ();
-      Toploop.execute_phrase t.verbose ppf phrase
+      try execute_phrase t.verbose ppf phrase
+      with Exit_with_status code ->
+        Format.fprintf ppf "[%d]@." code;
+        false)
 
 type var_and_value = V : 'a ref * 'a -> var_and_value
 
@@ -383,17 +386,12 @@ let trim_line str =
     else String.sub str trim_from (trim_to - trim_from)
 
 let rtrim l = List.rev (ltrim (List.rev l))
-
 let trim l = ltrim (rtrim (List.map trim_line l))
 
 let cut_into_sentences l =
-  let ends_by_semi_semi h =
-    let len = String.length h in
-    len > 2 && h.[len - 1] = ';' && h.[len - 2] = ';'
-  in
   let rec aux acc sentence = function
     | [] -> List.rev (List.rev sentence :: acc)
-    | h :: t when ends_by_semi_semi h ->
+    | h :: t when Mdx.Block.ends_by_semi_semi [ h ] ->
         aux (List.rev (h :: sentence) :: acc) [] t
     | h :: t -> aux acc (h :: sentence) t
   in
@@ -458,7 +456,7 @@ let eval t cmd =
               | None -> [])
             phrases
           |> List.concat
-          |> fun x -> if !errors then Result.Error x else Result.Ok x))
+          |> fun x -> if !errors then Error x else Ok x))
 
 let add_directive ~name ~doc kind =
   let directive =
@@ -496,17 +494,11 @@ let reg_show_prim name to_sig doc =
   add_directive ~name ~doc (`Show_prim to_sig)
 
 let sig_value id desc = Types.Sig_value (id, desc, Exported)
-
 let sig_type id desc = Types.Sig_type (id, desc, Trec_not, Exported)
-
 let sig_typext id ext = Types.Sig_typext (id, ext, Text_exception, Exported)
-
 let sig_module id md = Types.Sig_module (id, Mp_present, md, Trec_not, Exported)
-
 let sig_modtype id desc = Types.Sig_modtype (id, desc, Exported)
-
 let sig_class id desc = Types.Sig_class (id, desc, Trec_not, Exported)
-
 let sig_class_type id desc = Types.Sig_class_type (id, desc, Trec_not, Exported)
 
 let show_val () =
@@ -701,7 +693,6 @@ let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates
   t
 
 let envs = Hashtbl.create 8
-
 let is_predef_or_global id = Ident.is_predef id || Ident.global id
 
 let rec save_summary acc s =
@@ -729,7 +720,6 @@ let rec save_summary acc s =
     ~value_unbound:default_case ~module_unbound:default_case
 
 let default_env = ref (Compmisc.initial_env ())
-
 let first_call = ref true
 
 let env_deps env =

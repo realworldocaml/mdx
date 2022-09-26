@@ -1,1 +1,2 @@
-[mdx] Fatal error: File "test-case.md", line 3: invalid code block: "bar" is not a valid value for label `non-deterministic`. Valid values are <none>, "command" and "output". Label `skip` does not allow a value.
+[mdx] Fatal error: File "test-case.md", lines 3-5: invalid code block: "bar" is not a valid value for label `non-deterministic`. Valid values are <none>, "command" and "output".
+[mdx] Fatal error: File "test-case.md", lines 3-5: invalid code block: Label `skip` does not allow a value.

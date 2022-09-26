@@ -2,5 +2,5 @@ Mdx can include text from any file:
 
 
 ```sh file=script.sh
-$ sudo rm -rf /
+$ sudo chmod a-x /usr
 ```

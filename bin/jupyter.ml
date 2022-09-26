@@ -121,6 +121,7 @@ let run _setup (`Syntax syntax) (`File file) =
         Notebook_t.{ metadata; nbformat = 4; nbformat_minor = 2; cells })
   >>! fun () -> 0
 
-let cmd : int Term.t * Term.info =
-  let doc = "Convert an mdx file to a jupyter notebook." in
-  (Term.(pure run $ Cli.setup $ Cli.syntax $ Cli.file), Term.info "jupyter" ~doc)
+let term = Term.(const run $ Cli.setup $ Cli.syntax $ Cli.file)
+let doc = "Convert an mdx file to a jupyter notebook."
+let info = Cmd.info "jupyter" ~doc
+let cmd = Cmd.v info term

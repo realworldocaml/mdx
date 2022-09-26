@@ -47,7 +47,7 @@ type cell = {
     source: string;
     ?outputs: output list nullable;
     ?execution_count: int option;
-} <json keep_nulls false>
+}
 
 type notebook = {
     metadata: metadata;

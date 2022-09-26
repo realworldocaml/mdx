@@ -1,11 +1,8 @@
 module Testable = struct
   open Mdx.Label
+  include Testable
 
   let relation = Alcotest.testable Relation.pp ( = )
-
-  let msg =
-    Alcotest.testable (fun fmt (`Msg e) -> Format.pp_print_string fmt e) ( = )
-
   let label = Alcotest.testable pp ( = )
 end
 
@@ -31,7 +28,7 @@ let test_raw_parse =
   ]
 
 let test_interpret =
-  let ty = Alcotest.result Testable.label Testable.msg in
+  let ty = Testable.errormsg Testable.label in
   let make_test ~label ~value ~expected =
     let test_name = Printf.sprintf "interpret: %S" label in
     let test_fun () =

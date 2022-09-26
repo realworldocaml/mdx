@@ -14,23 +14,26 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Result
-
 module Result = struct
   module Infix = struct
     let ( >>= ) r f = match r with Ok x -> f x | Error _ as e -> e
-
     let ( >>| ) r f = match r with Ok x -> Ok (f x) | Error _ as e -> e
 
     let ( >>! ) r f =
       match r with
       | Ok x -> f x
-      | Error (`Msg e) ->
-          Printf.eprintf "[mdx] Fatal error: %s\n" e;
+      | Error l ->
+          List.iter
+            (fun (`Msg m) -> Printf.eprintf "[mdx] Fatal error: %s\n" m)
+            l;
           1
+
+    let ( let* ) = ( >>= )
+    let ( let+ ) = ( >>| )
   end
 
   let errorf fmt = Format.ksprintf (fun s -> Error (`Msg s)) fmt
+  let to_error_list = function Ok x -> Ok x | Error err -> Error [ err ]
 
   module List = struct
     open Infix
@@ -45,6 +48,15 @@ module Result = struct
     let map ~f l =
       fold ~f:(fun acc elm -> f elm >>| fun elm' -> elm' :: acc) ~init:[] l
       >>| List.rev
+
+    let split l =
+      let rec split_rec oks errors l =
+        match l with
+        | [] -> (List.rev oks, List.rev errors)
+        | Ok x :: tl -> split_rec (x :: oks) errors tl
+        | Error x :: tl -> split_rec oks (x :: errors) tl
+      in
+      split_rec [] [] l
   end
 end
 
@@ -64,7 +76,6 @@ end
 
 module Option = struct
   let is_some = function Some _ -> true | None -> false
-
   let value ~default = function Some v -> v | None -> default
 end
 
@@ -107,4 +118,16 @@ end
 module Process = struct
   let wait ~pid =
     match snd (Unix.waitpid [] pid) with WEXITED n -> n | _ -> 255
+end
+
+module Int = struct
+  let min a b = if a < b then a else b
+end
+
+module Seq = struct
+  (* [Seq.append] was added in 4.11, implement it for older versions *)
+  let rec append seq1 seq2 () =
+    match seq1 () with
+    | Seq.Nil -> seq2 ()
+    | Seq.Cons (x, next) -> Seq.Cons (x, append next seq2)
 end

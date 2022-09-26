@@ -32,8 +32,13 @@ let run (`Setup ()) (`Prelude prelude) (`Directories dirs) =
   line "    ]";
   line "  in";
   line "  let predicates = Predicate.[ byte; toploop ] in";
+  line "  let non_deterministic =";
+  line "    match Sys.getenv_opt \"MDX_RUN_NON_DETERMINISTIC\" with";
+  line "    | Some _ -> true";
+  line "    | None -> false";
+  line "  in";
   line "  run_exn ~packages ~predicates ~prelude_str:[]";
-  line "    ~non_deterministic:false";
+  line "    ~non_deterministic";
   line "    ~silent_eval:false ~record_backtrace:false";
   line "    ~syntax:None ~silent:false";
   line "    ~verbose_findlib:false ~section:None";
@@ -51,11 +56,11 @@ let run (`Setup ()) (`Prelude prelude) (`Directories dirs) =
   Buffer.output_buffer stdout buffer;
   0
 
-let cmd =
-  let open Cmdliner in
-  let doc =
-    "Generate the source for a specialized testing binary. This command is \
-     meant to be used by dune only. There are no stability guarantees."
-  in
-  ( Term.(pure run $ Cli.setup $ Cli.prelude $ Cli.directories),
-    Term.info "dune-gen" ~doc )
+let term = Cmdliner.Term.(const run $ Cli.setup $ Cli.prelude $ Cli.directories)
+
+let doc =
+  "Generate the source for a specialized testing binary. This command is meant \
+   to be used by dune only. There are no stability guarantees."
+
+let info = Cmdliner.Cmd.info "dune-gen" ~doc
+let cmd = Cmdliner.Cmd.v info term

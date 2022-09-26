@@ -36,6 +36,18 @@
  (action (diff code/test-case.md code.actual)))
 
 (rule
+ (target compenv-exit.actual)
+ (deps (package mdx) (source_tree compenv-exit))
+ (action
+  (with-stdout-to %{target}
+   (chdir compenv-exit
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff compenv-exit/test-case.md.expected compenv-exit.actual)))
+
+(rule
  (target cram.actual)
  (deps (package mdx) (source_tree cram))
  (action
@@ -216,6 +228,18 @@
  (action (diff labels-syntax/test-case.md labels-syntax.actual)))
 
 (rule
+ (target line-delimiters.actual)
+ (deps (package mdx) (source_tree line-delimiters))
+ (action
+  (with-stdout-to %{target}
+   (chdir line-delimiters
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff line-delimiters/test-case.md line-delimiters.actual)))
+
+(rule
  (target lines.actual)
  (deps (package mdx) (source_tree lines))
  (action
@@ -262,6 +286,18 @@
 (rule
  (alias runtest)
  (action (diff multilines/test-case.md multilines.actual)))
+
+(rule
+ (target multilines-mli.actual)
+ (deps (package mdx) (source_tree multilines-mli))
+ (action
+  (with-stdout-to %{target}
+   (chdir multilines-mli
+    (run ocaml-mdx test --output - test-case.mli)))))
+
+(rule
+ (alias runtest)
+ (action (diff multilines-mli/test-case.mli multilines-mli.actual)))
 
 (rule
  (target non-det.actual)
@@ -406,18 +442,6 @@
 (rule
  (alias runtest)
  (action (diff section/test-case.md.expected section.actual)))
-
-(rule
- (target semisemi.actual)
- (deps (package mdx) (source_tree semisemi))
- (action
-  (with-stdout-to %{target}
-   (chdir semisemi
-    (run ocaml-mdx test --output - test-case.md)))))
-
-(rule
- (alias runtest)
- (action (diff semisemi/test-case.md semisemi.actual)))
 
 (rule
  (target shell-file-inc.actual)

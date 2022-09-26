@@ -52,7 +52,7 @@ let test_of_line =
       let actual =
         Mdx.of_string Mdx.Normal lines >>| fun lines -> Mdx.Dep.of_lines lines
       in
-      Alcotest.(check (result (list Testable.dep) Testable.msg))
+      Alcotest.(check (result (list Testable.dep) (list Testable.msg)))
         test_name expected actual
     in
     (test_name, `Quick, test_fun)

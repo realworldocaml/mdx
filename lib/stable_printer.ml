@@ -1,7 +1,7 @@
 module Location = struct
   open Location
 
-  let print_loc ppf loc =
+  let pp ppf loc =
     (*setup_colors ();*)
     let file_valid = function
       | "_none_" ->

@@ -1,5 +1,4 @@
 val lookup_type : Longident.t -> Env.t -> Path.t
-
 val lookup_value : Longident.t -> Env.t -> Path.t * Types.value_description
 
 val find_value :
@@ -57,3 +56,14 @@ val match_env :
 
 val ctype_is_equal :
   Env.t -> bool -> Types.type_expr list -> Types.type_expr list -> bool
+
+val ctype_expand_head_and_get_desc : Env.t -> Types.type_expr -> Types.type_desc
+val ctype_get_desc : Types.type_expr -> Types.type_desc
+
+exception Exit_with_status of int
+
+val execute_phrase :
+  bool -> Format.formatter -> Parsetree.toplevel_phrase -> bool
+
+(* If the directive has to be intercepted, this function will return the new name of the directive *)
+val redirect_directive : string -> string

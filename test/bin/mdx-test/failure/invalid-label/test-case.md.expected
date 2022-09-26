@@ -1,1 +1,1 @@
-[mdx] Fatal error: File "test-case.md", line 3: invalid code block: `toto` is not a valid label.
+[mdx] Fatal error: File "test-case.md", lines 3-5: invalid code block: `toto` is not a valid label.

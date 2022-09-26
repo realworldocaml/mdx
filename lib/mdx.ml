@@ -17,15 +17,12 @@
 let src = Logs.Src.create "ocaml-mdx"
 
 module Lexer_mdx = Lexer_mdx
-
 module Log = (val Logs.src_log src : Logs.LOG)
-
 module Output = Output
 module Cram = Cram
 module Deprecated = Deprecated
 module Document = Document
 module Toplevel = Toplevel
-module Ocaml_delimiter = Ocaml_delimiter
 module Part = Part
 module Block = Block
 module Mli_parser = Mli_parser
@@ -58,16 +55,22 @@ let filter_section re (t : t) =
   | l -> Some l
 
 let parse l =
-  List.map
-    (function
-      | `Text t -> Text t | `Section s -> Section s | `Block b -> Block b)
-    l
+  let results =
+    List.map
+      (function
+        | `Text t -> Ok (Text t)
+        | `Section s -> Ok (Section s)
+        | `Block rb -> Block.from_raw rb >>= fun b -> Ok (Block b))
+      l
+  in
+  let ok, errors = Util.Result.List.split results in
+  match errors with [] -> Ok ok | _ -> Error (List.concat errors)
 
 let parse_lexbuf file_contents syntax l =
   match syntax with
   | Syntax.Mli -> Mli_parser.parse_mli file_contents
-  | Normal -> Lexer_mdx.markdown_token l >>| parse
-  | Cram -> Lexer_mdx.cram_token l >>| parse
+  | Normal -> Util.Result.to_error_list @@ Lexer_mdx.markdown_token l >>= parse
+  | Cram -> Util.Result.to_error_list @@ Lexer_mdx.cram_token l >>= parse
 
 let parse_file syntax f =
   let l = snd (Misc.init f) in

@@ -36,17 +36,19 @@ val replace : file -> part:string option -> lines:string list -> file
 (**/**)
 
 (* Exposed for test purposes only *)
+module Internal : sig
+  module Parse_parts : sig
+    type part_meta = { sep_indent : string; name : string }
 
-module Parse_parts : sig
-  type part_decl =
-    | Normal of string
-    | Compat_attr of string * string
-    (* ^^^^ This is for compat with the [[@@@part name]] delimiters *)
-    | Part_begin of string * string
-    | Part_end
-    | File_end
+    type t =
+      | Content of string
+      | Compat_attr of part_meta
+      (* ^^^^ This is for compat with the [[@@@part name]] delimiters *)
+      | Part_begin of part_meta
+      | Part_end
 
-  val parse_line : (string, [< `End_of_file ]) Result.result -> part_decl
+    val parse : string -> (t list, [> `Msg of string ]) result
+  end
 end
 
 (**/**)

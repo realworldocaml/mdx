@@ -3,10 +3,45 @@
 #### Added
 
 - Add Jupyter Notebook output (#124, @avsm, @CraigFe, @jonludlam)
+- Report all parsing errors in Markdown files (#389, @NathanReb)
 
 #### Changed
 
+- Preserve indentation in multiline OCaml blocks in .mli files (#395, @panglesd)
+
 #### Deprecated
+
+#### Fixed
+
+- Fixed compatibility with Cmdliner 1.1.0 (#371, @Leonidas-from-XIV)
+- Report errors and exit codes of toplevel directives (#382, @talex5,
+  @Leonidas-from-XIV)
+- Fix block locations in error reporting (#389, @NathanReb)
+- Include the content of the line that features the `part-end` MDX directive in
+  the output, before that line would've been dropped (#374, #387,
+  @Leonidas-from-XIV)
+
+#### Removed
+
+#### Security
+
+### 2.1.0
+
+#### Added
+
+- Add support for adding language tags and metadata labels in `mli` files.
+  (#339, #357, @julow, @Leonidas-from-XIV)
+- Add support for running non-deterministic tests in `dune` MDX 0.2 stanza by
+  setting the `MDX_RUN_NON_DETERMINISTIC` environment variable. (#365,
+  #366, @Leonidas-from-XIV)
+
+### 2.0.0
+
+#### Added
+
+- Add trailing `;;` to the output of toplevel phrases that were missing it.
+  (#346, @Leonidas-from-XIV)
+- Make MDX compatible with OCaml 4.14 (#356, @NathanReb)
 
 #### Fixed
 
@@ -20,8 +55,9 @@
   is 4.08 to 4.13 now (#345, @Leonidas-from-XIV)
 - Do not install deprecated `mdx` binary anymore (#274, @gpetiot)
 - Remove deprecated `rule` command (#312, @gpetiot)
-
-#### Security
+- Remove support for `require-package` label, use the `mdx` stanza in dune
+  instead. This label was only used for the `rule` command and can now be
+  safely removed. (#363, @Leonidas-from-XIV)
 
 ### 1.11.0
 

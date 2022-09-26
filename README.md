@@ -1,36 +1,154 @@
 [![Build Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fci.ocamllabs.io%2Fbadge%2Frealworldocaml%2Fmdx%2Fmain&logo=ocaml)](https://ci.ocamllabs.io/github/realworldocaml/mdx)
 
-## mdx -- executable code blocks inside markdown files
+## MDX
 
-`mdx` allows to execute code blocks inside markdown files.
-There are (currently) two sub-commands, corresponding
-to two modes of operations: pre-processing (`ocaml-mdx pp`)
-and tests (`ocaml-mdx test`).
+MDX allows to execute code blocks inside markdown and mli documentation
+to help keeping them up to date.
 
-The pre-processor mode allows to mix documentation and code,
-and to practice "literate programming" using markdown and OCaml.
+Use the
+[dune stanza](https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4)
+to enable it on your documentation.
 
-The test mode allows to ensure that shell scripts and OCaml fragments
-in the documentation always stays up-to-date.
-
-The blocks in markdown files can be parameterized by `mdx`-specific labels, that
-will change the way `mdx` interprets the block.
-The syntax is: `<!-- $MDX labels -->`, where `labels` is a list of valid labels
-separated by a comma. This line has to immediately precede the block it is
-attached to. Examples are given in the following sections.
-This syntax is the recommended way to define labels since `mdx` 1.7.0, to use the previous syntax please refer to the [mdx 1.6.0 README](https://github.com/realworldocaml/mdx/blob/1.6.0/README.md).
-
-`mdx` is released as a single binary (called `ocaml-mdx`) and
-can be installed using opam:
+`mdx` is released on opam and can be installed by running:
 
 ```sh
 $ opam install mdx
 ```
 
-If you want to contribute or hack on the project, please see the
+If you want to contribute to the project, please see the
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
+### Basic Usage
+
+You can use MDX with your Markdown or `.mli` documentation, which ensures
+code in multi-line or verbatim code blocks is correct.
+
+To enable MDX on specific files you must first enable it for your project by
+adding the following stanza to your `dune-project`:
+```
+(using mdx 0.2)
+```
+
+Note that version `0.2` of the MDX stanza is only available in dune `3.0` or
+higher. You can use the first, `0.1` version with dune `2.4` or higher.
+
+Then add the following in the relevant `dune` file:
+```
+(mdx)
+```
+That enables MDX on all markdown files in the folder.
+The MDX stanza can be further configured. Please visit the relevant section of
+[dune's manual](https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4)
+for more information.
+
+MDX supports various type of code blocks but the most common are OCaml toplevel
+blocks. We illustrate one in our example below. In a Markdown file, you
+would write something similar to this:
+
+````markdown
+Let's look at how good OCaml is with integers and strings:
+```ocaml
+# 1 + 2;;
+- : int = 2
+# "a" ^ "bc";;
+- : string = "ab"
+```
+````
+or in an `mli` file:
+```ocaml
+(** Let's look at how good OCaml is with integers and strings:
+    {@ocaml[
+    # 1 + 2;;
+    - : int = 2
+    # "a" ^ "bc";;
+    - : string = "ab"
+    ]}
+*)
+```
+
+The content of the toplevel blocks looks just like an interactive toplevel
+session. Phrases, i.e., the toplevel "input", start with a `#` and end with `;;`.
+The toplevel evaluation, or "output" follows each phrase.
+
+Now you probably have noticed that `1 + 2` is not equal to `2` nor is `"a" ^ "bc"`
+to `"ab"`. Somebody must have updated the phrases, but then forgot to update
+the evaluation.
+
+That's exactly why MDX is here!
+
+If you enable MDX for this file and then ran `dune runtest`, this would be the
+result:
+
+````
+$ dune runtest
+File "README.md", line 1, characters 0-0:
+       git (internal) (exit 1)
+(cd _build/default && /usr/bin/git --no-pager diff --no-index --color=always -u README.md .mdx/README.md.corrected)
+diff --git a/README.md b/.mdx/README.md.corrected
+index 181b86f..458ecec 100644
+--- a/README.md
++++ b/.mdx/README.md.corrected
+@@ -1,13 +1,13 @@
+Let's look at how good OCaml is with integers and strings:
+```ocaml
+# 1 + 2;;
+-- : int = 2
++- : int = 3
+# "a" ^ "bc";;
+-- : string = "ab"
++- : string = "abc"
+```
+````
+
+The test run just failed and dune is showing the diff between what we have
+locally and what should be, according to MDX.
+This uses dune's promotion workflow so at this point you can either investigate
+it further if you're surprised by this diff or if you're happy with it, simply
+accept it by running:
+
+```
+dune promote
+```
+
+Now the documentation is up-to-date and running `dune runtest` again should be
+successful!
+
 ### Supported Extensions
+
+#### Labels
+
+The blocks can be parameterized by `mdx`-specific labels, that
+will change the way `mdx` interprets the block.
+
+The markdown syntax is: `<!-- $MDX LABELS -->`, where `LABELS` is a list of
+valid labels separated by a comma. This line has to immediately precede the
+block it is attached to.
+
+    <!-- $MDX LABELS -->
+    ```ocaml
+    ```
+
+The `.mli` syntax for this is is slightly different to match the conventions of
+OCaml documentation comments:
+
+    (** This is an documentation comment with an ocaml block
+        {@ocaml LABELS [
+        ]}
+    *)
+
+The possible labels are:
+
+- `skip` -- ignore this block
+- `ocaml`, `cram`, `toplevel`, `include` -- set the block type
+- `version=VERSION` -- set OCaml version
+- `non-deterministic[=output|command]` -- see "Non-deterministic tests" section
+- `dir=PATH` -- set the directory where the tests should be run
+- `source-tree=PATH` -- does nothing?
+- `file=PATH` -- see the "File sync" section
+- `part=PART` -- see the "File sync" section
+- `env=ENV` -- see the "Named execution environments" section
+- `set-VAR=VALUE` -- set an environment variable
+- `unset-VAR` -- unset an environment variable
 
 #### Shell Scripts
 
@@ -73,7 +191,7 @@ with a padding of 3:
        10
     ```
 
-`ocaml-mdx` will also consider exit codes when the syntax `[<exit code>]`is used:
+MDX will also consider exit codes when the syntax `[<exit code>]`is used:
 
     ```sh
     $ exit 1
@@ -85,7 +203,7 @@ of success).
 
 #### OCaml Code
 
-`ocaml-mdx` interprets OCaml fragments. It understands _normal_ code fragments and
+MDX interprets OCaml fragments. It understands _normal_ code fragments and
 _toplevel_ code fragments (starting with a `#` sign and optionally ending with
 `;;`). Arbitrary whitespace padding is supported, at long as it stays
 consistent within a code block.
@@ -106,10 +224,18 @@ Here is an examples of toplevel OCaml code:
     ```
 
 ### File sync
-`mdx` is also capable of including content from files in fenced code blocks
-using the label `file`. When an OCaml file is included it can be automatically
-sliced if it contains annotations such as `[@@@part "partName"]` and if the
-block has the label `part=partName`:
+
+MDX is also capable of including content from files in fenced code blocks
+using the label `file`. OCaml files can be sliced using named blocks:
+
+```ocaml
+(* $MDX part-begin=partName *)
+let meaning_of_life () =
+  print_endline "42"
+(* $MDX part-end *)
+```
+
+These can then be included in the document:
 
     <!-- $MDX file=sync_to_md.ml,part=partName -->
     ```ocaml
@@ -121,38 +247,6 @@ Non-OCaml files can also be read and included in a block:
     ```
     ```
 However, part splitting is only supported for OCaml files.
-
-### Pre-processing
-
-`ocaml-mdx pp` allows to transform a markdown file into a valid
-OCaml file, which can be passed to OCaml using the `-pp`
-option.
-
-For instance, given the following `file.md` document:
-
-    ```ocaml
-    # print_endline "42"
-    42
-    ```
-
-Can be compiled and executed using:
-
-```sh
-$ ocamlc -pp 'ocaml-mdx pp' -impl file.md -o file.exe
-$ ./file.exe
-42
-```
-
-This can be automated using `dune`:
-
-```
-(rule
- ((targets (file.ml))
-  (deps    (file.md))
-  (action  (with-stdout-to ${@} (run ocaml-mdx pp ${<})))))
-
-(executable ((name file)))
-```
 
 ### Tests
 
@@ -181,51 +275,6 @@ To execute OCaml code and toplevel fragments, uses `ocaml-mdx test <file.md>`.
 
 If the output is not consistent with what is expected
 `<file.md>.corrected` is generated.
-
-#### Integration with Dune
-
-To test that the code blocks of `file.md` stay consistent, one can use
-dune's `mdx` stanza:
-
-```
-(mdx
- (files file.md))
-```
-
-This allows to test the consistency of a markdown file using the normal dev
-workflow:
-
-```
-$ dune runtest
-```
-
-will display a diff of the output if something has changed. For instance:
-
-```
-$ dune runtest
------- file.md
-++++++ file.md.corrected
-File "file.md", line 23, characters 0-1:
- |
- |```sh
--| $ for i in `seq 1 3`; do echo $i; done
-+| $ for i in `seq 1 4`; do echo $i; done
- | 1
- | 2
- | 3
-+| 4
- |```
-```
-
-And the changes can then be accepted using:
-
-```
-$ dune promote
-```
-
-For further details about the mdx stanza you should read the
-[according section](https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4)
-in the dune documentation.
 
 #### Non-deterministic Tests
 
@@ -256,6 +305,12 @@ back to the default behaviour.
 
 In that case, `ocaml-mdx test <file>` will *not* run the command. Use `ocaml-mdx test
 --non-deterministic <file>` to come back to the default behaviour.
+
+Alternatively, instead of passing the option it is also possible to set the
+environment variable `MDX_RUN_NON_DETERMINISTIC` to make MDX execute
+non-deterministic blocks. This is useful when not calling MDX directly but
+through other commands like `dune` or Makefiles etc. Use
+`MDX_RUN_NON_DETERMINISTIC=1 ocaml-mdx test` in this case.
 
 #### Named execution environments (since mdx 1.1.0)
 
@@ -346,36 +401,3 @@ Those variables are then available in the subsequent blocks
     bar
     - : unit = ()
     ```
-
-### Sections
-
-It is possible to test or execute only a subset of the file using
-sections using the `--section` option (short name is `-s`). For
-instance `ocaml-mdx pp -s foo` will only consider the section matching the
-perl regular expression `foo`.
-
-### Dune rules (since mdx 1.1.0)
-
-`ocaml-mdx` can generate `dune` rules to synchronize .md files with .ml files.
-
-Consider the test/dune_rules.md file that contains blocks referring to files
-dune_rules_1.ml and dune_rules_2.ml, running:
-
-```
-$ ocaml-mdx rule test/dune_rules.md
-```
-
-generates the following `dune` rules on the standard output:
-```
-(alias
- (name   runtest)
- (deps   (:x test/dune_rules.md)
-         (:y1 dune_rules_1.ml)
-         (:y0 dune_rules_2.ml)
-         (source_tree foo))
- (action (progn
-           (run ocaml-mdx test %{x})
-           (diff? %{x} %{x}.corrected)
-           (diff? %{y1} %{y1}.corrected)
-           (diff? %{y0} %{y0}.corrected))))
-```

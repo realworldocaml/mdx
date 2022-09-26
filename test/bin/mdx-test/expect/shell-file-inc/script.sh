@@ -1,1 +1,1 @@
-$ sudo rm -rf /
+$ sudo chmod a-x /usr

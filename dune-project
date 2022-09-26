@@ -22,21 +22,21 @@
   (ocaml
    (>= 4.08.0))
   ocamlfind
-  (fmt (>= 0.8.5))
-  (cppo :build)
+  (fmt (>= 0.8.7))
+  (cppo (and :build (>= 1.1.0)))
   (csexp
    (>= 1.3.2))
   astring
   atdgen
   (logs (>= 0.7.0))
   (cmdliner
-   (>= 1.0.0))
+   (>= 1.1.0))
   (re
    (>= 1.7.2))
   result
   yojson
   (ocaml-version
    (>= 2.3.0))
-  (odoc-parser (>= 0.9.0))
+  (odoc-parser (>= 1.0.0))
   (lwt :with-test)
   (alcotest :with-test)))
