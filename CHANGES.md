@@ -20,6 +20,8 @@
   the output, before that line would've been dropped (#374, #387,
   @Leonidas-from-XIV)
 - Handle EINTR signal on waitpid call by restarting the syscall. (#409, @tmcgilchrist)
+- Fix parsing of multiline toplevel phrases in .mli files (#394, #397,
+  @Leonidas-from-XIV)
 
 #### Removed
 
