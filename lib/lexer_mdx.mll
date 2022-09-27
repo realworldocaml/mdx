@@ -64,12 +64,12 @@ and cram_text section = parse
       { let section = (String.length n, str) in
         newline lexbuf;
         `Section section :: cram_text (Some section) lexbuf }
-  | "  " ([^'\n']* as first_line) eol
+  | ("  " as ws) ([^'\n']* as first_line) eol
       { let start = Lexing.lexeme_start_p lexbuf in
         newline lexbuf;
         let header = "sh" in
         let requires_empty_line, contents = cram_block lexbuf in
-        let contents = (Format.asprintf "  %s" first_line) :: contents in
+        let contents = (Format.asprintf "%s%s" ws first_line) :: contents in
         let label_cmt = Some "" in
         let legacy_labels = "" in
         let end_ = Lexing.lexeme_start_p lexbuf in
@@ -104,10 +104,10 @@ and cram_text section = parse
 and cram_block = parse
   | eof { false, [] }
   | eol { newline lexbuf; true, [] }
-  | "  " ([^'\n'] * as str) eol
+  | ("  " as ws) ([^'\n'] * as str) eol
       { let requires_empty_line, lst = cram_block lexbuf in
         newline lexbuf;
-        requires_empty_line, (Format.asprintf "  %s" str) :: lst }
+        requires_empty_line, (Format.asprintf "%s%s" ws str) :: lst }
 
 {
   let markdown_token lexbuf =
