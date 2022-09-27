@@ -20,12 +20,7 @@ module Log = (val Logs.src_log src : Logs.LOG)
 open Astring
 open Misc
 
-type t = {
-  command : string list;
-  output : Output.t list;
-  exit_code : int;
-  vpad : int;
-}
+type t = { command : string list; output : Output.t list; exit_code : int }
 
 let dump_line ppf = function
   | #Output.t as o -> Output.dump ppf o
@@ -42,20 +37,10 @@ let dump ppf (t : t) =
     Fmt.(Dump.list Output.dump)
     t.output t.exit_code
 
-let pp_vpad ppf t =
-  let rec loop = function
-    | 0 -> ()
-    | n ->
-        Fmt.pf ppf "\n";
-        loop (Int.pred n)
-  in
-  loop t.vpad
-
 let pp_command ?(pad = 0) ppf (t : t) =
   match t.command with
   | [] -> ()
   | l ->
-      pp_vpad ppf t;
       let sep ppf () = Fmt.pf ppf "\\\n%a> " pp_pad pad in
       Fmt.pf ppf "%a$ %a\n" pp_pad pad Fmt.(list ~sep string) l
 
@@ -97,11 +82,10 @@ let of_lines ~syntax:_ ~loc:_ t =
   let lines =
     Lexer_cram.token (Lexing.from_string (String.concat ~sep:"\n" lines))
   in
-  let vpad = 0 in
   Log.debug (fun l ->
       l "Cram.of_lines (pad=%d) %a" hpad Fmt.(Dump.list dump_line) lines);
   let mk command output ~exit:exit_code =
-    { command; output = List.rev output; exit_code; vpad }
+    { command; output = List.rev output; exit_code }
   in
   let rec command_cont acc = function
     | `Command_cont c :: t -> command_cont (c :: acc) t

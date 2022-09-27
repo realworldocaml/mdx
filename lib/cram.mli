@@ -16,12 +16,7 @@
 
 (** Cram tests *)
 
-type t = {
-  command : string list;
-  output : Output.t list;
-  exit_code : int;
-  vpad : int;
-}
+type t = { command : string list; output : Output.t list; exit_code : int }
 (** The type for cram tests. *)
 
 (** {2 Accessors} *)
