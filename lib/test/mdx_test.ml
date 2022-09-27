@@ -311,11 +311,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
           with_non_det non_deterministic non_det ~command:print_block
             ~output:det ~det
       | Cram { language = _; non_det } ->
-          let pad, tests =
-            Cram.of_lines
-              ~syntax:(Option.value ~default:Normal syntax)
-              ~loc:t.loc t.contents
-          in
+          let pad, tests = Cram.of_lines t.contents in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:(fun () ->
               print_block ();
@@ -326,10 +322,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
             ~det:(fun () ->
               run_cram_tests ?syntax t ?root ppf temp_file pad tests)
       | Toplevel { non_det; env } ->
-          let phrases =
-            let syntax = Util.Option.value syntax ~default:Normal in
-            Toplevel.of_lines ~syntax ~loc:t.loc t.contents
-          in
+          let phrases = Toplevel.of_lines ~loc:t.loc t.contents in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:(fun () ->
               assert (syntax <> Some Cram);

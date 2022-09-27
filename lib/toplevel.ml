@@ -81,7 +81,7 @@ let vpad_of_lines t =
   in
   aux 0 t
 
-let of_lines ~syntax:_ ~(loc : Location.t) t =
+let of_lines ~(loc : Location.t) t =
   let pos = loc.loc_start in
   let hpad = hpad_of_lines t in
   let unpad line =

@@ -66,7 +66,7 @@ let rec hpad_of_lines = function
 
 let is_whitespace s = s |> String.trim |> String.is_empty
 
-let of_lines ~syntax:_ ~loc:_ t =
+let of_lines t =
   let hpad = hpad_of_lines t in
   let unpad line =
     match is_whitespace line with

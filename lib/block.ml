@@ -263,13 +263,13 @@ let ends_by_semi_semi c =
 let pp_line_directive ppf (file, line) = Fmt.pf ppf "#%d %S" line file
 let line_directive = Fmt.to_to_string pp_line_directive
 
-let executable_contents ~syntax b =
+let executable_contents b =
   let contents =
     match b.value with
     | OCaml _ -> b.contents
     | Raw _ | Cram _ | Include _ -> []
     | Toplevel _ ->
-        let phrases = Toplevel.of_lines ~syntax ~loc:b.loc b.contents in
+        let phrases = Toplevel.of_lines ~loc:b.loc b.contents in
         List.flatten
           (List.map
              (fun (t : Toplevel.t) ->

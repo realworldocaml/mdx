@@ -34,7 +34,7 @@ val command_line : t -> string
 
 (** {2 Parser} *)
 
-val of_lines : syntax:Syntax.t -> loc:Location.t -> string list -> int * t list
+val of_lines : string list -> int * t list
 (** [of_lines l] parses the commands [l]. It returns the optional
    whitespace padding. *)
 
