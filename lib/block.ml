@@ -282,8 +282,7 @@ let executable_contents ~syntax b =
   else contents @ [ ";;" ]
 
 let version_enabled version =
-  let open Util.Result.Infix in
-  Ocaml_version.of_string Sys.ocaml_version >>| fun curr_version ->
+  let+ curr_version = Ocaml_version.of_string Sys.ocaml_version in
   match version with
   | Some (op, v) ->
       Label.Relation.compare op (Ocaml_version.compare curr_version v) 0
@@ -354,7 +353,7 @@ let mk_cram ~loc ?language ~config ~header ~errors () =
   let kind = "shell" in
   match config with
   | { file_inc = None; part = None; env = None; non_det; _ } ->
-      check_no_errors ~loc errors >>| fun () ->
+      let+ () = check_no_errors ~loc errors in
       let language =
         Util.Option.value language
           ~default:
@@ -374,7 +373,7 @@ let mk_toplevel ~loc ~config ~contents ~errors =
       match guess_ocaml_kind contents with
       | `Code -> loc_error ~loc "invalid toplevel syntax in toplevel blocks."
       | `Toplevel ->
-          check_no_errors ~loc errors >>| fun () ->
+          let+ () = check_no_errors ~loc errors in
           Toplevel { env = Ocaml_env.mk env; non_det })
   | { file_inc = Some _; _ } -> label_not_allowed ~loc ~label:"file" ~kind
   | { part = Some _; _ } -> label_not_allowed ~loc ~label:"part" ~kind
@@ -383,7 +382,7 @@ let mk_include ~loc ~config ~header ~errors =
   let kind = "include" in
   match config with
   | { file_inc = Some file_included; part; non_det = None; env = None; _ } -> (
-      check_no_errors ~loc errors >>= fun () ->
+      let* () = check_no_errors ~loc errors in
       match header with
       | Some Header.OCaml ->
           let file_kind = Fk_ocaml { part_included = part } in
@@ -412,23 +411,26 @@ let infer_block ~loc ~config ~header ~contents ~errors =
           | `Code -> mk_ocaml ~loc ~config ~contents ~errors
           | `Toplevel -> mk_toplevel ~loc ~config ~contents ~errors)
       | _ ->
-          check_not_set ~loc "`part` label requires a `file` label." part
-          >>= fun () ->
-          check_no_errors ~loc errors >>| fun () -> Raw { header })
+          let* () =
+            check_not_set ~loc "`part` label requires a `file` label." part
+          in
+          let+ () = check_no_errors ~loc errors in
+          Raw { header })
 
 let mk ~loc ~section ~labels ~legacy_labels ~header ~contents ~errors =
   let block_kind =
     get_label (function Block_kind x -> Some x | _ -> None) labels
   in
   let config = get_block_config labels in
-  (match block_kind with
-  | Some OCaml -> mk_ocaml ~loc ~config ~contents ~errors
-  | Some Cram -> mk_cram ~loc ~config ~header ~errors ()
-  | Some Toplevel -> mk_toplevel ~loc ~config ~contents ~errors
-  | Some Include -> mk_include ~loc ~config ~header ~errors
-  | None -> infer_block ~loc ~config ~header ~contents ~errors)
-  >>= fun value ->
-  version_enabled config.version >>| fun version_enabled ->
+  let* value =
+    match block_kind with
+    | Some OCaml -> mk_ocaml ~loc ~config ~contents ~errors
+    | Some Cram -> mk_cram ~loc ~config ~header ~errors ()
+    | Some Toplevel -> mk_toplevel ~loc ~config ~contents ~errors
+    | Some Include -> mk_include ~loc ~config ~header ~errors
+    | None -> infer_block ~loc ~config ~header ~contents ~errors
+  in
+  let+ version_enabled = version_enabled config.version in
   {
     loc;
     section;
@@ -454,20 +456,24 @@ let mk_include ~loc ~section ~labels =
 let parse_labels ~label_cmt ~legacy_labels =
   match (label_cmt, legacy_labels) with
   | Some label_cmt, "" ->
-      Label.of_string label_cmt >>= fun labels -> Ok (labels, false)
+      let+ labels = Label.of_string label_cmt in
+      (labels, false)
   | Some _, _ -> Error [ `Msg "cannot mix both block labels syntax" ]
-  | None, l -> Label.of_string l >>= fun labels -> Ok (labels, true)
+  | None, l ->
+      let+ labels = Label.of_string l in
+      (labels, true)
 
 let from_raw raw =
   match raw with
   | Raw.Include { loc; section; labels } ->
-      locate_errors ~loc (Label.of_string labels) >>= fun labels ->
+      let* labels = locate_errors ~loc (Label.of_string labels) in
       Util.Result.to_error_list @@ mk_include ~loc ~section ~labels
   | Raw.Any { loc; section; header; contents; label_cmt; legacy_labels; errors }
     ->
       let header = Header.of_string header in
-      locate_errors ~loc (parse_labels ~label_cmt ~legacy_labels)
-      >>= fun (labels, legacy_labels) ->
+      let* labels, legacy_labels =
+        locate_errors ~loc (parse_labels ~label_cmt ~legacy_labels)
+      in
       Util.Result.to_error_list
       @@ mk ~loc ~section ~header ~contents ~labels ~legacy_labels ~errors
 

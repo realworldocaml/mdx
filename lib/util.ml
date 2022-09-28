@@ -41,12 +41,18 @@ module Result = struct
     let fold ~f ~init l =
       let rec go acc = function
         | [] -> Ok acc
-        | hd :: tl -> f acc hd >>= fun acc -> go acc tl
+        | hd :: tl ->
+            let* acc = f acc hd in
+            go acc tl
       in
       go init l
 
     let map ~f l =
-      fold ~f:(fun acc elm -> f elm >>| fun elm' -> elm' :: acc) ~init:[] l
+      fold
+        ~f:(fun acc elm ->
+          let+ elm' = f elm in
+          elm' :: acc)
+        ~init:[] l
       >>| List.rev
 
     let split l =
