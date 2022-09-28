@@ -58,7 +58,7 @@ let slice lines ~(start : Odoc_parser.Loc.point) ~(end_ : Odoc_parser.Loc.point)
 
 let is_newline c = c = '\n'
 
-let find_nth_line s nth =
+let find_nth_line s =
   let max_index = String.length s - 1 in
   let indexes_of_newlines =
     s |> String.to_seqi
@@ -72,16 +72,12 @@ let find_nth_line s nth =
   in
   (* first line always starts at index zero, even if there is no preceeding newline *)
   let indexes = 0 :: List.of_seq indexes_of_line_starts in
-  (* index starts at zero but lines go from 1 *)
-  List.nth_opt indexes (nth - 1)
+  fun nth ->
+    (* index starts at zero but lines go from 1 *)
+    List.nth_opt indexes (nth - 1)
 
-let point_to_index (point : Odoc_parser.Loc.point) s =
-  let offset_of_line_start =
-    match find_nth_line s point.line with
-    | None -> Fmt.failwith "Attempting to reach invalid line"
-    | Some o -> o
-  in
-  let offset = offset_of_line_start + point.column in
+let point_to_index offset_of_line_start (point : Odoc_parser.Loc.point) =
+  let offset = offset_of_line_start point.line + point.column in
   (* on line 1 odoc-parser adjusts by the start of the docstring, undo *)
   match point.line with 1 -> offset - docstring_start_adjustment | _ -> offset
 
@@ -91,16 +87,22 @@ let dislocate_point ~(location : Lexing.position)
     (point : Odoc_parser.Loc.point) =
   { point with line = point.line - location.pos_lnum + initial_line_number }
 
-let slice_location ~(location : Lexing.position) (span : Odoc_parser.Loc.span) s
-    =
+let slice_location ~(location : Lexing.position) offset_of_line_start
+    (span : Odoc_parser.Loc.span) s =
   let start = dislocate_point ~location span.start in
   let end_ = dislocate_point ~location span.end_ in
-  let start_index = point_to_index start s in
-  let end_index = point_to_index end_ s in
+  let start_index = point_to_index offset_of_line_start start in
+  let end_index = point_to_index offset_of_line_start end_ in
   let len = end_index - start_index in
   String.sub s start_index len
 
 let extract_code_blocks ~(location : Lexing.position) ~docstring =
+  let offset_in_string = find_nth_line docstring in
+  let offset_of_line_start nth =
+    match offset_in_string nth with
+    | None -> Fmt.failwith "Attempting to reach invalid line"
+    | Some offset -> offset
+  in
   let rec acc blocks =
     List.map
       (fun block ->
@@ -113,7 +115,9 @@ let extract_code_blocks ~(location : Lexing.position) ~docstring =
                   Code_block.{ language_tag; labels })
                 metadata
             in
-            let contents = slice_location ~location span docstring in
+            let contents =
+              slice_location ~location offset_of_line_start span docstring
+            in
             [ { Code_block.location = block.location; metadata; contents } ]
         | `List (_, _, lists) -> List.map acc lists |> List.concat
         | _ -> [])
