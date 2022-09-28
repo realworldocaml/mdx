@@ -23,33 +23,3 @@ let warn ?replacement s ~since =
   Format.eprintf
     "Warning: %s is deprecated since %s and will be removed in 2.0.0. %s\n%!" s
     since replacement
-
-module Missing_double_semicolon = struct
-  let missing_semicolon = ref false
-
-  let ends_with_semi cmd =
-    cmd |> Astring.String.trim |> Astring.String.is_suffix ~affix:";;"
-
-  let fix_toplevel : Toplevel.t -> Toplevel.t =
-   fun toplevel ->
-    let rec fix_command = function
-      | [] -> []
-      | [ cmd ] when not @@ ends_with_semi cmd ->
-          missing_semicolon := true;
-          [ Printf.sprintf "%s;;" cmd ]
-      | [ cmd ] -> [ cmd ]
-      | x :: xs -> x :: fix_command xs
-    in
-    { toplevel with command = fix_command toplevel.command }
-
-  let fix block = List.map fix_toplevel block
-
-  let report ~filename =
-    if !missing_semicolon then
-      Format.eprintf
-        "Warning: OCaml toplevel block without trailing ;; detected in file \
-         '%s'.\n\
-         Non-semicolon terminated phrases are deprecated.\n\
-         In MDX 3.0 support for toplevel blocks without ;; will be removed.\n"
-        filename
-end

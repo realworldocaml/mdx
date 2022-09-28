@@ -323,7 +323,6 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
             let syntax = Util.Option.value syntax ~default:Normal in
             Toplevel.of_lines ~syntax ~loc:t.loc t.contents
           in
-          let phrases = Deprecated.Missing_double_semicolon.fix phrases in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:(fun () ->
               assert (syntax <> Some Cram);
@@ -367,7 +366,6 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
             try test_block ~ppf ~temp_file t
             with Failure msg -> raise (Test_block_failure (t, msg))))
       items;
-    Deprecated.Missing_double_semicolon.report ~filename:file;
     Format.pp_print_flush ppf ();
     Buffer.contents buf
   in
