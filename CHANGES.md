@@ -22,6 +22,10 @@
 
 #### Removed
 
+- Removed warning about missing semicolons added in MDX 1.11.0 and the
+  automatic insertion of semicolons in the corrected files introduced in MDX
+  2.0.0. (#<PR_NUMBER>, @Leonidas-from-XIV)
+
 #### Security
 
 ### 2.1.0
