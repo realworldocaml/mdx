@@ -60,7 +60,9 @@ let parse l =
       (function
         | `Text t -> Ok (Text t)
         | `Section s -> Ok (Section s)
-        | `Block rb -> Block.from_raw rb >>= fun b -> Ok (Block b))
+        | `Block rb ->
+            let* b = Block.from_raw rb in
+            Ok (Block b))
       l
   in
   let ok, errors = Util.Result.List.split results in
@@ -93,7 +95,7 @@ type expect_result = Identical | Differs
 
 let run_str ~syntax ~f file =
   let file_contents, lexbuf = Misc.init file in
-  parse_lexbuf file_contents syntax lexbuf >>| fun items ->
+  let+ items = parse_lexbuf file_contents syntax lexbuf in
   Log.debug (fun l -> l "run @[%a@]" dump items);
   let corrected = f file_contents items in
   let has_changed = corrected <> file_contents in
@@ -106,15 +108,16 @@ let write_file ~outfile content =
   close_out oc
 
 let run_to_stdout ?(syntax = Normal) ~f infile =
-  run_str ~syntax ~f infile >>| fun (_, corrected) -> print_string corrected
+  let+ _, corrected = run_str ~syntax ~f infile in
+  print_string corrected
 
 let run_to_file ?(syntax = Normal) ~f ~outfile infile =
-  run_str ~syntax ~f infile >>| fun (_, corrected) ->
+  let+ _, corrected = run_str ~syntax ~f infile in
   write_file ~outfile corrected
 
 let run ?(syntax = Normal) ?(force_output = false) ~f infile =
   let outfile = infile ^ ".corrected" in
-  run_str ~syntax ~f infile >>| fun (test_result, corrected) ->
+  let+ test_result, corrected = run_str ~syntax ~f infile in
   match (force_output, test_result) with
   | true, _ | false, Differs -> write_file ~outfile corrected
   | false, Identical -> if Sys.file_exists outfile then Sys.remove outfile
