@@ -115,7 +115,6 @@ type t = {
   value : value;
 }
 
-let dump_string ppf s = Fmt.pf ppf "%S" s
 let dump_section = Fmt.(Dump.pair int string)
 
 let header t =
@@ -145,18 +144,18 @@ let dump ppf ({ loc; section; labels; contents; value; _ } as b) =
     labels
     Fmt.(Dump.option Header.pp)
     (header b)
-    Fmt.(Dump.list dump_string)
+    Fmt.Dump.(list string)
     contents dump_value value
 
 let pp_lines syntax _t ppf lines =
   let print_line ppf first last line =
     (match syntax with
-    | Some Syntax.Cram -> Fmt.pf ppf "%s" line
+    | Some Syntax.Cram -> Fmt.string ppf line
     | Some Syntax.Mli -> (
         match (first, last) with
-        | true, _ | _, true -> Fmt.pf ppf "%s" (String.trim line)
-        | false, false -> Fmt.pf ppf "%s" line)
-    | Some Syntax.Normal | None -> Fmt.pf ppf "%s" line);
+        | true, _ | _, true -> Fmt.string ppf (String.trim line)
+        | false, false -> Fmt.string ppf line)
+    | Some Syntax.Normal | None -> Fmt.string ppf line);
     match last with false -> Fmt.pf ppf "\n" | true -> ()
   in
 
@@ -172,8 +171,8 @@ let pp_lines syntax _t ppf lines =
 
 let pp_contents ?syntax ppf t =
   match (syntax, t.contents) with
-  | Some Syntax.Mli, [ line ] -> Fmt.pf ppf "%s" line
-  | Some Syntax.Mli, lines -> Fmt.pf ppf "%a" (pp_lines syntax t) lines
+  | Some Syntax.Mli, [ line ] -> Fmt.string ppf line
+  | Some Syntax.Mli, lines -> (pp_lines syntax t) ppf lines
   | (Some Cram | Some Normal | None), [] -> ()
   | (Some Cram | Some Normal | None), lines ->
       Fmt.pf ppf "%a\n" (pp_lines syntax t) lines
@@ -182,7 +181,7 @@ let pp_errors ppf t =
   match t.value with
   | OCaml { errors; _ } when List.length errors > 0 ->
       Fmt.string ppf "```mdx-error\n";
-      Fmt.pf ppf "%a" Fmt.(list ~sep:nop Output.pp) errors;
+      Fmt.(list ~sep:nop Output.pp) ppf errors;
       Fmt.string ppf "```\n"
   | _ -> ()
 
