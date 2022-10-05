@@ -21,10 +21,7 @@ This works for normal OCaml fragments:
   | n -> n * fact (n-1)
 ]}
 
-The formatting for multilines in .mli files is the following:
-- The first line is indented two spaces after the comment opening
-- The other lines are indented to keep the original indentation relative to the
-  first line
+The formatting for multilines in .mli files should be preserved exactly:
 
   {[
     match None with
