@@ -20,7 +20,12 @@ module Log = (val Logs.src_log src : Logs.LOG)
 open Astring
 open Misc
 
-type t = { command : string list; output : Output.t list; exit_code : int }
+type t = {
+  command : string list;
+  output : Output.t list;
+  exit_code : int;
+  vpad : int;
+}
 
 let dump_line ppf = function
   | #Output.t as o -> Output.dump ppf o
@@ -37,10 +42,20 @@ let dump ppf (t : t) =
     Fmt.(Dump.list Output.dump)
     t.output t.exit_code
 
+let pp_vpad ppf t =
+  let rec loop = function
+    | 0 -> ()
+    | n ->
+        Fmt.pf ppf "\n";
+        loop (Int.pred n)
+  in
+  loop t.vpad
+
 let pp_command ?(pad = 0) ppf (t : t) =
   match t.command with
   | [] -> ()
   | l ->
+      pp_vpad ppf t;
       let sep ppf () = Fmt.pf ppf "\\\n%a> " pp_pad pad in
       Fmt.pf ppf "%a$ %a\n" pp_pad pad Fmt.(list ~sep string) l
 
@@ -66,6 +81,14 @@ let rec hpad_of_lines = function
 
 let is_whitespace s = s |> String.trim |> String.is_empty
 
+let vpad_lines lines =
+  let rec loop vpad = function
+    | [] -> (vpad, [])
+    | `Output "" :: xs -> loop (vpad + 1) xs
+    | xs -> (vpad, xs)
+  in
+  loop 0 lines
+
 let of_lines t =
   let hpad = hpad_of_lines t in
   let unpad line =
@@ -77,15 +100,14 @@ let of_lines t =
         | false -> String.with_index_range line ~first:hpad)
   in
   let lines = List.map unpad t in
-  (* remove leading empty line, if any which is true for multipline blocks *)
-  let lines = match lines with "" :: lines -> lines | lines -> lines in
   let lines =
     Lexer_cram.token (Lexing.from_string (String.concat ~sep:"\n" lines))
   in
+  let vpad, lines = vpad_lines lines in
   Log.debug (fun l ->
       l "Cram.of_lines (pad=%d) %a" hpad Fmt.(Dump.list dump_line) lines);
   let mk command output ~exit:exit_code =
-    { command; output = List.rev output; exit_code }
+    { command; output = List.rev output; exit_code; vpad = 0 }
   in
   let rec command_cont acc = function
     | `Command_cont c :: t -> command_cont (c :: acc) t
@@ -107,24 +129,33 @@ let of_lines t =
     | (`Command_last s | `Command_cont s) :: t ->
         aux command output acc (`Output s :: t)
   in
-  match lines with
-  | `Command_first cmd :: t ->
-      let cmd, t = command_cont [ cmd ] t in
-      (hpad, aux cmd [] [] t)
-  | `Command cmd :: t -> (hpad, aux [ cmd ] [] [] t)
-  | [] -> (0, [])
-  | `Output line :: _ ->
-      if String.length line > 0 && line.[0] = '$' then
-        failwith
-          "Blocks must start with a command or similar, not with an output \
-           line. To indicate a line as a command, start it with a dollar \
-           followed by a space."
-      else
-        failwith
-          "Blocks must start with a command or similar, not with an output \
-           line. Please, make sure that there's no spare empty line, \
-           particularly between the output and its input."
-  | _ -> Fmt.failwith "invalid cram block: %a" Fmt.(Dump.list dump_line) lines
+  let hpad, commands =
+    match lines with
+    | `Command_first cmd :: t ->
+        let cmd, t = command_cont [ cmd ] t in
+        (hpad, aux cmd [] [] t)
+    | `Command cmd :: t -> (hpad, aux [ cmd ] [] [] t)
+    | [] -> (0, [])
+    | `Output line :: _ ->
+        if String.length line > 0 && line.[0] = '$' then
+          failwith
+            "Blocks must start with a command or similar, not with an output \
+             line. To indicate a line as a command, start it with a dollar \
+             followed by a space."
+        else
+          failwith
+            "Blocks must start with a command or similar, not with an output \
+             line. Please, make sure that there's no spare empty line, \
+             particularly between the output and its input."
+    | _ -> Fmt.failwith "invalid cram block: %a" Fmt.(Dump.list dump_line) lines
+  in
+  (* add vpad to the first command *)
+  let commands =
+    match commands with
+    | [] -> commands
+    | first :: rest -> { first with vpad } :: rest
+  in
+  (hpad, commands)
 
 let exit_code t = t.exit_code
 

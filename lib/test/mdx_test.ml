@@ -101,8 +101,6 @@ let resolve_root file dir root =
 let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
   (* TODO: for some reason this doesn't use Block.pp *)
   Block.pp_header ?syntax ppf t;
-  (* TODO: this is ugly but required to print multiline cram blocks in Mli correctly *)
-  (match syntax with Some Mli -> Fmt.pf ppf "\n" | _ -> ());
   List.iter
     (fun test ->
       let root = root_dir ?root ~block:t () in
@@ -120,7 +118,7 @@ let run_cram_tests ?syntax t ?root ppf temp_file pad tests =
           | `Ellipsis -> Output.pp ~pad ppf `Ellipsis
           | `Output line ->
               let line = ansi_color_strip line in
-              Output.pp ?syntax ~pad ppf (`Output line))
+              Output.pp ~pad ppf (`Output line))
         output;
       Cram.pp_exit_code ~pad ppf n)
     tests;
