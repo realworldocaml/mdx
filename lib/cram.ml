@@ -27,6 +27,13 @@ type t = {
   vpad : int;
 }
 
+type cram_tests = {
+  start_pad : int;
+  hpad : int;
+  tests : t list;
+  end_pad : string option;
+}
+
 let dump_line ppf = function
   | #Output.t as o -> Output.dump ppf o
   | `Exit i -> Fmt.pf ppf "`Exit %d" i
@@ -35,21 +42,20 @@ let dump_line ppf = function
   | `Command_cont c -> Fmt.pf ppf "`Command_cont %S" c
   | `Command_last c -> Fmt.pf ppf "`Command_last %S" c
 
-let dump ppf (t : t) =
-  Fmt.pf ppf "{@[command: %a;@ output: %a;@ exit_code: %d@]}"
-    Fmt.(Dump.list dump_string)
-    t.command
-    Fmt.(Dump.list Output.dump)
-    t.output t.exit_code
+let dump ppf { command; output; exit_code; vpad } =
+  Fmt.pf ppf "{@[command: %a;@ output: %a;@ exit_code: %d;@ vpad: %d]}"
+    Fmt.Dump.(list string)
+    command
+    (Fmt.Dump.list Output.dump)
+    output exit_code vpad
 
-let pp_vpad ppf t =
-  let rec loop = function
-    | 0 -> ()
-    | n ->
-        Fmt.pf ppf "\n";
-        loop (Int.pred n)
-  in
-  loop t.vpad
+let rec pp_vertical_pad ppf = function
+  | 0 -> ()
+  | n ->
+      Fmt.pf ppf "\n";
+      pp_vertical_pad ppf (Int.pred n)
+
+let pp_vpad ppf { vpad; _ } = pp_vertical_pad ppf vpad
 
 let pp_command ?(pad = 0) ppf (t : t) =
   match t.command with
@@ -57,13 +63,15 @@ let pp_command ?(pad = 0) ppf (t : t) =
   | l ->
       pp_vpad ppf t;
       let sep ppf () = Fmt.pf ppf "\\\n%a> " pp_pad pad in
-      Fmt.pf ppf "%a$ %a\n" pp_pad pad Fmt.(list ~sep string) l
+      Fmt.pf ppf "%a$ %a" pp_pad pad Fmt.(list ~sep string) l
 
-let pp_exit_code ?(pad = 0) ppf n =
-  if n <> 0 then Fmt.pf ppf "%a[%d]\n" pp_pad pad n
+let pp_exit_code ?(pad = 0) ppf = function
+  | 0 -> ()
+  | n -> Fmt.pf ppf "\n%a[%d]" pp_pad pad n
 
 let pp ?pad ppf (t : t) =
   pp_command ?pad ppf t;
+  Fmt.string ppf "\n";
   pp_lines (Output.pp ?pad) ppf t.output;
   pp_exit_code ?pad ppf t.exit_code
 
@@ -79,31 +87,71 @@ let rec hpad_of_lines = function
           done;
           !i)
 
-let is_whitespace s = s |> String.trim |> String.is_empty
+let unpad_line ~hpad line =
+  match Util.String.all_blank line with
+  | true -> String.with_index_range line ~first:hpad
+  | false -> (
+      match String.length line < hpad with
+      | true -> Fmt.failwith "invalid padding: %S" line
+      | false -> String.with_index_range line ~first:hpad)
 
-let vpad_lines lines =
-  let rec loop vpad = function
-    | [] -> (vpad, [])
-    | `Output "" :: xs -> loop (vpad + 1) xs
-    | xs -> (vpad, xs)
+let unpad hpad = List.map (unpad_line ~hpad)
+
+let dump_cram_tests ppf { start_pad; hpad; tests; end_pad } =
+  Fmt.pf ppf "{@[start_pad: %d;@ hpad: %d;@ tests: %a;@ end_pad: %a]}" start_pad
+    hpad
+    Fmt.Dump.(list dump)
+    tests
+    Fmt.Dump.(option string)
+    end_pad
+
+(* determine the amount of empty lines before the first non-empty line *)
+let start_pad lines =
+  let pad_lines, code_lines =
+    Util.List.partition_until (String.equal "") lines
   in
-  loop 0 lines
+  (* make sure there *are* non-empty lines in the first place *)
+  match List.length code_lines with
+  | 0 -> (0, lines)
+  | _ -> (List.length pad_lines, code_lines)
+
+let rec end_pad = function
+  | [] -> (None, [])
+  | [ x; last ] when Util.String.all_blank last -> (Some last, [ x ])
+  | x :: xs ->
+      let pad, xs = end_pad xs in
+      (pad, x :: xs)
+
+type cram_input = {
+  start_pad : int;
+  tests : string list;
+  end_pad : string option;
+}
+
+let determine_padding lines =
+  match List.length lines with
+  | 0 -> failwith "unable to determine padding, no lines in block"
+  (* one line, it doesn't have any paddings *)
+  | 1 -> { start_pad = 0; tests = lines; end_pad = None }
+  | _ ->
+      let start_pad, lines = start_pad lines in
+      let end_pad, lines = end_pad lines in
+      let lines =
+        match List.for_all Util.String.all_blank lines with
+        | true -> []
+        | false -> lines
+      in
+      { start_pad; tests = lines; end_pad }
 
 let of_lines t =
+  (* TODO: determine hpad after padding, much easier *)
   let hpad = hpad_of_lines t in
-  let unpad line =
-    match is_whitespace line with
-    | true -> String.with_index_range line ~first:hpad
-    | false -> (
-        match String.length line < hpad with
-        | true -> Fmt.failwith "invalid padding: %S" line
-        | false -> String.with_index_range line ~first:hpad)
+  let { start_pad; tests; end_pad } = determine_padding t in
+  let lines = unpad hpad tests in
+  let lexer_input =
+    lines |> List.map ((Fun.flip String.append) "\n") |> String.concat
   in
-  let lines = List.map unpad t in
-  let lines =
-    Lexer_cram.token (Lexing.from_string (String.concat ~sep:"\n" lines))
-  in
-  let vpad, lines = vpad_lines lines in
+  let lines = Lexer_cram.token (Lexing.from_string lexer_input) in
   Log.debug (fun l ->
       l "Cram.of_lines (pad=%d) %a" hpad Fmt.(Dump.list dump_line) lines);
   let mk command output ~exit:exit_code =
@@ -129,7 +177,7 @@ let of_lines t =
     | (`Command_last s | `Command_cont s) :: t ->
         aux command output acc (`Output s :: t)
   in
-  let hpad, commands =
+  let hpad, tests =
     match lines with
     | `Command_first cmd :: t ->
         let cmd, t = command_cont [ cmd ] t in
@@ -149,13 +197,7 @@ let of_lines t =
              particularly between the output and its input."
     | _ -> Fmt.failwith "invalid cram block: %a" Fmt.(Dump.list dump_line) lines
   in
-  (* add vpad to the first command *)
-  let commands =
-    match commands with
-    | [] -> commands
-    | first :: rest -> { first with vpad } :: rest
-  in
-  (hpad, commands)
+  { start_pad; hpad; tests; end_pad }
 
 let exit_code t = t.exit_code
 

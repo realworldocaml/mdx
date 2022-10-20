@@ -19,7 +19,7 @@ open Astring
 let rec hpad_of_lines = function
   | [] -> 0
   | h :: hs -> (
-      match String.is_empty @@ String.trim h with
+      match Util.String.all_blank h with
       | true -> hpad_of_lines hs
       | false ->
           let i = ref 0 in

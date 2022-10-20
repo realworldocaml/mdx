@@ -189,18 +189,22 @@ let docstring_code_blocks str =
 
 let make_block ~loc code_block =
   let handle_header = function
-    | Some Code_block.{ language_tag; labels } -> (
-        let header =
-          Block.Header.of_string (Odoc_parser.Loc.value language_tag)
+    | Some Code_block.{ language_tag; labels } ->
+        let open Util.Result.Infix in
+        let language_tag = Odoc_parser.Loc.value language_tag in
+        let header = Block.Header.of_string language_tag in
+        let* labels =
+          match labels with
+          | None -> Ok []
+          | Some labels -> (
+              let labels = Odoc_parser.Loc.value labels |> String.trim in
+              match Label.of_string labels with
+              | Ok labels -> Ok labels
+              | Error msgs -> Error (List.hd msgs)
+              (* TODO: Report precise location *))
         in
-        match labels with
-        | None -> Ok (header, [])
-        | Some labels -> (
-            let labels = Odoc_parser.Loc.value labels |> String.trim in
-            match Label.of_string labels with
-            | Ok labels -> Ok (header, labels)
-            | Error msgs -> Error (List.hd msgs)
-            (* TODO: Report precise location *)))
+        let language_label = Label.Language_tag language_tag in
+        Ok (header, language_label :: labels)
     | None ->
         (* If not specified, blocks are run as ocaml blocks *)
         Ok (Some OCaml, [])
@@ -212,28 +216,6 @@ let make_block ~loc code_block =
       Block.mk ~loc ~section:None ~labels ~header ~contents ~legacy_labels:false
         ~errors:[]
 
-let code_block_markup code_block =
-  let open Document in
-  let opening =
-    match code_block.Code_block.metadata with
-    | Some { language_tag; labels } ->
-        let labels =
-          match labels with
-          | Some s -> [ Text " "; Text (Odoc_parser.Loc.value s) ]
-          | None -> []
-        in
-        [ Text "{@"; Text (Odoc_parser.Loc.value language_tag) ]
-        @ labels @ [ Text "[" ]
-    | None -> [ Text "{[" ]
-  in
-  let hpad =
-    let has_several_lines = String.contains code_block.contents '\n' in
-    let column = code_block.location.start.column in
-    if not has_several_lines then ""
-    else Astring.String.v ~len:column (fun _ -> ' ')
-  in
-  (opening, [ Text (hpad ^ "]}") ])
-
 let parse_mli file_contents =
   (* Find the locations of the code blocks within [file_contents], then slice it up into
      [Text] and [Block] parts by using the starts and ends of those blocks as
@@ -241,6 +223,7 @@ let parse_mli file_contents =
   let code_blocks = docstring_code_blocks file_contents in
   let cursor = ref { Odoc_parser.Loc.line = 1; column = 0 } in
   let lines = String.split_on_char '\n' file_contents |> Array.of_list in
+  (* TODO: Use List.fold_left instead of refs *)
   let tokens =
     List.map
       (fun ((code_block : Code_block.t), loc) ->
@@ -253,9 +236,8 @@ let parse_mli file_contents =
           | Ok block -> Document.Block block
           | Error (`Msg msg) -> Fmt.failwith "Error creating block: %s" msg
         in
-        let opening, closing = code_block_markup code_block in
         cursor := code_block.location.end_;
-        [ pre_text ] @ opening @ [ block ] @ closing)
+        [ pre_text ] @ [ block ])
       code_blocks
     |> List.concat
   in

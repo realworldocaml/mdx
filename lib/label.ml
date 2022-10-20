@@ -85,6 +85,7 @@ type t =
   | Set of string * string
   | Unset of string
   | Block_kind of block_kind
+  | Language_tag of string
 
 let pp_block_kind ppf = function
   | OCaml -> Fmt.string ppf "ocaml"
@@ -107,6 +108,7 @@ let pp ppf = function
   | Set (v, x) -> Fmt.pf ppf "set-%s=%s" v x
   | Unset x -> Fmt.pf ppf "unset-%s" x
   | Block_kind bk -> pp_block_kind ppf bk
+  | Language_tag language_tag -> Fmt.string ppf language_tag
 
 let is_prefix ~prefix s =
   let len_prefix = String.length prefix in

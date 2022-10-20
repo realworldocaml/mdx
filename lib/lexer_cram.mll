@@ -1,6 +1,4 @@
 {
-open Astring
-let commands s = String.cuts ~sep:"\\\n> " s
 }
 
 let eol = '\n' | eof
@@ -12,13 +10,13 @@ rule token = parse
  | "[" (digit+ as str) "]" ws* eol
                      { `Exit (int_of_string str) :: token lexbuf }
  | ws* "..." ws* eol { `Ellipsis :: token lexbuf }
- | "$ "              {
+ | ws* "$ "              {
       let buf = Buffer.create 8 in
       let line, cont = command_line buf lexbuf in
       if cont then `Command_first line :: token lexbuf
       else `Command line :: token lexbuf
     }
- | "> "              {
+ | ws* "> "              {
       let buf = Buffer.create 8 in
       let line, cont = command_line buf lexbuf in
       if cont then `Command_cont line :: token lexbuf

@@ -19,13 +19,58 @@ open Mdx.Util.Result.Infix
 let src = Logs.Src.create "cram.pp"
 
 module Log = (val Logs.src_log src : Logs.LOG)
+module Util = Mdx.Util
+module Block = Mdx.Block
+module Toplevel = Mdx.Toplevel
 
 let vpad_of_lines t =
   let rec aux i = function
-    | h :: t when String.trim h = "" -> aux (i + 1) t
+    | h :: t when Mdx.Util.String.all_blank h -> aux (i + 1) t
     | _ -> i
   in
   aux 0 t
+
+let pp_line_directive ppf (file, line) = Fmt.pf ppf "#%d %S" line file
+
+let rec add_semi_semi = function
+  | [] -> []
+  | [ "" ] -> [ ";;" ]
+  | x :: xs -> x :: add_semi_semi xs
+
+let phrase_pad (phrase : Toplevel.t) = String.make (phrase.hpad + 2) ' '
+
+let executable_contents (block : Block.t) =
+  let loc = block.loc in
+  let vpad = vpad_of_lines block.contents in
+  let line_pairs =
+    match block.value with
+    | OCaml _ ->
+        let block_start_loc = loc.loc_start.pos_lnum in
+        let line = block_start_loc + vpad in
+        [ (line, block.contents) ]
+    | Toplevel _ ->
+        Toplevel.of_lines ~loc block.contents
+        (* TODO: use all values from the record *)
+        |> (fun parsed -> parsed.tests)
+        |> List.fold_left
+             (fun acc (phrase : Toplevel.t) ->
+               match phrase.command with
+               | [] -> acc
+               | commands ->
+                   let mk s = Printf.sprintf "%s%s" (phrase_pad phrase) s in
+                   let commands = List.map mk commands in
+                   let commands = "" :: commands in
+                   let line = phrase.pos.pos_lnum in
+                   (line, commands) :: acc)
+             []
+        |> List.rev
+    | Raw _ | Cram _ | Include _ -> []
+  in
+  line_pairs
+  |> List.map (fun (line, contents) ->
+         if contents = [] || Block.ends_by_semi_semi contents then
+           (line, contents)
+         else (line, add_semi_semi contents))
 
 let run (`Setup ()) (`File file) (`Section section) =
   Mdx.parse_file Normal file >>! fun t ->
@@ -38,25 +83,20 @@ let run (`Setup ()) (`File file) (`Section section) =
   in
   match t with
   | [] -> 1
-  | _ ->
-      let rvpad = ref 1 in
+  | t ->
       List.iter
         (function
           | Mdx.Section _ | Text _ -> ()
-          | Block b ->
-              if not (Mdx.Block.skip b) then (
-                Log.debug (fun l -> l "pp: %a" Mdx.Block.dump b);
-                let pp_lines = Fmt.(list ~sep:(any "\n") string) in
-                let contents = Mdx.Block.executable_contents b in
-                match b.value with
-                | Toplevel _ -> Fmt.pr "%a\n" pp_lines contents
-                | OCaml _ ->
-                    let vpad = vpad_of_lines contents in
-                    rvpad := vpad + !rvpad;
-                    let line = b.loc.loc_start.pos_lnum + !rvpad in
-                    Fmt.pr "%a\n%a\n" Mdx.Block.pp_line_directive (file, line)
-                      pp_lines contents
-                | _ -> ()))
+          | Block block when Mdx.Block.skip block -> ()
+          | Block block ->
+              Log.debug (fun l -> l "pp: %a" Mdx.Block.dump block);
+              let pp_lines = Fmt.(list ~sep:(any "\n") string) in
+              let contents = executable_contents block in
+              List.iter
+                (fun (line, contents) ->
+                  Fmt.pr "%a%a\n" pp_line_directive (file, line) pp_lines
+                    contents)
+                contents)
         t;
       0
 

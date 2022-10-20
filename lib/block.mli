@@ -33,6 +33,8 @@ type ocaml_value = {
       (** [env] is the name given to the environment where tests are run. *)
   non_det : Label.non_det option;
   errors : Output.t list;
+      (** [header] defines whether a header was specified for the block. *)
+  header : Header.t option;
 }
 
 type toplevel_value = {
@@ -142,10 +144,6 @@ val pp_footer : ?syntax:Syntax.t -> t Fmt.t
 val pp : ?syntax:Syntax.t -> t Fmt.t
 (** [pp] pretty-prints blocks. *)
 
-val pp_line_directive : (string * int) Fmt.t
-(** [pp_line_directive] pretty-prints a line directive given as a
-   filename and line number. *)
-
 (** {2 Accessors} *)
 
 val non_det : t -> Label.non_det option
@@ -171,11 +169,6 @@ val value : t -> value
 
 val section : t -> section option
 (** [section t] is [t]'s section. *)
-
-val executable_contents : t -> string list
-(** [executable_contents t] is either [t]'s contents if [t] is a raw
-   or a cram block, or [t]'s commands if [t] is a toplevel fragments
-   (e.g. the phrase result is discarded). *)
 
 val is_active : ?section:string -> t -> bool
 
