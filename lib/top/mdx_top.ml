@@ -20,34 +20,36 @@ open Compat_top
 type directive = Directory of string | Load of string
 
 let redirect ~f =
-  let stdout_backup = Unix.dup Unix.stdout in
-  let stderr_backup = Unix.dup Unix.stderr in
-  let filename = Filename.temp_file "ocaml-mdx" "stdout" in
-  let fd_out =
-    Unix.openfile filename Unix.[ O_WRONLY; O_CREAT; O_TRUNC ] 0o600
-  in
-  Unix.dup2 fd_out Unix.stdout;
-  Unix.dup2 fd_out Unix.stderr;
-  let ic = open_in filename in
-  let read_up_to = ref 0 in
+  let stdout_backup = Unix.dup ~cloexec:true Unix.stdout in
+  let stderr_backup = Unix.dup ~cloexec:true Unix.stderr in
+  let fd_in, fd_out = Unix.pipe ~cloexec:true () in
+  Unix.set_nonblock fd_in;
+  Unix.dup2 ~cloexec:false fd_out Unix.stdout;
+  Unix.dup2 ~cloexec:false fd_out Unix.stderr;
+  Unix.close fd_out;
+  let bufsize = 4096 in
+  let bytes = Bytes.create bufsize in
   let capture buf =
     flush stdout;
     flush stderr;
-    let pos = Unix.lseek fd_out 0 Unix.SEEK_CUR in
-    let len = pos - !read_up_to in
-    read_up_to := pos;
-    Buffer.add_channel buf ic len
+    try
+      while true do
+        let n = Unix.read fd_in bytes 0 bufsize in
+        Buffer.add_subbytes buf bytes 0 n
+      done
+    with
+    | Unix.(Unix_error (EAGAIN, _, _)) | Unix.(Unix_error (EWOULDBLOCK, _, _))
+    ->
+      ()
   in
   Fun.protect
     (fun () -> f ~capture)
     ~finally:(fun () ->
-      close_in_noerr ic;
-      Unix.close fd_out;
-      Unix.dup2 stdout_backup Unix.stdout;
-      Unix.dup2 stderr_backup Unix.stderr;
+      Unix.close fd_in;
+      Unix.dup2 ~cloexec:false stdout_backup Unix.stdout;
+      Unix.dup2 ~cloexec:false stderr_backup Unix.stderr;
       Unix.close stdout_backup;
-      Unix.close stderr_backup;
-      Sys.remove filename)
+      Unix.close stderr_backup)
 
 module Lexbuf = struct
   open Lexing
