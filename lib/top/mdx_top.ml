@@ -54,8 +54,6 @@ let redirect ~f =
 module Lexbuf = struct
   open Lexing
 
-  type t = { contents : string; lexbuf : lexbuf }
-
   let toplevel_fname = "//toplevel//"
 
   let shift_toplevel_position ~start pos =
@@ -100,12 +98,7 @@ module Phrase = struct
   open Lexing
   open Parsetree
 
-  type t = {
-    doc : Lexbuf.t;
-    startpos : position;
-    endpos : position;
-    parsed : (toplevel_phrase, exn) result;
-  }
+  type t = { startpos : position; parsed : (toplevel_phrase, exn) result }
 
   let result t = t.parsed
   let start t = t.startpos
@@ -140,8 +133,7 @@ module Phrase = struct
            aux ());
           Error exn
     in
-    let endpos = lexbuf.Lexing.lex_curr_p in
-    { doc = { lexbuf; contents }; startpos; endpos; parsed }
+    { startpos; parsed }
 
   let parse lines =
     let lines =
@@ -175,7 +167,6 @@ module Rewrite = struct
   type t = {
     typ : Longident.t;
     witness : Longident.t;
-    runner : Longident.t;
     rewrite : Location.t -> expression -> expression;
     mutable preload : string option;
   }
@@ -193,7 +184,7 @@ module Rewrite = struct
             (Exp.ident (Location.mkloc runner loc))
             [ (Asttypes.Nolabel, e) ])
     in
-    { typ; runner; rewrite; witness; preload }
+    { typ; rewrite; witness; preload }
 
   (* Rewrite Async.Defered.t expressions to
      Async.Thread_safe.block_on_async_exn (fun () -> <expr>). *)
@@ -215,7 +206,7 @@ module Rewrite = struct
         (Exp.ident (Location.mkloc runner loc))
         [ (Asttypes.Nolabel, Exp.fun_ Asttypes.Nolabel None punit e) ]
     in
-    { typ; runner; rewrite; witness; preload }
+    { typ; rewrite; witness; preload }
 
   let normalize_type_path env path =
     match Env.find_type path env with
