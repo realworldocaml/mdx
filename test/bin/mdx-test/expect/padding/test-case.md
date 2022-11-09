@@ -11,10 +11,10 @@ Arbitrary padding is allowed, as long as it is consistent inside a code block.
 ```
 
 ```sh version<4.12
-$ ocaml -warn-help | egrep '\b9 Missing\b'
+$ ocaml -warn-help | grep -E '\b9 Missing\b'
   9 Missing fields in a record pattern.
 ```
 ```sh version>=4.12
-$ ocaml -warn-help | egrep '\b9 \[missing-record-field-pattern\] Missing\b'
+$ ocaml -warn-help | grep -E '\b9 \[missing-record-field-pattern\] Missing\b'
   9 [missing-record-field-pattern] Missing fields in a record pattern.
 ```
