@@ -5,4 +5,10 @@
  (preprocess
   (action
    (run %{bin:cppo} -V OCAML:%{ocaml_version} %{input-file})))
- (libraries unix mdx compiler-libs compiler-libs.toplevel threads findlib.top))
+ (libraries
+  unix
+  mdx
+  compiler-libs
+  compiler-libs.toplevel
+  threads
+  findlib.top))
