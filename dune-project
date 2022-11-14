@@ -1,6 +1,8 @@
-(lang dune 2.7)
+(lang dune 3.5)
 
 (name mdx)
+
+(cram disable)
 
 (source
  (github realworldocaml/mdx))

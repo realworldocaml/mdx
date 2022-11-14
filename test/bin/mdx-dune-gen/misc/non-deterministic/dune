@@ -25,8 +25,9 @@
 (rule
  (alias runtest)
  (action
-  (diff dune-mdx-nondeterministic.expected
-    dune-mdx-nondeterministic.deterministic)))
+  (diff
+   dune-mdx-nondeterministic.expected
+   dune-mdx-nondeterministic.deterministic)))
 
 ;; make sure the non-deterministic is different from the deterministic
 
@@ -37,5 +38,7 @@
 (rule
  (alias runtest)
  (action
-  (run ./different.exe %{dep:dune-mdx-nondeterministic.expected}
-    %{dep:dune-mdx-nondeterministic.nondeterministic})))
+  (run
+   ./different.exe
+   %{dep:dune-mdx-nondeterministic.expected}
+   %{dep:dune-mdx-nondeterministic.nondeterministic})))

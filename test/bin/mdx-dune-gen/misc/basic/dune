@@ -3,8 +3,13 @@
  (action
   (with-stdout-to
    %{target}
-   (run ocaml-mdx dune-gen --prelude %{dep:prelude.ml} --prelude
-     %{dep:prelude2.ml}))))
+   (run
+    ocaml-mdx
+    dune-gen
+    --prelude
+    %{dep:prelude.ml}
+    --prelude
+    %{dep:prelude2.ml}))))
 
 (rule
  (alias runtest)
