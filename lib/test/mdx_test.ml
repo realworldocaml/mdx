@@ -332,8 +332,9 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
     match syntax with Some syntax -> Some syntax | None -> Syntax.infer ~file
   in
   let c =
-    Mdx_top.init ~verbose:(not silent_eval) ~silent ~verbose_findlib ~directives
-      ~packages ~predicates ()
+    lazy
+      (Mdx_top.init ~verbose:(not silent_eval) ~silent ~verbose_findlib
+         ~directives ~packages ~predicates ())
   in
   let preludes = preludes ~prelude ~prelude_str in
 
@@ -350,6 +351,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
           let new_content = read_part file_included None in
           update_block_content ?syntax ppf t new_content
       | OCaml { non_det; env; errors; header = _ } ->
+          let c = Lazy.force c in
           let det () =
             assert (syntax <> Some Cram);
             Mdx_top.in_env env (fun () ->
@@ -369,6 +371,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
             ~on_evaluation:(fun () ->
               run_cram_tests ?syntax t ?root ppf temp_file tests)
       | Toplevel { non_det; env } ->
+          let c = Lazy.force c in
           let phrases = Toplevel.of_lines ~loc:t.loc t.contents in
           with_non_det non_deterministic non_det ~on_skip_execution:print_block
             ~on_keep_old_output:(fun () ->
@@ -398,8 +401,11 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
     let buf = Buffer.create (String.length file_contents + 1024) in
     let ppf = Format.formatter_of_buffer buf in
     let envs = Document.envs items in
-    let eval lines () = eval_raw ?root c lines in
-    let eval_in_env lines env = Mdx_top.in_env env (eval lines) in
+    let eval c lines () = eval_raw ?root c lines in
+    let eval_in_env lines env =
+      let c = Lazy.force c in
+      Mdx_top.in_env env (eval c lines)
+    in
     List.iter
       (function
         | `All, lines -> Ocaml_env.Set.iter (eval_in_env lines) envs
