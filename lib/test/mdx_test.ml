@@ -283,8 +283,9 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
     match syntax with Some syntax -> Some syntax | None -> Syntax.infer ~file
   in
   let c =
-    Mdx_top.init ~verbose:(not silent_eval) ~silent ~verbose_findlib ~directives
-      ~packages ~predicates ()
+    lazy
+      (Mdx_top.init ~verbose:(not silent_eval) ~silent ~verbose_findlib ~directives
+         ~packages ~predicates ())
   in
   let preludes = preludes ~prelude ~prelude_str in
 
@@ -304,7 +305,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
           let det () =
             assert (syntax <> Some Cram);
             Mdx_top.in_env env (fun () ->
-                eval_ocaml ~block:t ?syntax ?root c ppf t.contents errors)
+                eval_ocaml ~block:t ?syntax ?root (Lazy.force c) ppf t.contents errors)
           in
           with_non_det non_deterministic non_det ~command:print_block
             ~output:det ~det
@@ -337,7 +338,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
                 (fun (phrase : Toplevel.t) ->
                   match
                     Mdx_top.in_env env (fun () ->
-                        eval_test ~block:t ?root c phrase.command)
+                        eval_test ~block:t ?root (Lazy.force c) phrase.command)
                   with
                   | Ok _ -> ()
                   | Error e ->
@@ -348,7 +349,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
             ~det:(fun () ->
               assert (syntax <> Some Cram);
               Mdx_top.in_env env (fun () ->
-                  run_toplevel_tests ?syntax ?root c ppf phrases t))
+                  run_toplevel_tests ?syntax ?root (Lazy.force c) ppf phrases t))
     else print_block ()
   in
   let gen_corrected file_contents items =
@@ -357,7 +358,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
     let buf = Buffer.create (String.length file_contents + 1024) in
     let ppf = Format.formatter_of_buffer buf in
     let envs = Document.envs items in
-    let eval lines () = eval_raw ?root c lines in
+    let eval lines () = eval_raw ?root (Lazy.force c) lines in
     let eval_in_env lines env = Mdx_top.in_env env (eval lines) in
     List.iter
       (function
