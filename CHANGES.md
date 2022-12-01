@@ -19,6 +19,7 @@
 - Include the content of the line that features the `part-end` MDX directive in
   the output, before that line would've been dropped (#374, #387,
   @Leonidas-from-XIV)
+- Handle EINTR signal on waitpid call by restarting the syscall. (#409, @tmcgilchrist)
 
 #### Removed
 
