@@ -1,4 +1,4 @@
-Exit codes are udated properly:
+Exit codes are updated properly:
 
 
 ```sh
