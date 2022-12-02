@@ -221,26 +221,27 @@ let parse_mli file_contents =
      [Text] and [Block] parts by using the starts and ends of those blocks as
      boundaries. *)
   let code_blocks = docstring_code_blocks file_contents in
-  let cursor = ref { Odoc_parser.Loc.line = 1; column = 0 } in
+  let cursor = { Odoc_parser.Loc.line = 1; column = 0 } in
   let lines = String.split_on_char '\n' file_contents |> Array.of_list in
-  (* TODO: Use List.fold_left instead of refs *)
-  let tokens =
-    List.map
-      (fun ((code_block : Code_block.t), loc) ->
+  let cursor, tokens =
+    List.fold_left
+      (fun (cursor, code_blocks) ((code_block : Code_block.t), loc) ->
         let pre_text =
           Document.Text
-            (slice lines ~start:!cursor ~end_:code_block.location.start)
+            (slice lines ~start:cursor ~end_:code_block.location.start)
         in
         let block =
           match make_block ~loc code_block with
           | Ok block -> Document.Block block
           | Error (`Msg msg) -> Fmt.failwith "Error creating block: %s" msg
         in
-        cursor := code_block.location.end_;
-        [ pre_text ] @ [ block ])
-      code_blocks
-    |> List.concat
+        let cursor = code_block.location.end_ in
+        (* append them in reverse order, since this is a fold_left *)
+        let code_blocks = block :: pre_text :: code_blocks in
+        (cursor, code_blocks))
+      (cursor, []) code_blocks
   in
+  let tokens = List.rev tokens in
   let eof =
     {
       Odoc_parser.Loc.line = Array.length lines;
@@ -250,8 +251,8 @@ let parse_mli file_contents =
   let eof_is_beyond_location (loc : Odoc_parser.Loc.point) =
     eof.line > loc.line || (eof.line = loc.line && eof.column > loc.column)
   in
-  if eof_is_beyond_location !cursor then
-    let remainder = slice lines ~start:!cursor ~end_:eof in
+  if eof_is_beyond_location cursor then
+    let remainder = slice lines ~start:cursor ~end_:eof in
     if not (String.equal remainder "") then tokens @ [ Text remainder ]
     else tokens
   else tokens
