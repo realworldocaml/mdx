@@ -75,17 +75,14 @@ let pp ?pad ppf (t : t) =
   pp_lines (Output.pp ?pad) ppf t.output;
   pp_exit_code ?pad ppf t.exit_code
 
-let rec hpad_of_lines = function
+let hpad_of_lines = function
   | [] -> 0
-  | h :: hs -> (
-      match String.equal String.empty h with
-      | true -> hpad_of_lines hs
-      | false ->
-          let i = ref 0 in
-          while !i < String.length h && h.[!i] = ' ' do
-            incr i
-          done;
-          !i)
+  | h :: _ ->
+      let i = ref 0 in
+      while !i < String.length h && h.[!i] = ' ' do
+        incr i
+      done;
+      !i
 
 let unpad_line ~hpad line =
   match Util.String.all_blank line with
@@ -144,9 +141,8 @@ let determine_padding lines =
       { start_pad; tests = lines; end_pad }
 
 let of_lines t =
-  (* TODO: determine hpad after padding, much easier *)
-  let hpad = hpad_of_lines t in
   let { start_pad; tests; end_pad } = determine_padding t in
+  let hpad = hpad_of_lines tests in
   let lines = unpad hpad tests in
   let lexer_input =
     lines |> List.map ((Fun.flip String.append) "\n") |> String.concat
