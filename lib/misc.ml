@@ -41,12 +41,14 @@ let read_file file =
   close_in ic;
   file_contents
 
-let init file =
-  let file_contents = read_file file in
+type loaded_file = { lexbuf : Lexing.lexbuf; string : string }
+
+let load_file ~filename =
+  let file_contents = read_file filename in
   let lexbuf = Lexing.from_string file_contents in
   lexbuf.lex_curr_p <-
-    { pos_fname = file; pos_cnum = 0; pos_lnum = 1; pos_bol = 0 };
-  (file_contents, lexbuf)
+    { pos_fname = filename; pos_cnum = 0; pos_lnum = 1; pos_bol = 0 };
+  { string = file_contents; lexbuf }
 
 let pp_position ppf lexbuf =
   let p = Lexing.lexeme_start_p lexbuf in

@@ -17,5 +17,8 @@
 val hpad_of_lines : string list -> int
 val pp_pad : int Fmt.t
 val pp_lines : 'a Fmt.t -> 'a list Fmt.t
-val init : string -> string * Lexing.lexbuf
+
+type loaded_file = { lexbuf : Lexing.lexbuf; string : string }
+
+val load_file : filename:string -> loaded_file
 val err : Lexing.lexbuf -> ('a, Format.formatter, unit, 'b) format4 -> 'a

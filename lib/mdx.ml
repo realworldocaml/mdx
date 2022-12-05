@@ -68,20 +68,20 @@ let parse l =
   let ok, errors = Util.Result.List.split results in
   match errors with [] -> Ok ok | _ -> Error (List.concat errors)
 
-let parse_lexbuf file_contents syntax l =
+let parse_lexbuf syntax Misc.{ string; lexbuf } =
   match syntax with
-  | Syntax.Mli -> Mli_parser.parse_mli file_contents
-  | Normal -> Util.Result.to_error_list @@ Lexer_mdx.markdown_token l >>= parse
-  | Cram -> Util.Result.to_error_list @@ Lexer_mdx.cram_token l >>= parse
+  | Syntax.Mli -> Mli_parser.parse_mli string
+  | Normal ->
+      Util.Result.to_error_list @@ Lexer_mdx.markdown_token lexbuf >>= parse
+  | Cram -> Util.Result.to_error_list @@ Lexer_mdx.cram_token lexbuf >>= parse
 
-let parse_file syntax f =
-  let l = snd (Misc.init f) in
-  parse_lexbuf f syntax l
+let parse_file syntax f = Misc.load_file ~filename:f |> parse_lexbuf syntax
 
 let of_string syntax s =
   match syntax with
   | Syntax.Mli -> Mli_parser.parse_mli s
-  | Syntax.Normal | Syntax.Cram -> parse_lexbuf s syntax (Lexing.from_string s)
+  | Syntax.Normal | Syntax.Cram ->
+      Misc.{ lexbuf = Lexing.from_string s; string = s } |> parse_lexbuf syntax
 
 let dump_line ppf (l : line) =
   match l with
@@ -94,11 +94,11 @@ let dump = Fmt.Dump.list dump_line
 type expect_result = Identical | Differs
 
 let run_str ~syntax ~f file =
-  let file_contents, lexbuf = Misc.init file in
-  let+ items = parse_lexbuf file_contents syntax lexbuf in
+  let l = Misc.load_file ~filename:file in
+  let+ items = parse_lexbuf syntax l in
   Log.debug (fun l -> l "run @[%a@]" dump items);
-  let corrected = f file_contents items in
-  let has_changed = corrected <> file_contents in
+  let corrected = f l.string items in
+  let has_changed = corrected <> l.string in
   let result = if has_changed then Differs else Identical in
   (result, corrected)
 
