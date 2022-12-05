@@ -14,10 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Astring
-
 let pp_pad ppf = function
   | 0 -> ()
-  | i -> Fmt.string ppf (String.v ~len:i (fun _ -> ' '))
+  | i -> Fmt.string ppf (String.init i (fun _ -> ' '))
 
 let pp_lines pp = Fmt.(list ~sep:(any "\n") pp)
