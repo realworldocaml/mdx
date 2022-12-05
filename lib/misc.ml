@@ -14,20 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Astring
-
-let rec hpad_of_lines = function
-  | [] -> 0
-  | h :: hs -> (
-      match Util.String.all_blank h with
-      | true -> hpad_of_lines hs
-      | false ->
-          let i = ref 0 in
-          while !i < String.length h && h.[!i] = ' ' do
-            incr i
-          done;
-          !i)
-
 let read_file file =
   let ic = open_in_bin file in
   let len = in_channel_length ic in

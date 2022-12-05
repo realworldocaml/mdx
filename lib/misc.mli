@@ -14,8 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-val hpad_of_lines : string list -> int
-
 type loaded_file = { lexbuf : Lexing.lexbuf; string : string }
 
 val load_file : filename:string -> loaded_file

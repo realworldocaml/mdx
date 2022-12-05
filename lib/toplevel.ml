@@ -114,11 +114,23 @@ let unpad hpad line =
       if String.length line < hpad then Fmt.failwith "invalid padding: %S" line
       else String.with_index_range line ~first:hpad
 
+let rec hpad_of_lines = function
+  | [] -> 0
+  | h :: hs -> (
+      match Util.String.all_blank h with
+      | true -> hpad_of_lines hs
+      | false ->
+          let i = ref 0 in
+          while !i < String.length h && h.[!i] = ' ' do
+            incr i
+          done;
+          !i)
+
 let of_lines ~(loc : Location.t) t =
   Log.debug (fun l -> l "Toplevel lines to parse %a" Fmt.Dump.(list string) t);
   let pos = loc.loc_start in
   let pos = { pos with pos_lnum = pos.pos_lnum - 1 } in
-  let hpad = Misc.hpad_of_lines t in
+  let hpad = hpad_of_lines t in
   let t, end_pad = end_pad_of_lines t in
   let lines = List.map (unpad hpad) t in
   let lines = String.concat ~sep:"\n" lines in
