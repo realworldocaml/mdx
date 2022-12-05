@@ -14,8 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Misc
-
 type t = [ `Output of string | `Ellipsis ]
 
 let dump ppf = function
@@ -23,8 +21,8 @@ let dump ppf = function
   | `Ellipsis -> Fmt.pf ppf "`Ellipsis"
 
 let pp ?(pad = 0) ppf = function
-  | `Output s -> Fmt.pf ppf "%a%s" pp_pad pad s
-  | `Ellipsis -> Fmt.pf ppf "%a..." pp_pad pad
+  | `Output s -> Fmt.pf ppf "%a%s" Pp.pp_pad pad s
+  | `Ellipsis -> Fmt.pf ppf "%a..." Pp.pp_pad pad
 
 let equals_sub l r start length =
   let stop = start + length in

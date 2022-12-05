@@ -18,7 +18,6 @@ let src = Logs.Src.create "ocaml-mdx"
 
 module Log = (val Logs.src_log src : Logs.LOG)
 open Astring
-(* open Misc *)
 
 type t = {
   (* TODO: move vpad and hpad to `toplevel_tests` *)
@@ -77,16 +76,16 @@ let pp_command ppf (t : t) =
   | [] -> ()
   | l ->
       pp_vpad ppf t;
-      let sep ppf () = Fmt.pf ppf "\n%a  " Misc.pp_pad t.hpad in
+      let sep ppf () = Fmt.pf ppf "\n%a  " Pp.pp_pad t.hpad in
       let blank = Fmt.any "\n" in
-      Fmt.pf ppf "%a# %a" Misc.pp_pad t.hpad
+      Fmt.pf ppf "%a# %a" Pp.pp_pad t.hpad
         (pp_list_string_nonblank ~sep ~blank)
         l
 
 let pp ppf (t : t) =
   pp_command ppf t;
   Fmt.string ppf "\n";
-  Misc.pp_lines (Output.pp ~pad:t.vpad) ppf t.output
+  Pp.pp_lines (Output.pp ~pad:t.vpad) ppf t.output
 
 let lexbuf ~(pos : Lexing.position) s =
   let lexbuf = Lexing.from_string s in

@@ -28,12 +28,6 @@ let rec hpad_of_lines = function
           done;
           !i)
 
-let pp_pad ppf = function
-  | 0 -> ()
-  | i -> Fmt.string ppf (String.v ~len:i (fun _ -> ' '))
-
-let pp_lines pp = Fmt.(list ~sep:(any "\n") pp)
-
 let read_file file =
   let ic = open_in_bin file in
   let len = in_channel_length ic in

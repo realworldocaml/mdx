@@ -18,7 +18,6 @@ let src = Logs.Src.create "ocaml-mdx"
 
 module Log = (val Logs.src_log src : Logs.LOG)
 open Astring
-open Misc
 
 type t = {
   command : string list;
@@ -62,17 +61,17 @@ let pp_command ?(pad = 0) ppf (t : t) =
   | [] -> ()
   | l ->
       pp_vpad ppf t;
-      let sep ppf () = Fmt.pf ppf "\\\n%a> " pp_pad pad in
-      Fmt.pf ppf "%a$ %a" pp_pad pad Fmt.(list ~sep string) l
+      let sep ppf () = Fmt.pf ppf "\\\n%a> " Pp.pp_pad pad in
+      Fmt.pf ppf "%a$ %a" Pp.pp_pad pad Fmt.(list ~sep string) l
 
 let pp_exit_code ?(pad = 0) ppf = function
   | 0 -> ()
-  | n -> Fmt.pf ppf "\n%a[%d]" pp_pad pad n
+  | n -> Fmt.pf ppf "\n%a[%d]" Pp.pp_pad pad n
 
 let pp ?pad ppf (t : t) =
   pp_command ?pad ppf t;
   Fmt.string ppf "\n";
-  pp_lines (Output.pp ?pad) ppf t.output;
+  Pp.pp_lines (Output.pp ?pad) ppf t.output;
   pp_exit_code ?pad ppf t.exit_code
 
 let hpad_of_lines = function

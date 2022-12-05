@@ -14,9 +14,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-val hpad_of_lines : string list -> int
+open Astring
 
-type loaded_file = { lexbuf : Lexing.lexbuf; string : string }
+let pp_pad ppf = function
+  | 0 -> ()
+  | i -> Fmt.string ppf (String.v ~len:i (fun _ -> ' '))
 
-val load_file : filename:string -> loaded_file
-val err : Lexing.lexbuf -> ('a, Format.formatter, unit, 'b) format4 -> 'a
+let pp_lines pp = Fmt.(list ~sep:(any "\n") pp)
