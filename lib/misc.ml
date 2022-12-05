@@ -33,7 +33,6 @@ let pp_pad ppf = function
   | i -> Fmt.string ppf (String.v ~len:i (fun _ -> ' '))
 
 let pp_lines pp = Fmt.(list ~sep:(any "\n") pp)
-let dump_string ppf s = Fmt.pf ppf "%S" s
 
 let read_file file =
   let ic = open_in_bin file in

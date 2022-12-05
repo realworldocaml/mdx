@@ -18,7 +18,7 @@ let src = Logs.Src.create "ocaml-mdx"
 
 module Log = (val Logs.src_log src : Logs.LOG)
 open Astring
-open Misc
+(* open Misc *)
 
 type t = {
   (* TODO: move vpad and hpad to `toplevel_tests` *)
@@ -77,14 +77,16 @@ let pp_command ppf (t : t) =
   | [] -> ()
   | l ->
       pp_vpad ppf t;
-      let sep ppf () = Fmt.pf ppf "\n%a  " pp_pad t.hpad in
+      let sep ppf () = Fmt.pf ppf "\n%a  " Misc.pp_pad t.hpad in
       let blank = Fmt.any "\n" in
-      Fmt.pf ppf "%a# %a" pp_pad t.hpad (pp_list_string_nonblank ~sep ~blank) l
+      Fmt.pf ppf "%a# %a" Misc.pp_pad t.hpad
+        (pp_list_string_nonblank ~sep ~blank)
+        l
 
 let pp ppf (t : t) =
   pp_command ppf t;
   Fmt.string ppf "\n";
-  pp_lines (Output.pp ~pad:t.vpad) ppf t.output
+  Misc.pp_lines (Output.pp ~pad:t.vpad) ppf t.output
 
 let lexbuf ~(pos : Lexing.position) s =
   let lexbuf = Lexing.from_string s in
@@ -117,7 +119,7 @@ let of_lines ~(loc : Location.t) t =
   Log.debug (fun l -> l "Toplevel lines to parse %a" Fmt.Dump.(list string) t);
   let pos = loc.loc_start in
   let pos = { pos with pos_lnum = pos.pos_lnum - 1 } in
-  let hpad = hpad_of_lines t in
+  let hpad = Misc.hpad_of_lines t in
   let t, end_pad = end_pad_of_lines t in
   let lines = List.map (unpad hpad) t in
   let lines = String.concat ~sep:"\n" lines in
