@@ -1,3 +1,0 @@
-Warning: OCaml toplevel block without trailing ;; detected in file 'test-case.md'.
-Non-semicolon terminated phrases are deprecated.
-In MDX 3.0 support for toplevel blocks without ;; will be removed.

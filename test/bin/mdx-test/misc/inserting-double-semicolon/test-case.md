@@ -1,5 +1,5 @@
 `;;` is not mandatory at the end of toplevel phrases but will be inserted
-automatically in the corrected file. Also, a warning will be emitted.
+automatically.
 
 ```ocaml
 # let x = 3
