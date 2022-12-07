@@ -122,8 +122,12 @@ module Array = struct
 end
 
 module Process = struct
+  let rec waitpid_non_intr pid =
+    try Unix.waitpid [] pid
+    with Unix.Unix_error (Unix.EINTR, _, _) -> waitpid_non_intr pid
+
   let wait ~pid =
-    match snd (Unix.waitpid [] pid) with WEXITED n -> n | _ -> 255
+    match snd (waitpid_non_intr pid) with WEXITED n -> n | _ -> 255
 end
 
 module Int = struct
