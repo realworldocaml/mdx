@@ -113,6 +113,16 @@ dune promote
 Now the documentation is up-to-date and running `dune runtest` again should be
 successful!
 
+Note that to use the `dune runtest/promote` workflow with `mli` files,
+you will need to adjust the `mdx` stanza in the `dune` file, as by
+[default](https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4),
+Dune only checks markdown files with `mdx`.  E.g.,
+
+```
+(mdx
+ (files :standard - *.mli))
+```
+
 ### Supported Extensions
 
 #### Labels
