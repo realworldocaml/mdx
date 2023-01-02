@@ -419,7 +419,7 @@ let infer_block ~loc ~config ~header ~contents ~errors =
 
 let mk ~loc ~section ~labels ~legacy_labels ~header ~contents ~errors =
   let block_kind =
-    get_label (function Block_kind x -> Some x | _ -> None) labels
+    get_label (function Block_type x -> Some x | _ -> None) labels
   in
   let config = get_block_config labels in
   let* value =

@@ -1,0 +1,26 @@
+It is possible to explicitly state the type of a block using the
+`type` label to bypass the language header + content based inference,
+providing better, more focused error messages.
+
+The following blocks use a volontarily misleading language header that would
+normally lead to errors if we let MDX infer the type of block based on them.
+
+<!-- $MDX type=toplevel -->
+```ocaml
+# 1 + 1;;
+- : int = 2
+```
+
+<!-- $MDX type=ocaml -->
+```ocaml
+let x = 2
+```
+
+<!-- $MDX type=cram -->
+```sh
+$ echo "boom"
+boom
+```
+
+The include block type is somewhat redundant with the `file=...` label as
+so it is not tested here.
