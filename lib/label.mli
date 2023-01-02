@@ -29,7 +29,7 @@ type non_det = Nd_output | Nd_command
 
 val default_non_det : non_det
 
-type block_kind = OCaml | Cram | Toplevel | Include
+type block_type = OCaml | Cram | Toplevel | Include
 
 type t =
   | Dir of string
@@ -42,7 +42,7 @@ type t =
   | Version of Relation.t * Ocaml_version.t
   | Set of string * string
   | Unset of string
-  | Block_kind of block_kind
+  | Block_type of block_type
 
 val pp : Format.formatter -> t -> unit
 

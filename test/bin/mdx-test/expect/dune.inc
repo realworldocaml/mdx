@@ -12,6 +12,18 @@
  (action (diff bash-fence/test-case.md.expected bash-fence.actual)))
 
 (rule
+ (target block-type.actual)
+ (deps (package mdx) (source_tree block-type))
+ (action
+  (with-stdout-to %{target}
+   (chdir block-type
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff block-type/test-case.md.expected block-type.actual)))
+
+(rule
  (target casual-file-inc.actual)
  (deps (package mdx) (source_tree casual-file-inc))
  (action

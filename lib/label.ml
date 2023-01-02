@@ -71,7 +71,13 @@ type non_det = Nd_output | Nd_command
 
 let default_non_det = Nd_output
 
-type block_kind = OCaml | Cram | Toplevel | Include
+type block_type = OCaml | Cram | Toplevel | Include
+
+let pp_block_type ppf = function
+  | OCaml -> Fmt.string ppf "ocaml"
+  | Cram -> Fmt.string ppf "cram"
+  | Toplevel -> Fmt.string ppf "toplevel"
+  | Include -> Fmt.string ppf "include"
 
 type t =
   | Dir of string
@@ -84,13 +90,7 @@ type t =
   | Version of Relation.t * Ocaml_version.t
   | Set of string * string
   | Unset of string
-  | Block_kind of block_kind
-
-let pp_block_kind ppf = function
-  | OCaml -> Fmt.string ppf "ocaml"
-  | Cram -> Fmt.string ppf "cram"
-  | Toplevel -> Fmt.string ppf "toplevel"
-  | Include -> Fmt.string ppf "include"
+  | Block_type of block_type
 
 let pp ppf = function
   | Dir d -> Fmt.pf ppf "dir=%s" d
@@ -106,7 +106,7 @@ let pp ppf = function
       Fmt.pf ppf "version%a%a" Relation.pp op Ocaml_version.pp v
   | Set (v, x) -> Fmt.pf ppf "set-%s=%s" v x
   | Unset x -> Fmt.pf ppf "unset-%s" x
-  | Block_kind bk -> pp_block_kind ppf bk
+  | Block_type bt -> Fmt.pf ppf "type=%a" pp_block_type bt
 
 let is_prefix ~prefix s =
   let len_prefix = String.length prefix in
@@ -140,41 +140,65 @@ let requires_value ~label ~value f =
 
 let requires_eq_value ~label ~value f =
   requires_value ~label ~value (fun op value ->
-      match op with Relation.Eq -> Ok (f value) | _ -> non_eq_op ~label)
+      match op with Relation.Eq -> f value | _ -> non_eq_op ~label)
+
+let version_of_string s =
+  match Ocaml_version.of_string s with
+  | Ok v -> Ok v
+  | Error (`Msg e) -> Util.Result.errorf "Invalid version: %s." e
+
+let parse_non_det_value ~label s =
+  match s with
+  | "output" -> Ok Nd_output
+  | "command" -> Ok Nd_command
+  | s ->
+      let allowed_values = [ "<none>"; {|"command"|}; {|"output"|} ] in
+      invalid_value ~label ~allowed_values s
+
+let parse_block_type_value ~label s =
+  match s with
+  | "ocaml" -> Ok OCaml
+  | "cram" -> Ok Cram
+  | "toplevel" -> Ok Toplevel
+  | "include" -> Ok Include
+  | s ->
+      let allowed_values =
+        [ {|"ocaml"|}; {|"cram"|}; {|"toplevel"|}; {|"include"|} ]
+      in
+      invalid_value ~label ~allowed_values s
 
 let interpret label value =
+  let open Util.Result.Infix in
   match label with
   | "skip" -> doesnt_accept_value ~label ~value Skip
-  | "ocaml" -> doesnt_accept_value ~label ~value (Block_kind OCaml)
-  | "cram" -> doesnt_accept_value ~label ~value (Block_kind Cram)
-  | "toplevel" -> doesnt_accept_value ~label ~value (Block_kind Toplevel)
-  | "include" -> doesnt_accept_value ~label ~value (Block_kind Include)
+  | "ocaml" -> doesnt_accept_value ~label ~value (Block_type OCaml)
+  | "cram" -> doesnt_accept_value ~label ~value (Block_type Cram)
+  | "toplevel" -> doesnt_accept_value ~label ~value (Block_type Toplevel)
+  | "include" -> doesnt_accept_value ~label ~value (Block_type Include)
   | v when is_prefix ~prefix:"unset-" v ->
       doesnt_accept_value ~label ~value
         (Unset (split_prefix ~prefix:"unset-" v))
   | "version" ->
       requires_value ~label ~value (fun op v ->
-          match Ocaml_version.of_string v with
-          | Ok v -> Ok (Version (op, v))
-          | Error (`Msg e) ->
-              Util.Result.errorf "Invalid `version` label value: %s." e)
+          version_of_string v >>= fun v -> Ok (Version (op, v)))
   | "non-deterministic" -> (
       match value with
       | None -> Ok (Non_det None)
-      | Some (Relation.Eq, "output") -> Ok (Non_det (Some Nd_output))
-      | Some (Relation.Eq, "command") -> Ok (Non_det (Some Nd_command))
-      | Some (Relation.Eq, v) ->
-          let allowed_values = [ "<none>"; {|"command"|}; {|"output"|} ] in
-          invalid_value ~label ~allowed_values v
+      | Some (Relation.Eq, s) ->
+          parse_non_det_value ~label s >>= fun nd -> Ok (Non_det (Some nd))
       | Some _ -> non_eq_op ~label)
-  | "dir" -> requires_eq_value ~label ~value (fun x -> Dir x)
-  | "source-tree" -> requires_eq_value ~label ~value (fun x -> Source_tree x)
-  | "file" -> requires_eq_value ~label ~value (fun x -> File x)
-  | "part" -> requires_eq_value ~label ~value (fun x -> Part x)
-  | "env" -> requires_eq_value ~label ~value (fun x -> Env x)
+  | "dir" -> requires_eq_value ~label ~value (fun x -> Ok (Dir x))
+  | "source-tree" ->
+      requires_eq_value ~label ~value (fun x -> Ok (Source_tree x))
+  | "file" -> requires_eq_value ~label ~value (fun x -> Ok (File x))
+  | "part" -> requires_eq_value ~label ~value (fun x -> Ok (Part x))
+  | "env" -> requires_eq_value ~label ~value (fun x -> Ok (Env x))
+  | "type" ->
+      requires_eq_value ~label ~value (fun x ->
+          parse_block_type_value ~label x >>= fun bt -> Ok (Block_type bt))
   | l when is_prefix ~prefix:"set-" l ->
       requires_eq_value ~label ~value (fun x ->
-          Set (split_prefix ~prefix:"set-" l, x))
+          Ok (Set (split_prefix ~prefix:"set-" l, x)))
   | l -> Error (`Msg (Format.sprintf "`%s` is not a valid label." l))
 
 let of_string s =

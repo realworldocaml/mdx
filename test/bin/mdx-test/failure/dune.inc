@@ -13,6 +13,19 @@
  (action (diff block-locations/test-case.md.expected block-locations.actual)))
 
 (rule
+ (target block-type-value.actual)
+ (deps (package mdx) (source_tree block-type-value))
+ (action
+  (with-accepted-exit-codes 1
+   (with-outputs-to %{target}
+    (chdir block-type-value
+     (run %{bin:ocaml-mdx} test test-case.md))))))
+
+(rule
+ (alias runtest)
+ (action (diff block-type-value/test-case.md.expected block-type-value.actual)))
+
+(rule
  (target both-prelude.actual)
  (deps (package mdx) (source_tree both-prelude))
  (action
@@ -64,6 +77,19 @@
  (alias runtest)
  (enabled_if (<> %{os_type} Win32))
  (action (diff in-toplevel/test-case.md.expected in-toplevel.actual)))
+
+(rule
+ (target include-without-file-label.actual)
+ (deps (package mdx) (source_tree include-without-file-label))
+ (action
+  (with-accepted-exit-codes 1
+   (with-outputs-to %{target}
+    (chdir include-without-file-label
+     (run %{bin:ocaml-mdx} test test-case.md))))))
+
+(rule
+ (alias runtest)
+ (action (diff include-without-file-label/test-case.md.expected include-without-file-label.actual)))
 
 (rule
  (target invalid-label.actual)

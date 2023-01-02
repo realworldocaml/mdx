@@ -1,0 +1,12 @@
+{0 Preludes}
+
+Preludes are fragments of code that can be evaluated ahead of running the
+code in OCaml and OCaml toplevel MDX blocks. They can be used to globally
+open modules, register toplevel printers, set some globals like
+[Printexc.record_backtrace], you name it!
+
+They are especially useful if you want to hide or share this kind of setup
+phase, e.g. if you are writing polished documentation you want to publish
+or you are using MDX to add tests in your mli files directly.
+
+TODO

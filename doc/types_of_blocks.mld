@@ -1,0 +1,38 @@
+{0 Types of Blocks}
+
+MDX searches for code blocks within your documentation to make sure they are up
+to date.
+It supports different type of block contents, each have their own behaviour.
+
+If a code block does not belong to one of the categories described below, MDX
+will simply ignore it.
+
+The type of a block can either be set explicitly using the
+{{!page-labels.type}[type]} label, otherwise MDX
+will try to infer the type of the block based on its language tag, labels and
+content.
+Setting the block type explicitly allows MDX to better report syntax errors
+or invalid labels.
+
+{1:ocaml_toplevel OCaml Toplevel Blocks}
+
+OCaml Toplevel Blocks are composed of a sequence of toplevel phrases, starting
+with a [#] and a space and ending with [;;] followed by the output of the
+toplevel evaluation of the phrase.
+
+
+{1:ocaml OCaml Blocks}
+
+{1:file_include File Include Blocks}
+
+File Include Blocks are synchronized with the content of another file. Upon
+running MDX, the content of the block will be refreshed to match the content
+of the file specified in the block's {{!page-labels.file}[file]} label.
+
+It can be any kind of text file, [.ml], [dune], [.c], the content will simply be
+copied as is.
+
+It is possible for OCaml files to only include specific parts of the file, using
+the {{!page-labels.part}[part]} label and delimiter comments in the source file.
+
+{1:shell Shell Blocks}
