@@ -49,8 +49,7 @@ val command_line : t -> string
 (** {2 Parser} *)
 
 val of_lines : string list -> cram_tests
-(** [of_lines l] parses the commands [l]. It returns the optional
-   whitespace padding. *)
+(** [of_lines l] parses the commands [l]. *)
 
 (** {2 Pretty-printer} *)
 
