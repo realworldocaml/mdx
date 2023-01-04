@@ -128,6 +128,8 @@ let rec hpad_of_lines = function
 
 let of_lines ~(loc : Location.t) t =
   let pos = loc.loc_start in
+  (* Location.t considers the first line to be 1, whereas the tokenizer
+     assumes lines start with 0. *)
   let pos = { pos with pos_lnum = pos.pos_lnum - 1 } in
   let hpad = hpad_of_lines t in
   let t, end_pad = end_pad_of_lines t in
