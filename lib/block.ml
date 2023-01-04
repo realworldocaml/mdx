@@ -164,8 +164,6 @@ let pp_errors ppf t =
   | OCaml { errors = []; _ } -> ()
   | OCaml { errors; _ } ->
       let errors = error_padding errors in
-      Logs.debug (fun l ->
-          l "Printing errors: %a" (Fmt.Dump.list Output.dump) errors);
       Fmt.pf ppf "```mdx-error\n%a\n```\n"
         Fmt.(list ~sep:(any "\n") Output.pp)
         errors
@@ -408,10 +406,6 @@ let mk ~loc ~section ~labels ~legacy_labels ~header ~contents ~errors =
     get_label (function Block_kind x -> Some x | _ -> None) labels
   in
   let config = get_block_config labels in
-  Logs.debug (fun l ->
-      l "Block kind in Block.mk is %a"
-        (Fmt.Dump.option Label.pp_block_kind)
-        block_kind);
   let* value =
     match block_kind with
     | Some OCaml -> mk_ocaml ~loc ~config ~header ~contents ~errors
@@ -460,10 +454,6 @@ let from_raw raw =
       Util.Result.to_error_list @@ mk_include ~loc ~section ~labels
   | Raw.Any { loc; section; header; contents; label_cmt; legacy_labels; errors }
     ->
-      Logs.debug (fun l ->
-          l "Label_cmt %a,@ legacy_labels %s,@ header = %s"
-            Fmt.Dump.(option string)
-            label_cmt legacy_labels header);
       let header = Header.of_string header in
       let* labels, legacy_labels =
         locate_errors ~loc (parse_labels ~label_cmt ~legacy_labels)

@@ -127,7 +127,6 @@ let rec hpad_of_lines = function
           !i)
 
 let of_lines ~(loc : Location.t) t =
-  Log.debug (fun l -> l "Toplevel lines to parse %a" Fmt.Dump.(list string) t);
   let pos = loc.loc_start in
   let pos = { pos with pos_lnum = pos.pos_lnum - 1 } in
   let hpad = hpad_of_lines t in
