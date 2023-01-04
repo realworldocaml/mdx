@@ -16,13 +16,7 @@
 
 (** Cram tests *)
 
-type t = {
-  command : string list;
-  output : Output.t list;
-  exit_code : int;
-  (* TODO: remove vpad *)
-  vpad : int;
-}
+type t = { command : string list; output : Output.t list; exit_code : int }
 
 type cram_tests = {
   start_pad : int;
@@ -58,7 +52,7 @@ val pp : ?pad:int -> t Fmt.t
    the optional whitespace left padding (by default it is 0). *)
 
 val pp_vertical_pad : int Fmt.t
-(** [pp_vpad] is the pretty printer for the initial padding on the top
+(** [pp_vertical_pad] is the pretty printer for the initial padding on the top
    of Cram tests *)
 
 val dump : t Fmt.t

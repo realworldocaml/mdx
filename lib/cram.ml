@@ -19,12 +19,7 @@ let src = Logs.Src.create "ocaml-mdx"
 module Log = (val Logs.src_log src : Logs.LOG)
 open Astring
 
-type t = {
-  command : string list;
-  output : Output.t list;
-  exit_code : int;
-  vpad : int;
-}
+type t = { command : string list; output : Output.t list; exit_code : int }
 
 type cram_tests = {
   start_pad : int;
@@ -41,12 +36,12 @@ let dump_line ppf = function
   | `Command_cont c -> Fmt.pf ppf "`Command_cont %S" c
   | `Command_last c -> Fmt.pf ppf "`Command_last %S" c
 
-let dump ppf { command; output; exit_code; vpad } =
-  Fmt.pf ppf "{@[command: %a;@ output: %a;@ exit_code: %d;@ vpad: %d]}"
+let dump ppf { command; output; exit_code } =
+  Fmt.pf ppf "{@[command: %a;@ output: %a;@ exit_code: %d]}"
     Fmt.Dump.(list string)
     command
     (Fmt.Dump.list Output.dump)
-    output exit_code vpad
+    output exit_code
 
 let rec pp_vertical_pad ppf = function
   | 0 -> ()
@@ -54,13 +49,10 @@ let rec pp_vertical_pad ppf = function
       Fmt.pf ppf "\n";
       pp_vertical_pad ppf (Int.pred n)
 
-let pp_vpad ppf { vpad; _ } = pp_vertical_pad ppf vpad
-
 let pp_command ?(pad = 0) ppf (t : t) =
   match t.command with
   | [] -> ()
   | l ->
-      pp_vpad ppf t;
       let sep ppf () = Fmt.pf ppf "\\\n%a> " Pp.pp_pad pad in
       Fmt.pf ppf "%a$ %a" Pp.pp_pad pad Fmt.(list ~sep string) l
 
@@ -150,7 +142,7 @@ let of_lines t =
   Log.debug (fun l ->
       l "Cram.of_lines (pad=%d) %a" hpad Fmt.(Dump.list dump_line) lines);
   let mk command output ~exit:exit_code =
-    { command; output = List.rev output; exit_code; vpad = 0 }
+    { command; output = List.rev output; exit_code }
   in
   let rec command_cont acc = function
     | `Command_cont c :: t -> command_cont (c :: acc) t
