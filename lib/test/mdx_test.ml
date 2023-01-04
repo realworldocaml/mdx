@@ -358,7 +358,6 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
           with_non_det non_deterministic non_det ~on_skip_execution:print_block
             ~on_keep_old_output:det ~on_evaluation:det
       | Cram { language = _; non_det } ->
-          (* t.contents for md files is wrong, it's missing the begin and end *)
           let tests = Cram.of_lines t.contents in
           with_non_det non_deterministic non_det ~on_skip_execution:print_block
             ~on_keep_old_output:(fun () ->
