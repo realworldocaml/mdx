@@ -73,6 +73,13 @@ let default_non_det = Nd_output
 
 type block_kind = OCaml | Cram | Toplevel | Include
 
+(* TODO: [t] needs to be refactored because it usually is used as a [t list]
+   but most of these tags are not supposed to be specified multiple times.
+   There can be at most one Language_tag, similarly specifying multiple
+   Block_kind and Version labels is confusing at best. [t] should probably
+   be refactored to represent all labels and make sure that some labels
+   can be specified 0 or 1 times, while others are indeed lists. *)
+
 type t =
   | Dir of string
   | Source_tree of string
@@ -85,6 +92,9 @@ type t =
   | Set of string * string
   | Unset of string
   | Block_kind of block_kind
+  (* Specifies the language tag that is specified in the [mli] syntax, if
+     any. Can be left out if none is specified, in such case it will also
+     not be added back. *)
   | Language_tag of string
 
 let pp_block_kind ppf = function
