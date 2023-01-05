@@ -53,10 +53,6 @@ val of_string : syntax -> string -> (t, [ `Msg of string ] list) result
 val parse_file : syntax -> string -> (t, [ `Msg of string ] list) result
 (** [parse_file s] is {!of_string} of [s]'s contents. *)
 
-val parse_lexbuf :
-  string -> syntax -> Lexing.lexbuf -> (t, [ `Msg of string ] list) result
-(** [parse_lexbuf l] is {!of_string} of [l]'s contents. *)
-
 (** {2 Evaluation} *)
 
 val run_to_stdout :

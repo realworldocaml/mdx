@@ -16,12 +16,15 @@
 
 (** Cram tests *)
 
-type t = {
-  command : string list;
-  output : Output.t list;
-  exit_code : int;
-  vpad : int;
+type t = { command : string list; output : Output.t list; exit_code : int }
+
+type cram_tests = {
+  start_pad : int;
+  hpad : int;
+  tests : t list;
+  end_pad : string option;
 }
+
 (** The type for cram tests. *)
 
 (** {2 Accessors} *)
@@ -39,9 +42,8 @@ val command_line : t -> string
 
 (** {2 Parser} *)
 
-val of_lines : syntax:Syntax.t -> loc:Location.t -> string list -> int * t list
-(** [of_lines l] parses the commands [l]. It returns the optional
-   whitespace padding. *)
+val of_lines : string list -> cram_tests
+(** [of_lines l] parses the commands [l]. *)
 
 (** {2 Pretty-printer} *)
 
@@ -49,8 +51,14 @@ val pp : ?pad:int -> t Fmt.t
 (** [pp] is the pretty-printer for cram tests. [pad] is the size of
    the optional whitespace left padding (by default it is 0). *)
 
+val pp_vertical_pad : int Fmt.t
+(** [pp_vertical_pad] is the pretty printer for the initial padding on the top
+   of Cram tests *)
+
 val dump : t Fmt.t
 (** [dump] it the printer for dumping cram tests. Useful for debugging. *)
+
+val dump_cram_tests : cram_tests Fmt.t
 
 val pp_command : ?pad:int -> t Fmt.t
 (** [pp_command] pretty-prints cram commands. *)

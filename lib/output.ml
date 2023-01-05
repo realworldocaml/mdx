@@ -14,18 +14,15 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Misc
-
 type t = [ `Output of string | `Ellipsis ]
 
 let dump ppf = function
   | `Output s -> Fmt.pf ppf "`Output %S" s
   | `Ellipsis -> Fmt.pf ppf "`Ellipsis"
 
-let pp ?(pad = 0) ?syntax ppf = function
-  | `Output "" when syntax <> Some Syntax.Cram -> Fmt.pf ppf "\n"
-  | `Output s -> Fmt.pf ppf "%a%s\n" pp_pad pad s
-  | `Ellipsis -> Fmt.pf ppf "%a...\n" pp_pad pad
+let pp ?(pad = 0) ppf = function
+  | `Output s -> Fmt.pf ppf "%a%s" Pp.pp_pad pad s
+  | `Ellipsis -> Fmt.pf ppf "%a..." Pp.pp_pad pad
 
 let equals_sub l r start length =
   let stop = start + length in

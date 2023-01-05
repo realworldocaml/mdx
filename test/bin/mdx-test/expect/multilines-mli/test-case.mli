@@ -21,10 +21,7 @@ This works for normal OCaml fragments:
   | n -> n * fact (n-1)
 ]}
 
-The formatting for multilines in .mli files is the following:
-- The first line is indented two spaces after the comment opening
-- The other lines are indented to keep the original indentation relative to the
-  first line
+The formatting for multilines in .mli files should be preserved exactly:
 
   {[
     match None with
@@ -33,4 +30,15 @@ The formatting for multilines in .mli files is the following:
       | None -> ()
       | Some b -> b
   ]}
+
+It should also work fine for toplevel descriptions (as in
+[multilines/test-case.md]):
+
+{@ocaml[
+  # let rec fact = function
+    | 1 -> 1
+    | n -> n * fact (n-1)
+    ;;
+  val fact : int -> int = <fun>
+]}
 *)

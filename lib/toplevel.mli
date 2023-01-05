@@ -25,11 +25,15 @@ type t = {
 }
 (** The type for top-level phrases. *)
 
+type toplevel_tests = { tests : t list; end_pad : string option }
+
 (** {2 Pretty-printing} *)
 
 val dump : t Fmt.t
 (** [dump] is the printer for dumping toplevel phrases. Useful for
    debugging. *)
+
+val dump_toplevel_tests : toplevel_tests Fmt.t
 
 val pp : t Fmt.t
 (** [pp] is the pretty-printer for top-level phrases. [pad] is the
@@ -41,6 +45,6 @@ val pp_command : t Fmt.t
 
 (** {2 Parser} *)
 
-val of_lines : syntax:Syntax.t -> loc:Location.t -> string list -> t list
+val of_lines : loc:Location.t -> string list -> toplevel_tests
 (** [of_lines ~loc lines] is the list of toplevel blocks from location [loc].
     Return the vertical and horizontal whitespace padding as well. *)

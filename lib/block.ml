@@ -81,6 +81,7 @@ type ocaml_value = {
   env : Ocaml_env.t;
   non_det : Label.non_det option;
   errors : Output.t list;
+  header : Header.t option;
 }
 
 type toplevel_value = { env : Ocaml_env.t; non_det : Label.non_det option }
@@ -115,13 +116,12 @@ type t = {
   value : value;
 }
 
-let dump_string ppf s = Fmt.pf ppf "%S" s
 let dump_section = Fmt.(Dump.pair int string)
 
 let header t =
   match t.value with
-  | Raw b -> b.header
-  | OCaml _ -> Some Header.OCaml
+  | Raw { header; _ } -> header
+  | OCaml { header; _ } -> header
   | Cram { language; _ } -> Some (Header.Shell language)
   | Toplevel _ -> Some Header.OCaml
   | Include { file_kind = Fk_ocaml _; _ } -> Some Header.OCaml
@@ -145,62 +145,45 @@ let dump ppf ({ loc; section; labels; contents; value; _ } as b) =
     labels
     Fmt.(Dump.option Header.pp)
     (header b)
-    Fmt.(Dump.list dump_string)
+    Fmt.Dump.(list string)
     contents dump_value value
 
-let pp_lines syntax t =
-  let pp =
-    match syntax with
-    | Some Syntax.Cram -> Fmt.fmt "  %s"
-    | Some Syntax.Mli ->
-        fun ppf -> Fmt.fmt "%*s%s" ppf (t.loc.loc_start.pos_cnum + 2) ""
-    | _ -> Fmt.string
-  in
-  Fmt.(list ~sep:(any "\n") pp)
+let pp_contents ?syntax:_ ppf t =
+  Fmt.(list ~sep:(any "\n") string) ppf t.contents
 
-let lstrip strings =
-  let hpad = Misc.hpad_of_lines strings in
-  List.map
-    (fun string ->
-      let first = Util.Int.min (Misc.hpad_of_lines [ string ]) hpad in
-      Astring.String.with_index_range string ~first)
-    strings
-
-let pp_contents ?syntax ppf t =
-  match (syntax, t.contents) with
-  | Some Syntax.Mli, [ line ] -> Fmt.pf ppf "%s" line
-  | Some Syntax.Mli, lines ->
-      Fmt.pf ppf "@\n%a@\n" (pp_lines syntax t) (lstrip lines)
-  | (Some Cram | Some Normal | None), [] -> ()
-  | (Some Cram | Some Normal | None), _ ->
-      Fmt.pf ppf "%a\n" (pp_lines syntax t) t.contents
+let rec error_padding = function
+  | [] -> []
+  | [ (`Output _ as o); `Output padding ] when Util.String.all_blank padding ->
+      [ o ]
+  | x :: xs ->
+      let xs = error_padding xs in
+      x :: xs
 
 let pp_errors ppf t =
   match t.value with
-  | OCaml { errors; _ } when List.length errors > 0 ->
-      Fmt.string ppf "```mdx-error\n";
-      Fmt.pf ppf "%a" Fmt.(list ~sep:nop Output.pp) errors;
-      Fmt.string ppf "```\n"
+  | OCaml { errors = []; _ } -> ()
+  | OCaml { errors; _ } ->
+      let errors = error_padding errors in
+      Fmt.pf ppf "```mdx-error\n%a\n```\n"
+        Fmt.(list ~sep:(any "\n") Output.pp)
+        errors
   | _ -> ()
 
 let pp_footer ?syntax ppf _ =
   match syntax with
-  | Some Syntax.Mli -> ()
-  | Some Syntax.Cram -> ()
-  | _ -> Fmt.string ppf "```\n"
+  | Some Syntax.Mli -> Fmt.string ppf "]}"
+  | Some Syntax.Cram -> Fmt.string ppf "\n"
+  | Some Syntax.Normal | None -> Fmt.string ppf "```\n"
 
 let pp_legacy_labels ppf = function
   | [] -> ()
   | l -> Fmt.pf ppf " %a" Fmt.(list ~sep:(any ",") Label.pp) l
 
-let pp_labels ppf = function
-  | [] -> ()
-  | l -> Fmt.pf ppf "<!-- $MDX %a -->\n" Fmt.(list ~sep:(any ",") Label.pp) l
-
-let pp_header ?syntax ppf t =
+let pp_labels ?syntax ppf labels =
   match syntax with
+  | Some Syntax.Mli -> Fmt.(list ~sep:(any ",") Label.pp) ppf labels
   | Some Syntax.Cram -> (
-      match t.labels with
+      match labels with
       | [] -> ()
       | [ Non_det None ] -> Fmt.pf ppf "<-- non-deterministic\n"
       | [ Non_det (Some Nd_output) ] ->
@@ -208,14 +191,38 @@ let pp_header ?syntax ppf t =
       | [ Non_det (Some Nd_command) ] ->
           Fmt.pf ppf "<-- non-deterministic command\n"
       | _ -> failwith "cannot happen: checked during parsing")
-  | Some Syntax.Mli -> ()
-  | _ ->
+  | Some Syntax.Normal | None -> (
+      match labels with
+      | [] -> ()
+      | l ->
+          Fmt.pf ppf "<!-- $MDX %a -->\n" Fmt.(list ~sep:(any ",") Label.pp) l)
+
+let pp_header ?syntax ppf t =
+  match syntax with
+  | Some Syntax.Mli ->
+      let lang_headers, other_labels =
+        List.partition
+          (function Label.Language_tag _ -> true | _ -> false)
+          t.labels
+      in
+      let pp_lang_header ppf = function
+        | [] -> ()
+        | [ l ] -> Fmt.pf ppf "@%a" Label.pp l
+        | _ -> failwith "Multiple language tags, unsupported"
+      in
+      let pp_labels ppf = function
+        | [] -> ()
+        | labels -> Fmt.pf ppf " %a" (pp_labels ?syntax) labels
+      in
+      Fmt.pf ppf "{%a%a[" pp_lang_header lang_headers pp_labels other_labels
+  | Some Syntax.Cram -> pp_labels ?syntax ppf t.labels
+  | Some Syntax.Normal | None ->
       if t.legacy_labels then
-        Fmt.pf ppf "```%a%a\n"
+        Fmt.pf ppf "```%a%a"
           Fmt.(option Header.pp)
           (header t) pp_legacy_labels t.labels
       else
-        Fmt.pf ppf "%a```%a\n" pp_labels t.labels
+        Fmt.pf ppf "%a```%a" (pp_labels ?syntax) t.labels
           Fmt.(option Header.pp)
           (header t)
 
@@ -252,34 +259,10 @@ let guess_ocaml_kind contents =
   in
   aux contents
 
-let ends_by_semi_semi c =
-  match List.rev c with
-  | h :: _ -> Astring.String.is_suffix ~affix:";;" h
-  | _ -> false
-
-let pp_line_directive ppf (file, line) = Fmt.pf ppf "#%d %S" line file
-let line_directive = Fmt.to_to_string pp_line_directive
-
-let executable_contents ~syntax b =
-  let contents =
-    match b.value with
-    | OCaml _ -> b.contents
-    | Raw _ | Cram _ | Include _ -> []
-    | Toplevel _ ->
-        let phrases = Toplevel.of_lines ~syntax ~loc:b.loc b.contents in
-        List.flatten
-          (List.map
-             (fun (t : Toplevel.t) ->
-               match t.command with
-               | [] -> []
-               | cs ->
-                   let mk s = String.make (t.hpad + 2) ' ' ^ s in
-                   line_directive (t.pos.pos_fname, t.pos.pos_lnum)
-                   :: List.map mk cs)
-             phrases)
-  in
-  if contents = [] || ends_by_semi_semi contents then contents
-  else contents @ [ ";;" ]
+let rec ends_by_semi_semi = function
+  | [] -> false
+  | [ h ] -> Astring.String.is_suffix ~affix:";;" h
+  | _ :: xs -> ends_by_semi_semi xs
 
 let version_enabled version =
   let+ curr_version = Ocaml_version.of_string Sys.ocaml_version in
@@ -338,12 +321,13 @@ let get_block_config l =
     file_inc = get_label (function File x -> Some x | _ -> None) l;
   }
 
-let mk_ocaml ~loc ~config ~contents ~errors =
+let mk_ocaml ~loc ~config ~header ~contents ~errors =
   let kind = "OCaml" in
   match config with
   | { file_inc = None; part = None; env; non_det; _ } -> (
+      (* TODO: why does this call guess_ocaml_kind when infer_block already did? *)
       match guess_ocaml_kind contents with
-      | `Code -> Ok (OCaml { env = Ocaml_env.mk env; non_det; errors })
+      | `Code -> Ok (OCaml { env = Ocaml_env.mk env; non_det; errors; header })
       | `Toplevel ->
           loc_error ~loc "toplevel syntax is not allowed in OCaml blocks.")
   | { file_inc = Some _; _ } -> label_not_allowed ~loc ~label:"file" ~kind
@@ -408,7 +392,7 @@ let infer_block ~loc ~config ~header ~contents ~errors =
           mk_cram ~loc ~language ~config ~header ~errors ()
       | Some Header.OCaml -> (
           match guess_ocaml_kind contents with
-          | `Code -> mk_ocaml ~loc ~config ~contents ~errors
+          | `Code -> mk_ocaml ~loc ~config ~header ~contents ~errors
           | `Toplevel -> mk_toplevel ~loc ~config ~contents ~errors)
       | _ ->
           let* () =
@@ -424,7 +408,7 @@ let mk ~loc ~section ~labels ~legacy_labels ~header ~contents ~errors =
   let config = get_block_config labels in
   let* value =
     match block_kind with
-    | Some OCaml -> mk_ocaml ~loc ~config ~contents ~errors
+    | Some OCaml -> mk_ocaml ~loc ~config ~header ~contents ~errors
     | Some Cram -> mk_cram ~loc ~config ~header ~errors ()
     | Some Toplevel -> mk_toplevel ~loc ~config ~contents ~errors
     | Some Include -> mk_include ~loc ~config ~header ~errors

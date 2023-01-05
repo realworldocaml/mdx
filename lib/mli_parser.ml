@@ -11,6 +11,9 @@ module Code_block = struct
   }
 end
 
+(* odoc-parser adjusts for the initial [** *)
+let docstring_start_adjustment = String.length "(**"
+
 let drop_last lst =
   match List.rev lst with
   | [] -> None
@@ -53,17 +56,67 @@ let slice lines ~(start : Odoc_parser.Loc.point) ~(end_ : Odoc_parser.Loc.point)
       let last_line = String.sub last_line 0 end_.column in
       String.concat "\n" ([ first_line ] @ stripped @ [ last_line ])
 
+let is_newline c = c = '\n'
+
+let find_nth_line s =
+  let max_index = String.length s - 1 in
+  let indexes_of_newlines =
+    s |> String.to_seqi
+    |> Seq.filter_map (fun (i, c) ->
+           match is_newline c with true -> Some i | false -> None)
+  in
+  let indexes_of_line_starts =
+    indexes_of_newlines
+    |> Seq.filter_map (fun i ->
+           match i < max_index with true -> Some (i + 1) | false -> None)
+  in
+  (* first line always starts at index zero, even if there is no preceeding newline *)
+  let indexes = 0 :: List.of_seq indexes_of_line_starts in
+  fun nth ->
+    (* index starts at zero but lines go from 1 *)
+    List.nth_opt indexes (nth - 1)
+
+let point_to_index offset_of_line_start (point : Odoc_parser.Loc.point) =
+  let offset = offset_of_line_start point.line + point.column in
+  (* on line 1 odoc-parser adjusts by the start of the docstring, undo *)
+  match point.line with 1 -> offset - docstring_start_adjustment | _ -> offset
+
+let initial_line_number = 1
+
+let dislocate_point ~(location : Lexing.position)
+    (point : Odoc_parser.Loc.point) =
+  { point with line = point.line - location.pos_lnum + initial_line_number }
+
+let slice_location ~(location : Lexing.position) offset_of_line_start
+    (span : Odoc_parser.Loc.span) s =
+  let start = dislocate_point ~location span.start in
+  let end_ = dislocate_point ~location span.end_ in
+  let start_index = point_to_index offset_of_line_start start in
+  let end_index = point_to_index offset_of_line_start end_ in
+  let len = end_index - start_index in
+  String.sub s start_index len
+
 let extract_code_blocks ~(location : Lexing.position) ~docstring =
+  let offset_in_string = find_nth_line docstring in
+  let offset_of_line_start nth =
+    match offset_in_string nth with
+    | None -> Fmt.failwith "Attempting to reach invalid line"
+    | Some offset -> offset
+  in
   let rec acc blocks =
     List.map
       (fun block ->
         match Odoc_parser.Loc.value block with
-        | `Code_block (metadata, { Odoc_parser.Loc.value = contents; _ }) ->
+        | `Code_block (metadata, { Odoc_parser.Loc.value = _; location = span })
+          ->
             let metadata =
               Option.map
                 (fun (language_tag, labels) ->
                   Code_block.{ language_tag; labels })
                 metadata
+            in
+            let contents =
+              slice_location ~location offset_of_line_start span docstring
             in
             [ { Code_block.location = block.location; metadata; contents } ]
         | `List (_, _, lists) -> List.map acc lists |> List.concat
@@ -122,7 +175,10 @@ let docstring_code_blocks str =
   List.map
     (fun (docstring, (cmt_loc : Location.t)) ->
       let location =
-        { cmt_loc.loc_start with pos_cnum = cmt_loc.loc_start.pos_cnum + 3 }
+        {
+          cmt_loc.loc_start with
+          pos_cnum = cmt_loc.loc_start.pos_cnum + docstring_start_adjustment;
+        }
       in
       let blocks = extract_code_blocks ~location ~docstring in
       List.map
@@ -133,18 +189,22 @@ let docstring_code_blocks str =
 
 let make_block ~loc code_block =
   let handle_header = function
-    | Some Code_block.{ language_tag; labels } -> (
-        let header =
-          Block.Header.of_string (Odoc_parser.Loc.value language_tag)
+    | Some Code_block.{ language_tag; labels } ->
+        let open Util.Result.Infix in
+        let language_tag = Odoc_parser.Loc.value language_tag in
+        let header = Block.Header.of_string language_tag in
+        let* labels =
+          match labels with
+          | None -> Ok []
+          | Some labels -> (
+              let labels = Odoc_parser.Loc.value labels |> String.trim in
+              match Label.of_string labels with
+              | Ok labels -> Ok labels
+              | Error msgs -> Error (List.hd msgs)
+              (* TODO: Report precise location *))
         in
-        match labels with
-        | None -> Ok (header, [])
-        | Some labels -> (
-            let labels = Odoc_parser.Loc.value labels |> String.trim in
-            match Label.of_string labels with
-            | Ok labels -> Ok (header, labels)
-            | Error msgs -> Error (List.hd msgs)
-            (* TODO: Report precise location *)))
+        let language_label = Label.Language_tag language_tag in
+        Ok (header, language_label :: labels)
     | None ->
         (* If not specified, blocks are run as ocaml blocks *)
         Ok (Some OCaml, [])
@@ -156,54 +216,32 @@ let make_block ~loc code_block =
       Block.mk ~loc ~section:None ~labels ~header ~contents ~legacy_labels:false
         ~errors:[]
 
-let code_block_markup code_block =
-  let open Document in
-  let opening =
-    match code_block.Code_block.metadata with
-    | Some { language_tag; labels } ->
-        let labels =
-          match labels with
-          | Some s -> [ Text " "; Text (Odoc_parser.Loc.value s) ]
-          | None -> []
-        in
-        [ Text "{@"; Text (Odoc_parser.Loc.value language_tag) ]
-        @ labels @ [ Text "[" ]
-    | None -> [ Text "{[" ]
-  in
-  let hpad =
-    let has_several_lines = String.contains code_block.contents '\n' in
-    let column = code_block.location.start.column in
-    if not has_several_lines then ""
-    else Astring.String.v ~len:column (fun _ -> ' ')
-  in
-  (opening, [ Text (hpad ^ "]}") ])
-
 let parse_mli file_contents =
   (* Find the locations of the code blocks within [file_contents], then slice it up into
      [Text] and [Block] parts by using the starts and ends of those blocks as
      boundaries. *)
   let code_blocks = docstring_code_blocks file_contents in
-  let cursor = ref { Odoc_parser.Loc.line = 1; column = 0 } in
+  let cursor = { Odoc_parser.Loc.line = 1; column = 0 } in
   let lines = String.split_on_char '\n' file_contents |> Array.of_list in
-  let tokens =
-    List.map
-      (fun ((code_block : Code_block.t), loc) ->
+  let cursor, tokens =
+    List.fold_left
+      (fun (cursor, code_blocks) ((code_block : Code_block.t), loc) ->
         let pre_text =
           Document.Text
-            (slice lines ~start:!cursor ~end_:code_block.location.start)
+            (slice lines ~start:cursor ~end_:code_block.location.start)
         in
         let block =
           match make_block ~loc code_block with
           | Ok block -> Document.Block block
-          | Error (`Msg msg) ->
-              failwith (Fmt.str "Error creating block: %s" msg)
+          | Error (`Msg msg) -> Fmt.failwith "Error creating block: %s" msg
         in
-        let opening, closing = code_block_markup code_block in
-        cursor := code_block.location.end_;
-        [ pre_text ] @ opening @ [ block ] @ closing)
-      code_blocks
-    |> List.concat
+        let cursor = code_block.location.end_ in
+        (* append them in reverse order, since this is a fold_left *)
+        let code_blocks = block :: pre_text :: code_blocks in
+        (cursor, code_blocks))
+      (cursor, []) code_blocks
   in
+  let tokens = List.rev tokens in
   let eof =
     {
       Odoc_parser.Loc.line = Array.length lines;
@@ -213,8 +251,8 @@ let parse_mli file_contents =
   let eof_is_beyond_location (loc : Odoc_parser.Loc.point) =
     eof.line > loc.line || (eof.line = loc.line && eof.column > loc.column)
   in
-  if eof_is_beyond_location !cursor then
-    let remainder = slice lines ~start:!cursor ~end_:eof in
+  if eof_is_beyond_location cursor then
+    let remainder = slice lines ~start:cursor ~end_:eof in
     if not (String.equal remainder "") then tokens @ [ Text remainder ]
     else tokens
   else tokens

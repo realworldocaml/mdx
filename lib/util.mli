@@ -56,12 +56,16 @@ end
 
 module List : sig
   val find_map : ('a -> 'b option) -> 'a list -> 'b option
+  val partition_until : ('a -> bool) -> 'a list -> 'a list * 'a list
 end
 
 module String : sig
   val english_conjonction : string list -> string
   (** [english_conjonction ["a"; "b"; "c"]] returns ["a, b and c"].
       @raise Invalid_argument when called on the empty list. *)
+
+  val all_blank : string -> bool
+  (** [all_blank s] is true if every character of s is a whitespace *)
 end
 
 module Sexp : sig

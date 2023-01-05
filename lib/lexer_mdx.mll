@@ -26,6 +26,9 @@ rule text section = parse
          | Some _ -> newline lexbuf
          | None -> ());
         let contents = block lexbuf in
+        (* we assume the multi-line block starts with an ""
+           TODO: tie this to the regex match *)
+        let contents = "" :: contents in
         let errors =
           match error_block lexbuf with
           | exception _ -> []
@@ -49,11 +52,16 @@ rule text section = parse
         `Block block :: text section lexbuf }
   | ([^'\n']* as str) eol
       { newline lexbuf;
+        let str = String.append str "\n" in
         `Text str :: text section lexbuf }
 
 and block = parse
-  | eof | "```" ws* eol    { newline lexbuf; [] }
-  | ([^'\n'] * as str) eol { newline lexbuf; str :: block lexbuf }
+  | eof | ws* as end_pad "```" ws* eol
+    { newline lexbuf;
+      [end_pad] }
+  | ([^'\n']* as str) eol
+    { newline lexbuf;
+      str :: block lexbuf }
 
 and error_block = parse
   | "```mdx-error" ws* eol { newline lexbuf; block lexbuf }
@@ -64,12 +72,12 @@ and cram_text section = parse
       { let section = (String.length n, str) in
         newline lexbuf;
         `Section section :: cram_text (Some section) lexbuf }
-  | "  " ([^'\n']* as first_line) eol
+  | ("  " as ws) ([^'\n']* as first_line) eol
       { let start = Lexing.lexeme_start_p lexbuf in
         newline lexbuf;
         let header = "sh" in
         let requires_empty_line, contents = cram_block lexbuf in
-        let contents = first_line :: contents in
+        let contents = (String.append ws first_line) :: contents in
         let label_cmt = Some "" in
         let legacy_labels = "" in
         let end_ = Lexing.lexeme_start_p lexbuf in
@@ -80,7 +88,7 @@ and cram_text section = parse
               ~legacy_labels ~errors:[]
         in
         `Block block
-        :: (if requires_empty_line then `Text "" :: rest else rest) }
+        :: (if requires_empty_line then `Text "\n" :: rest else rest) }
   | "<-- non-deterministic" ws* ([^'\n']* as choice) eol
       { let start = Lexing.lexeme_start_p lexbuf in
         newline lexbuf;
@@ -96,18 +104,19 @@ and cram_text section = parse
               ~legacy_labels ~errors:[]
         in
         `Block block
-        :: (if requires_empty_line then `Text "" :: rest else rest) }
+        :: (if requires_empty_line then `Text "\n" :: rest else rest) }
   | ([^'\n']* as str) eol
       { newline lexbuf;
+        let str = String.append str "\n" in
         `Text str :: cram_text section lexbuf }
 
 and cram_block = parse
   | eof { false, [] }
   | eol { newline lexbuf; true, [] }
-  | "  " ([^'\n'] * as str) eol
+  | ("  " as ws) ([^'\n'] * as str) eol
       { let requires_empty_line, lst = cram_block lexbuf in
         newline lexbuf;
-        requires_empty_line, str :: lst }
+        requires_empty_line, (String.append ws str) :: lst }
 
 {
   let markdown_token lexbuf =

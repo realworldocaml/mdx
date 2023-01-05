@@ -14,24 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Astring
-
-let hpad_of_lines = function
-  | [] -> 0
-  | h :: _ ->
-      let i = ref 0 in
-      while !i < String.length h && h.[!i] = ' ' do
-        incr i
-      done;
-      !i
-
-let pp_pad ppf = function
-  | 0 -> ()
-  | i -> Fmt.string ppf (String.v ~len:i (fun _ -> ' '))
-
-let pp_lines pp = Fmt.(list ~sep:(any "\n") pp)
-let dump_string ppf s = Fmt.pf ppf "%S" s
-
 let read_file file =
   let ic = open_in_bin file in
   let len = in_channel_length ic in
@@ -39,12 +21,14 @@ let read_file file =
   close_in ic;
   file_contents
 
-let init file =
-  let file_contents = read_file file in
+type loaded_file = { lexbuf : Lexing.lexbuf; string : string }
+
+let load_file ~filename =
+  let file_contents = read_file filename in
   let lexbuf = Lexing.from_string file_contents in
   lexbuf.lex_curr_p <-
-    { pos_fname = file; pos_cnum = 0; pos_lnum = 1; pos_bol = 0 };
-  (file_contents, lexbuf)
+    { pos_fname = filename; pos_cnum = 0; pos_lnum = 1; pos_bol = 0 };
+  { string = file_contents; lexbuf }
 
 let pp_position ppf lexbuf =
   let p = Lexing.lexeme_start_p lexbuf in

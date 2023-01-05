@@ -33,6 +33,9 @@ val pp : ?syntax:syntax -> t Fmt.t
 (** [pp] is the pretty printer for mdx documents. Should be idempotent
    with {!of_string}. *)
 
+val dump : t Fmt.t
+(** [dump] is the printer for dumping mdx documents. Useful for debugging. *)
+
 val to_string : t -> string
 (** [to_string t] converts the document [t] to a string. *)
 

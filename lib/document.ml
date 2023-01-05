@@ -15,17 +15,24 @@
  *)
 
 type syntax = Syntax.t = Normal | Cram | Mli
-type line = Section of (int * string) | Text of string | Block of Block.t
+type section = int * string
+type line = Section of section | Text of string | Block of Block.t
 type t = line list
 
-let pp_line ?syntax ppf (l : line) =
-  match l with
-  | Block b -> Fmt.pf ppf "%a\n" (Block.pp ?syntax) b
-  | Section (d, s) -> Fmt.pf ppf "%s %s\n" (String.make d '#') s
-  | Text s -> (
-      match syntax with
-      | Some Mli -> Fmt.pf ppf "%s" s
-      | _ -> Fmt.pf ppf "%s\n" s)
+let pp_section ppf (level, text) =
+  Fmt.pf ppf "%s %s" (String.make level '#') text
+
+let dump_line ppf = function
+  | Block block -> Fmt.pf ppf "Block %a" Block.dump block
+  | Section section -> Fmt.pf ppf "Section %a" pp_section section
+  | Text text -> Fmt.pf ppf "Text %S" text
+
+let pp_line ?syntax ppf = function
+  | Block block -> Block.pp ?syntax ppf block
+  | Section section -> Fmt.pf ppf "%a\n" pp_section section
+  | Text s -> Fmt.string ppf s
+
+let dump ppf t = Fmt.Dump.(list dump_line) ppf t
 
 let pp ?syntax ppf t =
   Fmt.pf ppf "%a\n" Fmt.(list ~sep:(any "\n") (pp_line ?syntax)) t

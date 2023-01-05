@@ -104,6 +104,7 @@ module String = struct
     | hd :: tl -> aux hd tl
 
   let english_conjonction words = english_concat ~last_sep:"and" words
+  let all_blank = Astring.String.for_all Astring.Char.Ascii.is_white
 end
 
 module List = struct
@@ -113,6 +114,19 @@ module List = struct
       | h :: t -> ( match f h with Some x -> Some x | None -> aux t)
     in
     aux l
+
+  let partition_until f xs =
+    let rec loop = function
+      | [] -> ([], [])
+      | x :: xs -> (
+          match f x with
+          | true ->
+              let trueish, falseish = loop xs in
+              (x :: trueish, falseish)
+          | false -> ([], x :: xs))
+    in
+    let trueish, falseish = loop xs in
+    (List.rev trueish, falseish)
 end
 
 module Array = struct
