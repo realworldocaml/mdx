@@ -21,6 +21,8 @@
 #### Changed
 
 - Preserve indentation in multiline OCaml blocks in .mli files (#395, @panglesd)
+- Rename the `Normal` syntax to `Markdown` to better explain what the syntax is
+  and moved it to `Mdx.Syntax` (#<PR_NUMBER>, @Leonidas-from-XIV)
 
 #### Fixed
 
