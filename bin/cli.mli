@@ -2,7 +2,7 @@ open Cmdliner.Term
 
 val named : ('a -> 'b) -> 'a t -> 'b t
 val non_deterministic : [> `Non_deterministic of bool ] t
-val syntax : [> `Syntax of Mdx.syntax option ] t
+val syntax : [> `Syntax of Mdx.Syntax.t option ] t
 val file : [> `File of string ] t
 val section : [> `Section of string option ] t
 val silent_eval : [> `Silent_eval of bool ] t

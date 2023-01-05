@@ -46,17 +46,17 @@ val dump : line list Fmt.t
 
 (** {2 Document} *)
 
-val of_string : syntax -> string -> (t, [ `Msg of string ] list) result
+val of_string : Syntax.t -> string -> (t, [ `Msg of string ] list) result
 (** [of_string syntax s] is the document [t] such that
     [to_string ~syntax t = s]. *)
 
-val parse_file : syntax -> string -> (t, [ `Msg of string ] list) result
+val parse_file : Syntax.t -> string -> (t, [ `Msg of string ] list) result
 (** [parse_file s] is {!of_string} of [s]'s contents. *)
 
 (** {2 Evaluation} *)
 
 val run_to_stdout :
-  ?syntax:syntax ->
+  ?syntax:Syntax.t ->
   f:(string -> t -> string) ->
   string ->
   (unit, [ `Msg of string ] list) result
@@ -65,7 +65,7 @@ val run_to_stdout :
     The returned corrected version is then written to stdout. *)
 
 val run_to_file :
-  ?syntax:syntax ->
+  ?syntax:Syntax.t ->
   f:(string -> t -> string) ->
   outfile:string ->
   string ->
@@ -73,7 +73,7 @@ val run_to_file :
 (** Same as [run_to_stdout] but writes the corrected version to [outfile]*)
 
 val run :
-  ?syntax:syntax ->
+  ?syntax:Syntax.t ->
   ?force_output:bool ->
   f:(string -> t -> string) ->
   string ->

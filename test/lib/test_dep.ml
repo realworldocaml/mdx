@@ -50,7 +50,7 @@ let test_of_line =
     let test_name = Printf.sprintf "of_line: %S" line_des in
     let test_fun () =
       let actual =
-        let+ lines = Mdx.of_string Mdx.Markdown lines in
+        let+ lines = Mdx.of_string Mdx.Syntax.Markdown lines in
         Mdx.Dep.of_lines lines
       in
       Alcotest.(check (result (list Testable.dep) (list Testable.msg)))

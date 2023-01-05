@@ -16,12 +16,10 @@
 
 (** {2 Lines} *)
 
-type syntax = Syntax.t = Markdown | Cram | Mli
-
 (** The type for the lines of a markdown or cram file. *)
 type line = Section of (int * string) | Text of string | Block of Block.t
 
-val pp_line : ?syntax:syntax -> line Fmt.t
+val pp_line : ?syntax:Syntax.t -> line Fmt.t
 (** [pp_line] is the pretty-printer for markdown or cram lines. *)
 
 (** {2 Document} *)
@@ -29,7 +27,7 @@ val pp_line : ?syntax:syntax -> line Fmt.t
 type t = line list
 (** The type for mdx documents. *)
 
-val pp : ?syntax:syntax -> t Fmt.t
+val pp : ?syntax:Syntax.t -> t Fmt.t
 (** [pp] is the pretty printer for mdx documents. Should be idempotent
    with {!of_string}. *)
 

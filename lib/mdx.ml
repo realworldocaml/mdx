@@ -107,15 +107,15 @@ let write_file ~outfile content =
   output_string oc content;
   close_out oc
 
-let run_to_stdout ?(syntax = Markdown) ~f infile =
+let run_to_stdout ?(syntax = Syntax.Markdown) ~f infile =
   let+ _, corrected = run_str ~syntax ~f infile in
   print_string corrected
 
-let run_to_file ?(syntax = Markdown) ~f ~outfile infile =
+let run_to_file ?(syntax = Syntax.Markdown) ~f ~outfile infile =
   let+ _, corrected = run_str ~syntax ~f infile in
   write_file ~outfile corrected
 
-let run ?(syntax = Markdown) ?(force_output = false) ~f infile =
+let run ?(syntax = Syntax.Markdown) ?(force_output = false) ~f infile =
   let outfile = infile ^ ".corrected" in
   let+ test_result, corrected = run_str ~syntax ~f infile in
   match (force_output, test_result) with
