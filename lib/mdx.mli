@@ -61,7 +61,7 @@ val run_to_stdout :
   string ->
   (unit, [ `Msg of string ] list) result
 (** [run_to_stdout ?syntax ~f file] runs the callback [f] on the raw and
-    structured content of [file], as specified  by [syntax] (defaults to [Normal]).
+    structured content of [file], as specified  by [syntax] (defaults to [Markdown]).
     The returned corrected version is then written to stdout. *)
 
 val run_to_file :

@@ -173,7 +173,7 @@ let pp_footer ?syntax ppf _ =
   match syntax with
   | Some Syntax.Mli -> Fmt.string ppf "]}"
   | Some Syntax.Cram -> Fmt.string ppf "\n"
-  | Some Syntax.Normal | None -> Fmt.string ppf "```\n"
+  | Some Syntax.Markdown | None -> Fmt.string ppf "```\n"
 
 let pp_legacy_labels ppf = function
   | [] -> ()
@@ -191,7 +191,7 @@ let pp_labels ?syntax ppf labels =
       | [ Non_det (Some Nd_command) ] ->
           Fmt.pf ppf "<-- non-deterministic command\n"
       | _ -> failwith "cannot happen: checked during parsing")
-  | Some Syntax.Normal | None -> (
+  | Some Syntax.Markdown | None -> (
       match labels with
       | [] -> ()
       | l ->
@@ -216,7 +216,7 @@ let pp_header ?syntax ppf t =
       in
       Fmt.pf ppf "{%a%a[" pp_lang_header lang_headers pp_labels other_labels
   | Some Syntax.Cram -> pp_labels ?syntax ppf t.labels
-  | Some Syntax.Normal | None ->
+  | Some Syntax.Markdown | None ->
       if t.legacy_labels then
         Fmt.pf ppf "```%a%a"
           Fmt.(option Header.pp)
