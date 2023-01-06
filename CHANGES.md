@@ -1,4 +1,4 @@
-### unreleased
+### 2.2.0
 
 #### Added
 
@@ -7,8 +7,6 @@
 #### Changed
 
 - Preserve indentation in multiline OCaml blocks in .mli files (#395, @panglesd)
-
-#### Deprecated
 
 #### Fixed
 
@@ -28,8 +26,6 @@
 - Removed warning about missing semicolons added in MDX 1.11.0 and the
   automatic insertion of semicolons in the corrected files introduced in MDX
   2.0.0. (#398, @Leonidas-from-XIV)
-
-#### Security
 
 ### 2.1.0
 
