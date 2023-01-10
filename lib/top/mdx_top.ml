@@ -23,33 +23,55 @@ let redirect ~f =
   let stdout_backup = Unix.dup ~cloexec:true Unix.stdout in
   let stderr_backup = Unix.dup ~cloexec:true Unix.stderr in
   let fd_in, fd_out = Unix.pipe ~cloexec:true () in
-  Unix.set_nonblock fd_in;
   Unix.dup2 ~cloexec:false fd_out Unix.stdout;
   Unix.dup2 ~cloexec:false fd_out Unix.stderr;
-  Unix.close fd_out;
   let bufsize = 4096 in
   let bytes = Bytes.create bufsize in
+  let buf_internal = Buffer.create bufsize in
+  let close = ref false in
+  let mutex = Mutex.create () in
+  let rec reader () =
+    Thread.yield ();
+    if not !close then
+      match Unix.read fd_in bytes 0 bufsize with
+      | n ->
+          if n <> 0 then (
+            Mutex.lock mutex;
+            Buffer.add_subbytes buf_internal bytes 0 n;
+            Mutex.unlock mutex;
+            reader ())
+      | exception Unix.(Unix_error ((EACCES | EAGAIN | EBADF), _, _)) -> ()
+  in
+  let reader = Thread.create reader () in
   let capture buf =
     flush stdout;
     flush stderr;
-    try
-      while true do
-        let n = Unix.read fd_in bytes 0 bufsize in
-        Buffer.add_subbytes buf bytes 0 n
-      done
-    with
-    | Unix.(Unix_error (EAGAIN, _, _)) | Unix.(Unix_error (EWOULDBLOCK, _, _))
-    ->
-      ()
+    Unix.sleepf 0.001;
+    let rec loop () =
+      let was = Buffer.length buf in
+      Mutex.lock mutex;
+      Buffer.add_buffer buf buf_internal;
+      Buffer.clear buf_internal;
+      Mutex.unlock mutex;
+      if Buffer.length buf <> was then (
+        Unix.sleepf 0.0001;
+        loop ())
+    in
+    loop ()
   in
   Fun.protect
     (fun () -> f ~capture)
     ~finally:(fun () ->
+      close := true;
+      (* wake-up reader *)
+      Unix.write fd_out bytes 0 1 |> ignore;
+      Unix.close fd_out;
       Unix.close fd_in;
       Unix.dup2 ~cloexec:false stdout_backup Unix.stdout;
       Unix.dup2 ~cloexec:false stderr_backup Unix.stderr;
       Unix.close stdout_backup;
-      Unix.close stderr_backup)
+      Unix.close stderr_backup;
+      Thread.join reader)
 
 module Lexbuf = struct
   open Lexing
