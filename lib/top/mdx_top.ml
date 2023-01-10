@@ -20,14 +20,14 @@ open Compat_top
 type directive = Directory of string | Load of string
 
 let redirect ~f =
-  let stdout_backup = Unix.dup Unix.stdout in
-  let stderr_backup = Unix.dup Unix.stderr in
-  let filename = Filename.temp_file "ocaml-mdx" "stdout" in
+  let stdout_backup = Unix.dup ~cloexec:true Unix.stdout in
+  let stderr_backup = Unix.dup ~cloexec:true Unix.stderr in
+  let filename = Filename.temp_file "ocaml-mdx-" ".stdout" in
   let fd_out =
-    Unix.openfile filename Unix.[ O_WRONLY; O_CREAT; O_TRUNC ] 0o600
+    Unix.openfile filename Unix.[ O_WRONLY; O_CREAT; O_TRUNC; O_CLOEXEC ] 0o600
   in
-  Unix.dup2 fd_out Unix.stdout;
-  Unix.dup2 fd_out Unix.stderr;
+  Unix.dup2 ~cloexec:false fd_out Unix.stdout;
+  Unix.dup2 ~cloexec:false fd_out Unix.stderr;
   let ic = open_in filename in
   let read_up_to = ref 0 in
   let capture buf =
@@ -43,8 +43,8 @@ let redirect ~f =
     ~finally:(fun () ->
       close_in_noerr ic;
       Unix.close fd_out;
-      Unix.dup2 stdout_backup Unix.stdout;
-      Unix.dup2 stderr_backup Unix.stderr;
+      Unix.dup2 ~cloexec:false stdout_backup Unix.stdout;
+      Unix.dup2 ~cloexec:false stderr_backup Unix.stderr;
       Unix.close stdout_backup;
       Unix.close stderr_backup;
       Sys.remove filename)
