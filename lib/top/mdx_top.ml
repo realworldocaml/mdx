@@ -46,7 +46,7 @@ let redirect ~f =
   let capture buf =
     flush stdout;
     flush stderr;
-    Unix.sleepf 0.001;
+    Unix.sleepf 0.01;
     let rec loop () =
       let was = Buffer.length buf in
       Mutex.lock mutex;
@@ -54,7 +54,7 @@ let redirect ~f =
       Buffer.clear buf_internal;
       Mutex.unlock mutex;
       if Buffer.length buf <> was then (
-        Unix.sleepf 0.0001;
+        Unix.sleepf 0.001;
         loop ())
     in
     loop ()
