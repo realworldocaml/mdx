@@ -20,7 +20,7 @@ let cmds = [ Test.cmd; Pp.cmd; Deps.cmd; Dune_gen.cmd ]
 let main (`Setup ()) = `Help (`Pager, None)
 
 let info =
-  let doc = "Execute markdown files." in
+  let doc = "Execute code in documentation files." in
   let man = [] in
   Cmd.info "ocaml-mdx" ~version:"%%VERSION%%" ~doc ~man
 

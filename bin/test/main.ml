@@ -82,7 +82,7 @@ let term =
 
 let info =
   let man = [] in
-  let doc = "Test markdown files." in
+  let doc = "Execute and test code in documentation files." in
   Cmd.info "ocaml-mdx-test" ~version:"%%VERSION%%" ~doc ~man
 
 let cmd = Cmd.v info term
