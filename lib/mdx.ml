@@ -71,7 +71,7 @@ let parse l =
 let parse_lexbuf syntax Misc.{ string; lexbuf } =
   match syntax with
   | Syntax.Mli -> Mli_parser.parse_mli string
-  | Normal ->
+  | Markdown ->
       Util.Result.to_error_list @@ Lexer_mdx.markdown_token lexbuf >>= parse
   | Cram -> Util.Result.to_error_list @@ Lexer_mdx.cram_token lexbuf >>= parse
 
@@ -80,7 +80,7 @@ let parse_file syntax f = Misc.load_file ~filename:f |> parse_lexbuf syntax
 let of_string syntax s =
   match syntax with
   | Syntax.Mli -> Mli_parser.parse_mli s
-  | Syntax.Normal | Syntax.Cram ->
+  | Syntax.Markdown | Syntax.Cram ->
       Misc.{ lexbuf = Lexing.from_string s; string = s } |> parse_lexbuf syntax
 
 let dump_line ppf (l : line) =
@@ -107,15 +107,15 @@ let write_file ~outfile content =
   output_string oc content;
   close_out oc
 
-let run_to_stdout ?(syntax = Normal) ~f infile =
+let run_to_stdout ?(syntax = Syntax.Markdown) ~f infile =
   let+ _, corrected = run_str ~syntax ~f infile in
   print_string corrected
 
-let run_to_file ?(syntax = Normal) ~f ~outfile infile =
+let run_to_file ?(syntax = Syntax.Markdown) ~f ~outfile infile =
   let+ _, corrected = run_str ~syntax ~f infile in
   write_file ~outfile corrected
 
-let run ?(syntax = Normal) ?(force_output = false) ~f infile =
+let run ?(syntax = Syntax.Markdown) ?(force_output = false) ~f infile =
   let outfile = infile ^ ".corrected" in
   let+ test_result, corrected = run_str ~syntax ~f infile in
   match (force_output, test_result) with

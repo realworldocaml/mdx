@@ -14,7 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-type syntax = Syntax.t = Normal | Cram | Mli
 type section = int * string
 type line = Section of section | Text of string | Block of Block.t
 type t = line list

@@ -73,7 +73,7 @@ let executable_contents (block : Block.t) =
          else (line, add_semi_semi contents))
 
 let run (`Setup ()) (`File file) (`Section section) =
-  Mdx.parse_file Normal file >>! fun t ->
+  Mdx.parse_file Markdown file >>! fun t ->
   let t =
     match section with
     | None -> t

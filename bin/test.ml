@@ -53,6 +53,6 @@ let term =
     $ Cli.silent $ Cli.verbose_findlib $ Cli.prelude $ Cli.prelude_str
     $ Cli.file $ Cli.section $ Cli.root $ Cli.force_output $ Cli.output)
 
-let doc = "Test markdown files."
+let doc = "Test code in documentation files."
 let info = Cmd.info "test" ~doc
 let cmd = Cmd.v info term
