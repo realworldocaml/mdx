@@ -1,16 +1,9 @@
-### unreleased
-
-#### Added
-
-#### Changed
-
-#### Deprecated
+### 2.2.1
 
 #### Fixed
 
-#### Removed
-
-#### Security
+- Undid the change to the pipe code to restore compatibility with Windows
+  (#403, @MisterDA)
 
 ### 2.2.0
 
