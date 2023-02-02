@@ -1,5 +1,8 @@
 ### unreleased
 
+- tiny change to allow using the parser that the toplevel uses
+  (instead of always the official OCaml parser) (#417, @chetmurthy)
+
 #### Added
 
 #### Changed
