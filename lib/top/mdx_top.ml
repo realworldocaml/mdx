@@ -112,7 +112,7 @@ module Phrase = struct
     let lexbuf = Lexing.from_string contents in
     let startpos = lexbuf.Lexing.lex_start_p in
     let parsed =
-      match Parse.toplevel_phrase lexbuf with
+      match !Toploop.parse_toplevel_phrase lexbuf with
       | phrase -> Ok phrase
       | exception exn ->
           let exn =
