@@ -22,7 +22,7 @@ let run_exn_defaults =
     ~root:None ~force_output:false
     ~output:(Some `Stdout)
 let file = Sys.argv.(1)
-let prelude = ["prelude.ml";"prelude2.ml"]
+let prelude = [(`All, "prelude.ml"); (`All, "prelude2.ml")]
 
 let directives = List.map (fun path ->
   Mdx_top.Directory path) []
