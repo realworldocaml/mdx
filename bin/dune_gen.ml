@@ -22,24 +22,25 @@ let run (`Setup ()) (`Prelude prelude) (`Directories dirs) =
       (String.concat ";" (List.map (Printf.sprintf "%S") l))
   in
 
-  let show_ocaml_env = function
-    | Mdx.Ocaml_env.Default -> "Mdx.Ocaml_env.Default"
+  let pp_ocaml_env ppf = function
+    | Mdx.Ocaml_env.Default -> Fmt.string ppf "Mdx.Ocaml_env.Default"
     | Mdx.Ocaml_env.User_defined s ->
-        Printf.sprintf "(Mdx.Ocaml_env.User_defined %S)" s
+        Fmt.pf ppf "(Mdx.Ocaml_env.User_defined %S)" s
   in
 
-  let show_env = function
-    | `All -> "`All"
-    | `One ocaml_env -> Printf.sprintf "(`One %s)" (show_ocaml_env ocaml_env)
+  let pp_env ppf = function
+    | `All -> Fmt.string ppf "`All"
+    | `One ocaml_env -> Fmt.pf ppf "(`One %a)" pp_ocaml_env ocaml_env
   in
 
-  let show_prelude (env, filename) =
-    Printf.sprintf "(%s, %S)" (show_env env) filename
+  let pp_prelude ppf (env, filename) =
+    Fmt.pf ppf "(%a, %S)" pp_env env filename
   in
 
-  let show_preludes preludes =
-    Printf.sprintf "[%s]\n" (String.concat ";" (List.map show_prelude preludes))
+  let pp_preludes ppf preludes =
+    Fmt.pf ppf "%a" (Fmt.Dump.list pp_prelude) preludes
   in
+
   line "let run_exn_defaults =";
   line "  let open Mdx_test in";
   line "  let packages =";
@@ -65,7 +66,7 @@ let run (`Setup ()) (`Prelude prelude) (`Directories dirs) =
   line "    ~output:(Some `Stdout)";
 
   line "let file = Sys.argv.(1)";
-  line "let prelude = %s" (show_preludes prelude);
+  line "let prelude = %s" ((Fmt.to_to_string pp_preludes) prelude);
   line "let directives = List.map (fun path ->";
   line "  Mdx_top.Directory path) %s" (list dirs);
   line "let _ = run_exn_defaults";
