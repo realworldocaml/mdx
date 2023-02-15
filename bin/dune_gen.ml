@@ -16,10 +16,10 @@
 
 let run (`Setup ()) (`Prelude prelude) (`Directories dirs) =
   let buffer = Buffer.create 1024 in
-  let line fmt = Printf.bprintf buffer (fmt ^^ "\n") in
-  let list l =
-    Printf.sprintf "[%s]\n"
-      (String.concat ";" (List.map (Printf.sprintf "%S") l))
+  let ppf = Format.formatter_of_buffer buffer in
+  let line fmt = Fmt.kpf (fun ppf -> Fmt.string ppf "\n") ppf fmt in
+  let pp_list ppf =
+    Fmt.pf ppf "[%a]\n" (Fmt.list ~sep:(Fmt.any "; ") Fmt.Dump.string)
   in
 
   let pp_ocaml_env ppf = function
@@ -38,7 +38,7 @@ let run (`Setup ()) (`Prelude prelude) (`Directories dirs) =
   in
 
   let pp_preludes ppf preludes =
-    Fmt.pf ppf "%a" (Fmt.Dump.list pp_prelude) preludes
+    Fmt.pf ppf "[%a]\n" (Fmt.list ~sep:(Fmt.any "; ") pp_prelude) preludes
   in
 
   line "let run_exn_defaults =";
@@ -66,13 +66,14 @@ let run (`Setup ()) (`Prelude prelude) (`Directories dirs) =
   line "    ~output:(Some `Stdout)";
 
   line "let file = Sys.argv.(1)";
-  line "let prelude = %s" ((Fmt.to_to_string pp_preludes) prelude);
+  line "let prelude = %a" pp_preludes prelude;
   line "let directives = List.map (fun path ->";
-  line "  Mdx_top.Directory path) %s" (list dirs);
+  line "  Mdx_top.Directory path) %a" pp_list dirs;
   line "let _ = run_exn_defaults";
   line "  ~file";
   line "  ~prelude";
   line "  ~directives";
+  Fmt.flush ppf ();
   Buffer.output_buffer stdout buffer;
   0
 
