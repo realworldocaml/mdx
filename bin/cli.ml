@@ -68,20 +68,21 @@ let verbose_findlib =
 
 let prelude =
   let parse s =
-    let _, file = Mdx.Prelude.env_and_file s in
-    let parse, _ = Arg.non_dir_file in
-    match parse file with `Ok _ -> `Ok s | `Error e -> `Error e
+    let env, file = Mdx.Prelude.env_and_file s in
+    let parse, _print = Arg.non_dir_file in
+    match parse file with `Ok _ -> `Ok (env, file) | `Error e -> `Error e
   in
-  let prelude = (parse, Fmt.string) in
+  let prelude = (parse, Mdx.Prelude.pp) in
   let doc =
     "A file to load as prelude. Can be prefixed with $(i,env:) to specify a \
      specific environment to load the prelude in. Multiple prelude files can \
-     be provided:they will be evaluated in the order they are provided on the \
+     be provided: they will be evaluated in the order they are provided on the \
      command-line."
   in
   named
     (fun x -> `Prelude x)
-    Arg.(value & opt_all prelude [] & info [ "prelude" ] ~doc ~docv:"FILE")
+    Arg.(
+      value & opt_all prelude [] & info [ "prelude" ] ~doc ~docv:"[ENV:]FILE")
 
 let prelude_str =
   let doc =

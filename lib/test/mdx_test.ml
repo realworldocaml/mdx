@@ -314,14 +314,18 @@ let with_non_det ~on_skip_execution ~on_keep_old_output ~on_evaluation
   | _ -> on_evaluation ()
 
 let preludes ~prelude ~prelude_str =
-  let aux to_lines p =
+  let parse_str p =
     let env, file = Mdx.Prelude.env_and_file p in
-    (env, to_lines file)
+    (env, [ file ])
+  in
+  let parse p =
+    let env, file = p in
+    (env, Mdx.Util.File.read_lines file)
   in
   match (prelude, prelude_str) with
   | [], [] -> []
-  | [], fs -> List.map (aux (fun x -> [ x ])) fs
-  | fs, [] -> List.map (aux Mdx.Util.File.read_lines) fs
+  | [], fs -> List.map parse_str fs
+  | fs, [] -> List.map parse fs
   | _ -> Fmt.failwith "only one of --prelude or --prelude-str shoud be used"
 
 let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent

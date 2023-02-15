@@ -14,7 +14,11 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-val env_and_file : string -> [ `All | `One of Ocaml_env.t ] * string
+type t = [ `All | `One of Ocaml_env.t ] * string
+
+val pp : t Fmt.t
+
+val env_and_file : string -> t
 (** [env_and_file s] returns the environment and file/prelude string described
     by [s].
     I.e. [env_and_file "a:f"] associates [f] to the environment named [a],

@@ -21,6 +21,25 @@ let run (`Setup ()) (`Prelude prelude) (`Directories dirs) =
     Printf.sprintf "[%s]\n"
       (String.concat ";" (List.map (Printf.sprintf "%S") l))
   in
+
+  let show_ocaml_env = function
+    | Mdx.Ocaml_env.Default -> "Mdx.Ocaml_env.Default"
+    | Mdx.Ocaml_env.User_defined s ->
+        Printf.sprintf "(Mdx.Ocaml_env.User_defined %S)" s
+  in
+
+  let show_env = function
+    | `All -> "`All"
+    | `One ocaml_env -> Printf.sprintf "(`One %s)" (show_ocaml_env ocaml_env)
+  in
+
+  let show_prelude (env, filename) =
+    Printf.sprintf "(%s, %S)" (show_env env) filename
+  in
+
+  let show_preludes preludes =
+    Printf.sprintf "[%s]\n" (String.concat ";" (List.map show_prelude preludes))
+  in
   line "let run_exn_defaults =";
   line "  let open Mdx_test in";
   line "  let packages =";
@@ -46,7 +65,7 @@ let run (`Setup ()) (`Prelude prelude) (`Directories dirs) =
   line "    ~output:(Some `Stdout)";
 
   line "let file = Sys.argv.(1)";
-  line "let prelude = %s" (list prelude);
+  line "let prelude = %s" (show_preludes prelude);
   line "let directives = List.map (fun path ->";
   line "  Mdx_top.Directory path) %s" (list dirs);
   line "let _ = run_exn_defaults";
