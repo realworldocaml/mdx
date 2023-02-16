@@ -14,7 +14,14 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-let env_and_file f =
+type t = [ `All | `One of Ocaml_env.t ] * string
+
+let pp ppf = function
+  | `All, filename -> Fmt.pf ppf "(`All, %S)" filename
+  | `One ocaml_env, filename ->
+      Fmt.pf ppf "(`One %a, %S)" Ocaml_env.pp ocaml_env filename
+
+let env_and_payload f =
   match Astring.String.cut ~sep:":" f with
   | None -> (`All, f)
   | Some (e, f) ->

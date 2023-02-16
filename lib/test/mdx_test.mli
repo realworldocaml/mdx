@@ -19,8 +19,8 @@ val run_exn :
   syntax:Mdx.Syntax.t option ->
   silent:bool ->
   verbose_findlib:bool ->
-  prelude:string list ->
-  prelude_str:string list ->
+  prelude:Mdx.Prelude.t list ->
+  prelude_str:Mdx.Prelude.t list ->
   file:string ->
   section:string option ->
   root:string option ->

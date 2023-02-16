@@ -9,8 +9,8 @@ val silent_eval : [> `Silent_eval of bool ] t
 val record_backtrace : [> `Record_backtrace of bool ] t
 val silent : [> `Silent of bool ] t
 val verbose_findlib : [> `Verbose_findlib of bool ] t
-val prelude : [> `Prelude of string list ] t
-val prelude_str : [> `Prelude_str of string list ] t
+val prelude : [> `Prelude of Mdx.Prelude.t list ] t
+val prelude_str : [> `Prelude_str of Mdx.Prelude.t list ] t
 val directories : [> `Directories of string list ] t
 val root : [> `Root of string option ] t
 val force_output : [> `Force_output of bool ] t
