@@ -21,7 +21,7 @@ let pp ppf = function
   | `One ocaml_env, filename ->
       Fmt.pf ppf "(`One %a, %S)" Ocaml_env.pp ocaml_env filename
 
-let env_and_file f =
+let env_and_payload f =
   match Astring.String.cut ~sep:":" f with
   | None -> (`All, f)
   | Some (e, f) ->

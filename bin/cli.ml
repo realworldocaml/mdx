@@ -68,9 +68,11 @@ let verbose_findlib =
 
 let prelude =
   let parse s =
-    let env, file = Mdx.Prelude.env_and_file s in
-    let parse, _print = Arg.non_dir_file in
-    match parse file with `Ok _ -> `Ok (env, file) | `Error e -> `Error e
+    let env, filename = Mdx.Prelude.env_and_payload s in
+    let parse, _pp = Arg.non_dir_file in
+    match parse filename with
+    | `Ok _ -> `Ok (env, filename)
+    | `Error _ as e -> e
   in
   let prelude = (parse, Mdx.Prelude.pp) in
   let doc =
@@ -91,7 +93,7 @@ let prelude_str =
      not contain any spaces. Multiple prelude strings can be provided: they \
      will be evaluated in the order they are provided on the command-line."
   in
-  let parse s = `Ok (Mdx.Prelude.env_and_file s) in
+  let parse s = `Ok (Mdx.Prelude.env_and_payload s) in
   let prelude = (parse, Mdx.Prelude.pp) in
   named
     (fun x -> `Prelude_str x)
