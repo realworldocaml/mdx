@@ -20,7 +20,7 @@ val run_exn :
   silent:bool ->
   verbose_findlib:bool ->
   prelude:Mdx.Prelude.t list ->
-  prelude_str:string list ->
+  prelude_str:Mdx.Prelude.t list ->
   file:string ->
   section:string option ->
   root:string option ->

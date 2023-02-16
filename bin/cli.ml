@@ -91,9 +91,12 @@ let prelude_str =
      not contain any spaces. Multiple prelude strings can be provided: they \
      will be evaluated in the order they are provided on the command-line."
   in
+  let parse s = `Ok (Mdx.Prelude.env_and_file s) in
+  let prelude = (parse, Mdx.Prelude.pp) in
   named
     (fun x -> `Prelude_str x)
-    Arg.(value & opt_all string [] & info [ "prelude-str" ] ~doc ~docv:"STR")
+    Arg.(
+      value & opt_all prelude [] & info [ "prelude-str" ] ~doc ~docv:"[ENV:]STR")
 
 let directories =
   let doc = "A list of directories to load for the #directory directive." in
