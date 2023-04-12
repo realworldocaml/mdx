@@ -37,9 +37,10 @@ let get_files dir =
   read_dir dir |> List.filter is_file
 
 let cwd_options_file = "test-case.opts"
-let cwd_test_file_md = "test-case.md"
-let cwd_test_file_t = "test-case.t"
-let cwd_test_file_mli = "test-case.mli"
+
+let cwd_test_files =
+  [ "test-case.md"; "test-case.t"; "test-case.mli"; "test-case.mld" ]
+
 let cwd_enabled_if_file = "test-case.enabled-if"
 
 type dir = {
@@ -52,20 +53,13 @@ type dir = {
 }
 
 let test_file ~dir_name files =
-  let is_test_file f =
-    f = cwd_test_file_md || f = cwd_test_file_t || f = cwd_test_file_mli
-  in
+  let is_test_file f = List.mem f cwd_test_files in
   match List.filter is_test_file files with
   | [ test_file ] -> test_file
-  | [] ->
-      Printf.eprintf "No test file for %s\n" dir_name;
-      Printf.eprintf "There should be one of %s, %s, or %s\n" cwd_test_file_md
-        cwd_test_file_t cwd_test_file_mli;
-      exit 1
   | _ ->
-      Printf.eprintf "More than one test file for %s\n" dir_name;
-      Printf.eprintf "There should be only one of %s, %s, or %s\n"
-        cwd_test_file_md cwd_test_file_t cwd_test_file_mli;
+      Format.eprintf "No test file for %s\n" dir_name;
+      Format.eprintf "There should be exactly one of [%a]\n" pp_string_list
+        cwd_test_files;
       exit 1
 
 let expected_file ~dir_name ~test_file files =
