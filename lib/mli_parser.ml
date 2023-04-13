@@ -20,11 +20,13 @@ end
 
    The results are prepended in reverse order onto [acc]. *)
 let extract_code_block_info acc ~(location : Lexing.position) ~docstring =
-  let open Odoc_parser in
-  let parsed = parse_comment ~location ~text:docstring in
+  let module O = Odoc_parser in
+  let parsed = O.parse_comment ~location ~text:docstring in
 
   (* If odoc-parser produced any warnings, we raise them as errors here *)
-  List.iter (fun error -> failwith (Warning.to_string error)) (warnings parsed);
+  List.iter
+    (fun error -> failwith (O.Warning.to_string error))
+    (O.warnings parsed);
 
   (* Extract the useful info from what odoc has given us.
 
@@ -33,21 +35,21 @@ let extract_code_block_info acc ~(location : Lexing.position) ~docstring =
      Fortunately the location info give us enough info to be able to extract
      the code from the original text, whitespace and all.
   *)
-  let handle_code_block : Loc.span -> _ -> Code_block.t =
-    let convert_loc (sp : Loc.span) =
+  let handle_code_block : O.Loc.span -> _ -> Code_block.t =
+    let convert_loc (sp : O.Loc.span) =
       Location.
         {
-          loc_start = position_of_point parsed sp.start;
-          loc_end = position_of_point parsed sp.end_;
+          loc_start = O.position_of_point parsed sp.start;
+          loc_end = O.position_of_point parsed sp.end_;
           loc_ghost = false;
         }
     in
-    fun location (metadata, { Loc.location = span; _ }) ->
+    fun location (metadata, { O.Loc.location = span; _ }) ->
       let metadata =
         Option.map
           (fun (lang, labels) ->
-            let language_tag = Loc.value lang in
-            let labels = Option.map Loc.value labels in
+            let language_tag = O.Loc.value lang in
+            let labels = Option.map O.Loc.value labels in
             Code_block.{ language_tag; labels })
           metadata
       in
@@ -58,13 +60,13 @@ let extract_code_block_info acc ~(location : Lexing.position) ~docstring =
 
   (* Fold over the results from odoc-parser, recurse where necessary
      and extract the code block metadata *)
-  let rec fold_fn acc (elt : Ast.block_element Loc.with_location) =
+  let rec fold_fn acc (elt : O.Ast.block_element O.Loc.with_location) =
     match elt with
-    | { Loc.value = `Code_block c; location } ->
+    | { O.Loc.value = `Code_block c; location } ->
         handle_code_block location c :: acc
-    | { Loc.value = `List (_, _, lists); _ } ->
-        List.fold_left (List.fold_left fold_fn) acc (lists :> Ast.t list)
-    | { value = `Tag tag; _ } -> (
+    | { O.Loc.value = `List (_, _, lists); _ } ->
+        List.fold_left (List.fold_left fold_fn) acc (lists :> O.Ast.t list)
+    | { O.Loc.value = `Tag tag; _ } -> (
         match tag with
         | `Deprecated blocks
         | `Param (_, blocks)
@@ -72,12 +74,12 @@ let extract_code_block_info acc ~(location : Lexing.position) ~docstring =
         | `Return blocks
         | `See (_, _, blocks)
         | `Before (_, blocks) ->
-            List.fold_left fold_fn acc (blocks :> Ast.t)
+            List.fold_left fold_fn acc (blocks :> O.Ast.t)
         | _ -> acc)
     | _ -> acc
   in
 
-  List.fold_left fold_fn acc (ast parsed)
+  List.fold_left fold_fn acc (O.ast parsed)
 
 (* This function handles string containing ocaml code. It parses it as ocaml
    via compiler-libs, then for each odoc-formatted comment it then parses
