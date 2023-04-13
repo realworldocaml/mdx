@@ -43,13 +43,12 @@ let extract_code_block_info acc ~(location : Lexing.position) ~docstring =
         }
     in
     fun location (metadata, { Loc.location = span; _ }) ->
-      let open Code_block in
       let metadata =
         Option.map
           (fun (lang, labels) ->
             let language_tag = Loc.value lang in
             let labels = Option.map Loc.value labels in
-            { language_tag; labels })
+            Code_block.{ language_tag; labels })
           metadata
       in
       let content = convert_loc span in
@@ -86,31 +85,38 @@ let extract_code_block_info acc ~(location : Lexing.position) ~docstring =
    blocks within the comments. The result is given as an in-order list of
    [Code_block.t] values. *)
 let docstring_code_blocks str =
-  Lexer.handle_docstrings := true;
-  Lexer.init ();
-  let lexbuf = Lexing.from_string str in
-  let rec loop list =
-    match Lexer.token_with_comments lexbuf with
-    | Parser.EOF -> list
-    | Parser.DOCSTRING docstring ->
-        let body = Docstrings.docstring_body docstring in
-        let loc = Docstrings.docstring_loc docstring in
+  let initial_handle_docstrings = !Lexer.handle_docstrings in
+  Fun.protect
+    ~finally:(fun () -> Lexer.handle_docstrings := initial_handle_docstrings)
+    (fun () ->
+      Lexer.handle_docstrings := true;
+      Lexer.init ();
+      let lexbuf = Lexing.from_string str in
+      let rec loop list =
+        match Lexer.token_with_comments lexbuf with
+        | Parser.EOF -> list
+        | Parser.DOCSTRING docstring ->
+            let body = Docstrings.docstring_body docstring in
+            let loc = Docstrings.docstring_loc docstring in
 
-        (* odoc-parser adjusts for the initial [** *)
-        let adjustment = 3 (* String.length "(**" *) in
+            (* odoc-parser adjusts for the initial [** *)
+            let adjustment = 3 (* String.length "(**" *) in
 
-        let location =
-          { loc.loc_start with pos_cnum = loc.loc_start.pos_cnum + adjustment }
-        in
-        loop (extract_code_block_info list ~location ~docstring:body)
-    | _ -> loop list
-  in
-  loop [] |> List.rev
+            let location =
+              {
+                loc.loc_start with
+                pos_cnum = loc.loc_start.pos_cnum + adjustment;
+              }
+            in
+            loop (extract_code_block_info list ~location ~docstring:body)
+        | _ -> loop list
+      in
+      loop [] |> List.rev)
 
 (* Given code block metadata and the original file, this function splices the
    contents of the code block from the original text and creates an Mdx
    Block.t, or reports the error (e.g., from invalid tags) *)
-let make_block code_block orig =
+let make_block code_block file_contents =
   let handle_header = function
     | Some Code_block.{ language_tag; labels } ->
         let open Util.Result.Infix in
@@ -136,7 +142,7 @@ let make_block code_block orig =
       let slice (loc : Location.t) =
         let start = loc.loc_start.pos_cnum in
         let len = loc.loc_end.pos_cnum - start in
-        String.sub orig start len
+        String.sub file_contents start len
       in
       let contents = slice code_block.content |> String.split_on_char '\n' in
       Block.mk ~loc:code_block.code_block ~section:None ~labels ~header
