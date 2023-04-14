@@ -1,8 +1,4 @@
-### unreleased
-
-- Switch to using the parser that toplevel uses (found in a mutable
-  `ref`, instead of always the official OCaml parser).  This allows
-  Camlp5's parser to be used with MDX. (#417, @chetmurthy)
+### 2.3.0
 
 #### Added
 
@@ -10,13 +6,9 @@
 
 #### Changed
 
-#### Deprecated
-
-#### Fixed
-
-#### Removed
-
-#### Security
+- Switch to using the parser that toplevel uses (found in a mutable
+  `ref`, instead of always the official OCaml parser).  This allows
+  Camlp5's parser to be used with MDX. (#417, @chetmurthy)
 
 ### 2.2.1
 
