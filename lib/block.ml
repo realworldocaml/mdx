@@ -171,7 +171,7 @@ let pp_errors ppf t =
 
 let pp_footer ?syntax ppf _ =
   match syntax with
-  | Some Syntax.Mli -> Fmt.string ppf "]}"
+  | Some Syntax.Mli | Some Syntax.Mld -> Fmt.string ppf "]}"
   | Some Syntax.Cram -> Fmt.string ppf "\n"
   | Some Syntax.Markdown | None -> Fmt.string ppf "```\n"
 
@@ -181,7 +181,8 @@ let pp_legacy_labels ppf = function
 
 let pp_labels ?syntax ppf labels =
   match syntax with
-  | Some Syntax.Mli -> Fmt.(list ~sep:(any ",") Label.pp) ppf labels
+  | Some Syntax.Mli | Some Syntax.Mld ->
+      Fmt.(list ~sep:(any ",") Label.pp) ppf labels
   | Some Syntax.Cram -> (
       match labels with
       | [] -> ()
@@ -199,7 +200,7 @@ let pp_labels ?syntax ppf labels =
 
 let pp_header ?syntax ppf t =
   match syntax with
-  | Some Syntax.Mli ->
+  | Some Syntax.Mli | Some Syntax.Mld ->
       let lang_headers, other_labels =
         List.partition
           (function Label.Language_tag _ -> true | _ -> false)

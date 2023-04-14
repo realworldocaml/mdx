@@ -6,6 +6,8 @@
 
 #### Added
 
+- Added support for `mld` files (#423, @jonludlam)
+
 #### Changed
 
 #### Deprecated

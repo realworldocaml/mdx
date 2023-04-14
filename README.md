@@ -2,7 +2,7 @@
 
 ## MDX
 
-MDX allows to execute code blocks inside markdown and mli documentation
+MDX allows to execute code blocks inside markdown and mli/mld documentation
 to help keeping them up to date.
 
 Use the
@@ -20,7 +20,7 @@ If you want to contribute to the project, please see the
 
 ### Basic Usage
 
-You can use MDX with your Markdown or `.mli` documentation, which ensures
+You can use MDX with your Markdown or `.ml{i,d}` documentation, which ensures
 code in multi-line or verbatim code blocks is correct.
 
 To enable MDX on specific files you must first enable it for your project by
@@ -113,7 +113,7 @@ dune promote
 Now the documentation is up-to-date and running `dune runtest` again should be
 successful!
 
-Note that to use the `dune runtest/promote` workflow with `mli` files,
+Note that to use the `dune runtest/promote` workflow with `mli` or `mld` files,
 you will need to adjust the `mdx` stanza in the `dune` file, as by
 [default](https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4),
 Dune only checks markdown files with `mdx`.  E.g.,
@@ -138,7 +138,7 @@ block it is attached to.
     ```ocaml
     ```
 
-The `.mli` syntax for this is is slightly different to match the conventions of
+The `.mli` and `.mld` syntax for this is is slightly different to match the conventions of
 OCaml documentation comments:
 
     (** This is an documentation comment with an ocaml block
