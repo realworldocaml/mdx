@@ -153,7 +153,7 @@ let make_block code_block file_contents =
 (* Given the locations of the code blocks within [file_contents], then slice it up into
    [Text] and [Block] parts by using the starts and ends of those blocks as
    boundaries. *)
-let parse_generic code_blocks file_contents =
+let extract_blocks code_blocks file_contents =
   let cursor, tokens =
     List.fold_left
       (fun (cursor, code_blocks) (code_block : Code_block.t) ->
@@ -184,7 +184,7 @@ let parse_generic code_blocks file_contents =
 let parse_mli file_contents =
   try
     let code_blocks = docstring_code_blocks file_contents in
-    Ok (parse_generic code_blocks file_contents)
+    Ok (extract_blocks code_blocks file_contents)
   with exn -> Error [ `Msg (Printexc.to_string exn) ]
 
 let parse_mld ?(filename = "_none_") file_contents =
@@ -194,4 +194,4 @@ let parse_mld ?(filename = "_none_") file_contents =
   let code_blocks =
     extract_code_block_info [] ~location ~docstring:file_contents |> List.rev
   in
-  Ok (parse_generic code_blocks file_contents)
+  Ok (extract_blocks code_blocks file_contents)

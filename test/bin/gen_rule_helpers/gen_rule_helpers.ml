@@ -56,8 +56,9 @@ let test_file ~dir_name files =
   let is_test_file f = List.mem f cwd_test_files in
   match List.filter is_test_file files with
   | [ test_file ] -> test_file
-  | _ ->
-      Format.eprintf "No test file for %s\n" dir_name;
+  | found_files ->
+      Format.eprintf "Invalid number of test file for %s (found %a)\n" dir_name
+        pp_string_list found_files;
       Format.eprintf "There should be exactly one of [%a]\n" pp_string_list
         cwd_test_files;
       exit 1
