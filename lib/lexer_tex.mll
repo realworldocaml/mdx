@@ -56,7 +56,7 @@ rule text section = parse
         `Text str :: text section lexbuf }
 
 and block = parse
-  | eof | ws* as end_pad "\end" ws* eol
+  | eof | ws* as end_pad "\end{ocaml}" ws* eol
     { newline lexbuf;
       [end_pad] }
   | ([^'\n']* as str) eol
