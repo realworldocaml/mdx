@@ -1,4 +1,4 @@
-type t = Markdown | Cram | Mli | Mld
+type t = Markdown | Latex | Cram | Mli | Mld
 
 val pp : Format.formatter -> t -> unit
 val equal : t -> t -> bool
