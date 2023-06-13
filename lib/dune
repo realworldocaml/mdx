@@ -21,3 +21,5 @@
 (ocamllex lexer_cram)
 
 (ocamllex lexer_top)
+
+(ocamllex lexer_tex)

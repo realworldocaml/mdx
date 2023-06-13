@@ -17,6 +17,7 @@
 let src = Logs.Src.create "ocaml-mdx"
 
 module Lexer_mdx = Lexer_mdx
+module Lexer_tex = Lexer_tex
 module Log = (val Logs.src_log src : Logs.LOG)
 module Output = Output
 module Cram = Cram
