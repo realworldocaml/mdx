@@ -19,7 +19,7 @@ rule text section = parse
         newline lexbuf;
         `Section section :: text (Some section) lexbuf }
   | ( "%" ws* "$MDX" ws* ([^' ' '\n']* as label_cmt) ws* eol? )?
-    "\begin{" ([^' ' '\n']* as header) ws* ([^'\n']* as legacy_labels) "}" eol
+    "\\begin{" ([^' ' '\n']* as header) ws* ([^'\n']* as legacy_labels) "}" eol
       { let start = Lexing.lexeme_start_p lexbuf in
         newline lexbuf;
         (match label_cmt with
@@ -56,7 +56,7 @@ rule text section = parse
         `Text str :: text section lexbuf }
 
 and block = parse
-  | eof | ws* as end_pad "\end{ocaml}" ws* eol
+  | eof | ws* as end_pad "\\end{ocaml}" ws* eol
     { newline lexbuf;
       [end_pad] }
   | ([^'\n']* as str) eol
@@ -65,14 +65,6 @@ and block = parse
 
 and error_block = parse
   | "```mdx-error" ws* eol { newline lexbuf; block lexbuf }
-
-and cram_block = parse
-  | eof { false, [] }
-  | eol { newline lexbuf; true, [] }
-  | ("  " as ws) ([^'\n'] * as str) eol
-      { let requires_empty_line, lst = cram_block lexbuf in
-        newline lexbuf;
-        requires_empty_line, (String.append ws str) :: lst }
 
 {
   let latex_token lexbuf =

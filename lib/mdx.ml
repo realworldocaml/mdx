@@ -73,6 +73,8 @@ let parse_lexbuf syntax Misc.{ string; lexbuf } =
   match syntax with
   | Syntax.Mli -> Mli_parser.parse_mli string
   | Syntax.Mld -> Mli_parser.parse_mld string
+  | Latex ->
+      Util.Result.to_error_list @@ Lexer_tex.latex_token lexbuf >>= parse
   | Markdown ->
       Util.Result.to_error_list @@ Lexer_mdx.markdown_token lexbuf >>= parse
   | Cram -> Util.Result.to_error_list @@ Lexer_mdx.cram_token lexbuf >>= parse
@@ -83,7 +85,7 @@ let of_string syntax s =
   match syntax with
   | Syntax.Mli -> Mli_parser.parse_mli s
   | Syntax.Mld -> Mli_parser.parse_mld s
-  | Syntax.Markdown | Syntax.Cram ->
+  | Syntax.Latex | Syntax.Markdown | Syntax.Cram ->
       Misc.{ lexbuf = Lexing.from_string s; string = s } |> parse_lexbuf syntax
 
 let dump_line ppf (l : line) =
