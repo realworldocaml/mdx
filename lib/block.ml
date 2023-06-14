@@ -159,14 +159,20 @@ let rec error_padding = function
       let xs = error_padding xs in
       x :: xs
 
-let pp_errors ppf t =
+let pp_errors ?syntax ppf t =
   match t.value with
   | OCaml { errors = []; _ } -> ()
   | OCaml { errors; _ } ->
       let errors = error_padding errors in
-      Fmt.pf ppf "```mdx-error\n%a\n```\n"
-        Fmt.(list ~sep:(any "\n") Output.pp)
-        errors
+      (match syntax with
+      | Some Syntax.Latex ->
+          Fmt.pf ppf "\\begin{mdx-error}\n%a\n\\end{mdx-error}\n"
+            Fmt.(list ~sep:(any "\n") Output.pp)
+            errors
+      | _ ->
+          Fmt.pf ppf "```mdx-error\n%a\n```\n"
+            Fmt.(list ~sep:(any "\n") Output.pp)
+            errors)
   | _ -> ()
 
 let pp_footer ?syntax ppf _ =
@@ -221,9 +227,10 @@ let pp_header ?syntax ppf t =
   | Some Syntax.Cram -> pp_labels ?syntax ppf t.labels
   | Some Syntax.Latex ->
       if t.legacy_labels then
-      Fmt.pf ppf "\\begin{%a%a}"
+      let legacy_labels = Fmt.str " %%%a" pp_legacy_labels t.labels in
+      Fmt.pf ppf "\\begin{%a}%s"
           Fmt.(option Header.pp)
-          (header t) pp_legacy_labels t.labels
+          (header t) (if String.length legacy_labels > 3 then legacy_labels else "") 
       else
       Fmt.pf ppf "%a\\end{%a}" (pp_labels ?syntax) t.labels
           Fmt.(option Header.pp)
@@ -242,7 +249,7 @@ let pp ?syntax ppf b =
   pp_header ?syntax ppf b;
   pp_contents ?syntax ppf b;
   pp_footer ?syntax ppf b;
-  pp_errors ppf b
+  pp_errors ?syntax ppf b
 
 let directory t = t.dir
 let file t = match t.value with Include t -> Some t.file_included | _ -> None

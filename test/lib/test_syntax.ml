@@ -16,6 +16,7 @@ let test_infer =
   [
     make_test ~file:"" ~expected:None ();
     make_test ~file:"test.md" ~expected:(Some Markdown) ();
+    make_test ~file:"test.tex" ~expected:(Some Latex) ();
     make_test ~file:"test.t" ~expected:(Some Cram) ();
     make_test ~file:"test.ml" ~expected:None ();
     make_test ~file:"test.mli" ~expected:(Some Mli) ();
