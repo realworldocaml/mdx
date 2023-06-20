@@ -37,6 +37,7 @@
   (ocaml-version
    (>= 2.3.0))
   (lwt :with-test)
+  camlp-streams
   (alcotest :with-test))
  (conflicts
    (result (< 1.5))))
