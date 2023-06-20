@@ -31,6 +31,7 @@ depends: [
   "ocaml-version" {>= "2.3.0"}
   "lwt" {with-test}
   "camlp-streams"
+  "result"
   "alcotest" {with-test}
   "odoc" {with-doc}
 ]
