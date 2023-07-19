@@ -84,6 +84,7 @@ module Raw : sig
     contents:string list ->
     label_cmt:string option ->
     legacy_labels:string ->
+    latex_arguments:string option ->
     errors:Output.t list ->
     t
 
@@ -97,6 +98,7 @@ type t = {
   dir : string option;
   labels : Label.t list;
   legacy_labels : bool;
+  latex_arguments:string option;
   contents : string list;
   skip : bool;
   version_enabled : bool;
@@ -112,6 +114,7 @@ val mk :
   section:section option ->
   labels:Label.t list ->
   legacy_labels:bool ->
+  latex_arguments:string option ->
   header:Header.t option ->
   contents:string list ->
   errors:Output.t list ->

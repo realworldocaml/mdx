@@ -23,7 +23,7 @@ let test_mk =
     let test_fun () =
       let actual =
         Mdx.Block.mk ~loc:Location.none ~section:None ~labels
-          ~legacy_labels:false ~header ~contents ~errors:[]
+          ~legacy_labels:false ~latex_arguments:None ~header ~contents ~errors:[]
       in
       let expected =
         Result.map_error

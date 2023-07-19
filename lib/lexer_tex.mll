@@ -19,7 +19,7 @@ rule text section = parse
         newline lexbuf;
         `Section section :: text (Some section) lexbuf }
   | ( "%" ws* "$MDX" ws* ([^' ' '\n']* as label_cmt) ws* eol? )?
-    "\\begin{" ([^' ' '\n']* as header) "}" ("[" ([^ '\n']* as legacy_labels) "]")? eol
+    "\\begin{" ([^' ' '\n']* as header) "}" ("[" [^'\n']* "]" as latex_arguments)? eol
       { let start = Lexing.lexeme_start_p lexbuf in
         newline lexbuf;
         (match label_cmt with
@@ -42,7 +42,7 @@ rule text section = parse
         let loc = loc ~start ~end_ in
         let block =
           Block.Raw.make ~loc ~section ~header ~contents ~label_cmt
-            ~legacy_labels:(match legacy_labels with Some v -> v | None -> "") ~errors
+            ~legacy_labels:"" ~latex_arguments ~errors
         in
         `Block block :: text section lexbuf }
   | "%" ws* "$MDX" ws* ([^' ' '\n']* as labels) ws* eol
