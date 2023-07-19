@@ -86,7 +86,7 @@ and cram_text section = parse
         let loc = loc ~start ~end_ in
         let block =
             Block.Raw.make ~loc ~section ~header ~contents ~label_cmt
-              ~legacy_labels ~errors:[]
+              ~legacy_labels ~latex_arguments:None ~errors:[]
         in
         `Block block
         :: (if requires_empty_line then `Text "\n" :: rest else rest) }
@@ -102,7 +102,7 @@ and cram_text section = parse
         let rest = cram_text section lexbuf in
         let block =
             Block.Raw.make ~loc ~section ~header ~contents ~label_cmt
-              ~legacy_labels ~errors:[]
+              ~legacy_labels ~latex_arguments:None ~errors:[]
         in
         `Block block
         :: (if requires_empty_line then `Text "\n" :: rest else rest) }
