@@ -122,13 +122,13 @@ module Phrase = struct
                 Location.Error (Lexbuf.shift_location_error startpos error)
           in
           (if lexbuf.Lexing.lex_last_action <> Lexbuf.semisemi_action then
-           let rec aux () =
-             match Lexer.token lexbuf with
-             | Parser.SEMISEMI | Parser.EOF -> ()
-             | exception Lexer.Error (_, _) -> ()
-             | _ -> aux ()
-           in
-           aux ());
+             let rec aux () =
+               match Lexer.token lexbuf with
+               | Parser.SEMISEMI | Parser.EOF -> ()
+               | exception Lexer.Error (_, _) -> ()
+               | _ -> aux ()
+             in
+             aux ());
           Error exn
     in
     { startpos; parsed }
