@@ -215,7 +215,7 @@ let pp_labels ?syntax ppf labels =
   | Some Syntax.Latex -> (
       match labels with
       | [] -> ()
-      | l -> Fmt.pf ppf "%% $MDX %a \n" Fmt.(list ~sep:(any ",") Label.pp) l)
+      | l -> Fmt.pf ppf "%% $MDX %a\n" Fmt.(list ~sep:(any ",") Label.pp) l)
   | Some Syntax.Markdown | None -> (
       match labels with
       | [] -> ()
