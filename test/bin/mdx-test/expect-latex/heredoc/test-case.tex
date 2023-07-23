@@ -1,0 +1,26 @@
+Support for heredoc syntax:
+
+\begin{sh}
+$ cat <<EOF \
+> hello\
+> world\
+> EOF
+hello
+world
+$ echo foo
+foo
+\end{sh}
+
+And
+
+\begin{sh}
+$ cat <<EOF > foo \
+> hello\
+> world\
+> EOF
+$ cat foo
+hello
+world
+$ echo foo
+foo
+\end{sh}

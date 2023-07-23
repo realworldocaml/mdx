@@ -1,0 +1,7 @@
+% $MDX version>=4.08
+\begin{ocaml}
+let (let*) a f = f a
+let test ma f =
+  let* s = ma in
+  f s
+\end{ocaml}

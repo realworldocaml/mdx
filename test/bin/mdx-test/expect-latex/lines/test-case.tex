@@ -1,0 +1,73 @@
+Testing lines directives
+
+\begin{ocaml}
+let f x =
+  x+x
+  +x
+\end{ocaml}
+
+And
+
+% $MDX version=4.02
+\begin{ocaml}
+# let f x = x + 1;;
+val f : int -> int = <fun>
+# let f y =
+  y^"foo";;
+val f : bytes -> bytes = <fun>
+\end{ocaml}
+
+% $MDX version>=4.06
+\begin{ocaml}
+# let f x = x + 1;;
+val f : int -> int = <fun>
+# let f y =
+  y^"foo";;
+val f : string -> string = <fun>
+\end{ocaml}
+
+And
+
+% $MDX version=4.02
+\begin{ocaml}
+# let f x = function
+  | 0 -> 1
+  | n ->
+  n + "foo";;
+Characters 45-50:
+Error: This expression has type bytes but an expression was expected of type
+         int
+\end{ocaml}
+
+% $MDX version=4.06
+\begin{ocaml}
+# let f x = function
+  | 0 -> 1
+  | n ->
+  n + "foo";;
+Characters 45-50:
+Error: This expression has type string but an expression was expected of type
+         int
+\end{ocaml}
+
+% $MDX version=4.07
+\begin{ocaml}
+# let f x = function
+  | 0 -> 1
+  | n ->
+  n + "foo";;
+Characters 45-50:
+Error: This expression has type string but an expression was expected of type
+         int
+\end{ocaml}
+
+% $MDX version>=4.08
+\begin{ocaml}
+# let f x = function
+  | 0 -> 1
+  | n ->
+  n + "foo";;
+Line 4, characters 7-12:
+Error: This expression has type string but an expression was expected of type
+         int
+\end{ocaml}

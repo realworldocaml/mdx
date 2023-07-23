@@ -1,6 +1,6 @@
 Ellipsis lines are preserved if possible even when the output changes
 
-```sh
+\begin{sh}
 $ for i in `seq 1 21`; do echo $i; done
 1
 2
@@ -10,9 +10,9 @@ $ for i in `seq 1 21`; do echo $i; done
 19
 20
 21
-```
+\end{sh}
 
-```sh
+\begin{sh}
 $ for i in `seq 1 19`; do echo $i; done
 1
 2
@@ -27,4 +27,4 @@ $ for i in `seq 1 19`; do echo $i; done
 17
 18
 19
-```
+\end{sh}

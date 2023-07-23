@@ -1,0 +1,30 @@
+We are testing the new label syntax on some existing tests.
+
+# Set environment variables
+
+Environment variables can be loaded in an ocaml block environment.
+
+% $MDX set-FOO=bar,set-BAR=foo
+\begin{ocaml}
+  # print_endline (Sys.getenv "FOO");;
+  bar
+  - : unit = ()
+  # print_endline (Sys.getenv "BAR");;
+  foo
+  - : unit = ()
+\end{ocaml}
+
+### Non-deterministic Outputs
+
+% $MDX non-deterministic=output
+\begin{sh}
+$ echo $RANDOM
+4150
+\end{sh}
+
+### Non-deterministic Commands
+
+% $MDX non-deterministic=command
+\begin{sh}
+$ touch toto
+\end{sh}

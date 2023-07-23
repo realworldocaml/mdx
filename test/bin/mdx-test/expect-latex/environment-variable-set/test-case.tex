@@ -1,0 +1,50 @@
+Environment variables can be loeaded in ocaml blocks
+
+# OCaml
+
+Environment variables can be loaded in an ocaml block environment.
+
+% $MDX set-FOO=bar,set-BAR=foo
+\begin{ocaml}
+  # print_endline (Sys.getenv "FOO");;
+  bar
+  - : unit = ()
+  # print_endline (Sys.getenv "BAR");;
+  foo
+  - : unit = ()
+\end{ocaml}
+
+And the variable stays available in subsequent blocks.
+
+\begin{ocaml}
+  # print_endline (Sys.getenv "FOO");;
+  bar
+  - : unit = ()
+\end{ocaml}
+
+# Sh/bash
+
+Environment variables can be loaded in an ocaml block environment.
+
+% $MDX set-FAR=boo,set-BOO=far
+\begin{sh}
+  $ echo $FAR
+  boo
+  $ echo $BOO
+  far
+\end{sh}
+
+And the variable stays available in subsequent blocks.
+
+\begin{sh}
+  $ echo $BOO
+  far
+\end{sh}
+
+Environment variables can contain underscores
+
+% $MDX set-TWO_WORDS=success
+\begin{sh}
+  $ echo $TWO_WORDS
+  success
+\end{sh}

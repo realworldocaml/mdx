@@ -1,0 +1,40 @@
+Mdx can also understand ocaml code blocks:
+
+
+% $MDX file=parts-begin-end.ml,part=toto
+\begin{ocaml}
+# let x = 3;;
+val x : int = 3
+# let y = 4;;
+val y : int = 4
+# print_int x;;
+3
+- : unit = ()
+# print_int y;;
+4
+- : unit = ()
+\end{ocaml}
+
+% $MDX file=parts-begin-end.ml,part=z_zz
+\begin{ocaml}
+\end{ocaml}
+
+% $MDX file=parts-begin-end.ml,part=4-2
+\begin{ocaml}
+\end{ocaml}
+
+% $MDX file=parts-begin-end.ml
+\begin{ocaml}
+\end{ocaml}
+
+\begin{ocaml}
+# let x = 2;;
+val x : int = 2
+# print_int x;;
+3
+- : unit = ()
+\end{ocaml}
+
+% $MDX file=parts-begin-end.ml,part=indented
+\begin{ocaml}
+\end{ocaml}

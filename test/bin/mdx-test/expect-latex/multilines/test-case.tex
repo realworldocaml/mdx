@@ -1,0 +1,37 @@
+Test multi-lines shell commands:
+
+\begin{sh}
+$ for i in `seq 1 10`; do \
+>   echo $i; \
+> done
+1
+...
+10
+\end{sh}
+
+This works trivially for normal OCaml fragments:
+
+\begin{ocaml}
+let rec fact = function
+| 1 -> 1
+| n -> n * fact (n-1)
+\end{ocaml}
+
+And it should work fine for toplevel too:
+
+\begin{ocaml}
+# let rec fact = function
+  | 1 -> 1
+  | n -> n * fact (n-1)
+  ;;
+val fact : int -> int = <fun>
+\end{ocaml}
+
+\begin{ocaml}
+# print_string "foo \
+  \" \
+  toto\
+  \ bar\"";;
+foo " toto bar"
+- : unit = ()
+\end{ocaml}
