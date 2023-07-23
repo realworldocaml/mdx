@@ -56,15 +56,15 @@ rule text section = parse
         `Text str :: text section lexbuf }
 
 and block = parse
-  | eof | ws* as end_pad "\\end{ocaml}" ws* eol
+  | eof | ws* as end_pad "\\end{" ([^' ' '\n']*) "}" ws* eol
     { newline lexbuf;
       [end_pad] }
   | ([^'\n']* as str) eol
-    { newline lexbuf;
+  { newline lexbuf;
       str :: block lexbuf }
 
 and error_block = parse
-  | "\\begin{ocaml}" ws* eol { newline lexbuf; block lexbuf }
+  | "\\begin{mdx-error}" ws* eol { newline lexbuf; block lexbuf }
 
 {
   let latex_token lexbuf =
