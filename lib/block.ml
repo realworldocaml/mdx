@@ -192,15 +192,8 @@ let pp_footer ?syntax ppf t =
   match syntax with
   | Some Syntax.Mli | Some Syntax.Mld -> Fmt.string ppf "]}"
   | Some Syntax.Cram -> Fmt.string ppf "\n"
-  | Some Syntax.Latex -> (
-    let header = header t in
-    match header with 
-    | None -> Fmt.string ppf "\\end{}\n" 
-    | Some t -> (
-      Fmt.string ppf "\\end{";
-      Header.pp ppf t;
-      Fmt.string ppf "}\n";
-    ))
+  | Some Syntax.Latex ->
+      Fmt.pf ppf "\\end{%a}\n" Fmt.(option Header.pp) (header t)
   | Some Syntax.Markdown | None -> Fmt.string ppf "```\n"
 
 let pp_legacy_labels ppf = function
