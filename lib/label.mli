@@ -42,6 +42,7 @@ type t =
   | Skip
   | Non_det of non_det option
   | Version of Relation.t * Ocaml_version.t
+  | Os_type of Relation.t * string
   | Set of string * string
   | Unset of string
   | Block_kind of block_kind
