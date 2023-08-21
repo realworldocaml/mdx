@@ -2,6 +2,9 @@
 
 #### Added
 
+- Add `os_type` label to enable/disable based on `Sys.os_type` (#433,
+  @polytypic)
+
 - Make MDX compatible with OCaml 5.1 (#435, @polytypic and @kit-ty-kate)
 
 #### Changed
