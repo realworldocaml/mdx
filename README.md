@@ -390,6 +390,33 @@ The version number can be of the following forms:
 - `X.Y`
 - `X.Y.Z`
 
+#### Matching based on the `os_type` (since mdx 2.4.0)
+
+Block can be processed or ignored depending on the current
+[`os_type`](https://v2.ocaml.org/api/Sys.html#VALos_type).
+
+For example, different blocks could be enabled depending on whether we are on
+Windows or not:
+
+    ```ocaml
+    #require "unix"
+    ```
+
+    <!-- $MDX os_type<>Win32 -->
+    ```ocaml
+    # Unix.nice 0
+    - : int = 0
+    ```
+
+    <!-- $MDX os_type=Win32 -->
+    ```ocaml
+    # Unix.nice 0
+    Exception: Invalid_argument "Unix.nice not implemented".
+    ```
+
+The `os_type` values should be written in ASCII and are compared case
+insensitively.
+
 #### Environment variables declaration
 
 Environment variables can be declared at the beginning of a block:
