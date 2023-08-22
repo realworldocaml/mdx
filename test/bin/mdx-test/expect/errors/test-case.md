@@ -53,14 +53,6 @@ Error: This expression has type string but an expression was expected of type
          int
 ```
 
-```ocaml version>=4.08
-# let x =
-  1 + "42";;
-Line 2, characters 7-11:
-Error: This expression has type string but an expression was expected of type
-         int
-```
-
 ```ocaml non-deterministic=output
 # raise Not_found;;
 Exception: Not_found.
@@ -70,4 +62,12 @@ Exception: Not_found.
 # print_endline "first"; failwith "second";;
 first
 Exception: Failure "second".
+```
+
+```ocaml version>=4.08
+# let x =
+  1 + "42";;
+Line 2, characters 7-11:
+Error: This expression has type string but an expression was expected of type
+         int
 ```

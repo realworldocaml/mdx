@@ -67,3 +67,5 @@ val execute_phrase :
 
 (* If the directive has to be intercepted, this function will return the new name of the directive *)
 val redirect_directive : string -> string
+val get_id_in_path : Path.t -> Ident.t
+val get_id_opt : Path.t -> Ident.t option
