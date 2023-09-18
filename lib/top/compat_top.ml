@@ -269,7 +269,7 @@ let rec get_id_in_path = function
   | Path.Pident id -> id
   | Path.Pdot (p, _) -> get_id_in_path p
   | Path.Papply (_, p) -> get_id_in_path p
-#if OCAML_VERSION > (5, 0, 0)
+#if OCAML_VERSION >= (5, 1, 0)
   | Path.Pextra_ty (p, _) -> get_id_in_path p
 #endif
 
@@ -277,6 +277,6 @@ let get_id_opt = function
   | Path.Pident id -> Some id
   | Path.Pdot _ -> None
   | Path.Papply _ -> None
-#if OCAML_VERSION > (5, 0, 0)
+#if OCAML_VERSION >= (5, 1, 0)
   | Path.Pextra_ty _ -> None
 #endif
