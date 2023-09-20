@@ -2,6 +2,8 @@
 
 #### Added
 
+- Make MDX compatible with OCaml 5.1 (#435, @polytypic and @kit-ty-kate)
+
 #### Changed
 
 #### Deprecated

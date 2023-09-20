@@ -214,11 +214,6 @@ module Rewrite = struct
         | _ -> path)
     | _ -> path
 
-  let rec get_id_in_path = function
-    | Path.Pident id -> id
-    | Path.Pdot (p, _) -> get_id_in_path p
-    | Path.Papply (_, p) -> get_id_in_path p
-
   let is_persistent_value env longident =
     let is_persistent_path p = Ident.persistent (get_id_in_path p) in
     try is_persistent_path (fst (Compat_top.lookup_value longident env))
@@ -701,9 +696,9 @@ let rec save_summary acc s =
     ~module_:(fun summary id ~present ->
       match present with true -> add summary id | false -> acc)
     ~open_:(fun summary x ->
-      match x with
-      | Pident id -> add summary id
-      | Pdot _ | Papply _ -> default_case summary)
+      match get_id_opt x with
+      | Some id -> add summary id
+      | None -> default_case summary)
     ~class_:add ~functor_arg:add ~extension:add
     ~empty:(fun () -> acc)
     ~constraints:default_case ~cltype:default_case ~modtype:default_case
