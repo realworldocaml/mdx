@@ -89,6 +89,7 @@ type t =
   | Skip
   | Non_det of non_det option
   | Version of Relation.t * Ocaml_version.t
+  | Os_type of Relation.t * string
   | Set of string * string
   | Unset of string
   | Block_kind of block_kind
@@ -115,6 +116,7 @@ let pp ppf = function
   | Non_det (Some Nd_command) -> Fmt.string ppf "non-deterministic=command"
   | Version (op, v) ->
       Fmt.pf ppf "version%a%a" Relation.pp op Ocaml_version.pp v
+  | Os_type (op, v) -> Fmt.pf ppf "os_type%a%s" Relation.pp op v
   | Set (v, x) -> Fmt.pf ppf "set-%s=%s" v x
   | Unset x -> Fmt.pf ppf "unset-%s" x
   | Block_kind bk -> pp_block_kind ppf bk
@@ -170,6 +172,7 @@ let interpret label value =
           | Ok v -> Ok (Version (op, v))
           | Error (`Msg e) ->
               Util.Result.errorf "Invalid `version` label value: %s." e)
+  | "os_type" -> requires_value ~label ~value (fun op v -> Ok (Os_type (op, v)))
   | "non-deterministic" -> (
       match value with
       | None -> Ok (Non_det None)

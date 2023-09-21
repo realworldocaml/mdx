@@ -111,6 +111,7 @@ type t = {
   contents : string list;
   skip : bool;
   version_enabled : bool;
+  os_type_enabled : bool;
   set_variables : (string * string) list;
   unset_variables : string list;
   value : value;
@@ -272,6 +273,16 @@ let version_enabled version =
       Label.Relation.compare op (Ocaml_version.compare curr_version v) 0
   | None -> true
 
+let os_type_enabled os_type =
+  match os_type with
+  | Some (op, v) ->
+      Label.Relation.compare op
+        (String.compare
+           (String.lowercase_ascii Sys.os_type)
+           (String.lowercase_ascii v))
+        0
+  | None -> true
+
 let get_label f (labels : Label.t list) = Util.List.find_map f labels
 
 let label_not_allowed ~loc ~label ~kind =
@@ -296,6 +307,7 @@ type block_config = {
   dir : string option;
   skip : bool;
   version : (Label.Relation.t * Ocaml_version.t) option;
+  os_type : (Label.Relation.t * string) option;
   set_variables : (string * string) list;
   unset_variables : string list;
   file_inc : string option;
@@ -315,6 +327,7 @@ let get_block_config l =
     dir = get_label (function Dir x -> Some x | _ -> None) l;
     skip = List.exists (function Label.Skip -> true | _ -> false) l;
     version = get_label (function Version (x, y) -> Some (x, y) | _ -> None) l;
+    os_type = get_label (function Os_type (x, y) -> Some (x, y) | _ -> None) l;
     set_variables =
       List.filter_map (function Label.Set (v, x) -> Some (v, x) | _ -> None) l;
     unset_variables =
@@ -416,6 +429,7 @@ let mk ~loc ~section ~labels ~legacy_labels ~header ~contents ~errors =
     | None -> infer_block ~loc ~config ~header ~contents ~errors
   in
   let+ version_enabled = version_enabled config.version in
+  let os_type_enabled = os_type_enabled config.os_type in
   {
     loc;
     section;
@@ -425,6 +439,7 @@ let mk ~loc ~section ~labels ~legacy_labels ~header ~contents ~errors =
     contents;
     skip = config.skip;
     version_enabled;
+    os_type_enabled;
     set_variables = config.set_variables;
     unset_variables = config.unset_variables;
     value;
@@ -471,4 +486,4 @@ let is_active ?section:s t =
         | None -> Re.execp (Re.Perl.compile_pat p) "")
     | None -> true
   in
-  active && t.version_enabled && not t.skip
+  active && t.version_enabled && t.os_type_enabled && not t.skip

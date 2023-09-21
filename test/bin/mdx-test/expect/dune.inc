@@ -372,6 +372,18 @@
  (action (diff ocaml-errors-ellipsis/test-case.md ocaml-errors-ellipsis.actual)))
 
 (rule
+ (target os_type.actual)
+ (deps (package mdx) (source_tree os_type))
+ (action
+  (with-stdout-to %{target}
+   (chdir os_type
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff os_type/test-case.md os_type.actual)))
+
+(rule
  (target padding.actual)
  (deps (package mdx) (source_tree padding))
  (action
