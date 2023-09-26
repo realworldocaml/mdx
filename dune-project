@@ -36,8 +36,9 @@
    (>= 1.7.2))
   (ocaml-version
    (>= 2.3.0))
-  (odoc-parser (>= 1.0.0))
   (lwt :with-test)
+  camlp-streams
+  result
   (alcotest :with-test))
  (conflicts
    (result (< 1.5))))

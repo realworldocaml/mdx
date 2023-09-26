@@ -9,6 +9,9 @@
 
 #### Changed
 
+- Vendored the odoc-parser library, removing the need to have it
+  as a dependency. (#430, @jonludlam)
+
 #### Deprecated
 
 #### Fixed

@@ -1,0 +1,8 @@
+(ocamllex lexer)
+
+(library
+ (name odoc_parser)
+ (package mdx)
+ (flags
+  (:standard -w -50))
+ (libraries astring result camlp-streams))
