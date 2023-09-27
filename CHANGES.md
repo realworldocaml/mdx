@@ -1,4 +1,4 @@
-### unreleased
+### 2.3.1
 
 #### Added
 
@@ -11,14 +11,6 @@
 
 - Vendored the odoc-parser library, removing the need to have it
   as a dependency. (#430, @jonludlam)
-
-#### Deprecated
-
-#### Fixed
-
-#### Removed
-
-#### Security
 
 ### 2.3.0
 
