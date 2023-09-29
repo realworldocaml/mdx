@@ -1,3 +1,9 @@
+### unreleased
+
+#### Added
+
+- Handle the error-blocks syntax (#439, @jonludlam, @gpetiot)
+
 ### 2.3.1
 
 #### Added
