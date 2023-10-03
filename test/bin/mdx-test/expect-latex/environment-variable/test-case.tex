@@ -1,0 +1,19 @@
+Environment variable can also loaded in an environment
+
+% $MDX set-FOO=bar,set-BAR=foo
+\begin{ocaml}
+  # print_endline (Sys.getenv "FOO");;
+  bar
+  - : unit = ()
+  # print_endline (Sys.getenv "BAR");;
+  foo
+  - : unit = ()
+\end{ocaml}
+
+And the variable stays available in subsequent blocks
+
+\begin{ocaml}
+  # print_endline (Sys.getenv "FOO");;
+  bar
+  - : unit = ()
+\end{ocaml}

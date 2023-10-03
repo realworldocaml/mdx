@@ -65,12 +65,24 @@ module Raw = struct
         header : string;
         contents : string list;
         label_cmt : string option;
+        latex_arguments : string option;
         legacy_labels : string;
         errors : Output.t list;
       }
 
-  let make ~loc ~section ~header ~contents ~label_cmt ~legacy_labels ~errors =
-    Any { loc; section; header; contents; label_cmt; legacy_labels; errors }
+  let make ~loc ~section ~header ~contents ~label_cmt ~legacy_labels
+      ~latex_arguments ~errors =
+    Any
+      {
+        loc;
+        section;
+        header;
+        contents;
+        label_cmt;
+        legacy_labels;
+        latex_arguments;
+        errors;
+      }
 
   let make_include ~loc ~section ~labels = Include { loc; section; labels }
 end
@@ -108,6 +120,7 @@ type t = {
   dir : string option;
   labels : Label.t list;
   legacy_labels : bool;
+  latex_arguments : string option;
   contents : string list;
   skip : bool;
   version_enabled : bool;
@@ -160,20 +173,28 @@ let rec error_padding = function
       let xs = error_padding xs in
       x :: xs
 
-let pp_errors ppf t =
+let pp_errors ?syntax ppf t =
   match t.value with
   | OCaml { errors = []; _ } -> ()
-  | OCaml { errors; _ } ->
+  | OCaml { errors; _ } -> (
       let errors = error_padding errors in
-      Fmt.pf ppf "```mdx-error\n%a\n```\n"
-        Fmt.(list ~sep:(any "\n") Output.pp)
-        errors
+      match syntax with
+      | Some Syntax.Latex ->
+          Fmt.pf ppf "\\begin{mdx-error}\n%a\n\\end{mdx-error}\n"
+            Fmt.(list ~sep:(any "\n") Output.pp)
+            errors
+      | _ ->
+          Fmt.pf ppf "```mdx-error\n%a\n```\n"
+            Fmt.(list ~sep:(any "\n") Output.pp)
+            errors)
   | _ -> ()
 
-let pp_footer ?syntax ppf _ =
+let pp_footer ?syntax ppf t =
   match syntax with
   | Some Syntax.Mli | Some Syntax.Mld -> Fmt.string ppf "]}"
   | Some Syntax.Cram -> Fmt.string ppf "\n"
+  | Some Syntax.Latex ->
+      Fmt.pf ppf "\\end{%a}\n" Fmt.(option Header.pp) (header t)
   | Some Syntax.Markdown | None -> Fmt.string ppf "```\n"
 
 let pp_legacy_labels ppf = function
@@ -193,6 +214,10 @@ let pp_labels ?syntax ppf labels =
       | [ Non_det (Some Nd_command) ] ->
           Fmt.pf ppf "<-- non-deterministic command\n"
       | _ -> failwith "cannot happen: checked during parsing")
+  | Some Syntax.Latex -> (
+      match labels with
+      | [] -> ()
+      | l -> Fmt.pf ppf "%% $MDX %a\n" Fmt.(list ~sep:(any ",") Label.pp) l)
   | Some Syntax.Markdown | None -> (
       match labels with
       | [] -> ()
@@ -218,6 +243,17 @@ let pp_header ?syntax ppf t =
       in
       Fmt.pf ppf "{%a%a[" pp_lang_header lang_headers pp_labels other_labels
   | Some Syntax.Cram -> pp_labels ?syntax ppf t.labels
+  | Some Syntax.Latex -> (
+      (* LaTeX does not have any legacy labels *)
+      match t.latex_arguments with
+      | None ->
+          Fmt.pf ppf "%a\\begin{%a}" (pp_labels ?syntax) t.labels
+            Fmt.(option Header.pp)
+            (header t)
+      | Some args ->
+          Fmt.pf ppf "%a\\begin{%a}%s" (pp_labels ?syntax) t.labels
+            Fmt.(option Header.pp)
+            (header t) args)
   | Some Syntax.Markdown | None ->
       if t.legacy_labels then
         Fmt.pf ppf "```%a%a"
@@ -232,7 +268,7 @@ let pp ?syntax ppf b =
   pp_header ?syntax ppf b;
   pp_contents ?syntax ppf b;
   pp_footer ?syntax ppf b;
-  pp_errors ppf b
+  pp_errors ?syntax ppf b
 
 let directory t = t.dir
 let file t = match t.value with Include t -> Some t.file_included | _ -> None
@@ -415,7 +451,8 @@ let infer_block ~loc ~config ~header ~contents ~errors =
           let+ () = check_no_errors ~loc errors in
           Raw { header })
 
-let mk ~loc ~section ~labels ~legacy_labels ~header ~contents ~errors =
+let mk ~loc ~section ~labels ~legacy_labels ~latex_arguments ~header ~contents
+    ~errors =
   let block_kind =
     get_label (function Block_kind x -> Some x | _ -> None) labels
   in
@@ -436,6 +473,7 @@ let mk ~loc ~section ~labels ~legacy_labels ~header ~contents ~errors =
     dir = config.dir;
     labels;
     legacy_labels;
+    latex_arguments;
     contents;
     skip = config.skip;
     version_enabled;
@@ -449,8 +487,8 @@ let mk_include ~loc ~section ~labels =
   match get_label (function File x -> Some x | _ -> None) labels with
   | Some file_inc ->
       let header = Header.infer_from_file file_inc in
-      mk ~loc ~section ~labels ~legacy_labels:false ~header ~contents:[]
-        ~errors:[]
+      mk ~loc ~section ~latex_arguments:None ~labels ~legacy_labels:false
+        ~header ~contents:[] ~errors:[]
   | None -> label_required ~loc ~label:"file" ~kind:"include"
 
 let parse_labels ~label_cmt ~legacy_labels =
@@ -468,14 +506,24 @@ let from_raw raw =
   | Raw.Include { loc; section; labels } ->
       let* labels = locate_errors ~loc (Label.of_string labels) in
       Util.Result.to_error_list @@ mk_include ~loc ~section ~labels
-  | Raw.Any { loc; section; header; contents; label_cmt; legacy_labels; errors }
-    ->
+  | Raw.Any
+      {
+        loc;
+        section;
+        header;
+        contents;
+        label_cmt;
+        latex_arguments;
+        legacy_labels;
+        errors;
+      } ->
       let header = Header.of_string header in
       let* labels, legacy_labels =
         locate_errors ~loc (parse_labels ~label_cmt ~legacy_labels)
       in
       Util.Result.to_error_list
-      @@ mk ~loc ~section ~header ~contents ~labels ~legacy_labels ~errors
+      @@ mk ~loc ~section ~header ~contents ~labels ~latex_arguments
+           ~legacy_labels ~errors
 
 let is_active ?section:s t =
   let active =

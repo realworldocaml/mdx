@@ -1,0 +1,45 @@
+Mdx can also understand ocaml code blocks:
+
+% $MDX version=4.02
+\begin{ocaml}
+# #require "fmt";;
+# let x = 3;;
+val x : int = 3
+# x + "foo";;
+Characters 4-9:
+Error: This expression has type bytes but an expression was expected of type
+         int
+\end{ocaml}
+
+% $MDX version=4.06
+\begin{ocaml}
+# #require "fmt";;
+# let x = 3;;
+val x : int = 3
+# x + "foo";;
+Characters 4-9:
+Error: This expression has type string but an expression was expected of type
+         int
+\end{ocaml}
+
+% $MDX version=4.07
+\begin{ocaml}
+# #require "fmt";;
+# let x = 3;;
+val x : int = 3
+# x + "foo";;
+Characters 4-9:
+Error: This expression has type string but an expression was expected of type
+         int
+\end{ocaml}
+
+% $MDX version>=4.08
+\begin{ocaml}
+# #require "fmt";;
+# let x = 3;;
+val x : int = 3
+# x + "foo";;
+Line 1, characters 5-10:
+Error: This expression has type string but an expression was expected of type
+         int
+\end{ocaml}

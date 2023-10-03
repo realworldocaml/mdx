@@ -39,7 +39,7 @@ let get_files dir =
 let cwd_options_file = "test-case.opts"
 
 let cwd_test_files =
-  [ "test-case.md"; "test-case.t"; "test-case.mli"; "test-case.mld" ]
+  [ "test-case.md"; "test-case.t"; "test-case.mli"; "test-case.mld"; "test-case.tex" ]
 
 let cwd_enabled_if_file = "test-case.enabled-if"
 

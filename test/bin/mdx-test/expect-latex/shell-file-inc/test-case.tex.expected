@@ -1,0 +1,7 @@
+Mdx can include text from any file:
+
+
+% $MDX file=script.sh
+\begin{sh}
+$ sudo chmod a-x /usr
+\end{sh}

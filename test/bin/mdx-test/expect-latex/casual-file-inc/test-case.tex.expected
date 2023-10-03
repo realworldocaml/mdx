@@ -1,0 +1,8 @@
+Mdx can also include text from any file:
+
+% $MDX file=casual-file.txt
+\begin{ocaml}
+Include me.
+
+Please.
+\end{ocaml}

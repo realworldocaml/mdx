@@ -24,6 +24,7 @@
    {{!Output}outputs}.  *)
 
 module Lexer_mdx = Lexer_mdx
+module Lexer_tex = Lexer_tex
 module Output = Output
 module Cram = Cram
 module Deprecated = Deprecated

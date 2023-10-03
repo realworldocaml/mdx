@@ -1,0 +1,79 @@
+Errors should be well localized:
+
+% $MDX version<4.08
+\begin{ocaml}
+# class ['a] stack init = object
+    val mutable v = init
+
+    method pop =
+      match v with
+      | hd :: tl ->
+        v <- tl;
+        Some hd
+      | [] -> None
+
+    method push hd =
+      v <- hd :: v
+  end;;
+Characters 0-215:
+Error: Some type variables are unbound in this type:
+         class ['a] stack :
+           'b list ->
+           object
+             val mutable v : 'b list
+             method pop : 'b option
+             method push : 'b -> unit
+           end
+       The method pop has type 'b option where 'b is unbound
+\end{ocaml}
+
+Hi!
+
+
+% $MDX version=4.02
+\begin{ocaml}
+# let x =
+  1 + "42";;
+Characters 14-18:
+Error: This expression has type bytes but an expression was expected of type
+         int
+\end{ocaml}
+
+% $MDX version=4.06
+\begin{ocaml}
+# let x =
+  1 + "42";;
+Characters 14-18:
+Error: This expression has type string but an expression was expected of type
+         int
+\end{ocaml}
+
+% $MDX version=4.07
+\begin{ocaml}
+# let x =
+  1 + "42";;
+Characters 14-18:
+Error: This expression has type string but an expression was expected of type
+         int
+\end{ocaml}
+
+% $MDX version>=4.08
+\begin{ocaml}
+# let x =
+  1 + "42";;
+Line 2, characters 7-11:
+Error: This expression has type string but an expression was expected of type
+         int
+\end{ocaml}
+
+% $MDX non-deterministic=output
+\begin{ocaml}
+# raise Not_found;;
+Exception: Not_found.
+\end{ocaml}
+
+\begin{ocaml}
+# print_endline "first"; failwith "second";;
+first
+Exception: Failure "second".
+\end{ocaml}

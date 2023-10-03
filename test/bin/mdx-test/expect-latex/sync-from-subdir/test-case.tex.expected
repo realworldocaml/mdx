@@ -1,0 +1,6 @@
+You can sync files from subdirs:
+
+% $MDX file=some_dir/some_module.ml,part=1
+\begin{ocaml}
+let _ = "Include me"
+\end{ocaml}

@@ -1,0 +1,60 @@
+Different environments can have different preludes
+
+This is run with `--prelude all.ml --prelude " :default.ml" --prelude a:a.ml --prelude b:b.ml`.
+Each of them defines a variable of the same name.
+
+\begin{ocaml}
+# all;;
+- : int = 1
+# default;;
+- : int = 1
+# a;;
+...
+Error: Unbound value a
+# b;;
+...
+Error: Unbound value b
+\end{ocaml}
+
+% $MDX env=a
+\begin{ocaml}
+# all;;
+- : int = 1
+# default;;
+...
+Error: Unbound value default
+# a;;
+- : int = 1
+# b;;
+...
+Error: Unbound value b
+\end{ocaml}
+
+% $MDX env=b
+\begin{ocaml}
+# all;;
+- : int = 1
+# default;;
+...
+Error: Unbound value default
+# a;;
+...
+Error: Unbound value a
+# b;;
+- : int = 1
+\end{ocaml}
+
+% $MDX env=c
+\begin{ocaml}
+# all;;
+- : int = 1
+# default;;
+...
+Error: Unbound value default
+# a;;
+...
+Error: Unbound value a
+# b;;
+...
+Error: Unbound value b
+\end{ocaml}

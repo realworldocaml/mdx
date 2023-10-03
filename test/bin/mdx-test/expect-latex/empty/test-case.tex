@@ -1,0 +1,26 @@
+Testing empty blocks
+
+\begin{sh}
+\end{sh}
+
+\begin{foo}
+\end{foo}
+
+% $MDX env=x
+\begin{foo}
+\end{foo}
+
+% $MDX skip
+\begin{foo}
+\end{foo}
+
+Empty lines are preserved:
+
+\begin{foo}
+
+\end{foo}
+
+% $MDX skip
+\begin{foo}
+
+\end{foo}

@@ -1,0 +1,23 @@
+Arbitrary padding is allowed, as long as it is consistent inside a code block.
+
+\begin{sh}
+   $ echo foo
+   foo
+\end{sh}
+
+\begin{ocaml}
+     # let x = 3;;
+     val x : int = 3
+\end{ocaml}
+
+% $MDX version<4.12
+\begin{sh}
+$ ocaml -warn-help | grep -E '\b9 Missing\b'
+  9 Missing fields in a record pattern.
+\end{sh}
+
+% $MDX version>=4.12
+\begin{sh}
+$ ocaml -warn-help | grep -E '\b9 \[missing-record-field-pattern\] Missing\b'
+  9 [missing-record-field-pattern] Missing fields in a record pattern.
+\end{sh}

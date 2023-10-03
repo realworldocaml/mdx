@@ -1,0 +1,33 @@
+Long lines can be replaced by ellipsis:
+
+
+\begin{sh}
+$ for i in `seq 1 10`; do echo $i; done
+1
+2
+...
+10
+\end{sh}
+
+\begin{ocaml}
+# for i = 1 to 10 do Printf.printf "%d\n%!" i; done;;
+1
+2
+...
+10
+- : unit = ()
+\end{ocaml}
+
+\begin{sh}
+$ printf "foo\"\n\nbar"
+foo"
+
+...
+\end{sh}
+
+Lines ending with ellipsis
+
+\begin{sh}
+$ echo Hello world
+Hello...
+\end{sh}

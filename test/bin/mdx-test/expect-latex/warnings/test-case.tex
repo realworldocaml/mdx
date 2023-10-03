@@ -1,0 +1,33 @@
+No warning is printed by default:
+
+\begin{ocaml}
+type p = { x : int ; y : int }
+
+let x { x } = x
+\end{ocaml}
+
+Warning attributes must be set to print them:
+
+% $MDX version<4.12
+\begin{ocaml}
+[@@@warning "+9"]
+let x { x } = x
+\end{ocaml}
+\begin{mdx-error}
+...
+Warning 9: the following labels are not bound in this record pattern:
+y
+Either bind these labels explicitly or add '; _' to the pattern.
+\end{mdx-error}
+
+% $MDX version>=4.12
+\begin{ocaml}
+[@@@warning "+9"]
+let x { x } = x
+\end{ocaml}
+\begin{mdx-error}
+Line 2, characters 9-14:
+Warning 9 [missing-record-field-pattern]: the following labels are not bound in this record pattern:
+y
+Either bind these labels explicitly or add '; _' to the pattern.
+\end{mdx-error}
