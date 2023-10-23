@@ -161,6 +161,21 @@ let rec error_padding = function
       let xs = error_padding xs in
       x :: xs
 
+let compute_delimiter ~base_delim outputs =
+  let s =
+    Format.asprintf "%a" (Format.pp_print_list (Output.pp ~pad:0)) outputs
+  in
+  let is_inadequate delim =
+    Astring.String.is_infix ~affix:("]" ^ delim ^ "}") s
+  in
+  let rec loop n =
+    let delim =
+      match n with 0 -> base_delim | n -> Format.sprintf "%s_%d" base_delim n
+    in
+    if is_inadequate delim then loop (n + 1) else delim
+  in
+  loop 0
+
 let pp_error ?syntax ?delim ppf outputs =
   match syntax with
   | Some Syntax.Markdown ->
@@ -168,11 +183,12 @@ let pp_error ?syntax ?delim ppf outputs =
         Fmt.(list ~sep:(any "\n") Output.pp)
         outputs
   | Some Syntax.Mli | Some Syntax.Mld ->
-      Fmt.pf ppf "]%a[\n{err@mdx-error[\n%a\n]err}"
+      let err_delim = compute_delimiter ~base_delim:"err" outputs in
+      Fmt.pf ppf "]%a[\n{%s@mdx-error[\n%a\n]%s}"
         Fmt.(option string)
-        delim
+        delim err_delim
         Fmt.(list ~sep:(any "\n") Output.pp)
-        outputs
+        outputs err_delim
   | _ -> ()
 
 let has_output t =
