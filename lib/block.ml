@@ -114,6 +114,7 @@ type t = {
   os_type_enabled : bool;
   set_variables : (string * string) list;
   unset_variables : string list;
+  delim : string option;
   value : value;
 }
 
@@ -160,19 +161,61 @@ let rec error_padding = function
       let xs = error_padding xs in
       x :: xs
 
-let pp_errors ppf t =
+let compute_delimiter ~base_delim outputs =
+  let s =
+    Format.asprintf "%a" (Format.pp_print_list (Output.pp ~pad:0)) outputs
+  in
+  let is_inadequate delim =
+    Astring.String.is_infix ~affix:("]" ^ delim ^ "}") s
+  in
+  let rec loop n =
+    let delim =
+      match n with 0 -> base_delim | n -> Format.sprintf "%s_%d" base_delim n
+    in
+    if is_inadequate delim then loop (n + 1) else delim
+  in
+  loop 0
+
+let pp_error ?syntax ?delim ppf outputs =
+  match syntax with
+  | Some Syntax.Markdown ->
+      Fmt.pf ppf "```\n```mdx-error\n%a\n"
+        Fmt.(list ~sep:(any "\n") Output.pp)
+        outputs
+  | Some Syntax.Mli | Some Syntax.Mld ->
+      let err_delim = compute_delimiter ~base_delim:"err" outputs in
+      Fmt.pf ppf "]%a[\n{%s@mdx-error[\n%a\n]%s}"
+        Fmt.(option string)
+        delim err_delim
+        Fmt.(list ~sep:(any "\n") Output.pp)
+        outputs err_delim
+  | _ -> ()
+
+let has_output t =
+  match t.value with
+  | OCaml { errors = []; _ } -> false
+  | OCaml { errors = _; _ } -> true
+  | _ -> false
+
+let pp_value ?syntax ppf t =
+  let delim = t.delim in
   match t.value with
   | OCaml { errors = []; _ } -> ()
   | OCaml { errors; _ } ->
       let errors = error_padding errors in
-      Fmt.pf ppf "```mdx-error\n%a\n```\n"
-        Fmt.(list ~sep:(any "\n") Output.pp)
-        errors
+      pp_error ?syntax ?delim ppf errors
   | _ -> ()
 
-let pp_footer ?syntax ppf _ =
+let pp_footer ?syntax ppf t =
+  let delim =
+    if has_output t then (
+      pp_value ?syntax ppf t;
+      None)
+    else t.delim
+  in
   match syntax with
-  | Some Syntax.Mli | Some Syntax.Mld -> Fmt.string ppf "]}"
+  | Some Syntax.Mli | Some Syntax.Mld ->
+      Fmt.pf ppf "]%a}" Fmt.(option string) delim
   | Some Syntax.Cram -> Fmt.string ppf "\n"
   | Some Syntax.Markdown | None -> Fmt.string ppf "```\n"
 
@@ -216,7 +259,9 @@ let pp_header ?syntax ppf t =
         | [] -> ()
         | labels -> Fmt.pf ppf " %a" (pp_labels ?syntax) labels
       in
-      Fmt.pf ppf "{%a%a[" pp_lang_header lang_headers pp_labels other_labels
+      Fmt.pf ppf "{%a%a%a["
+        Fmt.(option string)
+        t.delim pp_lang_header lang_headers pp_labels other_labels
   | Some Syntax.Cram -> pp_labels ?syntax ppf t.labels
   | Some Syntax.Markdown | None ->
       if t.legacy_labels then
@@ -231,8 +276,7 @@ let pp_header ?syntax ppf t =
 let pp ?syntax ppf b =
   pp_header ?syntax ppf b;
   pp_contents ?syntax ppf b;
-  pp_footer ?syntax ppf b;
-  pp_errors ppf b
+  pp_footer ?syntax ppf b
 
 let directory t = t.dir
 let file t = match t.value with Include t -> Some t.file_included | _ -> None
@@ -415,7 +459,7 @@ let infer_block ~loc ~config ~header ~contents ~errors =
           let+ () = check_no_errors ~loc errors in
           Raw { header })
 
-let mk ~loc ~section ~labels ~legacy_labels ~header ~contents ~errors =
+let mk ~loc ~section ~labels ~legacy_labels ~header ~delim ~contents ~errors =
   let block_kind =
     get_label (function Block_kind x -> Some x | _ -> None) labels
   in
@@ -442,6 +486,7 @@ let mk ~loc ~section ~labels ~legacy_labels ~header ~contents ~errors =
     os_type_enabled;
     set_variables = config.set_variables;
     unset_variables = config.unset_variables;
+    delim;
     value;
   }
 
@@ -450,7 +495,7 @@ let mk_include ~loc ~section ~labels =
   | Some file_inc ->
       let header = Header.infer_from_file file_inc in
       mk ~loc ~section ~labels ~legacy_labels:false ~header ~contents:[]
-        ~errors:[]
+        ~errors:[] ~delim:None
   | None -> label_required ~loc ~label:"file" ~kind:"include"
 
 let parse_labels ~label_cmt ~legacy_labels =
@@ -476,6 +521,7 @@ let from_raw raw =
       in
       Util.Result.to_error_list
       @@ mk ~loc ~section ~header ~contents ~labels ~legacy_labels ~errors
+           ~delim:None
 
 let is_active ?section:s t =
   let active =

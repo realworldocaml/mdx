@@ -3,6 +3,7 @@ module Code_block = struct
 
   type t = {
     metadata : metadata option;
+    delimiter : string option;
     content : Location.t; (* Location of the content *)
     code_block : Location.t; (* Location of the enclosing code block *)
   }
@@ -44,18 +45,19 @@ let extract_code_block_info acc ~(location : Lexing.position) ~docstring =
           loc_ghost = false;
         }
     in
-    fun location (metadata, { O.Loc.location = span; _ }) ->
+    fun location
+        { O.Ast.meta; delimiter; content = { O.Loc.location = span; _ }; _ } ->
       let metadata =
         Option.map
-          (fun (lang, labels) ->
-            let language_tag = O.Loc.value lang in
-            let labels = Option.map O.Loc.value labels in
+          (fun { O.Ast.language; tags } ->
+            let language_tag = O.Loc.value language in
+            let labels = Option.map O.Loc.value tags in
             Code_block.{ language_tag; labels })
-          metadata
+          meta
       in
       let content = convert_loc span in
       let code_block = convert_loc location in
-      { metadata; content; code_block }
+      { metadata; delimiter; content; code_block }
   in
 
   (* Fold over the results from odoc-parser, recurse where necessary
@@ -146,9 +148,10 @@ let make_block code_block file_contents =
         let len = loc.loc_end.pos_cnum - start in
         String.sub file_contents start len
       in
+      let delim = code_block.delimiter in
       let contents = slice code_block.content |> String.split_on_char '\n' in
       Block.mk ~loc:code_block.code_block ~section:None ~labels ~header
-        ~contents ~legacy_labels:false ~errors:[]
+        ~contents ~legacy_labels:false ~errors:[] ~delim
 
 (* Given the locations of the code blocks within [file_contents], then slice it up into
    [Text] and [Block] parts by using the starts and ends of those blocks as

@@ -105,6 +105,7 @@ type t = {
       (** Whether the current os type complies with the block's version. *)
   set_variables : (string * string) list;
   unset_variables : string list;
+  delim : string option;
   value : value;
 }
 (** The type for supported code blocks. *)
@@ -115,6 +116,7 @@ val mk :
   labels:Label.t list ->
   legacy_labels:bool ->
   header:Header.t option ->
+  delim:string option ->
   contents:string list ->
   errors:Output.t list ->
   (t, [ `Msg of string ]) result
