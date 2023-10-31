@@ -203,9 +203,11 @@ let rec error_padding = function
       let xs = error_padding xs in
       x :: xs
 
+let contains_warnings l =
+  String.is_prefix ~affix:"Warning" l || String.is_infix ~affix:"\nWarning" l
+
 let eval_ocaml ~(block : Block.t) ?syntax ?root c ppf errors =
   let cmd = block.contents |> remove_padding in
-  let contains_warnings = String.is_infix ~affix:"Warning" in
   let error_lines =
     match eval_test ?root ~block c cmd with
     | Ok lines -> List.filter contains_warnings lines

@@ -35,9 +35,6 @@ Test against some false positives:
 ```ocaml
 let x = [ "Warning" ]
 ```
-```mdx-error
-val x : string list = ["Warning"]
-```
 
 ```ocaml
 module Warning = struct
@@ -45,10 +42,6 @@ module Warning = struct
 end
 
 let warning = Warning.Warning
-```
-```mdx-error
-module Warning : sig type t = Warning end
-val warning : Warning.t = Warning.Warning
 ```
 
 Intended false positive:
