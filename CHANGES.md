@@ -4,6 +4,10 @@
 
 - Handle the error-blocks syntax (#439, @jonludlam, @gpetiot)
 
+#### Fixed
+
+- Reduce false-positives while detecting warnings (#440, @Julow)
+
 ### 2.3.1
 
 #### Added
