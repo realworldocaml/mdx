@@ -120,7 +120,7 @@ Dune only checks markdown files with `mdx`.  E.g.,
 
 ```
 (mdx
- (files :standard - *.mli))
+ (files :standard *.mli))
 ```
 
 ### Supported Extensions
