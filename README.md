@@ -1,6 +1,6 @@
 [![Build Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fci.ocamllabs.io%2Fbadge%2Frealworldocaml%2Fmdx%2Fmain&logo=ocaml)](https://ci.ocamllabs.io/github/realworldocaml/mdx)
 
-## MDX
+# MDX
 
 MDX allows to execute code blocks inside markdown and mli/mld documentation
 to help keeping them up to date.
@@ -18,7 +18,7 @@ $ opam install mdx
 If you want to contribute to the project, please see the
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
-### Basic Usage
+## Basic Usage
 
 You can use MDX with your Markdown or `.ml{i,d}` documentation, which ensures
 code in multi-line or verbatim code blocks is correct.
@@ -123,9 +123,9 @@ Dune only checks markdown files with `mdx`.  E.g.,
  (files :standard *.mli))
 ```
 
-### Supported Extensions
+## Supported Extensions
 
-#### Labels
+### Labels
 
 The blocks can be parameterized by `mdx`-specific labels, that
 will change the way `mdx` interprets the block.
@@ -160,7 +160,7 @@ The possible labels are:
 - `set-VAR=VALUE` -- set an environment variable
 - `unset-VAR` -- unset an environment variable
 
-#### Shell Scripts
+### Shell Scripts
 
 `ocaml-mdx` interprets shell scripts inside `sh` code blocks as cram-like tests. The
 syntax is the following:
@@ -211,7 +211,7 @@ MDX will also consider exit codes when the syntax `[<exit code>]`is used:
 Note that nothing will be displayed when the exit code is 0 (e.g. in case
 of success).
 
-#### OCaml Code
+### OCaml Code
 
 MDX interprets OCaml fragments. It understands _normal_ code fragments and
 _toplevel_ code fragments (starting with a `#` sign and optionally ending with
@@ -233,7 +233,7 @@ Here is an examples of toplevel OCaml code:
     42
     ```
 
-### File sync
+## File sync
 
 MDX is also capable of including content from files in fenced code blocks
 using the label `file`. OCaml files can be sliced using named blocks:
@@ -258,9 +258,9 @@ Non-OCaml files can also be read and included in a block:
     ```
 However, part splitting is only supported for OCaml files.
 
-### Tests
+## Tests
 
-#### Cram Tests
+### Cram Tests
 
 Cram tests can be executed and checked with `ocaml-mdx test <file.md>`.
 
@@ -274,7 +274,7 @@ Cram tests can be executed and checked with `ocaml-mdx test <file.md>`.
 If the output is not consistent with what is expected,
 `<file.md>.corrected` is generated.
 
-#### OCaml
+### OCaml
 
 To execute OCaml code and toplevel fragments, uses `ocaml-mdx test <file.md>`.
 
@@ -286,9 +286,9 @@ To execute OCaml code and toplevel fragments, uses `ocaml-mdx test <file.md>`.
 If the output is not consistent with what is expected
 `<file.md>.corrected` is generated.
 
-#### Non-deterministic Tests
+### Non-deterministic Tests
 
-**Non-deterministic Outputs**
+#### Non-deterministic Outputs
 
 `ocaml-mdx test` supports non-deterministic outputs:
 
@@ -303,7 +303,7 @@ generate `<file>.corrected` if the new output differs from the one
 described in the file. Use `ocaml-mdx test --non-deterministic <file>` to come
 back to the default behaviour.
 
-**Non-deterministic Commands**
+#### Non-deterministic Commands
 
 `ocaml-mdx test` supports non-deterministic commands:
 
@@ -322,7 +322,7 @@ non-deterministic blocks. This is useful when not calling MDX directly but
 through other commands like `dune` or Makefiles etc. Use
 `MDX_RUN_NON_DETERMINISTIC=1 ocaml-mdx test` in this case.
 
-#### Named execution environments (since mdx 1.1.0)
+### Named execution environments (since mdx 1.1.0)
 
 Separate environments can be defined for blocks:
 
@@ -359,7 +359,7 @@ We can retrieve the value of `x` in environment `e1`:
     - : int -> int = <fun>
     ```
 
-#### Matching on the OCaml version (since mdx 1.2.0)
+### Matching on the OCaml version (since mdx 1.2.0)
 
 Blocks can be processed or ignored depending on the current version of OCaml.
 
@@ -390,7 +390,7 @@ The version number can be of the following forms:
 - `X.Y`
 - `X.Y.Z`
 
-#### Matching based on the `os_type` (since mdx 2.4.0)
+### Matching based on the `os_type` (since mdx 2.4.0)
 
 Block can be processed or ignored depending on the current
 [`os_type`](https://v2.ocaml.org/api/Sys.html#VALos_type).
@@ -417,7 +417,7 @@ Windows or not:
 The `os_type` values should be written in ASCII and are compared case
 insensitively.
 
-#### Environment variables declaration
+### Environment variables declaration
 
 Environment variables can be declared at the beginning of a block:
 
