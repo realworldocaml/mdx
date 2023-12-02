@@ -3,6 +3,7 @@
 #### Added
 
 - Handle the error-blocks syntax (#439, @jonludlam, @gpetiot)
+- Fix directives not allowed in the `ocaml` mode.
 
 ### 2.3.1
 
