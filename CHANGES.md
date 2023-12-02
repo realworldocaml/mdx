@@ -1,3 +1,9 @@
+### Unreleased
+
+#### Fixed
+
+- Fix directives not allowed in the `ocaml` mode (#443, @sorawee).
+
 ### 2.6.0
 
 #### Added
