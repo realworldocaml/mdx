@@ -1,5 +1,17 @@
 
 (rule
+ (target attributes.actual)
+ (deps (package mdx) (source_tree attributes))
+ (action
+  (with-stdout-to %{target}
+   (chdir attributes
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff attributes/test-case.md.expected attributes.actual)))
+
+(rule
  (target bash-fence.actual)
  (deps (package mdx) (source_tree bash-fence))
  (action
