@@ -1,6 +1,6 @@
 It is possible to use ellipsis (`...`) in the error blocks attached to OCaml blocks, here it is useful as the error message depends on the OCaml version:
 
-```ocaml
+```ocaml version<5.2
 module Counter: Irmin.Contents.S with type t = int64 = struct
   type t = int64
   let t = Irmin.Type.int64

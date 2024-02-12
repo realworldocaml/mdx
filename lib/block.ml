@@ -177,8 +177,7 @@ let pp_contents ?syntax:_ ppf t =
 
 let rec error_padding = function
   | [] -> []
-  | [ (`Output _ as o); `Output padding ] when Util.String.all_blank padding ->
-      [ o ]
+  | [ o; `Output padding ] when Util.String.all_blank padding -> [ o ]
   | x :: xs ->
       let xs = error_padding xs in
       x :: xs

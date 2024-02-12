@@ -196,13 +196,10 @@ module Rewrite = struct
     let preload = None in
     let open Ast_helper in
     let rewrite loc e =
-      let punit =
-        Pat.construct (Location.mkloc (Longident.Lident "()") loc) None
-      in
       with_default_loc loc @@ fun () ->
       Exp.apply
         (Exp.ident (Location.mkloc runner loc))
-        [ (Asttypes.Nolabel, Exp.fun_ Asttypes.Nolabel None punit e) ]
+        [ (Asttypes.Nolabel, Compat_top.mk_fun loc e) ]
     in
     { typ; rewrite; witness; preload }
 

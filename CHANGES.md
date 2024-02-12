@@ -4,6 +4,7 @@
 
 - Handle the error-blocks syntax (#439, @jonludlam, @gpetiot)
 - Allow execution of included OCaml code blocks (#446, @panglesd)
+- Make MDX compatible with OCaml 5.2 (#448, @gpetiot)
 
 #### Fixed
 
