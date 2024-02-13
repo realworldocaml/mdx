@@ -300,7 +300,7 @@ let guess_ocaml_kind contents =
     | h :: t ->
         let h = String.trim h in
         if h = "" then aux t
-        else if String.length h > 1 && h.[0] = '#' then `Toplevel
+        else if String.length h > 2 && h.[0] = '#' && h.[1] = ' ' then `Toplevel
         else `Code
   in
   aux contents
@@ -383,7 +383,10 @@ let mk_ocaml ~loc ~config ~header ~contents ~errors =
   let kind = "OCaml" in
   match config with
   | { file_inc = None; part = None; env; non_det; _ } -> (
-      (* TODO: why does this call guess_ocaml_kind when infer_block already did? *)
+      (* mk_ocaml can be invoked because an explicit "$MDX ocaml" is given.
+         In such case, we still want to make it an error if
+         a toplevel interaction is given (see the test "invalid ocaml"),
+         so we use guess_ocaml_kind here to do that. *)
       match guess_ocaml_kind contents with
       | `Code -> Ok (OCaml { env = Ocaml_env.mk env; non_det; errors; header })
       | `Toplevel ->
