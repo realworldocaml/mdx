@@ -190,10 +190,19 @@ let rec remove_padding ?(front = true) = function
       let xs = remove_padding ~front xs in
       x :: xs
 
-let update_ocaml ~errors = function
-  | { Block.value = OCaml v; _ } as b ->
-      { b with value = OCaml { v with errors } }
-  (* [eval_ocaml] only called on OCaml blocks *)
+let update_errors ~errors t =
+  let update_ocaml_value (ov : Block.ocaml_value) = { ov with errors } in
+  match t.Block.value with
+  | OCaml v -> { t with value = OCaml (update_ocaml_value v) }
+  | Include
+      ({ file_kind = Fk_ocaml ({ ocaml_value = Some v; _ } as fk); _ } as i) ->
+      let ocaml_value = Some (update_ocaml_value v) in
+      let file_kind = Block.Fk_ocaml { fk with ocaml_value } in
+      { t with value = Include { i with file_kind } }
+  | _ -> assert false
+
+let update_include ~contents = function
+  | { Block.value = Include _; _ } as b -> { b with contents }
   | _ -> assert false
 
 let rec error_padding = function
@@ -206,7 +215,7 @@ let rec error_padding = function
 let contains_warnings l =
   String.is_prefix ~affix:"Warning" l || String.is_infix ~affix:"\nWarning" l
 
-let eval_ocaml ~(block : Block.t) ?syntax ?root c ppf errors =
+let eval_ocaml ~(block : Block.t) ?root c errors =
   let cmd = block.contents |> remove_padding in
   let error_lines =
     match eval_test ?root ~block c cmd with
@@ -229,8 +238,7 @@ let eval_ocaml ~(block : Block.t) ?syntax ?root c ppf errors =
               | `Output x -> `Output (ansi_color_strip x))
             (Output.merge output errors)
   in
-  let updated_block = update_ocaml ~errors block in
-  Block.pp ?syntax ppf updated_block
+  update_errors ~errors block
 
 let lines = function Ok x | Error x -> x
 
@@ -278,9 +286,12 @@ let read_part file part =
         (match part with None -> "" | Some p -> p)
         file
   | Some lines ->
+      (* in any [string] element of lines, there might be newlines. *)
       let contents = String.concat ~sep:"\n" lines in
       String.drop contents ~rev:true ~sat:Char.Ascii.is_white
       |> String.drop ~sat:(function '\n' -> true | _ -> false)
+      |> (fun contents -> "\n" ^ contents ^ "\n")
+      |> String.cuts ~sep:"\n"
 
 let write_parts ~force_output file parts =
   let output_file = file ^ ".corrected" in
@@ -292,18 +303,13 @@ let write_parts ~force_output file parts =
       flush oc;
       close_out oc
 
-let update_block_content ?syntax ppf t content =
-  Block.pp_header ?syntax ppf t;
-  Fmt.string ppf "\n";
-  Output.pp ppf (`Output content);
-  Fmt.string ppf "\n";
-  Block.pp_footer ?syntax ppf t
-
-let update_file_or_block ?syntax ?root ppf md_file ml_file block part =
+let update_file_or_block ?root md_file ml_file block part =
   let root = root_dir ?root ~block () in
   let dir = Filename.dirname md_file in
   let ml_file = resolve_root ml_file dir root in
-  update_block_content ?syntax ppf block (read_part ml_file part)
+  let contents = read_part ml_file part in
+  let new_block = update_include ~contents block in
+  new_block
 
 exception Test_block_failure of Block.t * string
 
@@ -337,26 +343,44 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
   in
   let preludes = preludes ~prelude ~prelude_str in
 
+  let run_ocaml_value t Block.{ env; non_det; errors; header = _; _ } =
+    let det () =
+      Mdx_top.in_env env (fun () -> eval_ocaml ~block:t ?root c errors)
+    in
+    with_non_det non_deterministic non_det
+      ~on_skip_execution:(fun () -> t)
+      ~on_keep_old_output:det ~on_evaluation:det
+  in
+
   let test_block ~ppf ~temp_file t =
     let print_block () = Block.pp ?syntax ppf t in
     if Block.is_active ?section t then
       match Block.value t with
       | Raw _ -> print_block ()
-      | Include { file_included; file_kind = Fk_ocaml { part_included } } ->
+      | Include
+          {
+            file_included;
+            file_kind = Fk_ocaml { part_included; ocaml_value; _ };
+          } ->
           assert (syntax <> Some Cram);
-          update_file_or_block ?syntax ?root ppf file file_included t
-            part_included
-      | Include { file_included; file_kind = Fk_other _ } ->
-          let new_content = read_part file_included None in
-          update_block_content ?syntax ppf t new_content
-      | OCaml { non_det; env; errors; header = _ } ->
-          let det () =
-            assert (syntax <> Some Cram);
-            Mdx_top.in_env env (fun () ->
-                eval_ocaml ~block:t ?syntax ?root c ppf errors)
+          let new_block =
+            update_file_or_block ?root file file_included t part_included
           in
-          with_non_det non_deterministic non_det ~on_skip_execution:print_block
-            ~on_keep_old_output:det ~on_evaluation:det
+          let updated_block =
+            match ocaml_value with
+            (* including without executing *)
+            | Some _ when t.skip -> new_block
+            | Some ocaml_value -> run_ocaml_value new_block ocaml_value
+            | _ -> new_block
+          in
+          Block.pp ?syntax ppf updated_block
+      | Include { file_included; file_kind = Fk_other _ } ->
+          let contents = read_part file_included None in
+          let new_block = update_include ~contents t in
+          Block.pp ?syntax ppf new_block
+      | OCaml ov ->
+          let updated_block = run_ocaml_value t ov in
+          Block.pp ?syntax ppf updated_block
       | Cram { language = _; non_det } ->
           let tests = Cram.of_lines t.contents in
           with_non_det non_deterministic non_det ~on_skip_execution:print_block

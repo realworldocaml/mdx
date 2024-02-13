@@ -3,6 +3,7 @@
 #### Added
 
 - Handle the error-blocks syntax (#439, @jonludlam, @gpetiot)
+- Allow execution of included OCaml code blocks (#446, @panglesd)
 
 #### Fixed
 
