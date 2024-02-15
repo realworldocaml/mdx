@@ -280,3 +280,19 @@ let get_id_opt = function
 #if OCAML_VERSION >= (5, 1, 0)
   | Path.Pextra_ty _ -> None
 #endif
+
+let mk_fun loc exp =
+  let punit =
+    Ast_helper.Pat.construct (Location.mkloc (Longident.Lident "()") loc) None
+  in
+  let label = Asttypes.Nolabel in
+  let default = None in
+#if OCAML_VERSION >= (5, 2, 0)
+  let param =
+    { Parsetree.pparam_loc= loc
+    ; pparam_desc= Pparam_val (label, default, punit) }
+  in
+  Ast_helper.Exp.function_ [param] None (Pfunction_body exp)
+#else
+  Ast_helper.Exp.fun_ label default punit exp
+#endif

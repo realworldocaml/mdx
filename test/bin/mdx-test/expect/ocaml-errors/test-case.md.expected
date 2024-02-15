@@ -14,16 +14,16 @@ Error: This 'struct' might be unmatched
 ```
 
 
-```ocaml version>=4.08
+```ocaml version>=5.2
 module Counter: Irmin.Contents.S with type t = int64 = struct
   type t = int64
   let t = Irmin.Type.int64
 ```
 ```mdx-error
 Line 4, characters 3-3:
-Error: Syntax error: 'end' expected
+Error: Syntax error: end expected
 Line 1, characters 56-62:
-  This 'struct' might be unmatched
+  This struct might be unmatched
 ```
 
 

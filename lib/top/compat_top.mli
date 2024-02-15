@@ -69,3 +69,6 @@ val execute_phrase :
 val redirect_directive : string -> string
 val get_id_in_path : Path.t -> Ident.t
 val get_id_opt : Path.t -> Ident.t option
+
+val mk_fun : Location.t -> Parsetree.expression -> Parsetree.expression
+(** [mk_fun loc e] produces [fun () -> e]. *)
