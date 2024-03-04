@@ -3,7 +3,8 @@
 #### Added
 
 - Handle the error-blocks syntax (#439, @jonludlam, @gpetiot)
-- Allow execution of included OCaml code blocks (#446, @panglesd)
+- Allow execution of included OCaml code blocks. Add `skip` to `include` blocks
+  to revert to the old behavior (#446, @panglesd)
 - Make MDX compatible with OCaml 5.2 (#448, @gpetiot)
 
 #### Fixed
