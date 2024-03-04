@@ -16,6 +16,10 @@
 
 (** Code blocks headers. *)
 
+module OCaml_kind : sig
+  type t = Impl | Intf
+end
+
 module Header : sig
   type t = Shell of [ `Sh | `Bash ] | OCaml | Other of string
 
@@ -47,6 +51,9 @@ type include_ocaml_file = {
   part_included : string option;
       (** [part_included] is the part of the file to synchronize with.
           If lines is not specified synchronize the whole file. *)
+  ocaml_value : ocaml_value option;
+  kind : OCaml_kind.t;
+  exec : bool;
 }
 
 type include_other_file = { header : Header.t option }
@@ -167,6 +174,9 @@ val unset_variables : t -> string list
 
 val skip : t -> bool
 (** [skip t] is true iff [skip] is in the labels of [t]. *)
+
+val exec : t -> bool
+(** [exec t] is true iff [exec] is in the labels of [t]. *)
 
 val value : t -> value
 (** [value t] is [t]'s value. *)

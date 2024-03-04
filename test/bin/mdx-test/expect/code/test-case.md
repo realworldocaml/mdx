@@ -29,5 +29,6 @@ module type Foo = sig type t end
 
 ```ocaml skip
 # Pipe.f ();;
-- : unit
+Line 1, characters 1-7:
+Error: Unbound module Pipe
 ```

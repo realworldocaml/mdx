@@ -16,14 +16,15 @@
 
 type t = File of string | Dir of string
 
-let of_block block =
+let of_block b =
   let open Block in
-  match (directory block, file block, skip block) with
-  | Some d, Some f, false -> Some (File (Filename.concat d f))
-  | Some d, None, false -> Some (Dir d)
-  | None, Some f, false -> Some (File f)
-  | None, None, false -> None
-  | _, _, true -> None
+  let block b = (not (skip b)) || exec b in
+  match (directory b, file b, block b) with
+  | Some d, Some f, true -> Some (File (Filename.concat d f))
+  | Some d, None, true -> Some (Dir d)
+  | None, Some f, true -> Some (File f)
+  | None, None, true -> None
+  | _, _, false -> None
 
 let of_lines =
   let open Document in
