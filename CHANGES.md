@@ -2,7 +2,7 @@
 
 #### Changed
 
-- Revert #446: "Allow execution of included OCaml code blocks" (#<PR_NUMBER>, @gpetiot).
+- Revert #446: "Allow execution of included OCaml code blocks" (#451, @gpetiot).
   Included OCaml code blocks preserve their pre-2.4.0 behavior.
 
 ### 2.4.0
