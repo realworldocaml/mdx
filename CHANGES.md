@@ -1,10 +1,18 @@
+### unreleased
+
+#### Changed
+
+- Revert #446: "Allow execution of included OCaml code blocks" (#<PR_NUMBER>, @gpetiot).
+  Included OCaml code blocks preserve their pre-2.4.0 behavior.
+
 ### 2.4.0
 
 #### Added
 
 - Handle the error-blocks syntax (#439, @jonludlam, @gpetiot)
 - Allow execution of included OCaml code blocks. Add `skip` to `include` blocks
-  to revert to the old behavior (#446, @panglesd)
+  to revert to the old behavior (#446, @panglesd, @gpetiot)
+  *Warning: this is a breaking change that is reverted in the next release.*
 - Make MDX compatible with OCaml 5.2 (#448, @gpetiot)
 
 #### Fixed

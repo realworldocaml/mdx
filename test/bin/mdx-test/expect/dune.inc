@@ -180,18 +180,6 @@
  (action (diff errors/test-case.md errors.actual)))
 
 (rule
- (target exec-include.actual)
- (deps (package mdx) (source_tree exec-include))
- (action
-  (with-stdout-to %{target}
-   (chdir exec-include
-    (run ocaml-mdx test --output - test-case.md)))))
-
-(rule
- (alias runtest)
- (action (diff exec-include/test-case.md exec-include.actual)))
-
-(rule
  (target exit.actual)
  (deps (package mdx) (source_tree exit))
  (action

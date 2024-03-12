@@ -1,7 +1,7 @@
 Mdx can also understand ocaml code blocks:
 
 
-```ocaml file=sync_to_md.ml,part=toto,skip
+```ocaml file=sync_to_md.ml,part=toto
 # let x = 3;;
 val x : int = 3
 # let y = 4;;
@@ -14,16 +14,16 @@ val y : int = 4
 - : unit = ()
 ```
 
-```ocaml file=sync_to_md.ml,part=zzz,skip
+```ocaml file=sync_to_md.ml,part=zzz
 ```
 
-```ocaml file=sync_to_md.ml,part=42,skip
+```ocaml file=sync_to_md.ml,part=42
 ```
 
 ```ocaml file=sync_to_md.ml,part=
 ```
 
-```ocaml file=sync_to_md.ml,skip
+```ocaml file=sync_to_md.ml
 ```
 
 ```ocaml
