@@ -16,10 +16,6 @@
 
 (** Code blocks headers. *)
 
-module OCaml_kind : sig
-  type t = Impl | Intf
-end
-
 module Header : sig
   type t = Shell of [ `Sh | `Bash ] | OCaml | Other of string
 
@@ -51,8 +47,6 @@ type include_ocaml_file = {
   part_included : string option;
       (** [part_included] is the part of the file to synchronize with.
           If lines is not specified synchronize the whole file. *)
-  ocaml_value : ocaml_value option;
-  kind : OCaml_kind.t;
 }
 
 type include_other_file = { header : Header.t option }

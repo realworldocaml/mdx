@@ -30,16 +30,6 @@ let locate_errors ~loc r =
     (fun l -> List.map (fun (`Msg m) -> `Msg (locate_error_msg ~loc m)) l)
     r
 
-module OCaml_kind = struct
-  type t = Impl | Intf
-
-  let infer_from_file file =
-    match Filename.(remove_extension (basename file), extension file) with
-    | _, (".ml" | ".mlt" | ".eliom") -> Some Impl
-    | _, (".mli" | ".eliomi") -> Some Intf
-    | _ -> None
-end
-
 module Header = struct
   type t = Shell of [ `Sh | `Bash ] | OCaml | Other of string
 
@@ -95,13 +85,7 @@ type ocaml_value = {
 }
 
 type toplevel_value = { env : Ocaml_env.t; non_det : Label.non_det option }
-
-type include_ocaml_file = {
-  part_included : string option;
-  ocaml_value : ocaml_value option;
-  kind : OCaml_kind.t;
-}
-
+type include_ocaml_file = { part_included : string option }
 type include_other_file = { header : Header.t option }
 
 type include_file_kind =
@@ -133,12 +117,6 @@ type t = {
   delim : string option;
   value : value;
 }
-
-let get_ocaml_value t =
-  match t.value with
-  | OCaml ocaml_value -> Some ocaml_value
-  | Include { file_kind = Fk_ocaml { ocaml_value; _ }; _ } -> ocaml_value
-  | _ -> None
 
 let dump_section = Fmt.(Dump.pair int string)
 
@@ -212,22 +190,24 @@ let pp_error ?syntax ?delim ppf outputs =
         outputs err_delim
   | _ -> ()
 
-let has_errors t =
-  match get_ocaml_value t with
-  | Some { errors = _ :: _; _ } -> true
+let has_output t =
+  match t.value with
+  | OCaml { errors = []; _ } -> false
+  | OCaml { errors = _; _ } -> true
   | _ -> false
 
 let pp_value ?syntax ppf t =
   let delim = t.delim in
-  match get_ocaml_value t with
-  | Some { errors; _ } ->
+  match t.value with
+  | OCaml { errors = []; _ } -> ()
+  | OCaml { errors; _ } ->
       let errors = error_padding errors in
       pp_error ?syntax ?delim ppf errors
   | _ -> ()
 
 let pp_footer ?syntax ppf t =
   let delim =
-    if has_errors t then (
+    if has_output t then (
       pp_value ?syntax ppf t;
       None)
     else t.delim
@@ -398,16 +378,13 @@ let get_block_config l =
     file_inc = get_label (function File x -> Some x | _ -> None) l;
   }
 
-let mk_ocaml_value env non_det errors header =
-  { env = Ocaml_env.mk env; non_det; errors; header }
-
 let mk_ocaml ~loc ~config ~header ~contents ~errors =
   let kind = "OCaml" in
   match config with
   | { file_inc = None; part = None; env; non_det; _ } -> (
       (* TODO: why does this call guess_ocaml_kind when infer_block already did? *)
       match guess_ocaml_kind contents with
-      | `Code -> Ok (OCaml (mk_ocaml_value env non_det errors header))
+      | `Code -> Ok (OCaml { env = Ocaml_env.mk env; non_det; errors; header })
       | `Toplevel ->
           loc_error ~loc "toplevel syntax is not allowed in OCaml blocks.")
   | { file_inc = Some _; _ } -> label_not_allowed ~loc ~label:"file" ~kind
@@ -445,31 +422,13 @@ let mk_toplevel ~loc ~config ~contents ~errors =
 let mk_include ~loc ~config ~header ~errors =
   let kind = "include" in
   match config with
-  | { file_inc = Some file_included; part; non_det; env; _ } -> (
-      let kind =
-        match header with
-        | Some Header.OCaml -> `OCaml
-        | None -> (
-            match OCaml_kind.infer_from_file file_included with
-            | Some _ -> `OCaml
-            | None -> `Other)
-        | _ -> `Other
-      in
-      match kind with
-      | `OCaml ->
-          let kind =
-            Util.Option.value ~default:OCaml_kind.Impl
-              (OCaml_kind.infer_from_file file_included)
-          in
-          let part_included = part in
-          let ocaml_value =
-            match kind with
-            | Impl -> Some (mk_ocaml_value env non_det errors header)
-            | Intf -> None
-          in
-          let file_kind = Fk_ocaml { part_included; ocaml_value; kind } in
+  | { file_inc = Some file_included; part; non_det = None; env = None; _ } -> (
+      let* () = check_no_errors ~loc errors in
+      match header with
+      | Some Header.OCaml ->
+          let file_kind = Fk_ocaml { part_included = part } in
           Ok (Include { file_included; file_kind })
-      | `Other -> (
+      | _ -> (
           match part with
           | None ->
               let file_kind = Fk_other { header } in
@@ -477,6 +436,9 @@ let mk_include ~loc ~config ~header ~errors =
           | Some _ ->
               label_not_allowed ~loc ~label:"part" ~kind:"non-OCaml include"))
   | { file_inc = None; _ } -> label_required ~loc ~label:"file" ~kind
+  | { non_det = Some _; _ } ->
+      label_not_allowed ~loc ~label:"non-deterministic" ~kind
+  | { env = Some _; _ } -> label_not_allowed ~loc ~label:"env" ~kind
 
 let infer_block ~loc ~config ~header ~contents ~errors =
   match config with
@@ -561,7 +523,7 @@ let from_raw raw =
            ~delim:None
 
 let is_active ?section:s t =
-  let active_section =
+  let active =
     match s with
     | Some p -> (
         match t.section with
@@ -569,10 +531,4 @@ let is_active ?section:s t =
         | None -> Re.execp (Re.Perl.compile_pat p) "")
     | None -> true
   in
-  let can_update_content =
-    match t.value with
-    (* include blocks are always updated even if not executed *)
-    | Include _ -> true
-    | _ -> not t.skip
-  in
-  active_section && t.version_enabled && t.os_type_enabled && can_update_content
+  active && t.version_enabled && t.os_type_enabled && not t.skip
