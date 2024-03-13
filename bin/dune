@@ -1,7 +1,7 @@
 (library
  (name cli)
  (modules cli)
- (libraries cmdliner fmt.cli logs.fmt fmt.tty logs.cli mdx))
+ (libraries cmdliner fmt.cli logs.fmt fmt.tty logs.cli mdx yojson atdgen))
 
 (executable
  (name main)
@@ -9,3 +9,15 @@
  (package mdx)
  (modules :standard \ cli)
  (libraries cli mdx))
+
+(rule
+ (targets notebook_j.ml notebook_j.mli)
+ (deps notebook.atd)
+ (action
+  (run atdgen -j -j-std %{deps})))
+
+(rule
+ (targets notebook_t.ml notebook_t.mli)
+ (deps notebook.atd)
+ (action
+  (run atdgen -t %{deps})))

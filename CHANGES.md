@@ -56,6 +56,7 @@
 
 #### Added
 
+- Add Jupyter Notebook output (#124, @avsm, @CraigFe, @jonludlam)
 - Report all parsing errors in Markdown files (#389, @NathanReb)
 
 #### Changed
