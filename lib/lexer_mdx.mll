@@ -19,7 +19,9 @@ rule text section = parse
         newline lexbuf;
         `Section section :: text (Some section) lexbuf }
   | ( "<!--" ws* "$MDX" ws* ([^' ' '\n']* as label_cmt) ws* "-->" ws* eol? )?
-      "```" ([^' ' '\n']* as header) ws* ([^'\n']* as legacy_labels) eol
+      "```" ([^' ' '=' '{' '\n']* as header) ws* ([^'{' '\n']* as legacy_labels) ws*
+      ('{' ([^'\n']* as attributes) '}')? ws*
+      eol
       { let start = Lexing.lexeme_start_p lexbuf in
         newline lexbuf;
         (match label_cmt with
@@ -42,7 +44,7 @@ rule text section = parse
         let loc = loc ~start ~end_ in
         let block =
           Block.Raw.make ~loc ~section ~header ~contents ~label_cmt
-            ~legacy_labels ~errors
+            ~legacy_labels ~attributes ~errors
         in
         `Block block :: text section lexbuf }
   | "<!--" ws* "$MDX" ws* ([^' ' '\n']* as labels) ws* "-->" ws* eol
@@ -85,7 +87,7 @@ and cram_text section = parse
         let loc = loc ~start ~end_ in
         let block =
             Block.Raw.make ~loc ~section ~header ~contents ~label_cmt
-              ~legacy_labels ~errors:[]
+              ~legacy_labels ~errors:[] ~attributes:None
         in
         `Block block
         :: (if requires_empty_line then `Text "\n" :: rest else rest) }
@@ -101,7 +103,7 @@ and cram_text section = parse
         let rest = cram_text section lexbuf in
         let block =
             Block.Raw.make ~loc ~section ~header ~contents ~label_cmt
-              ~legacy_labels ~errors:[]
+              ~legacy_labels ~errors:[] ~attributes:None
         in
         `Block block
         :: (if requires_empty_line then `Text "\n" :: rest else rest) }

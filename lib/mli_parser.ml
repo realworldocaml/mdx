@@ -151,7 +151,7 @@ let make_block code_block file_contents =
       let delim = code_block.delimiter in
       let contents = slice code_block.content |> String.split_on_char '\n' in
       Block.mk ~loc:code_block.code_block ~section:None ~labels ~header
-        ~contents ~legacy_labels:false ~errors:[] ~delim
+        ~contents ~legacy_labels:false ~errors:[] ~delim ~attributes:[]
 
 (* Given the locations of the code blocks within [file_contents], then slice it up into
    [Text] and [Block] parts by using the starts and ends of those blocks as

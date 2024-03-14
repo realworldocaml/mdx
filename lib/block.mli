@@ -84,6 +84,7 @@ module Raw : sig
     contents:string list ->
     label_cmt:string option ->
     legacy_labels:string ->
+    attributes:string option ->
     errors:Output.t list ->
     t
 
@@ -105,6 +106,7 @@ type t = {
       (** Whether the current os type complies with the block's version. *)
   set_variables : (string * string) list;
   unset_variables : string list;
+  attributes : string list;
   delim : string option;
   value : value;
 }
@@ -118,6 +120,7 @@ val mk :
   header:Header.t option ->
   delim:string option ->
   contents:string list ->
+  attributes:string list ->
   errors:Output.t list ->
   (t, [ `Msg of string ]) result
 
