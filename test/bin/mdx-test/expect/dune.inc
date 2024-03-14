@@ -576,6 +576,18 @@
  (action (diff trailing-whitespaces/test-case.md.expected trailing-whitespaces.actual)))
 
 (rule
+ (target unclosed-block.actual)
+ (deps (package mdx) (source_tree unclosed-block))
+ (action
+  (with-stdout-to %{target}
+   (chdir unclosed-block
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff unclosed-block/test-case.md.expected unclosed-block.actual)))
+
+(rule
  (target warnings.actual)
  (deps (package mdx) (source_tree warnings))
  (action
