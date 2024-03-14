@@ -1,15 +1,11 @@
 [![Build Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fci.ocamllabs.io%2Fbadge%2Frealworldocaml%2Fmdx%2Fmain&logo=ocaml)](https://ci.ocamllabs.io/github/realworldocaml/mdx)
 
-## MDX
+# MDX
 
-MDX allows to execute code blocks inside markdown and mli/mld documentation
-to help keeping them up to date.
+MDX is a tool that generates evaluation results for code interactions inside Markdown (`.md`) 
+and `.ml{i,d}` documentation.
 
-Use the
-[dune stanza](https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4)
-to enable it on your documentation.
-
-`mdx` is released on opam and can be installed by running:
+MDX is released on opam and can be installed by running:
 
 ```sh
 $ opam install mdx
@@ -18,114 +14,144 @@ $ opam install mdx
 If you want to contribute to the project, please see the
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
-### Basic Usage
+## Setup
 
-You can use MDX with your Markdown or `.ml{i,d}` documentation, which ensures
-code in multi-line or verbatim code blocks is correct.
+MDX is integrated with Dune. To enable MDX for your Dune project, 
+you must first add a [`dune-project` stanza](https://dune.readthedocs.io/en/latest/dune-files.html#mdx) to allow Dune to recognize MDX:
 
-To enable MDX on specific files you must first enable it for your project by
-adding the following stanza to your `dune-project`:
 ```
-(using mdx 0.2)
+(using mdx 0.4)
 ```
 
-Note that version `0.2` of the MDX stanza is only available in dune `3.0` or
-higher. You can use the first, `0.1` version with dune `2.4` or higher.
+See [compatibility](#compatibility) for more details about version compatibility.
 
-Then add the following in the relevant `dune` file:
+Then add the following MDX stanza in relevant `dune` files:
+
 ```
-(mdx)
+(mdx (files :standard *.mli))
 ```
-That enables MDX on all markdown files in the folder.
+
+Under a folder with a `dune` file, `:standard` enables MDX on all Markdown files (`*.md`)
+and odoc's documentation pages (`*.mld`); `*.mli` enables MDX on the OCaml interface files.
 The MDX stanza can be further configured. Please visit the relevant section of
-[dune's manual](https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4)
-for more information.
+[Dune's manual](https://dune.readthedocs.io/en/latest/dune-files.html#mdx) and 
+the rest of this README for more information.
 
-MDX supports various type of code blocks but the most common are OCaml toplevel
-blocks. We illustrate one in our example below. In a Markdown file, you
-would write something similar to this:
+### Compatibility
+
+- `(using mdx 0.1)` requires Dune 2.4 or higher, with no restriction on MDX version.
+- `(using mdx 0.2)` requires Dune 3.0 or higher and MDX 1.9.0 or higher.
+- `(using mdx 0.3)` requires TODO
+- `(using mdx 0.4)` requires Dune 3.8 or higher and MDX 2.3.0 or higher.
+
+## Getting Started
+
+MDX ensures that your code examples behave the way you expect by actually running them.
+
+MDX supports various types of code blocks but the most common ones are 
+_OCaml interactive toplevel blocks_. 
+We illustrate one in the example below. In a Markdown file, we may have:
 
 ````markdown
-Let's look at how good OCaml is with integers and strings:
+Let's look at how good OCaml is with integers and floats:
 ```ocaml
 # 1 + 2;;
 - : int = 2
-# "a" ^ "bc";;
-- : string = "ab"
+# 1.2 + 3.4;;
+- : float = 4.6
 ```
 ````
 or in an `mli` file:
 ```ocaml
-(** Let's look at how good OCaml is with integers and strings:
+(** Let's look at how good OCaml is with integers and floats:
     {@ocaml[
     # 1 + 2;;
     - : int = 2
-    # "a" ^ "bc";;
-    - : string = "ab"
+    # 1.2 + 3.4;;
+    - : float = 4.6
     ]}
 *)
 ```
 
-The content of the toplevel blocks looks just like an interactive toplevel
-session. Phrases, i.e., the toplevel "input", start with a `#` and end with `;;`.
+The content of the interactive toplevel blocks looks just like an interactive toplevel
+session. _Phrases_, i.e., the toplevel "input", start with a `#` and end with `;;`.
 The toplevel evaluation, or "output" follows each phrase.
 
-Now you probably have noticed that `1 + 2` is not equal to `2` nor is `"a" ^ "bc"`
-to `"ab"`. Somebody must have updated the phrases, but then forgot to update
-the evaluation.
+Now you probably have noticed that `1 + 2` is not equal to `2` nor is `1.2 + 3.4` type-checked. 
+Somebody must have introduced a typo, or updated the phrases but then forgot to update the evaluation result.
 
 That's exactly why MDX is here!
 
-If you enable MDX for this file and then ran `dune runtest`, this would be the
-result:
+If we run `dune runtest`, this would be the result:
 
-````
+````sh
 $ dune runtest
 File "README.md", line 1, characters 0-0:
-       git (internal) (exit 1)
-(cd _build/default && /usr/bin/git --no-pager diff --no-index --color=always -u README.md .mdx/README.md.corrected)
-diff --git a/README.md b/.mdx/README.md.corrected
-index 181b86f..458ecec 100644
---- a/README.md
-+++ b/.mdx/README.md.corrected
-@@ -1,13 +1,13 @@
-Let's look at how good OCaml is with integers and strings:
-```ocaml
-# 1 + 2;;
+diff --git a/_build/default/README.md b/_build/default/.mdx/README.md.corrected
+index e74437a..dfeeb64 100644
+--- a/_build/default/README.md
++++ b/_build/default/.mdx/README.md.corrected
+@@ -1,7 +1,9 @@
+ Let's look at how good OCaml is with integers and floats:
+ ```ocaml
+ # 1 + 2;;
 -- : int = 2
 +- : int = 3
-# "a" ^ "bc";;
--- : string = "ab"
-+- : string = "abc"
-```
+ # 1.2 + 3.4;;
+-- : float = 4.6
++Line 1, characters 1-4:
++Error: This expression has type float but an expression was expected of type
++         int
+ ```
 ````
 
-The test run just failed and dune is showing the diff between what we have
-locally and what should be, according to MDX.
-This uses dune's promotion workflow so at this point you can either investigate
-it further if you're surprised by this diff or if you're happy with it, simply
-accept it by running:
+The test run just failed, and Dune showed the diff between what we have
+locally and what we should have, according to MDX.
+This uses Dune's promotion workflow so that at this point we can investigate
+it further if we are surprised by this diff. In this case, we may want to fix 
+the second phrase to `# 1.2 +. 3.4;;`. Then, we can re-run `dune runtest` again. 
+
+````sh
+$ dune runtest
+File "README.md", line 1, characters 0-0:
+diff --git a/_build/default/README.md b/_build/default/.mdx/README.md.corrected
+index 760debc..8e5878b 100644
+--- a/_build/default/README.md
++++ b/_build/default/.mdx/README.md.corrected
+@@ -1,7 +1,7 @@
+ Let's look at how good OCaml is with integers and floats:
+ ```ocaml
+ # 1 + 2;;
+-- : int = 2
++- : int = 3
+ # 1.2 +. 3.4;;
+ - : float = 4.6
+ ```
+````
+
+Since we are now happy with the diff, we can accept it by running:
 
 ```
 dune promote
 ```
 
-Now the documentation is up-to-date and running `dune runtest` again should be
-successful!
+Now the documentation is up-to-date with the content:
 
-Note that to use the `dune runtest/promote` workflow with `mli` or `mld` files,
-you will need to adjust the `mdx` stanza in the `dune` file, as by
-[default](https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4),
-Dune only checks markdown files with `mdx`.  E.g.,
-
+````markdown
+Let's look at how good OCaml is with integers and floats:
+```ocaml
+# 1 + 2;;
+- : int = 3
+# 1.2 +. 3.4;;
+- : float = 4.6
 ```
-(mdx
- (files :standard - *.mli))
-```
+````
 
-### Supported Extensions
+and running `dune runtest` again should be successful!
 
-#### Labels
+## Supported Extensions
+
+### Labels
 
 The blocks can be parameterized by `mdx`-specific labels, that
 will change the way `mdx` interprets the block.
@@ -160,7 +186,7 @@ The possible labels are:
 - `set-VAR=VALUE` -- set an environment variable
 - `unset-VAR` -- unset an environment variable
 
-#### Shell Scripts
+### Shell Scripts
 
 `ocaml-mdx` interprets shell scripts inside `sh` code blocks as cram-like tests. The
 syntax is the following:
@@ -211,7 +237,7 @@ MDX will also consider exit codes when the syntax `[<exit code>]`is used:
 Note that nothing will be displayed when the exit code is 0 (e.g. in case
 of success).
 
-#### OCaml Code
+### OCaml Code
 
 MDX interprets OCaml fragments. It understands _normal_ code fragments and
 _toplevel_ code fragments (starting with a `#` sign and optionally ending with
@@ -233,7 +259,7 @@ Here is an examples of toplevel OCaml code:
     42
     ```
 
-### File sync
+## File sync
 
 MDX is also capable of including content from files in fenced code blocks
 using the label `file`. OCaml files can be sliced using named blocks:
@@ -258,9 +284,9 @@ Non-OCaml files can also be read and included in a block:
     ```
 However, part splitting is only supported for OCaml files.
 
-### Tests
+## Tests
 
-#### Cram Tests
+### Cram Tests
 
 Cram tests can be executed and checked with `ocaml-mdx test <file.md>`.
 
@@ -274,7 +300,7 @@ Cram tests can be executed and checked with `ocaml-mdx test <file.md>`.
 If the output is not consistent with what is expected,
 `<file.md>.corrected` is generated.
 
-#### OCaml
+### OCaml
 
 To execute OCaml code and toplevel fragments, uses `ocaml-mdx test <file.md>`.
 
@@ -286,9 +312,9 @@ To execute OCaml code and toplevel fragments, uses `ocaml-mdx test <file.md>`.
 If the output is not consistent with what is expected
 `<file.md>.corrected` is generated.
 
-#### Non-deterministic Tests
+### Non-deterministic Tests
 
-**Non-deterministic Outputs**
+#### Non-deterministic Outputs
 
 `ocaml-mdx test` supports non-deterministic outputs:
 
@@ -303,7 +329,7 @@ generate `<file>.corrected` if the new output differs from the one
 described in the file. Use `ocaml-mdx test --non-deterministic <file>` to come
 back to the default behaviour.
 
-**Non-deterministic Commands**
+#### Non-deterministic Commands
 
 `ocaml-mdx test` supports non-deterministic commands:
 
@@ -322,7 +348,7 @@ non-deterministic blocks. This is useful when not calling MDX directly but
 through other commands like `dune` or Makefiles etc. Use
 `MDX_RUN_NON_DETERMINISTIC=1 ocaml-mdx test` in this case.
 
-#### Named execution environments (since mdx 1.1.0)
+### Named execution environments (since mdx 1.1.0)
 
 Separate environments can be defined for blocks:
 
@@ -359,7 +385,7 @@ We can retrieve the value of `x` in environment `e1`:
     - : int -> int = <fun>
     ```
 
-#### Matching on the OCaml version (since mdx 1.2.0)
+### Matching on the OCaml version (since mdx 1.2.0)
 
 Blocks can be processed or ignored depending on the current version of OCaml.
 
@@ -390,7 +416,7 @@ The version number can be of the following forms:
 - `X.Y`
 - `X.Y.Z`
 
-#### Matching based on the `os_type` (since mdx 2.4.0)
+### Matching based on the `os_type` (since mdx 2.4.0)
 
 Block can be processed or ignored depending on the current
 [`os_type`](https://v2.ocaml.org/api/Sys.html#VALos_type).
@@ -417,7 +443,7 @@ Windows or not:
 The `os_type` values should be written in ASCII and are compared case
 insensitively.
 
-#### Environment variables declaration
+### Environment variables declaration
 
 Environment variables can be declared at the beginning of a block:
 
