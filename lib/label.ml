@@ -87,6 +87,7 @@ type t =
   | Part of string
   | Env of string
   | Skip
+  | Exec
   | Non_det of non_det option
   | Version of Relation.t * Ocaml_version.t
   | Os_type of Relation.t * string
@@ -111,6 +112,7 @@ let pp ppf = function
   | Part p -> Fmt.pf ppf "part=%s" p
   | Env e -> Fmt.pf ppf "env=%s" e
   | Skip -> Fmt.string ppf "skip"
+  | Exec -> Fmt.string ppf "exec"
   | Non_det None -> Fmt.string ppf "non-deterministic"
   | Non_det (Some Nd_output) -> Fmt.string ppf "non-deterministic=output"
   | Non_det (Some Nd_command) -> Fmt.string ppf "non-deterministic=command"
@@ -159,6 +161,7 @@ let requires_eq_value ~label ~value f =
 let interpret label value =
   match label with
   | "skip" -> doesnt_accept_value ~label ~value Skip
+  | "exec" -> doesnt_accept_value ~label ~value Exec
   | "ocaml" -> doesnt_accept_value ~label ~value (Block_kind OCaml)
   | "cram" -> doesnt_accept_value ~label ~value (Block_kind Cram)
   | "toplevel" -> doesnt_accept_value ~label ~value (Block_kind Toplevel)

@@ -40,6 +40,7 @@ type t =
   | Part of string
   | Env of string
   | Skip
+  | Exec  (** Only for include blocks. *)
   | Non_det of non_det option
   | Version of Relation.t * Ocaml_version.t
   | Os_type of Relation.t * string
