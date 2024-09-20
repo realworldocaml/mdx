@@ -1,3 +1,10 @@
+### unreleased
+
+#### Added
+
+- Add `ocaml-mdx jupyter` to convert an mdx file to a Jupyter notebook
+  (#124, @avsm, @CraigFe, @jonludlam)
+
 ### 2.7.0
 
 #### Added

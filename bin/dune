@@ -8,4 +8,16 @@
  (public_name ocaml-mdx)
  (package mdx)
  (modules :standard \ cli)
- (libraries cli mdx))
+ (libraries cli mdx yojson atdgen-runtime))
+
+(rule
+ (targets notebook_j.ml notebook_j.mli)
+ (deps notebook.atd)
+ (action
+  (run atdgen -j %{deps})))
+
+(rule
+ (targets notebook_t.ml notebook_t.mli)
+ (deps notebook.atd)
+ (action
+  (run atdgen -t %{deps})))

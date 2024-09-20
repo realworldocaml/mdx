@@ -29,11 +29,16 @@
   (csexp
    (>= 1.3.2))
   astring
+  (atdgen
+   (and :build (>= 2.0.0)))
+  (atdgen-runtime
+   (>= 2.0.0))
   (logs (>= 0.7.0))
   (cmdliner
    (>= 1.1.0))
   (re
    (>= 1.7.2))
+  yojson
   (ocaml-version
    (>= 2.3.0))
   (lwt :with-test)

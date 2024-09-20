@@ -1,0 +1,17 @@
+(rule
+ (targets test.ipynb)
+ (deps
+  (:x test.md)
+  (package mdx))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ocaml-mdx jupyter %{x}))))
+
+(rule
+ (alias runtest)
+ (deps
+  (:x test.ipynb)
+  (:y test.ipynb.expected))
+ (action
+  (diff? %{y} %{x})))
