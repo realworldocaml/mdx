@@ -1,0 +1,57 @@
+type kernelspec = {
+    display_name : string;
+    language: string;
+    name: string;
+}
+
+type language_info = {
+    name: string;
+    version: string;
+    codemirror_mode: string nullable;
+    file_extension: string;
+    mimetype: string;
+    nbconverter_exporter: string nullable;
+    pygments_lexer: string;
+}
+
+type metadata = {
+    kernelspec: kernelspec;
+    language_info: language_info;
+}
+
+type cell_metadata = {
+    ?collapsed: bool nullable;
+    ?scrolled: bool nullable;
+}
+
+type cell_type = [
+    | Code <json name="code">
+    | Markdown <json name="markdown">
+    | Raw <json name="raw">
+]
+
+type output_type = [
+      Stream <json name="stream">
+    | Display_data <json name="display_data">
+    | Execute_result <json name="execute_result">
+    | Error <json name="error">
+]
+
+type output = {
+    output_type : output_type;
+}
+
+type cell = {
+    cell_type : cell_type;
+    metadata: cell_metadata;
+    source: string;
+    ?outputs: output list nullable;
+    ?execution_count: int option;
+} <json keep_nulls="false">
+
+type notebook = {
+    metadata: metadata;
+    nbformat: int;
+    nbformat_minor: int;
+    cells: cell list
+}

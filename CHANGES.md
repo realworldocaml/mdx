@@ -1,5 +1,7 @@
 ### 2.4.1
 
+- Add Jupyter Notebook output (#124, @avsm, @CraigFe, @jonludlam)
+
 #### Changed
 
 - Revert #446: "Allow execution of included OCaml code blocks" (#451, @gpetiot).
