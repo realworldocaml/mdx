@@ -107,6 +107,7 @@ let docstring_code_blocks str =
             let adjustment =
               3
               (* String.length "(**" *)
+              (* ...extra "**)" to fix syntax highlighting...*)
             in
 
             let location =
