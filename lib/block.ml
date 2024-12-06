@@ -309,12 +309,12 @@ let rec ends_by_semi_semi = function
   | [ h ] -> Astring.String.is_suffix ~affix:";;" h
   | _ :: xs -> ends_by_semi_semi xs
 
-let version_enabled version =
+let version_enabled versions =
   let+ curr_version = Ocaml_version.of_string Sys.ocaml_version in
-  match version with
-  | Some (op, v) ->
-      Label.Relation.compare op (Ocaml_version.compare curr_version v) 0
-  | None -> true
+  List.for_all
+    (fun (op, v) ->
+      Label.Relation.compare op (Ocaml_version.compare curr_version v) 0)
+    versions
 
 let os_type_enabled os_type =
   match os_type with
@@ -349,7 +349,7 @@ type block_config = {
   env : string option;
   dir : string option;
   skip : bool;
-  version : (Label.Relation.t * Ocaml_version.t) option;
+  version : (Label.Relation.t * Ocaml_version.t) list;
   os_type : (Label.Relation.t * string) option;
   set_variables : (string * string) list;
   unset_variables : string list;
@@ -369,7 +369,10 @@ let get_block_config l =
     env = get_label (function Env x -> Some x | _ -> None) l;
     dir = get_label (function Dir x -> Some x | _ -> None) l;
     skip = List.exists (function Label.Skip -> true | _ -> false) l;
-    version = get_label (function Version (x, y) -> Some (x, y) | _ -> None) l;
+    version =
+      List.filter_map
+        (function Label.Version (x, y) -> Some (x, y) | _ -> None)
+        l;
     os_type = get_label (function Os_type (x, y) -> Some (x, y) | _ -> None) l;
     set_variables =
       List.filter_map (function Label.Set (v, x) -> Some (v, x) | _ -> None) l;
