@@ -28,7 +28,7 @@ depends: [
   "logs" {>= "0.7.0"}
   "cmdliner" {>= "1.1.0"}
   "re" {>= "1.7.2"}
-  "ocaml-version" {>= "3.6.5"}
+  "ocaml-version" {>= "2.3.0"}
   "lwt" {with-test}
   "camlp-streams"
   "result"

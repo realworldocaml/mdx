@@ -64,10 +64,18 @@ first
 Exception: Failure "second".
 ```
 
-```ocaml version>=4.08
+```ocaml version>=4.08,version<5.3
 # let x =
   1 + "42";;
 Line 2, characters 7-11:
 Error: This expression has type string but an expression was expected of type
+         int
+```
+
+```ocaml version>=5.3
+# let x =
+  1 + "42";;
+Line 2, characters 7-11:
+Error: This constant has type string but an expression was expected of type
          int
 ```
