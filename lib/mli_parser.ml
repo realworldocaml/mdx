@@ -104,7 +104,10 @@ let docstring_code_blocks str =
             let loc = Docstrings.docstring_loc docstring in
 
             (* odoc-parser adjusts for the initial [** *)
-            let adjustment = 3 (* String.length "(**" *) in
+            let adjustment =
+              3
+              (* String.length "(**" *)
+            in
 
             let location =
               {

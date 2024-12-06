@@ -16,12 +16,12 @@
 
 (** [Mdx] is a library to manipulate markdown code blocks.
 
-    [mdx] allows to execute code blocks inside markdown files. The
-   supported code {{!Block}blocks} are either {{!Cram}cram-like}
-   tests, raw OCaml fragments or {{!Toplevel}toplevel} phrases.
+    [mdx] allows to execute code blocks inside markdown files. The supported
+    code {{!Block}blocks} are either {{!Cram}cram-like} tests, raw OCaml
+    fragments or {{!Toplevel}toplevel} phrases.
 
     Cram tests and toplevel phrases are sequences of commands and
-   {{!Output}outputs}.  *)
+    {{!Output}outputs}. *)
 
 module Lexer_mdx = Lexer_mdx
 module Output = Output
@@ -61,8 +61,8 @@ val run_to_stdout :
   string ->
   (unit, [ `Msg of string ] list) result
 (** [run_to_stdout ?syntax ~f file] runs the callback [f] on the raw and
-    structured content of [file], as specified  by [syntax] (defaults to [Markdown]).
-    The returned corrected version is then written to stdout. *)
+    structured content of [file], as specified by [syntax] (defaults to
+    [Markdown]). The returned corrected version is then written to stdout. *)
 
 val run_to_file :
   ?syntax:Syntax.t ->
@@ -90,5 +90,5 @@ val section_of_line : line -> (int * string) option
 (** [section_of_line l] is [l]'s section. *)
 
 val filter_section : Re.re -> t -> t option
-(** [section re t] is the subset of [t] such that their section
-   matches with [re]. *)
+(** [section re t] is the subset of [t] such that their section matches with
+    [re]. *)

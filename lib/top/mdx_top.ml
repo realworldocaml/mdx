@@ -140,7 +140,7 @@ module Phrase = struct
     match parse lines with exception End_of_file -> None | t -> Some t
 
   (** Returns the name of the toplevel directive or [None] if the given phrase
-    is not a directive *)
+      is not a directive *)
   let top_directive_name (toplevel_phrase : Parsetree.toplevel_phrase) =
     match toplevel_phrase with
     | Ptop_def _ -> None

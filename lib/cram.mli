@@ -36,9 +36,8 @@ val use_heredoc : t -> bool
 (** [use_heredoc t] is true iff [t] uses the heredoc ['<<'] syntax. *)
 
 val command_line : t -> string
-(** [command_line t] is [t]'s command line. It either adds ['\'] at
-   the end of each line of [t]'s command or do nothing is [t] uses the
-   heredoc syntax. *)
+(** [command_line t] is [t]'s command line. It either adds ['\'] at the end of
+    each line of [t]'s command or do nothing is [t] uses the heredoc syntax. *)
 
 (** {2 Parser} *)
 
@@ -48,12 +47,12 @@ val of_lines : string list -> cram_tests
 (** {2 Pretty-printer} *)
 
 val pp : ?pad:int -> t Fmt.t
-(** [pp] is the pretty-printer for cram tests. [pad] is the size of
-   the optional whitespace left padding (by default it is 0). *)
+(** [pp] is the pretty-printer for cram tests. [pad] is the size of the optional
+    whitespace left padding (by default it is 0). *)
 
 val pp_vertical_pad : int Fmt.t
 (** [pp_vertical_pad] is the pretty printer for the initial padding on the top
-   of Cram tests *)
+    of Cram tests *)
 
 val dump : t Fmt.t
 (** [dump] it the printer for dumping cram tests. Useful for debugging. *)

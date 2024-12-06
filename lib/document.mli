@@ -28,8 +28,8 @@ type t = line list
 (** The type for mdx documents. *)
 
 val pp : ?syntax:Syntax.t -> t Fmt.t
-(** [pp] is the pretty printer for mdx documents. Should be idempotent
-   with {!of_string}. *)
+(** [pp] is the pretty printer for mdx documents. Should be idempotent with
+    {!of_string}. *)
 
 val dump : t Fmt.t
 (** [dump] is the printer for dumping mdx documents. Useful for debugging. *)

@@ -10,9 +10,9 @@ let pp_expect_action fmt dir =
     (run ocaml-mdx pp %a%s)))|}
     dir.dir_name pp_options dir.options dir.test_file
 
-(** Tests that 'cd <dir> && ocaml-mdx pp [options] <file>' exits with a
-    failing code and that its output is equal to the content of the
-    '.expected' file in <dir>. *)
+(** Tests that 'cd <dir> && ocaml-mdx pp [options] <file>' exits with a failing
+    code and that its output is equal to the content of the '.expected' file in
+    <dir>. *)
 let pp_failure_action fmt dir =
   Fmt.pf fmt
     {|

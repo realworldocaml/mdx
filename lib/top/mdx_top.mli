@@ -36,7 +36,7 @@ val init :
 (** [init ()] is a new configuration value. *)
 
 val eval : t -> string list -> (string list, string list) result
-(** [eval t p] evaluates the toplevel phrase [p] (possibly spawning on
-    mulitple lines) with the configuration value [t]. *)
+(** [eval t p] evaluates the toplevel phrase [p] (possibly spawning on mulitple
+    lines) with the configuration value [t]. *)
 
 val in_env : Mdx.Ocaml_env.t -> (unit -> 'a) -> 'a
