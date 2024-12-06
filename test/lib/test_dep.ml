@@ -27,6 +27,7 @@ let test_of_block =
         match
           Mdx.Block.mk ~loc:Location.none ~section:None ~labels ~header:None
             ~contents:[] ~legacy_labels:false ~errors:[] ~delim:None
+            ~attributes:[]
         with
         | Ok block -> block
         | Error _ -> assert false)

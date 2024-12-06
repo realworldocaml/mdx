@@ -66,11 +66,23 @@ module Raw = struct
         contents : string list;
         label_cmt : string option;
         legacy_labels : string;
+        attributes : string option;
         errors : Output.t list;
       }
 
-  let make ~loc ~section ~header ~contents ~label_cmt ~legacy_labels ~errors =
-    Any { loc; section; header; contents; label_cmt; legacy_labels; errors }
+  let make ~loc ~section ~header ~contents ~label_cmt ~legacy_labels ~attributes
+      ~errors =
+    Any
+      {
+        loc;
+        section;
+        header;
+        contents;
+        label_cmt;
+        legacy_labels;
+        attributes;
+        errors;
+      }
 
   let make_include ~loc ~section ~labels = Include { loc; section; labels }
 end
@@ -114,6 +126,7 @@ type t = {
   os_type_enabled : bool;
   set_variables : (string * string) list;
   unset_variables : string list;
+  attributes : string list;
   delim : string option;
   value : value;
 }
@@ -262,7 +275,7 @@ let pp_header ?syntax ppf t =
         Fmt.(option string)
         t.delim pp_lang_header lang_headers pp_labels other_labels
   | Some Syntax.Cram -> pp_labels ?syntax ppf t.labels
-  | Some Syntax.Markdown | None ->
+  | Some Syntax.Markdown | None -> (
       if t.legacy_labels then
         Fmt.pf ppf "```%a%a"
           Fmt.(option Header.pp)
@@ -270,7 +283,10 @@ let pp_header ?syntax ppf t =
       else
         Fmt.pf ppf "%a```%a" (pp_labels ?syntax) t.labels
           Fmt.(option Header.pp)
-          (header t)
+          (header t);
+      match t.attributes with
+      | [] | [ "" ] -> ()
+      | attrs -> Fmt.pf ppf " {%a}" Fmt.(string |> list ~sep:(any " ")) attrs)
 
 let pp ?syntax ppf b =
   pp_header ?syntax ppf b;
@@ -458,7 +474,8 @@ let infer_block ~loc ~config ~header ~contents ~errors =
           let+ () = check_no_errors ~loc errors in
           Raw { header })
 
-let mk ~loc ~section ~labels ~legacy_labels ~header ~delim ~contents ~errors =
+let mk ~loc ~section ~labels ~legacy_labels ~header ~delim ~contents ~attributes
+    ~errors =
   let block_kind =
     get_label (function Block_kind x -> Some x | _ -> None) labels
   in
@@ -485,6 +502,7 @@ let mk ~loc ~section ~labels ~legacy_labels ~header ~delim ~contents ~errors =
     os_type_enabled;
     set_variables = config.set_variables;
     unset_variables = config.unset_variables;
+    attributes;
     delim;
     value;
   }
@@ -494,7 +512,7 @@ let mk_include ~loc ~section ~labels =
   | Some file_inc ->
       let header = Header.infer_from_file file_inc in
       mk ~loc ~section ~labels ~legacy_labels:false ~header ~contents:[]
-        ~errors:[] ~delim:None
+        ~errors:[] ~delim:None ~attributes:[]
   | None -> label_required ~loc ~label:"file" ~kind:"include"
 
 let parse_labels ~label_cmt ~legacy_labels =
@@ -512,15 +530,37 @@ let from_raw raw =
   | Raw.Include { loc; section; labels } ->
       let* labels = locate_errors ~loc (Label.of_string labels) in
       Util.Result.to_error_list @@ mk_include ~loc ~section ~labels
-  | Raw.Any { loc; section; header; contents; label_cmt; legacy_labels; errors }
-    ->
-      let header = Header.of_string header in
+  | Raw.Any
+      {
+        loc;
+        section;
+        header;
+        contents;
+        label_cmt;
+        legacy_labels;
+        attributes;
+        errors;
+      } ->
+      let attributes =
+        String.split_on_char ' ' (Option.value ~default:"" attributes)
+      in
+      let attr_classes =
+        attributes |> List.filter @@ String.starts_with ~prefix:"."
+      in
+      let header, attributes =
+        match (Header.of_string header, attr_classes) with
+        | None, lang :: _ ->
+            ( lang |> Astring.String.with_range ~first:1 |> Header.of_string,
+              List.filter (fun a -> a <> lang) attributes )
+        | (Some _ as some), _ -> (some, attributes)
+        | None, [] -> (None, attributes)
+      in
       let* labels, legacy_labels =
         locate_errors ~loc (parse_labels ~label_cmt ~legacy_labels)
       in
       Util.Result.to_error_list
-      @@ mk ~loc ~section ~header ~contents ~labels ~legacy_labels ~errors
-           ~delim:None
+      @@ mk ~loc ~section ~header ~contents ~labels ~legacy_labels ~attributes
+           ~errors ~delim:None
 
 let is_active ?section:s t =
   let active =
