@@ -15,9 +15,9 @@
  *)
 open Gen_rule_helpers
 
-(** Tests that the result of 'cd <dir_name> && ocaml-mdx test [options] test-case.md'
-    is equal to '<dir_name>/test-case.md.expected' if it exists or to
-    '<dir>/test-case.md' otherwise. *)
+(** Tests that the result of 'cd <dir_name> && ocaml-mdx test [options]
+    test-case.md' is equal to '<dir_name>/test-case.md.expected' if it exists or
+    to '<dir>/test-case.md' otherwise. *)
 let pp_expect_action fmt dir =
   Fmt.pf fmt
     {|
@@ -27,8 +27,8 @@ let pp_expect_action fmt dir =
     dir.dir_name pp_options dir.options dir.test_file
 
 (** Tests that 'cd <dir> && ocaml-mdx test [options] <file>' exits with a
-    failing code and that its output is equal to the content of the
-    '.expected' file in <dir>. *)
+    failing code and that its output is equal to the content of the '.expected'
+    file in <dir>. *)
 let pp_failure_action fmt dir =
   Fmt.pf fmt
     {|

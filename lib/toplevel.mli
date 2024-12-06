@@ -30,15 +30,13 @@ type toplevel_tests = { tests : t list; end_pad : string option }
 (** {2 Pretty-printing} *)
 
 val dump : t Fmt.t
-(** [dump] is the printer for dumping toplevel phrases. Useful for
-   debugging. *)
+(** [dump] is the printer for dumping toplevel phrases. Useful for debugging. *)
 
 val dump_toplevel_tests : toplevel_tests Fmt.t
 
 val pp : t Fmt.t
-(** [pp] is the pretty-printer for top-level phrases. [pad] is the
-   size of the optionnalwhitespace left padding (by default is is
-   0). *)
+(** [pp] is the pretty-printer for top-level phrases. [pad] is the size of the
+    optionnalwhitespace left padding (by default is is 0). *)
 
 val pp_command : t Fmt.t
 (** [pp_command] is the pretty-printer for toplevel commands. *)

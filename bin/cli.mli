@@ -18,9 +18,8 @@ val force_output : [> `Force_output of bool ] t
 type output = File of string | Stdout
 
 val output : [> `Output of output option ] t
-(** A --output option to overwrite the command output.
-    One can pass it ["-"] to set it to stdout which should imply [force_output].
-    [default_doc] is used to describe the default value in the command's
-    manpage *)
+(** A --output option to overwrite the command output. One can pass it ["-"] to
+    set it to stdout which should imply [force_output]. [default_doc] is used to
+    describe the default value in the command's manpage *)
 
 val setup : [> `Setup of unit ] t

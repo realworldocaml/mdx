@@ -48,7 +48,8 @@ let equal a b =
     | (`Ellipsis :: a as x), (_ :: b as y)
     | (_ :: b as y), (`Ellipsis :: a as x) ->
         aux x b
-        || (* n+ matches: skip y's head *)
+        ||
+        (* n+ matches: skip y's head *)
         aux a y
         (* 0  match  : skip x's head *)
     | a :: b, h :: t -> (a = h || ellipsis_equal (a, h)) && aux b t

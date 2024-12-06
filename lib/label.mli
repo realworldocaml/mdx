@@ -21,8 +21,8 @@ module Relation : sig
   val compare : t -> int -> int -> bool
 
   val raw_parse : string -> string * (t * string) option
-  (** [raw_parse s] splits [s] into a label, and optionally the relation and
-      the associated value. *)
+  (** [raw_parse s] splits [s] into a label, and optionally the relation and the
+      associated value. *)
 end
 
 type non_det = Nd_output | Nd_command

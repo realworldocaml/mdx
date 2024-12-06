@@ -53,8 +53,8 @@ let test_interpret =
       ~expected:
         (Error
            (`Msg
-             "\"bar\" is not a valid value for label `non-deterministic`. \
-              Valid values are <none>, \"command\" and \"output\"."));
+              "\"bar\" is not a valid value for label `non-deterministic`. \
+               Valid values are <none>, \"command\" and \"output\"."));
     make_test ~label:"dir"
       ~value:(Some (Lt, "bar"))
       ~expected:

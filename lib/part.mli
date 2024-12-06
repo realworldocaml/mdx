@@ -18,20 +18,20 @@ type file
 (** The type for files. *)
 
 val read : string -> file
-(** [read f] is the file [f]. It's a costly operations, better to be
-   done once. *)
+(** [read f] is the file [f]. It's a costly operations, better to be done once.
+*)
 
 val contents : file -> string
 (** [contents f] is [f] contents. *)
 
 val find : file -> part:string option -> string list option
-(** [find f ~part] returns the lines of the part [part] in the file
-   [f]. Return [None] if [f] does not contain the part [part]. *)
+(** [find f ~part] returns the lines of the part [part] in the file [f]. Return
+    [None] if [f] does not contain the part [part]. *)
 
 val replace : file -> part:string option -> lines:string list -> file
-(** [replace ~file ~part ~lines] returns the lines of the file [file] where
-    the lines of part [part] have been replaced by [lines].
-    If [part] does not occur in the file, a new part is added at the end. *)
+(** [replace ~file ~part ~lines] returns the lines of the file [file] where the
+    lines of part [part] have been replaced by [lines]. If [part] does not occur
+    in the file, a new part is added at the end. *)
 
 (**/**)
 

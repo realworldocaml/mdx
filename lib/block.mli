@@ -45,8 +45,8 @@ type toplevel_value = {
 
 type include_ocaml_file = {
   part_included : string option;
-      (** [part_included] is the part of the file to synchronize with.
-          If lines is not specified synchronize the whole file. *)
+      (** [part_included] is the part of the file to synchronize with. If lines
+          is not specified synchronize the whole file. *)
 }
 
 type include_other_file = { header : Header.t option }
@@ -100,7 +100,8 @@ type t = {
   contents : string list;
   skip : bool;
   version_enabled : bool;
-      (** Whether the current OCaml version complies with the block's version. *)
+      (** Whether the current OCaml version complies with the block's version.
+      *)
   os_type_enabled : bool;
       (** Whether the current os type complies with the block's version. *)
   set_variables : (string * string) list;
@@ -126,8 +127,8 @@ val mk_include :
   section:section option ->
   labels:Label.t list ->
   (t, [ `Msg of string ]) result
-(** [mk_include] builds an include block from a comment [<!-- $MDX ... -->]
-    that is not followed by a code block [``` ... ```]. *)
+(** [mk_include] builds an include block from a comment [<!-- $MDX ... -->] that
+    is not followed by a code block [``` ... ```]. *)
 
 val from_raw : Raw.t -> (t, [ `Msg of string ] list) Result.result
 
@@ -160,7 +161,8 @@ val file : t -> string option
 (** [file t] is the name of the file to synchronize [t] with. *)
 
 val set_variables : t -> (string * string) list
-(** [set_variable t] is the list of environment variable to set and their values *)
+(** [set_variable t] is the list of environment variable to set and their values
+*)
 
 val unset_variables : t -> string list
 (** [unset_variable t] is the list of environment variable to unset *)

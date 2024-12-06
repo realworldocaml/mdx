@@ -41,8 +41,8 @@ let test_of_line =
       ~expected:
         (Error
            (`Msg
-             "'part-end' delimiter does not accept a value. Please write '(* \
-              $MDX part-end *)' instead."));
+              "'part-end' delimiter does not accept a value. Please write '(* \
+               $MDX part-end *)' instead."));
   ]
 
 let suite = ("Parts", test_of_line)

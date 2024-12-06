@@ -16,9 +16,8 @@
 
 type t = { base_name : string; sub_lib : string option }
 (** The type to represent dune libraries as referred to in '#require' statements
-    or in dune files.
-    I.e. lib.sub_lib is [{base_name = "lib"; sub_lib = Some "sub_lib"}].
-    *)
+    or in dune files. I.e. lib.sub_lib is
+    [{base_name = "lib"; sub_lib = Some "sub_lib"}]. *)
 
 val equal : t -> t -> bool
 val compare : t -> t -> int
@@ -34,6 +33,6 @@ module Set : sig
 
   val to_package_set : t -> Astring.String.Set.t
   (** [to_package_set lib_set] returns the set of dune packages needed to get
-      all the libraries in [lib_set].
-      I.e. it's the set of basenames for all the libraries in [lib_set]. *)
+      all the libraries in [lib_set]. I.e. it's the set of basenames for all the
+      libraries in [lib_set]. *)
 end
