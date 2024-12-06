@@ -121,6 +121,52 @@ let docstring_code_blocks str =
       in
       loop [] |> List.rev)
 
+let output_of_line x =
+  match String.trim x with "..." -> `Ellipsis | _ -> `Output x
+
+let slice file_contents (loc : Location.t) =
+  let start = loc.loc_start.pos_cnum in
+  let len = loc.loc_end.pos_cnum - start in
+  String.sub file_contents start len
+
+(* extract "Error: expected int, got string" from:
+  {delim@ocaml[
+    let x = 1 + "a string is not an int"
+  ]delim[
+    {err@mdx-error[
+      Error: expected int, got string
+    ]err}
+  ]} *)
+let slice_error (code_block : Code_block.t) file_contents =
+  let starts = code_block.content.loc_end.pos_cnum in
+  let ends = code_block.code_block.loc_end.pos_cnum in
+  let len = ends - starts in
+  let str = String.sub file_contents starts len in
+  let no_errors = Fmt.str "]%a}" Fmt.(option string) code_block.delimiter in
+  if str = no_errors then []
+  else
+    let sep = Fmt.str "]%a[\n" Fmt.(option string) code_block.delimiter in
+    assert (Astring.String.is_prefix ~affix:sep str);
+    assert (Astring.String.is_suffix ~affix:"]}" str);
+    let str =
+      String.sub str (String.length sep)
+        (String.length str - String.length sep - 2)
+    in
+    let location =
+      { code_block.content.loc_end with pos_cnum = starts + String.length sep }
+    in
+    match extract_code_block_info [] ~location ~docstring:str with
+    | [ x ] ->
+        let lines =
+          x.content |> slice file_contents |> String.split_on_char '\n'
+        in
+        let lines =
+          (* Discard the first and last lines *)
+          List.tl (List.rev (List.tl (List.rev lines)))
+        in
+        List.map output_of_line lines
+    | _ -> assert false
+
 (* Given code block metadata and the original file, this function splices the
    contents of the code block from the original text and creates an Mdx
    Block.t, or reports the error (e.g., from invalid tags) *)
@@ -147,15 +193,13 @@ let make_block code_block file_contents =
   match handle_header code_block.Code_block.metadata with
   | Error _ as e -> e
   | Ok (header, labels) ->
-      let slice (loc : Location.t) =
-        let start = loc.loc_start.pos_cnum in
-        let len = loc.loc_end.pos_cnum - start in
-        String.sub file_contents start len
-      in
       let delim = code_block.delimiter in
-      let contents = slice code_block.content |> String.split_on_char '\n' in
+      let contents =
+        slice file_contents code_block.content |> String.split_on_char '\n'
+      in
+      let errors = slice_error code_block file_contents in
       Block.mk ~loc:code_block.code_block ~section:None ~labels ~header
-        ~contents ~legacy_labels:false ~errors:[] ~delim
+        ~contents ~legacy_labels:false ~errors ~delim
 
 (* Given the locations of the code blocks within [file_contents], then slice it up into
    [Text] and [Block] parts by using the starts and ends of those blocks as

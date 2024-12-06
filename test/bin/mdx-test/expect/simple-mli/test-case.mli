@@ -60,3 +60,14 @@ Error: This expression has type string but an expression was expected of type
          int
 ]err}]}
 *)
+
+(**
+{@ocaml skip[
+  let f = 1 + "2"
+][
+{err@mdx-error[
+Line 1, characters 15-18:
+Error: This expression has type string but an expression was expected of type
+         int
+]err}]}
+*)
