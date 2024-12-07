@@ -1,3 +1,16 @@
+### 2.5.0
+
+#### Added
+
+- Support OCaml 5.3 (#457, @anmonteiro, @samoht, @voodoos)
+- Support multiple version labels in block headers. The block is active if all
+  the version formulaes are satisfied (#458, @samoht)
+
+#### Fixed
+
+- Avoid infinite loop in lexer on unclosed code block (#444, @edwintorok)
+- Fix support for skipped blocks in mli and mld files (#462, @samoht)
+
 ### 2.4.1
 
 #### Changed
