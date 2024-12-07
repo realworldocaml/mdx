@@ -56,13 +56,23 @@ Error: This expression has type string but an expression was expected of type
          int
 ```
 
-```ocaml version>=4.08
+```ocaml version>=4.08,version<5.3
 # let f x = function
   | 0 -> 1
   | n ->
   n + "foo";;
 Line 4, characters 7-12:
 Error: This expression has type string but an expression was expected of type
+         int
+```
+
+```ocaml version>=5.3
+# let f x = function
+  | 0 -> 1
+  | n ->
+  n + "foo";;
+Line 4, characters 7-12:
+Error: This constant has type string but an expression was expected of type
          int
 ```
 

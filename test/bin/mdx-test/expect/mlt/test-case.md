@@ -30,12 +30,22 @@ Error: This expression has type string but an expression was expected of type
          int
 ```
 
-```ocaml version>=4.08
+```ocaml version>=4.08,version<5.3
 # #require "fmt";;
 # let x = 3;;
 val x : int = 3
 # x + "foo";;
 Line 1, characters 5-10:
 Error: This expression has type string but an expression was expected of type
+         int
+```
+
+```ocaml version>=5.3
+# #require "fmt";;
+# let x = 3;;
+val x : int = 3
+# x + "foo";;
+Line 1, characters 5-10:
+Error: This constant has type string but an expression was expected of type
          int
 ```

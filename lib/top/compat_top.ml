@@ -96,7 +96,9 @@ let extension_constructor
   ; ext_private
   ; ext_loc
   ; ext_attributes
-#if OCAML_VERSION >= (4, 11, 0)
+#if OCAML_VERSION >= (5, 3, 0)
+  ; ext_uid = Uid.mk ~current_unit:None
+#elif OCAML_VERSION >= (4, 11, 0)
   ; ext_uid = Uid.mk ~current_unit:"mdx"
 #endif
   }

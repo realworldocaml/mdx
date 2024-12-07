@@ -51,12 +51,23 @@ val bar : string
 val baz : string
 
 (**
-{[
+{@ocaml version<5.3[
   let f = 1 + "2"
 ][
 {err@mdx-error[
 Line 1, characters 15-18:
 Error: This expression has type string but an expression was expected of type
+         int
+]err}]}
+*)
+
+(**
+{@ocaml version>=5.3[
+  let f = 1 + "2"
+][
+{err@mdx-error[
+Line 1, characters 15-18:
+Error: This constant has type string but an expression was expected of type
          int
 ]err}]}
 *)
