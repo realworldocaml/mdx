@@ -6,8 +6,10 @@ MDX allows to execute code blocks inside markdown and mli/mld documentation
 to help keeping them up to date.
 
 Use the
-[dune stanza](https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4)
+[dune stanza][dune-mdx]
 to enable it on your documentation.
+
+[dune-mdx]: https://dune.readthedocs.io/en/stable/reference/dune/mdx.html
 
 `mdx` is released on opam and can be installed by running:
 
@@ -38,7 +40,7 @@ Then add the following in the relevant `dune` file:
 ```
 That enables MDX on all markdown files in the folder.
 The MDX stanza can be further configured. Please visit the relevant section of
-[dune's manual](https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4)
+[dune's manual][dune-mdx]
 for more information.
 
 MDX supports various type of code blocks but the most common are OCaml toplevel
@@ -115,7 +117,7 @@ successful!
 
 Note that to use the `dune runtest/promote` workflow with `mli` or `mld` files,
 you will need to adjust the `mdx` stanza in the `dune` file, as by
-[default](https://dune.readthedocs.io/en/latest/dune-files.html#mdx-since-2-4),
+[default][dune-mdx],
 Dune only checks markdown files with `mdx`.  E.g.,
 
 ```
