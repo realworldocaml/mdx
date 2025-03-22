@@ -5,7 +5,9 @@ module Code_block = struct
     metadata : metadata option;
     delimiter : string option;
     content : Location.t; (* Location of the content *)
+    content_txt : string; (* The content itself *)
     code_block : Location.t; (* Location of the enclosing code block *)
+    output : t list;
   }
 end
 
@@ -36,7 +38,7 @@ let extract_code_block_info acc ~(location : Lexing.position) ~docstring =
      Fortunately the location info give us enough info to be able to extract
      the code from the original text, whitespace and all.
   *)
-  let handle_code_block : O.Loc.span -> _ -> Code_block.t =
+  let rec handle_code_block : O.Loc.span -> _ -> Code_block.t =
     let convert_loc (sp : O.Loc.span) =
       Location.
         {
@@ -46,7 +48,7 @@ let extract_code_block_info acc ~(location : Lexing.position) ~docstring =
         }
     in
     fun location
-        { O.Ast.meta; delimiter; content = { O.Loc.location = span; _ }; _ } ->
+        { O.Ast.meta; delimiter; content = { O.Loc.location = span; value }; output } ->
       let metadata =
         Option.map
           (fun { O.Ast.language; tags } ->
@@ -57,12 +59,14 @@ let extract_code_block_info acc ~(location : Lexing.position) ~docstring =
       in
       let content = convert_loc span in
       let code_block = convert_loc location in
-      { metadata; delimiter; content; code_block }
-  in
+      let output = Option.map (List.fold_left fold_fn [])
+        (output :> O.Ast.block_element O.Ast.with_location list option) in
+      let output = Option.value ~default:[] output in
+      { metadata; delimiter; content; content_txt = value;  code_block; output }
 
   (* Fold over the results from odoc-parser, recurse where necessary
      and extract the code block metadata *)
-  let rec fold_fn acc (elt : O.Ast.block_element O.Loc.with_location) =
+  and fold_fn acc (elt : O.Ast.block_element O.Loc.with_location) =
     match elt with
     | { O.Loc.value = `Code_block c; location } ->
         handle_code_block location c :: acc
@@ -137,34 +141,10 @@ let slice file_contents (loc : Location.t) =
       Error: expected int, got string
     ]err}
   ]} *)
-let slice_error (code_block : Code_block.t) file_contents =
-  let starts = code_block.content.loc_end.pos_cnum in
-  let ends = code_block.code_block.loc_end.pos_cnum in
-  let len = ends - starts in
-  let str = String.sub file_contents starts len in
-  let no_errors = Fmt.str "]%a}" Fmt.(option string) code_block.delimiter in
-  if str = no_errors then []
-  else
-    let sep = Fmt.str "]%a[\n" Fmt.(option string) code_block.delimiter in
-    assert (Astring.String.is_prefix ~affix:sep str);
-    assert (Astring.String.is_suffix ~affix:"]}" str);
-    let str =
-      String.sub str (String.length sep)
-        (String.length str - String.length sep - 2)
-    in
-    let location =
-      { code_block.content.loc_end with pos_cnum = starts + String.length sep }
-    in
-    match extract_code_block_info [] ~location ~docstring:str with
-    | [ x ] ->
-        let lines =
-          x.content |> slice file_contents |> String.split_on_char '\n'
-        in
-        let lines =
-          (* Discard the first and last lines *)
-          List.tl (List.rev (List.tl (List.rev lines)))
-        in
-        List.map output_of_line lines
+let slice_error (code_block : Code_block.t) =
+  match code_block.output with
+  | [] -> []
+  | [ x ] -> x.content_txt |> output_of_line |> fun x -> [ x ]
     | _ -> assert false
 
 (* Given code block metadata and the original file, this function splices the
@@ -197,7 +177,7 @@ let make_block code_block file_contents =
       let contents =
         slice file_contents code_block.content |> String.split_on_char '\n'
       in
-      let errors = slice_error code_block file_contents in
+      let errors = slice_error code_block in
       Block.mk ~loc:code_block.code_block ~section:None ~labels ~header
         ~contents ~legacy_labels:false ~errors ~delim
 
