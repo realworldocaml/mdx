@@ -48,7 +48,12 @@ let extract_code_block_info acc ~(location : Lexing.position) ~docstring =
         }
     in
     fun location
-        { O.Ast.meta; delimiter; content = { O.Loc.location = span; value }; output } ->
+        {
+          O.Ast.meta;
+          delimiter;
+          content = { O.Loc.location = span; value };
+          output;
+        } ->
       let metadata =
         Option.map
           (fun { O.Ast.language; tags } ->
@@ -59,11 +64,13 @@ let extract_code_block_info acc ~(location : Lexing.position) ~docstring =
       in
       let content = convert_loc span in
       let code_block = convert_loc location in
-      let output = Option.map (List.fold_left fold_fn [])
-        (output :> O.Ast.block_element O.Ast.with_location list option) in
+      let output =
+        Option.map
+          (List.fold_left fold_fn [])
+          (output :> O.Ast.block_element O.Ast.with_location list option)
+      in
       let output = Option.value ~default:[] output in
-      { metadata; delimiter; content; content_txt = value;  code_block; output }
-
+      { metadata; delimiter; content; content_txt = value; code_block; output }
   (* Fold over the results from odoc-parser, recurse where necessary
      and extract the code block metadata *)
   and fold_fn acc (elt : O.Ast.block_element O.Loc.with_location) =
@@ -145,7 +152,7 @@ let slice_error (code_block : Code_block.t) =
   match code_block.output with
   | [] -> []
   | [ x ] -> x.content_txt |> output_of_line |> fun x -> [ x ]
-    | _ -> assert false
+  | _ -> assert false
 
 (* Given code block metadata and the original file, this function splices the
    contents of the code block from the original text and creates an Mdx
