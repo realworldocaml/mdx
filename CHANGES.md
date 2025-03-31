@@ -1,3 +1,10 @@
+### Unreleased
+
+#### Changed
+
+- Improved implementation of handling of skipped blocks in mli/mld
+  files (#466, @jonludlam)
+
 ### 2.5.0
 
 #### Added
