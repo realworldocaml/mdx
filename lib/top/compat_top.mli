@@ -8,7 +8,11 @@ val find_type :
   Env.t -> Location.t -> Longident.t -> Path.t * Types.type_declaration
 
 val find_constructor :
+#if OCAML_VERSION < (5, 4, 0)
   Env.t -> Location.t -> Longident.t -> Types.constructor_description
+#else
+  Env.t -> Location.t -> Longident.t -> Data_types.constructor_description
+#endif
 
 val find_module :
   Env.t -> Location.t -> Longident.t -> Path.t * Types.module_declaration
