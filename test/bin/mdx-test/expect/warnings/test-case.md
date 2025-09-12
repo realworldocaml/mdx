@@ -19,7 +19,7 @@ y
 Either bind these labels explicitly or add '; _' to the pattern.
 ```
 
-```ocaml version>=4.12
+```ocaml version>=4.12,version<5.4
 [@@@warning "+9"]
 let x { x } = x
 ```
@@ -28,6 +28,17 @@ Line 2, characters 9-14:
 Warning 9 [missing-record-field-pattern]: the following labels are not bound in this record pattern:
 y
 Either bind these labels explicitly or add '; _' to the pattern.
+```
+
+```ocaml version>=5.4
+[@@@warning "+9"]
+let x { x } = x
+```
+```mdx-error
+Line 2, characters 9-14:
+Warning 9 [missing-record-field-pattern]: the following labels are not bound
+  in this record pattern: y.
+  Either bind these labels explicitly or add ; _ to the pattern.
 ```
 
 Test against some false positives:
