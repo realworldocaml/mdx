@@ -1,5 +1,9 @@
 ### Unreleased
 
+#### Added
+
+- Support OCaml 5.4 (#470, @chetmurthy)
+
 #### Changed
 
 - Improved implementation of handling of skipped blocks in mli/mld
