@@ -70,9 +70,7 @@ let prelude =
   let parser s =
     let env, filename = Mdx.Prelude.env_and_payload s in
     let parse = Arg.conv_parser Arg.non_dir_file in
-    match parse filename with
-    | Ok _ -> Ok (env, filename)
-    | Error _ as e -> e
+    match parse filename with Ok _ -> Ok (env, filename) | Error _ as e -> e
   in
   let prelude = Arg.conv (parser, Mdx.Prelude.pp) in
   let doc =
@@ -83,8 +81,7 @@ let prelude =
   in
   named
     (fun x -> `Prelude x)
-    Arg.(
-      value & opt_all prelude [] & info [ "prelude" ] ~doc)
+    Arg.(value & opt_all prelude [] & info [ "prelude" ] ~doc)
 
 let prelude_str =
   let doc =
@@ -97,8 +94,7 @@ let prelude_str =
   let prelude = Arg.conv (parse, Mdx.Prelude.pp) in
   named
     (fun x -> `Prelude_str x)
-    Arg.(
-      value & opt_all prelude [] & info [ "prelude-str" ] ~doc)
+    Arg.(value & opt_all prelude [] & info [ "prelude-str" ] ~doc)
 
 let directories =
   let doc = "A list of directories to load for the #directory directive." in
