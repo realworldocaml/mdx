@@ -7,5 +7,12 @@
 
 (rule
  (alias runtest)
+ (enabled_if (< %{version:cmdliner} "2.0.0"))
  (action
   (diff test.expected test.output)))
+
+(rule
+ (alias runtest)
+ (enabled_if (>= %{version:cmdliner} "2.0.0"))
+ (action
+  (diff test.expected-cmdliner2 test.output)))
