@@ -10,12 +10,12 @@ let non_deterministic =
     Arg.(value & flag & info [ "non-deterministic"; "n" ] ~env ~doc)
 
 let syntax =
-  let parse s =
+  let parser s =
     match Mdx.Syntax.of_string s with
-    | Some syntax -> `Ok syntax
-    | None -> `Error (Format.sprintf "unrecognized syntax %S" s)
+    | Some syntax -> Ok syntax
+    | None -> Error (`Msg (Format.sprintf "unrecognized syntax %S" s))
   in
-  let syntax = (parse, Mdx.Syntax.pp) in
+  let syntax = Arg.conv (parser, Mdx.Syntax.pp) in
   let doc =
     "Which syntax to use. Either 'markdown' (also 'normal'), 'cram', or 'mli'."
   in
@@ -67,14 +67,12 @@ let verbose_findlib =
     Arg.(value & flag & info [ "verbose-findlib" ] ~doc)
 
 let prelude =
-  let parse s =
+  let parser s =
     let env, filename = Mdx.Prelude.env_and_payload s in
-    let parse, _pp = Arg.non_dir_file in
-    match parse filename with
-    | `Ok _ -> `Ok (env, filename)
-    | `Error _ as e -> e
+    let parse = Arg.conv_parser Arg.non_dir_file in
+    match parse filename with Ok _ -> Ok (env, filename) | Error _ as e -> e
   in
-  let prelude = (parse, Mdx.Prelude.pp) in
+  let prelude = Arg.conv (parser, Mdx.Prelude.pp) in
   let doc =
     "A file to load as prelude. Can be prefixed with $(i,env:) to specify a \
      specific environment to load the prelude in. Multiple prelude files can \
@@ -83,8 +81,7 @@ let prelude =
   in
   named
     (fun x -> `Prelude x)
-    Arg.(
-      value & opt_all prelude [] & info [ "prelude" ] ~doc ~docv:"[ENV:]FILE")
+    Arg.(value & opt_all prelude [] & info [ "prelude" ] ~doc)
 
 let prelude_str =
   let doc =
@@ -93,12 +90,11 @@ let prelude_str =
      not contain any spaces. Multiple prelude strings can be provided: they \
      will be evaluated in the order they are provided on the command-line."
   in
-  let parse s = `Ok (Mdx.Prelude.env_and_payload s) in
-  let prelude = (parse, Mdx.Prelude.pp) in
+  let parse s = Ok (Mdx.Prelude.env_and_payload s) in
+  let prelude = Arg.conv (parse, Mdx.Prelude.pp) in
   named
     (fun x -> `Prelude_str x)
-    Arg.(
-      value & opt_all prelude [] & info [ "prelude-str" ] ~doc ~docv:"[ENV:]STR")
+    Arg.(value & opt_all prelude [] & info [ "prelude-str" ] ~doc)
 
 let directories =
   let doc = "A list of directories to load for the #directory directive." in
@@ -121,12 +117,12 @@ let force_output =
 type output = File of string | Stdout
 
 let output_conv =
-  let sparse, sprint = Arg.string in
+  let sparse, sprint = Arg.(conv_parser string, conv_printer string) in
   let parse s =
     match sparse s with
-    | `Ok "-" -> Ok Stdout
-    | `Ok s -> Ok (File s)
-    | `Error msg -> Error (`Msg msg)
+    | Ok "-" -> Ok Stdout
+    | Ok s -> Ok (File s)
+    | Error msg -> Error msg
   in
   let print fmt = function
     | Stdout -> sprint fmt "-"

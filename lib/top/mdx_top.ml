@@ -169,11 +169,16 @@ module Rewrite = struct
     mutable preload : string option;
   }
 
+#if OCAML_VERSION < (5, 4, 0)
+  let ldot (a, b) = Longident.Ldot(a, b)
+#else
+  let ldot (a, b) = Longident.Ldot(Location.mknoloc a, Location.mknoloc b)
+#endif
   (* Rewrite Lwt.t expressions to Lwt_main.run <expr> *)
   let lwt =
-    let typ = Longident.(Ldot (Lident "Lwt", "t")) in
-    let runner = Longident.(Ldot (Lident "Lwt_main", "run")) in
-    let witness = Longident.(Ldot (Lident "Lwt", "return")) in
+    let typ = Longident.(ldot (Lident "Lwt", "t")) in
+    let runner = Longident.(ldot (Lident "Lwt_main", "run")) in
+    let witness = Longident.(ldot (Lident "Lwt", "return")) in
     let preload = Some "lwt.unix" in
     let open Ast_helper in
     let rewrite loc e =
@@ -187,10 +192,10 @@ module Rewrite = struct
   (* Rewrite Async.Defered.t expressions to
      Async.Thread_safe.block_on_async_exn (fun () -> <expr>). *)
   let async =
-    let typ = Longident.(Ldot (Ldot (Lident "Async", "Deferred"), "t")) in
+    let typ = Longident.(ldot (ldot (Lident "Async", "Deferred"), "t")) in
     let runner =
       Longident.(
-        Ldot (Ldot (Lident "Async", "Thread_safe"), "block_on_async_exn"))
+        ldot (ldot (Lident "Async", "Thread_safe"), "block_on_async_exn"))
     in
     let witness = runner in
     let preload = None in
@@ -453,7 +458,12 @@ let add_directive ~name ~doc kind =
             let s =
               match lid with
               | Longident.Lident s -> s
-              | Longident.Ldot (_, s) -> s
+              | Longident.Ldot (_, s) ->
+#if OCAML_VERSION < (5, 4, 0)
+                s
+#else
+                s.txt
+#endif
               | Longident.Lapply _ ->
                   Format.printf "Invalid path %a@." Printtyp.longident lid;
                   raise Exit
