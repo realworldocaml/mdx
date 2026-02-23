@@ -127,7 +127,11 @@ let match_env
   | Env_empty -> empty ()
   | Env_open (summary, pid) ->
     open_ summary pid
+#if OCAML_VERSION >= (5, 5, 0)
+  | Env_not_aliasable (summary, id) -> functor_arg summary id
+#else
   | Env_functor_arg (summary, id) -> functor_arg summary id
+#endif
   | Env_module (summary, id, presence, _) ->
     let present = match presence with
       | Mp_present -> true
