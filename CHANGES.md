@@ -1,3 +1,9 @@
+### unreleased
+
+#### Added
+
+- Support OCaml 5.5 (#475, @anmonteiro)
+
 ### 2.5.1
 
 #### Added
