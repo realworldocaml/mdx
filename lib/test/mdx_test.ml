@@ -18,6 +18,67 @@ open Mdx
 open Astring
 open Mdx.Util.Result.Infix
 
+module Monitor = struct
+  type progress = {
+    start_time : float;
+    loc : Lexing.position;
+  }
+
+  type t = {
+    output : Unix.file_descr;
+    mutable progress : progress option;
+  }
+
+  let create ~output =
+    let output = Unix.dup output in
+    { output; progress = None }
+
+  let update t loc = t.progress <- Some { start_time = Unix.gettimeofday (); loc }
+
+  let pp_loc f (loc : Lexing.position) =
+    Fmt.pf f "%s:%d" loc.pos_fname loc.pos_lnum
+
+  let run_thread t =
+    let out = Format.formatter_of_out_channel (Unix.out_channel_of_descr t.output) in
+    let default_threshold = 5.0 in
+    let rec aux ~last ~threshold =
+      Unix.sleep 1;
+      match t.progress with
+      | None -> aux ~last ~threshold
+      | Some x when x.loc <> last -> aux ~last:x.loc ~threshold:default_threshold
+      | Some { start_time; loc } ->
+        let delay = Unix.gettimeofday () -. start_time in
+        if delay < threshold -. 0.1 then aux ~last ~threshold
+        else (
+          Format.fprintf out "warning: %a has been running for %.0f seconds@." pp_loc loc delay;
+          aux ~last ~threshold:(threshold *. 2.0)
+        )
+    in
+    aux ~last:Lexing.dummy_pos ~threshold:default_threshold
+
+  let output t fmt =
+    fmt |> Fmt.kstr (fun msg ->
+        ignore (Unix.write_substring t.output msg 0 (String.length msg) : int)
+      )
+
+  let handle_interrupt t _n =
+    Sys.(set_signal sigint) Signal_default;
+    t.progress |> Option.iter (fun progress -> output t "\n%a: interrupted\n" pp_loc progress.loc);
+    exit 1
+
+  let handle_usr1 t _n =
+    match t.progress with
+    | None -> output t "Not running any tests (USR1 received)\n"
+    | Some progress -> output t "%a (USR1 received)\n" pp_loc progress.loc
+
+  let install_signal_handlers t =
+    Sys.(set_signal sigint) (Signal_handle (handle_interrupt t));
+    Sys.(set_signal sigusr1) (Signal_handle (handle_usr1 t))
+
+  let run t =
+    ignore (Thread.create run_thread t : Thread.t)
+end
+
 let src = Logs.Src.create "cram.test"
 
 module Log = (val Logs.src_log src : Logs.LOG)
@@ -234,9 +295,10 @@ let eval_ocaml ~(block : Block.t) ?syntax ?root c ppf errors =
 
 let lines = function Ok x | Error x -> x
 
-let run_toplevel_tests ?syntax ?root c ppf Toplevel.{ tests; end_pad } block =
+let run_toplevel_tests ?syntax ?root ~progress c ppf Toplevel.{ tests; end_pad } block =
   Block.pp_header ?syntax ppf block;
   let pp_test ppf (test : Toplevel.t) =
+    progress test.pos;
     let lines = eval_test ?root ~block c test.command |> lines |> split_lines in
     let output_received = List.map output_from_line lines in
     let output_expected = test.output in
@@ -324,9 +386,9 @@ let preludes ~prelude ~prelude_str =
   | fs, [] -> List.map parse fs
   | _ -> Fmt.failwith "only one of --prelude or --prelude-str should be used"
 
-let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
+let run_exn ?(progress=ignore) ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
     ~verbose_findlib ~prelude ~prelude_str ~file ~section ~root ~force_output
-    ~output ~directives ~packages ~predicates =
+    ~output ~directives ~packages ~predicates () =
   Printexc.record_backtrace record_backtrace;
   let syntax =
     match syntax with Some syntax -> Some syntax | None -> Syntax.infer ~file
@@ -339,6 +401,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
 
   let test_block ~ppf ~temp_file t =
     let print_block () = Block.pp ?syntax ppf t in
+    progress t.loc.loc_start;
     if Block.is_active ?section t then
       match Block.value t with
       | Raw _ -> print_block ()
@@ -389,7 +452,7 @@ let run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax ~silent
             ~on_evaluation:(fun () ->
               assert (syntax <> Some Cram);
               Mdx_top.in_env env (fun () ->
-                  run_toplevel_tests ?syntax ?root c ppf phrases t))
+                  run_toplevel_tests ?syntax ?root ~progress c ppf phrases t))
     else print_block ()
   in
   let gen_corrected file_contents items =

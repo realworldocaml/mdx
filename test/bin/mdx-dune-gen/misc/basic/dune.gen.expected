@@ -14,7 +14,11 @@ let run_exn_defaults =
     | Some _ -> true
     | None -> false
   in
-  run_exn ~packages ~predicates ~prelude_str:[]
+  let monitor = Mdx_test.Monitor.create ~output:Unix.stderr in
+  Mdx_test.Monitor.run monitor;
+  run_exn ()
+    ~progress:(Mdx_test.Monitor.update monitor)
+    ~packages ~predicates ~prelude_str:[]
     ~non_deterministic
     ~silent_eval:false ~record_backtrace:false
     ~syntax:None ~silent:false

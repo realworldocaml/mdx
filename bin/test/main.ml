@@ -37,10 +37,14 @@ let run_exn (`Setup ()) (`Non_deterministic non_deterministic)
       Mdx_test.Package.compilerlibs_toplevel;
     ]
   in
+  let monitor = Mdx_test.Monitor.create ~output:Unix.stderr in
+  Mdx_test.Monitor.install_signal_handlers monitor;
+  Mdx_test.Monitor.run monitor;
   let predicates = [ Mdx_test.Predicate.byte; Mdx_test.Predicate.toploop ] in
-  Mdx_test.run_exn ~non_deterministic ~silent_eval ~record_backtrace ~syntax
+  Mdx_test.run_exn () ~non_deterministic ~silent_eval ~record_backtrace ~syntax
     ~silent ~verbose_findlib ~prelude ~prelude_str ~file ~section ~root
     ~force_output ~output ~directives ~packages ~predicates
+    ~progress:(Mdx_test.Monitor.update monitor)
 
 let report_error_in_block block msg =
   let kind =
