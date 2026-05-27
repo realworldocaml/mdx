@@ -16,7 +16,7 @@
 
 (** Cram tests *)
 
-type t = { command : string list; output : Output.t list; exit_code : int }
+type t = { command : string list; output : Output.t list; exit_code : int; loc : Lexing.position }
 
 type cram_tests = {
   start_pad : int;
@@ -41,8 +41,8 @@ val command_line : t -> string
 
 (** {2 Parser} *)
 
-val of_lines : string list -> cram_tests
-(** [of_lines l] parses the commands [l]. *)
+val of_lines : loc:Lexing.position -> string list -> cram_tests
+(** [of_lines ~loc l] parses the commands [l]. *)
 
 (** {2 Pretty-printer} *)
 

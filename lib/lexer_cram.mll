@@ -8,13 +8,14 @@ let digit = ['0' - '9']
 rule token = parse
  | eof               { [] }
  | "[" (digit+ as str) "]" ws* eol
-                     { `Exit (int_of_string str) :: token lexbuf }
- | ws* "..." ws* eol { `Ellipsis :: token lexbuf }
+                     { Lexing.new_line lexbuf; `Exit (int_of_string str) :: token lexbuf }
+ | ws* "..." ws* eol { Lexing.new_line lexbuf; `Ellipsis :: token lexbuf }
  | ws* "$ "              {
+      let loc = Lexing.lexeme_start_p lexbuf in
       let buf = Buffer.create 8 in
       let line, cont = command_line buf lexbuf in
-      if cont then `Command_first line :: token lexbuf
-      else `Command line :: token lexbuf
+      if cont then `Command_first (loc, line) :: token lexbuf
+      else `Command (loc, line) :: token lexbuf
     }
  | ws* "> "              {
       let buf = Buffer.create 8 in
@@ -22,7 +23,7 @@ rule token = parse
       if cont then `Command_cont line :: token lexbuf
       else `Command_last line :: token lexbuf
     }
- | eol               { `Output "" :: token lexbuf }
+ | eol               { Lexing.new_line lexbuf; `Output "" :: token lexbuf }
  | _ as c            {
      let buf = Buffer.create 8 in
      Buffer.add_char buf c;
@@ -31,8 +32,8 @@ rule token = parse
    }
 
 and command_line buf = parse
- | '\\' ws* eol { Buffer.contents buf, true }
- | eol          { Buffer.contents buf, false }
+ | '\\' ws* eol { Lexing.new_line lexbuf; Buffer.contents buf, true }
+ | eol          { Lexing.new_line lexbuf; Buffer.contents buf, false }
  | '\"'   {
      let xbuf = Buffer.create 8 in
      Buffer.add_char xbuf '\"';
@@ -46,7 +47,7 @@ and string buf = parse
  | _ as c        { Buffer.add_char buf c; string buf lexbuf }
 
 and line buf = parse
- | eol    { Buffer.contents buf }
+ | eol    { Lexing.new_line lexbuf; Buffer.contents buf }
  | _ as c { Buffer.add_char buf c; line buf lexbuf }
 
 {

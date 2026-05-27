@@ -135,7 +135,8 @@ let get_env unset_variables =
   let env = List.fold_left f env unset_variables in
   Array.of_list (List.map (String.concat ~sep:"=") env)
 
-let run_test ?root unset_variables temp_file t =
+let run_test ?root ~progress unset_variables temp_file t =
+  progress (t.Cram.loc);
   let cmd = Cram.command_line t in
   let env = get_env unset_variables in
   Log.info (fun l -> l "exec: %S" cmd);
@@ -180,7 +181,7 @@ let pad_output ~pad_blank hpad outputs =
           | true, true | false, _ -> `Output (Fmt.str "%s%s" string_pad s)))
     outputs
 
-let run_cram_tests ?syntax t ?root ppf temp_file
+let run_cram_tests ?syntax t ?root ~progress ppf temp_file
     (Cram.{ hpad; tests; end_pad; start_pad } as cram_tests) =
   Block.pp_header ?syntax ppf t;
   Log.debug (fun l ->
@@ -192,7 +193,7 @@ let run_cram_tests ?syntax t ?root ppf temp_file
   let pp_test ppf (test : Cram.t) =
     let root = root_dir ?root ~block:t () in
     let unset_variables = Block.unset_variables t in
-    let n = run_test ?root unset_variables temp_file test in
+    let n = run_test ?root ~progress unset_variables temp_file test in
     let lines = Mdx.Util.File.read_lines temp_file in
     let output_expected = test.output in
     let output_received = List.map output_from_line lines in
@@ -421,16 +422,16 @@ let run_exn ?(progress=ignore) ~non_deterministic ~silent_eval ~record_backtrace
           with_non_det non_deterministic non_det ~on_skip_execution:print_block
             ~on_keep_old_output:det ~on_evaluation:det
       | Cram { language = _; non_det } ->
-          let tests = Cram.of_lines t.contents in
+          let tests = Cram.of_lines ~loc:t.loc.loc_start t.contents in
           with_non_det non_deterministic non_det ~on_skip_execution:print_block
             ~on_keep_old_output:(fun () ->
               print_block ();
               let unset_variables = Block.unset_variables t in
               List.iter
-                (fun t -> ignore (run_test ?root unset_variables temp_file t))
+                (fun t -> ignore (run_test ?root ~progress unset_variables temp_file t))
                 tests.Cram.tests)
             ~on_evaluation:(fun () ->
-              run_cram_tests ?syntax t ?root ppf temp_file tests)
+              run_cram_tests ?syntax t ?root ~progress ppf temp_file tests)
       | Toplevel { non_det; env } ->
           let phrases = Toplevel.of_lines ~loc:t.loc t.contents in
           with_non_det non_deterministic non_det ~on_skip_execution:print_block
