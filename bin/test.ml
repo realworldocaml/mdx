@@ -30,7 +30,7 @@ let run (`Setup ()) _ _ _ _ _ _ _ _ _ _ =
   let dir = Filename.dirname Sys.argv.(0) in
   let cmd =
     match base with
-    | "main.exe" -> dir / "test" / "main.exe"
+    | "main.exe" -> dir / "test" / "main.bc"
     | x when String.length x > 6 && String.sub x 0 6 = "ocaml-" ->
         let x_without_ext, x_ext = split_exe_extension x in
         (dir / x_without_ext) ^ "-test" ^ x_ext
