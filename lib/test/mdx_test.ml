@@ -72,8 +72,11 @@ module Monitor = struct
     | Some progress -> output t "%a (USR1 received)\n" pp_loc progress.loc
 
   let install_signal_handlers t =
-    Sys.(set_signal sigint) (Signal_handle (handle_interrupt t));
-    Sys.(set_signal sigusr1) (Signal_handle (handle_usr1 t))
+    (* Not sure what Windows would do if we tried to set these, so skip for now. *)
+    if Sys.os_type = "Unix" then (
+      Sys.(set_signal sigint) (Signal_handle (handle_interrupt t));
+      Sys.(set_signal sigusr1) (Signal_handle (handle_usr1 t))
+    )
 
   let run t = ignore (Thread.create run_thread t : Thread.t)
 end
