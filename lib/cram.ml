@@ -19,7 +19,12 @@ let src = Logs.Src.create "ocaml-mdx"
 module Log = (val Logs.src_log src : Logs.LOG)
 open Astring
 
-type t = { command : string list; output : Output.t list; exit_code : int; loc : Lexing.position }
+type t = {
+  command : string list;
+  output : Output.t list;
+  exit_code : int;
+  loc : Lexing.position;
+}
 
 type cram_tests = {
   start_pad : int;
@@ -44,8 +49,7 @@ let dump ppf { command; output; exit_code; loc } =
     Fmt.Dump.(list string)
     command
     (Fmt.Dump.list Output.dump)
-    output exit_code
-    pp_loc loc
+    output exit_code pp_loc loc
 
 let rec pp_vertical_pad ppf = function
   | 0 -> ()

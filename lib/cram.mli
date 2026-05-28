@@ -16,7 +16,12 @@
 
 (** Cram tests *)
 
-type t = { command : string list; output : Output.t list; exit_code : int; loc : Lexing.position }
+type t = {
+  command : string list;
+  output : Output.t list;
+  exit_code : int;
+  loc : Lexing.position;
+}
 
 type cram_tests = {
   start_pad : int;
