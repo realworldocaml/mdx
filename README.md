@@ -440,3 +440,18 @@ Those variables are then available in the subsequent blocks
     bar
     - : unit = ()
     ```
+
+### Hanging tests
+
+If a test takes a long time, MDX will write a warning to stderr with the location.
+For example:
+
+<!-- $MDX skip -->
+```sh
+$ dune exec -- ocaml-mdx-test test.md
+warning: test.md:7 has been running for 5 seconds
+```
+
+However, when used with dune the output isn't shown until the whole file
+completes, preventing you from seeing it. To avoid this, use `dune test
+--no-buffer` to disable dune's buffering.
