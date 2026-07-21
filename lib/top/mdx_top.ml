@@ -217,7 +217,11 @@ module Rewrite = struct
     | _ -> path
 
   let is_persistent_value env longident =
+#ifdef OXCAML
+    let is_persistent_path p = Ident.is_global_or_predef (get_id_in_path p) in
+#else
     let is_persistent_path p = Ident.persistent (get_id_in_path p) in
+#endif
     try is_persistent_path (fst (Compat_top.lookup_value longident env))
     with Not_found -> false
 
@@ -239,8 +243,13 @@ module Rewrite = struct
 
   let item ts env pstr_item tstr_item =
     match (pstr_item.Parsetree.pstr_desc, tstr_item.Typedtree.str_desc) with
+#ifdef OXCAML
+    | ( Parsetree.Pstr_eval (e, _),
+        Typedtree.Tstr_eval ({ Typedtree.exp_type = typ; _ }, _, _) ) -> (
+#else
     | ( Parsetree.Pstr_eval (e, _),
         Typedtree.Tstr_eval ({ Typedtree.exp_type = typ; _ }, _) ) -> (
+#endif
         match Compat_top.ctype_get_desc typ with
         | Types.Tconstr (path, _, _) -> apply ts env pstr_item path e
         | _ -> pstr_item)
@@ -465,13 +474,23 @@ let add_directive ~name ~doc kind =
                 s.txt
 #endif
               | Longident.Lapply _ ->
+#ifdef OXCAML
+                  Format.printf "Invalid path %a@."
+                    (Format_doc.compat Printtyp.longident) lid;
+#else
                   Format.printf "Invalid path %a@." Printtyp.longident lid;
+#endif
                   raise Exit
             in
             let id = Ident.create_persistent s in
             let sg = to_sig env loc id lid in
             Printtyp.wrap_printing_env ~error:false env (fun () ->
+#ifdef OXCAML
+                Format.printf "@[%a@]@."
+                  (Format_doc.compat Printtyp.signature) sg)
+#else
                 Format.printf "@[%a@]@." Printtyp.signature sg)
+#endif
           with
           | Not_found -> Format.printf "@[Unknown element.@]@."
           | Exit -> ()
@@ -533,7 +552,11 @@ let mty_path =
   let open Types in
   function
   | Mty_alias path -> Some path
+#ifdef OXCAML
+  | Mty_ident _ | Mty_signature _ | Mty_functor _ | Mty_strengthen _ -> None
+#else
   | Mty_ident _ | Mty_signature _ | Mty_functor _ -> None
+#endif
 
 let map_sig_attributes ~f =
   let open Types in
@@ -686,7 +709,11 @@ let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates
   t
 
 let envs = Hashtbl.create 8
+#ifdef OXCAML
+let is_predef_or_global id = Ident.is_predef id || Ident.is_global id
+#else
 let is_predef_or_global id = Ident.is_predef id || Ident.global id
+#endif
 
 let rec save_summary acc s =
   let default_case summary = save_summary acc summary in

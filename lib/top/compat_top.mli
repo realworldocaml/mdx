@@ -32,7 +32,11 @@ val type_structure :
 val extension_constructor :
   ext_type_path:Path.t ->
   ext_type_params:Types.type_expr list ->
+#ifdef OXCAML
+  ext_args:Types.constructor_argument list ->
+#else
   ext_args:Types.type_expr list ->
+#endif
   ext_ret_type:Types.type_expr option ->
   ext_private:Asttypes.private_flag ->
   ext_loc:Location.t ->

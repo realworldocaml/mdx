@@ -1,10 +1,23 @@
+(rule
+ (target cppo_flags)
+ (action
+  (with-stdout-to
+   %{target}
+   (run ocaml %{dep:gen_cppo_flags.ml} %{ocaml_version}))))
+
 (library
  (name mdx_top)
  (public_name mdx.top)
  (modes byte)
+ (modules (:standard \ gen_cppo_flags))
  (preprocess
   (action
-   (run %{bin:cppo} -V OCAML:%{ocaml_version} %{input-file})))
+   (run
+    %{bin:cppo}
+    -V
+    OCAML:%{ocaml_version}
+    %{read-lines:cppo_flags}
+    %{input-file})))
  (libraries
   unix
   mdx
