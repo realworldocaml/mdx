@@ -19,7 +19,12 @@ let src = Logs.Src.create "ocaml-mdx"
 module Log = (val Logs.src_log src : Logs.LOG)
 open Astring
 
-type t = { command : string list; output : Output.t list; exit_code : int }
+type t = {
+  command : string list;
+  output : Output.t list;
+  exit_code : int;
+  loc : Lexing.position;
+}
 
 type cram_tests = {
   start_pad : int;
@@ -31,17 +36,20 @@ type cram_tests = {
 let dump_line ppf = function
   | #Output.t as o -> Output.dump ppf o
   | `Exit i -> Fmt.pf ppf "`Exit %d" i
-  | `Command c -> Fmt.pf ppf "`Command %S" c
-  | `Command_first c -> Fmt.pf ppf "`Command_first %S" c
+  | `Command (_pos, c) -> Fmt.pf ppf "`Command %S" c
+  | `Command_first (_pos, c) -> Fmt.pf ppf "`Command_first %S" c
   | `Command_cont c -> Fmt.pf ppf "`Command_cont %S" c
   | `Command_last c -> Fmt.pf ppf "`Command_last %S" c
 
-let dump ppf { command; output; exit_code } =
-  Fmt.pf ppf "{@[command: %a;@ output: %a;@ exit_code: %d]}"
+let pp_loc f (loc : Lexing.position) =
+  Fmt.pf f "%s:%d" loc.pos_fname loc.pos_lnum
+
+let dump ppf { command; output; exit_code; loc } =
+  Fmt.pf ppf "{@[command: %a;@ output: %a;@ exit_code: %d;@ loc: %a]}"
     Fmt.Dump.(list string)
     command
     (Fmt.Dump.list Output.dump)
-    output exit_code
+    output exit_code pp_loc loc
 
 let rec pp_vertical_pad ppf = function
   | 0 -> ()
@@ -131,45 +139,51 @@ let determine_padding lines =
       in
       { start_pad; tests = lines; end_pad }
 
-let of_lines t =
+let of_lines ~loc t =
   let { start_pad; tests; end_pad } = determine_padding t in
+  let loc = { loc with Lexing.pos_lnum = loc.Lexing.pos_lnum + start_pad } in
   let hpad = hpad_of_lines tests in
   let lines = unpad hpad tests in
   let lexer_input =
     lines |> List.map ((Fun.flip String.append) "\n") |> String.concat
   in
-  let lines = Lexer_cram.token (Lexing.from_string lexer_input) in
+  let lines =
+    let x = Lexing.from_string lexer_input in
+    Lexing.set_position x loc;
+    Lexing.set_filename x loc.pos_fname;
+    Lexer_cram.token x
+  in
   Log.debug (fun l ->
       l "Cram.of_lines (pad=%d) %a" hpad Fmt.(Dump.list dump_line) lines);
-  let mk command output ~exit:exit_code =
-    { command; output = List.rev output; exit_code }
+  let mk ~loc command output ~exit:exit_code =
+    { command; output = List.rev output; exit_code; loc }
   in
   let rec command_cont acc = function
     | `Command_cont c :: t -> command_cont (c :: acc) t
     | `Command_last c :: t -> (List.rev (c :: acc), t)
     | _ -> Fmt.failwith "invalid multi-line command"
   in
-  let rec aux command output acc = function
+  let rec aux ~loc command output acc = function
     | [] when command = [] -> List.rev acc
-    | [] -> List.rev (mk command output ~exit:0 :: acc)
-    | `Exit exit :: t -> aux [] [] (mk command output ~exit :: acc) t
-    | (`Ellipsis as o) :: t -> aux command (o :: output) acc t
-    | `Command cmd :: t ->
-        if command = [] then aux [ cmd ] [] acc t
-        else aux [ cmd ] [] (mk command output ~exit:0 :: acc) t
-    | `Command_first cmd :: t ->
+    | [] -> List.rev (mk ~loc command output ~exit:0 :: acc)
+    | `Exit exit :: t -> aux ~loc [] [] (mk ~loc command output ~exit :: acc) t
+    | (`Ellipsis as o) :: t -> aux ~loc command (o :: output) acc t
+    | `Command (loc2, cmd) :: t ->
+        if command = [] then aux ~loc:loc2 [ cmd ] [] acc t
+        else aux ~loc:loc2 [ cmd ] [] (mk ~loc command output ~exit:0 :: acc) t
+    | `Command_first (loc2, cmd) :: t ->
         let cmd, t = command_cont [ cmd ] t in
-        aux cmd [] (mk command output ~exit:0 :: acc) t
-    | (`Output _ as o) :: t -> aux command (o :: output) acc t
+        aux ~loc:loc2 cmd [] (mk ~loc command output ~exit:0 :: acc) t
+    | (`Output _ as o) :: t -> aux ~loc command (o :: output) acc t
     | (`Command_last s | `Command_cont s) :: t ->
-        aux command output acc (`Output s :: t)
+        aux ~loc command output acc (`Output s :: t)
   in
   let hpad, tests =
     match lines with
-    | `Command_first cmd :: t ->
+    | `Command_first (loc, cmd) :: t ->
         let cmd, t = command_cont [ cmd ] t in
-        (hpad, aux cmd [] [] t)
-    | `Command cmd :: t -> (hpad, aux [ cmd ] [] [] t)
+        (hpad, aux ~loc cmd [] [] t)
+    | `Command (loc, cmd) :: t -> (hpad, aux ~loc [ cmd ] [] [] t)
     | [] -> (0, [])
     | `Output line :: _ ->
         if String.length line > 0 && line.[0] = '$' then

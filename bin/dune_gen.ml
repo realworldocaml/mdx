@@ -57,7 +57,11 @@ let run (`Setup ()) (`Prelude prelude) (`Directories dirs) =
   line "    | Some _ -> true";
   line "    | None -> false";
   line "  in";
-  line "  run_exn ~packages ~predicates ~prelude_str:[]";
+  line "  let monitor = Mdx_test.Monitor.create ~output:Unix.stderr in";
+  line "  Mdx_test.Monitor.run monitor;";
+  line "  run_exn ()";
+  line "    ~progress:(Mdx_test.Monitor.update monitor)";
+  line "    ~packages ~predicates ~prelude_str:[]";
   line "    ~non_deterministic";
   line "    ~silent_eval:false ~record_backtrace:false";
   line "    ~syntax:None ~silent:false";

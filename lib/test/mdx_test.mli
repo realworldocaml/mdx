@@ -1,5 +1,14 @@
 exception Test_block_failure of Mdx.Block.t * string
 
+module Monitor : sig
+  type t
+
+  val create : output:Unix.file_descr -> t
+  val run : t -> unit
+  val update : t -> Lexing.position -> unit
+  val install_signal_handlers : t -> unit
+end
+
 module Package : sig
   val unix : string
   val findlib_top : string
@@ -13,6 +22,7 @@ module Predicate : sig
 end
 
 val run_exn :
+  ?progress:(Lexing.position -> unit) ->
   non_deterministic:bool ->
   silent_eval:bool ->
   record_backtrace:bool ->
@@ -29,4 +39,5 @@ val run_exn :
   directives:Mdx_top.directive list ->
   packages:string list ->
   predicates:string list ->
+  unit ->
   int
