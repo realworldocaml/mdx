@@ -18,7 +18,8 @@
  (name mdx_top)
  (public_name mdx.top)
  (modes byte)
- (modules (:standard \ gen_cppo_flags))
+ (modules
+  (:standard \ gen_cppo_flags))
  (preprocess
   (action
    (run
