@@ -1,3 +1,10 @@
+### 2.6.0
+
+#### Changed
+
+- Mark the tests as conflicting with dune 3.24.0 due to a bug in
+  that release; see https://github.com/ocaml/dune/issues/14724 (@avsm)
+
 ### 2.5.2
 
 #### Added

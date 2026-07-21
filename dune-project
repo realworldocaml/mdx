@@ -41,4 +41,5 @@
   result
   (alcotest :with-test))
  (conflicts
-   (result (< 1.5))))
+   (result (< 1.5))
+   (dune (and :with-test (= 3.24.0)))))
