@@ -1,6 +1,7 @@
 open Cmdliner.Term
 
 val named : ('a -> 'b) -> 'a t -> 'b t
+val normalize_file_path : string -> string
 val non_deterministic : [> `Non_deterministic of bool ] t
 val syntax : [> `Syntax of Mdx.Syntax.t option ] t
 val file : [> `File of string ] t
