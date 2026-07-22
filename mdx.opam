@@ -18,7 +18,7 @@ license: "ISC"
 homepage: "https://github.com/realworldocaml/mdx"
 bug-reports: "https://github.com/realworldocaml/mdx/issues"
 depends: [
-  "dune" {>= "3.5"}
+  "dune" {>= "3.21"}
   "ocaml" {>= "4.08.0"}
   "ocamlfind"
   "fmt" {>= "0.8.7"}
@@ -54,3 +54,4 @@ build: [
   ]
 ]
 dev-repo: "git+https://github.com/realworldocaml/mdx.git"
+x-maintenance-intent: ["(latest)"]
