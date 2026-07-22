@@ -34,7 +34,7 @@ let run (`Setup ()) (`Prelude prelude) (`Directories dirs) =
   in
 
   let pp_prelude ppf (env, filename) =
-    Fmt.pf ppf "(%a, %S)" pp_env env filename
+    Fmt.pf ppf "(%a, %S)" pp_env env (Cli.normalize_file_path filename)
   in
 
   let pp_preludes ppf preludes =

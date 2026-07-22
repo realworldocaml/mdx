@@ -30,7 +30,8 @@ let vpad_of_lines t =
   in
   aux 0 t
 
-let pp_line_directive ppf (file, line) = Fmt.pf ppf "#%d %S" line file
+let pp_line_directive ppf (file, line) =
+  Fmt.pf ppf "#%d %S" line (Cli.normalize_file_path file)
 
 let rec add_semi_semi = function
   | [] -> []
