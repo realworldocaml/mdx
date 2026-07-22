@@ -56,14 +56,13 @@ module Monitor = struct
   let output t fmt =
     fmt
     |> Fmt.kstr (fun msg ->
-           ignore
-             (Unix.write_substring t.output msg 0 (String.length msg) : int))
+        ignore (Unix.write_substring t.output msg 0 (String.length msg) : int))
 
   let handle_interrupt t _n =
     Sys.(set_signal sigint) Signal_default;
     t.progress
     |> Option.iter (fun progress ->
-           output t "\n%a: interrupted\n" pp_loc progress.loc);
+        output t "\n%a: interrupted\n" pp_loc progress.loc);
     exit 1
 
   let handle_usr1 t _n =
@@ -75,8 +74,7 @@ module Monitor = struct
     (* Not sure what Windows would do if we tried to set these, so skip for now. *)
     if Sys.os_type = "Unix" then (
       Sys.(set_signal sigint) (Signal_handle (handle_interrupt t));
-      Sys.(set_signal sigusr1) (Signal_handle (handle_usr1 t))
-    )
+      Sys.(set_signal sigusr1) (Signal_handle (handle_usr1 t)))
 
   let run t = ignore (Thread.create run_thread t : Thread.t)
 end
@@ -486,10 +484,10 @@ let run_exn ?(progress = ignore) ~non_deterministic ~silent_eval
     Buffer.contents buf
   in
   (match output with
-  | Some `Stdout -> Mdx.run_to_stdout ?syntax ~f:gen_corrected file
-  | Some (`File outfile) ->
-      Mdx.run_to_file ?syntax ~outfile ~f:gen_corrected file
-  | None -> Mdx.run ?syntax ~force_output ~f:gen_corrected file)
+    | Some `Stdout -> Mdx.run_to_stdout ?syntax ~f:gen_corrected file
+    | Some (`File outfile) ->
+        Mdx.run_to_file ?syntax ~outfile ~f:gen_corrected file
+    | None -> Mdx.run ?syntax ~force_output ~f:gen_corrected file)
   >>! fun () ->
   Hashtbl.iter (write_parts ~force_output) files;
   0
