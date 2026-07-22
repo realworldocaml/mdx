@@ -1,9 +1,13 @@
 ### 2.6.0
 
-#### Changed
+#### Added
 
 - If a test takes longer than 5 seconds, display a warning with the test's location
   Also display the location on Ctrl-C (#476, @talex5 @avsm).
+- Support oxcaml-5.2.0-minus39 alongside normal OCaml (#481, @avsm)
+
+#### Changed
+
 - Mark the tests as conflicting with dune 3.24.0 due to a bug in
   that release; see https://github.com/ocaml/dune/issues/14724 (@avsm)
 
