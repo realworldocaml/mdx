@@ -1,10 +1,32 @@
+(rule
+ (target cppo_flags)
+ (enabled_if %{ocaml-config:ox})
+ (action
+  (with-stdout-to
+   %{target}
+   (echo "-D\nOXCAML"))))
+
+(rule
+ (target cppo_flags)
+ (enabled_if
+  (not %{ocaml-config:ox}))
+ (action
+  (with-stdout-to
+   %{target}
+   (echo ""))))
+
 (library
  (name mdx_top)
  (public_name mdx.top)
  (modes byte)
  (preprocess
   (action
-   (run %{bin:cppo} -V OCAML:%{ocaml_version} %{input-file})))
+   (run
+    %{bin:cppo}
+    -V
+    OCAML:%{ocaml_version}
+    %{read-lines:cppo_flags}
+    %{input-file})))
  (libraries
   unix
   mdx

@@ -2,10 +2,10 @@
 
 #### Changed
 
-- Mark the tests as conflicting with dune 3.24.0 due to a bug in
-  that release; see https://github.com/ocaml/dune/issues/14724 (@avsm)
 - If a test takes longer than 5 seconds, display a warning with the test's location
   Also display the location on Ctrl-C (#476, @talex5 @avsm).
+- Mark the tests as conflicting with dune 3.24.0 due to a bug in
+  that release; see https://github.com/ocaml/dune/issues/14724 (@avsm)
 
 ### 2.5.2
 

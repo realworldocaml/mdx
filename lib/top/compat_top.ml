@@ -13,7 +13,9 @@ let lookup_value v env =
 #endif
 
 let find_value env loc id =
-#if OCAML_VERSION >= (4, 10, 0)
+#ifdef OXCAML
+  Env.lookup_value ~loc id env |> fun (p, w, _) -> (p, w)
+#elif OCAML_VERSION >= (4, 10, 0)
   Env.lookup_value ~loc id env
 #else
   Typetexp.find_value env loc id
@@ -27,14 +29,18 @@ let find_type env loc id =
 #endif
 
 let find_constructor env loc id =
-#if OCAML_VERSION >= (4, 10, 0)
+#ifdef OXCAML
+  Env.lookup_constructor ~loc Env.Positive id env |> fst
+#elif OCAML_VERSION >= (4, 10, 0)
   Env.lookup_constructor ~loc Env.Positive id env
 #else
   Typetexp.find_constructor env loc id
 #endif
 
 let find_module env loc id =
-#if OCAML_VERSION >= (4, 10, 0)
+#ifdef OXCAML
+  Env.lookup_module ~loc id env |> fun (p, w, _) -> (p, w)
+#elif OCAML_VERSION >= (4, 10, 0)
   Env.lookup_module ~loc id env
 #else
   Typetexp.find_module env loc id
@@ -48,7 +54,9 @@ let find_modtype env loc id =
 #endif
 
 let find_class env loc id =
-#if OCAML_VERSION >= (4, 10, 0)
+#ifdef OXCAML
+  Env.lookup_class ~loc id env |> fun (p, w, _) -> (p, w)
+#elif OCAML_VERSION >= (4, 10, 0)
   Env.lookup_class ~loc id env
 #else
   Typetexp.find_class env loc id
@@ -62,7 +70,9 @@ let find_class_type env loc id =
 #endif
 
 let type_structure env str loc =
-#if OCAML_VERSION >= (4, 14, 0)
+#ifdef OXCAML
+  let tstr, _, _, _, _, env =
+#elif OCAML_VERSION >= (4, 14, 0)
   let tstr, _, _, _, env =
 #else
   let tstr, _, _, env =
@@ -96,7 +106,16 @@ let extension_constructor
   ; ext_private
   ; ext_loc
   ; ext_attributes
-#if OCAML_VERSION >= (5, 3, 0)
+#ifdef OXCAML
+  ; ext_shape = Constructor_uniform_value
+  ; ext_constant = true
+  ; ext_uid = (
+    let unit_info =
+      Unit_info.make ~check_modname:false ~source_file:"__NONE__"
+        ~for_pack_prefix:Compilation_unit.Prefix.empty Intf "mdx"
+    in
+    Uid.mk ~current_unit:(Some unit_info))
+#elif OCAML_VERSION >= (5, 3, 0)
   ; ext_uid = Uid.mk ~current_unit:None
 #elif OCAML_VERSION >= (4, 11, 0)
   ; ext_uid = Uid.mk ~current_unit:"mdx"
@@ -122,8 +141,13 @@ let match_env
     env =
   ignore (constraints, persistent, copy_types, value_unbound, module_unbound);
   match env with
+#ifdef OXCAML
+  | Env.Env_value (summary, id, _, _) ->
+    value summary id
+#else
   | Env.Env_value (summary, id, _) ->
     value summary id
+#endif
   | Env_empty -> empty ()
   | Env_open (summary, pid) ->
     open_ summary pid
@@ -132,13 +156,20 @@ let match_env
 #else
   | Env_functor_arg (summary, id) -> functor_arg summary id
 #endif
+#ifdef OXCAML
+  | Env_module (summary, id, presence, _, _, _) ->
+#else
   | Env_module (summary, id, presence, _) ->
+#endif
     let present = match presence with
       | Mp_present -> true
       | Mp_absent -> false
     in
     module_ summary id ~present
   | Env_type (summary, _, _) -> type_ summary
+#ifdef OXCAML
+  | Env_jkind (summary, _, _) -> type_ summary
+#endif
   | Env_modtype (summary, _, _) -> modtype summary
   | Env_cltype (summary, _, _) -> cltype summary
   | Env_class (summary, id, _) -> class_ summary id
@@ -298,7 +329,14 @@ let mk_fun loc exp =
     { Parsetree.pparam_loc= loc
     ; pparam_desc= Pparam_val (label, default, punit) }
   in
+#ifdef OXCAML
+  let function_constraint : Parsetree.function_constraint =
+    { mode_annotations = []; ret_mode_annotations = []; ret_type_constraint = None }
+  in
+  Ast_helper.Exp.function_ [param] function_constraint (Pfunction_body exp)
+#else
   Ast_helper.Exp.function_ [param] None (Pfunction_body exp)
+#endif
 #else
   Ast_helper.Exp.fun_ label default punit exp
 #endif

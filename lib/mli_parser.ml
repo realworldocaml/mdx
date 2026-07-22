@@ -48,12 +48,13 @@ let extract_code_block_info acc ~(location : Lexing.position) ~docstring =
         }
     in
     fun location
-        {
-          O.Ast.meta;
-          delimiter;
-          content = { O.Loc.location = span; value };
-          output;
-        } ->
+      {
+        O.Ast.meta;
+        delimiter;
+        content = { O.Loc.location = span; value };
+        output;
+      }
+    ->
       let metadata =
         Option.map
           (fun { O.Ast.language; tags } ->

@@ -68,9 +68,8 @@ let executable_contents (block : Block.t) =
   in
   line_pairs
   |> List.map (fun (line, contents) ->
-         if contents = [] || Block.ends_by_semi_semi contents then
-           (line, contents)
-         else (line, add_semi_semi contents))
+      if contents = [] || Block.ends_by_semi_semi contents then (line, contents)
+      else (line, add_semi_semi contents))
 
 let run (`Setup ()) (`File file) (`Section section) =
   Mdx.parse_file Markdown file >>! fun t ->
