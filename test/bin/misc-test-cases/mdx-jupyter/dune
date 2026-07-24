@@ -1,0 +1,17 @@
+(rule
+ (targets test.jpynb)
+ (deps
+  (:x test.md)
+  (package mdx))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:ocaml-mdx} jupyter %{x}))))
+
+(rule
+ (alias runtest)
+ (deps
+  (:x test.jpynb)
+  (:y test.jpynb.expected))
+ (action
+  (diff? %{y} %{x})))
