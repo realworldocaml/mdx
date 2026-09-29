@@ -330,6 +330,7 @@ type t = {
   mutable verbose : bool;
   mutable silent : bool;
   verbose_findlib : bool;
+  skip : string option ref;     (** If [Some] then we're skipping. Shared with test code. *)
 }
 
 let toplevel_exec_phrase t ppf p =
@@ -675,12 +676,25 @@ let in_words s =
   in
   split 0 0
 
+let init_skip () =
+  let lex = Lexing.from_string
+      "let rec _mdx_skip : string option ref = ref None
+       and mdx_skip fmt =
+        Format.kasprintf (fun reason -> _mdx_skip := Some reason; failwith reason) fmt;;"
+  in
+  let phrase = Parse.toplevel_phrase lex in
+  let ok = Toploop.execute_phrase false Format.std_formatter phrase in
+  assert ok;
+  let skip : string option ref = Obj.obj (Toploop.getvalue "_mdx_skip") in
+  skip
+
 let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates
     () =
   Clflags.real_paths := false;
   Toploop.set_paths ();
   Mdx.Compat.init_path ();
   Toploop.toplevel_env := Compmisc.initial_env ();
+  let skip = init_skip () in
   Sys.interactive := false;
   List.iter
     (function
@@ -695,7 +709,7 @@ let init ~verbose:v ~silent:s ~verbose_findlib ~directives ~packages ~predicates
     (Toploop.Directive_string
        (fun s -> protect Topfind.load_deeply (in_words s)))
     { Toploop.section = "Loading code"; doc = "Load an ocamlfind package" };
-  let t = { verbose = v; silent = s; verbose_findlib } in
+  let t = { verbose = v; silent = s; verbose_findlib; skip } in
   show ();
   show_val ();
   show_type ();
@@ -767,3 +781,6 @@ let in_env e f =
   let env, names, objs = env_deps env in
   Hashtbl.replace envs env_name (env, names, objs);
   res
+
+let skip_reason t = !(t.skip)
+let clear_skip t = t.skip := None

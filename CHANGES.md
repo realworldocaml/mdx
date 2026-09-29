@@ -1,3 +1,7 @@
+### dev
+
+- Add `mdx_skip` for skipping tests (#483, @talex5).
+
 ### 2.6.0
 
 #### Added

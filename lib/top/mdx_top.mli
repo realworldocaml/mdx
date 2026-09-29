@@ -40,3 +40,11 @@ val eval : t -> string list -> (string list, string list) result
     lines) with the configuration value [t]. *)
 
 val in_env : Mdx.Ocaml_env.t -> (unit -> 'a) -> 'a
+
+val skip_reason : t -> string option
+(** [skip_reason t] returns the reason passed to [mdx_skip], or [None] if that
+    hasn't been called yet. *)
+
+val clear_skip : t -> unit
+(** [clear_skip t] clears the skip state, so that [skip_reason t] returns [None]
+    again. *)

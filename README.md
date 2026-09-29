@@ -235,6 +235,22 @@ Here is an examples of toplevel OCaml code:
     42
     ```
 
+If a test should be skipped in certain situations,
+you can call the `mdx_skip` function with the reason.
+For example:
+
+    ```ocaml
+    # if Sys.word_size < 64 then
+        mdx_skip "Word size %d is too small" Sys.word_size;;
+    - : unit = ()
+
+    # 0x100000000;;
+    - : int = 4294967296
+    ```
+
+`mdx_skip` stops execution until the end of the block.
+The reason is logged at INFO level (so run with `-v` to see it).
+
 ### File sync
 
 MDX is also capable of including content from files in fenced code blocks

@@ -268,6 +268,9 @@ let rec error_padding = function
 let contains_warnings l =
   String.is_prefix ~affix:"Warning" l || String.is_infix ~affix:"\nWarning" l
 
+let report_skipped loc reason =
+  Log.info (fun l -> l "%a: mdx_skip %S" Monitor.pp_loc loc reason)
+
 let eval_ocaml ~(block : Block.t) ?syntax ?root c ppf errors =
   let cmd = block.contents |> remove_padding in
   let error_lines =
@@ -278,18 +281,23 @@ let eval_ocaml ~(block : Block.t) ?syntax ?root c ppf errors =
   let errors =
     match error_lines with
     | [] -> []
-    | lines ->
-        let lines = split_lines lines in
-        let output = List.map output_from_line lines in
+    | lines -> (
         let errors = error_padding errors in
-        let output = error_padding output in
-        if Output.equal output errors then errors
-        else
-          List.map
-            (function
-              | `Ellipsis -> `Ellipsis
-              | `Output x -> `Output (ansi_color_strip x))
-            (Output.merge output errors)
+        match Mdx_top.skip_reason c with
+        | Some reason ->
+            report_skipped block.loc.loc_start reason;
+            errors
+        | None ->
+            let lines = split_lines lines in
+            let output = List.map output_from_line lines in
+            let output = error_padding output in
+            if Output.equal output errors then errors
+            else
+              List.map
+                (function
+                  | `Ellipsis -> `Ellipsis
+                  | `Output x -> `Output (ansi_color_strip x))
+                (Output.merge output errors))
   in
   let updated_block = update_ocaml ~errors block in
   Block.pp ?syntax ppf updated_block
@@ -301,11 +309,23 @@ let run_toplevel_tests ?syntax ?root ~progress c ppf Toplevel.{ tests; end_pad }
   Block.pp_header ?syntax ppf block;
   let pp_test ppf (test : Toplevel.t) =
     progress test.pos;
-    let lines = eval_test ?root ~block c test.command |> lines |> split_lines in
-    let output_received = List.map output_from_line lines in
-    let output_expected = test.output in
-    let output_equal = Output.equal output_received output_expected in
-    let output = if output_equal then output_expected else output_received in
+    let output =
+      let output_expected = test.output in
+      if Mdx_top.skip_reason c <> None then output_expected
+      else
+        let lines =
+          eval_test ?root ~block c test.command |> lines |> split_lines
+        in
+        match Mdx_top.skip_reason c with
+        | Some reason ->
+            report_skipped test.pos reason;
+            output_expected
+        | None ->
+            let output_received = List.map output_from_line lines in
+            let output_expected = test.output in
+            let output_equal = Output.equal output_received output_expected in
+            if output_equal then output_expected else output_received
+    in
     let output = pad_output ~pad_blank:false test.hpad output in
     Toplevel.pp_command ppf test;
     match output with [] -> () | output -> pp_outputs ppf output
@@ -403,6 +423,7 @@ let run_exn ?(progress = ignore) ~non_deterministic ~silent_eval
   let preludes = preludes ~prelude ~prelude_str in
 
   let test_block ~ppf ~temp_file t =
+    Mdx_top.clear_skip c;
     let print_block () = Block.pp ?syntax ppf t in
     progress t.loc.loc_start;
     if Block.is_active ?section t then
@@ -443,15 +464,18 @@ let run_exn ?(progress = ignore) ~non_deterministic ~silent_eval
               print_block ();
               List.iter
                 (fun (phrase : Toplevel.t) ->
-                  match
-                    Mdx_top.in_env env (fun () ->
-                        eval_test ~block:t ?root c phrase.command)
-                  with
-                  | Ok _ -> ()
-                  | Error e ->
-                      let output = List.map (fun l -> `Output l) e in
-                      if Output.equal phrase.output output then ()
-                      else err_eval ~cmd:phrase.command e)
+                  if Mdx_top.skip_reason c = None then
+                    let result = 
+                      Mdx_top.in_env env (fun () ->
+                          eval_test ~block:t ?root c phrase.command)
+                    in
+                    match result, Mdx_top.skip_reason c with
+                    | _, Some reason -> report_skipped phrase.pos reason
+                    | Ok _, _ -> ()
+                    | Error e, _ ->
+                        let output = List.map (fun l -> `Output l) e in
+                        if Output.equal phrase.output output then ()
+                        else err_eval ~cmd:phrase.command e)
                 phrases.tests)
             ~on_evaluation:(fun () ->
               assert (syntax <> Some Cram);
