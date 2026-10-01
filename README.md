@@ -240,8 +240,7 @@ you can call the `mdx_skip` function with the reason.
 For example:
 
     ```ocaml
-    # if Sys.word_size < 64 then
-        mdx_skip "Word size %d is too small" Sys.word_size;;
+    # if Sys.word_size < 64 then mdx_skip "Requires 64-bit words";;
     - : unit = ()
 
     # 0x100000000;;

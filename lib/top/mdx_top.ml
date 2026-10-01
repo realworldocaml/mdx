@@ -679,8 +679,9 @@ let in_words s =
 let init_skip () =
   let lex = Lexing.from_string
       "let rec _mdx_skip : string option ref = ref None
-       and mdx_skip fmt =
-        Format.kasprintf (fun reason -> _mdx_skip := Some reason; failwith reason) fmt;;"
+       and mdx_skip reason =
+         _mdx_skip := Some reason;
+         failwith reason;;"
   in
   let phrase = Parse.toplevel_phrase lex in
   let ok = Toploop.execute_phrase false Format.std_formatter phrase in

@@ -45,7 +45,7 @@ This test requires `/bin/cp` and so won't work on NixOS:
 let get_cp_path () =
   let path = "/bin/cp" in
   if Sys.file_exists path then path
-  else mdx_skip "Test requires %s" path
+  else mdx_skip ("Test requires " ^ path)
 ```
 
 ```ocaml
@@ -56,8 +56,7 @@ let get_cp_path () =
 The example in the README:
 
 ```ocaml
-# if Sys.word_size < 64 then
-    mdx_skip "Word size %d is too small" Sys.word_size;;
+# if Sys.word_size < 64 then mdx_skip "Requires 64-bit words";;
 - : unit = ()
 
 # 0x100000000;;
