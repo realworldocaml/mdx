@@ -248,7 +248,6 @@ For example:
     ```
 
 `mdx_skip` stops execution until the end of the block.
-The reason is logged at INFO level (so run with `-v` to see it).
 
 ### File sync
 

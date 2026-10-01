@@ -269,7 +269,7 @@ let contains_warnings l =
   String.is_prefix ~affix:"Warning" l || String.is_infix ~affix:"\nWarning" l
 
 let report_skipped loc reason =
-  Log.info (fun l -> l "%a: mdx_skip %S" Monitor.pp_loc loc reason)
+  Fmt.epr "%a: mdx_skip %S@." Monitor.pp_loc loc reason
 
 let eval_ocaml ~(block : Block.t) ?syntax ?root c ppf errors =
   let cmd = block.contents |> remove_padding in
