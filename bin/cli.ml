@@ -2,6 +2,17 @@ open Cmdliner
 
 let named wrapper = Term.(app (const wrapper))
 
+let normalize_file_path filename =
+  let local_prefix = Filename.current_dir_name ^ Filename.dir_sep in
+  let len_prefix = String.length local_prefix in
+  if
+    String.length filename >= len_prefix
+    && String.equal (String.sub filename 0 len_prefix) local_prefix
+  then
+    (* Strip current directory prefix *)
+    String.sub filename len_prefix (String.length filename - len_prefix)
+  else filename
+
 let non_deterministic =
   let doc = "Run non-deterministic tests." in
   let env = Cmd.Env.info ~doc "MDX_RUN_NON_DETERMINISTIC" in
