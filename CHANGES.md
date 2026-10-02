@@ -1,6 +1,6 @@
-### unreleased
+### dev
 
-### Changed
+- Add `mdx_skip` for skipping tests (#483, @talex5).
 
 - Paths are normalized to drop the directory prefix ("./" on MacOs and Linux)
   before pretty printing them (#482, @shonfeder).

@@ -504,6 +504,18 @@
  (action (diff simple-mli/test-case.mli simple-mli.actual)))
 
 (rule
+ (target skip.actual)
+ (deps (package mdx) (source_tree skip))
+ (action
+  (with-stdout-to %{target}
+   (chdir skip
+    (run ocaml-mdx test --output - test-case.md)))))
+
+(rule
+ (alias runtest)
+ (action (diff skip/test-case.md skip.actual)))
+
+(rule
  (target spaces.actual)
  (deps (package mdx) (source_tree spaces))
  (action
