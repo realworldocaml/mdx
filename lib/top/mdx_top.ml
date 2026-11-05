@@ -475,23 +475,13 @@ let add_directive ~name ~doc kind =
                 s.txt
 #endif
               | Longident.Lapply _ ->
-#ifdef OXCAML
-                  Format.printf "Invalid path %a@."
-                    (Format_doc.compat Printtyp.longident) lid;
-#else
                   Format.printf "Invalid path %a@." Printtyp.longident lid;
-#endif
                   raise Exit
             in
             let id = Ident.create_persistent s in
             let sg = to_sig env loc id lid in
             Printtyp.wrap_printing_env ~error:false env (fun () ->
-#ifdef OXCAML
-                Format.printf "@[%a@]@."
-                  (Format_doc.compat Printtyp.signature) sg)
-#else
                 Format.printf "@[%a@]@." Printtyp.signature sg)
-#endif
           with
           | Not_found -> Format.printf "@[Unknown element.@]@."
           | Exit -> ()
