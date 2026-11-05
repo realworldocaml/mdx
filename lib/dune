@@ -14,6 +14,13 @@
   re
   str
   compiler-libs.common
+  ; OxCaml exposes Compmisc in compiler-libs.frontend - the select here simply
+  ; ensures that the additional library gets pulled in.
+  (select
+   compat.ml
+   from
+   (compiler-libs.frontend -> compat.in.ml)
+   (-> compat.in.ml))
   unix))
 
 (ocamllex lexer_mdx)
