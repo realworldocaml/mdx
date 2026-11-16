@@ -1,3 +1,12 @@
+### unreleased
+
+#### Fixed
+
+- The Lwt rewriter no longer requires `lwt.unix` when `Lwt_main.run` is
+  already linked in, as in the toplevel of a dune `mdx` stanza, and a failing
+  preload is reported like any other directive instead of aborting the file
+  (#485, #486, @samoht).
+
 ### 2.7.0
 
 #### Added
