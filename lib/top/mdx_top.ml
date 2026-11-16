@@ -165,6 +165,7 @@ module Rewrite = struct
   type t = {
     typ : Longident.t;
     witness : Longident.t;
+    runner : Longident.t;
     rewrite : Location.t -> expression -> expression;
     mutable preload : string option;
   }
@@ -187,7 +188,7 @@ module Rewrite = struct
             (Exp.ident (Location.mkloc runner loc))
             [ (Asttypes.Nolabel, e) ])
     in
-    { typ; rewrite; witness; preload }
+    { typ; rewrite; witness; runner; preload }
 
   (* Rewrite Async.Defered.t expressions to
      Async.Thread_safe.block_on_async_exn (fun () -> <expr>). *)
@@ -206,7 +207,7 @@ module Rewrite = struct
         (Exp.ident (Location.mkloc runner loc))
         [ (Asttypes.Nolabel, Compat_top.mk_fun loc e) ]
     in
-    { typ; rewrite; witness; preload }
+    { typ; rewrite; witness; runner; preload }
 
   let normalize_type_path env path =
     match Env.find_type path env with
@@ -316,7 +317,12 @@ module Rewrite = struct
               | None -> acc
               | Some x ->
                   t.preload <- None;
-                  x :: acc)
+                  (* A runner already linked in, as in a toplevel that dune
+                     builds for an [mdx] stanza, needs no package: requiring
+                     it would load its archives and their C stubs again. *)
+                  if is_persistent_value !Toploop.toplevel_env t.runner then
+                    acc
+                  else x :: acc)
             [] ts
         in
         List.iter
@@ -350,12 +356,13 @@ let toplevel_exec_phrase t ppf p =
         | Ptop_def s ->
             Ptop_def (Pparse.apply_rewriters_str ~tool_name:"ocaml-mdx" s)
       in
-      Rewrite.preload t.verbose_findlib ppf;
-      let phrase = Rewrite.phrase phrase in
-      if !Clflags.dump_parsetree then Printast.top_phrase ppf phrase;
-      if !Clflags.dump_source then Pprintast.top_phrase ppf phrase;
-      Env.reset_cache_toplevel ();
-      try execute_phrase t.verbose ppf phrase
+      try
+        Rewrite.preload t.verbose_findlib ppf;
+        let phrase = Rewrite.phrase phrase in
+        if !Clflags.dump_parsetree then Printast.top_phrase ppf phrase;
+        if !Clflags.dump_source then Pprintast.top_phrase ppf phrase;
+        Env.reset_cache_toplevel ();
+        execute_phrase t.verbose ppf phrase
       with Exit_with_status code ->
         Format.fprintf ppf "[%d]@." code;
         false)
